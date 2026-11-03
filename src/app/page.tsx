@@ -19,12 +19,10 @@ import {
   TrendingDown,
   CalendarClock,
   Store,
-  MessageCircle,
   Moon,
   Sun,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useChat, unreadFor } from "@/lib/chat";
 import { AREAS, agentById, type Category } from "@/lib/data";
 import { useStore, haptic } from "@/lib/store";
 import { fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime, useLang, useT } from "@/lib/i18n";
@@ -41,7 +39,6 @@ export default function HomePage() {
   const name = useStore((s) => s.name);
   const prefs = useStore((s) => s.prefs);
   const unread = useStore((s) => s.notifications.filter((n) => !n.read).length);
-  const chatUnread = useChat((s) => unreadFor(s.threads, "client"));
   const viewings = useStore((s) => s.viewings);
   const setS = useStore((s) => s.set);
   const theme = useStore((s) => s.theme);
@@ -106,14 +103,6 @@ export default function HomePage() {
             </motion.span>
           </AnimatePresence>
         </button>
-        <Link href="/chat" aria-label={t("المحادثات", "Messages")} className="relative grid size-11 place-items-center rounded-full bg-surface ring-1 ring-line shadow-card active:scale-90">
-          <MessageCircle className="size-5" />
-          {chatUnread > 0 && (
-            <span className="tabular absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[10.5px] font-semibold text-navy ring-2 ring-bg">
-              {fmtNum(chatUnread, lang)}
-            </span>
-          )}
-        </Link>
         <Link href="/notifications" aria-label={t("التنبيهات", "Notifications")} className="relative grid size-11 place-items-center rounded-full bg-surface ring-1 ring-line shadow-card active:scale-90">
           <Bell className="size-5" />
           {unread > 0 && <span className="absolute end-2.5 top-2.5 size-2.5 rounded-full bg-accent ring-2 ring-surface" />}

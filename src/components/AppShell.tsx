@@ -12,6 +12,7 @@ import { TabBar } from "./TabBar";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { CompareTray } from "./Compare";
+import { ChatFab } from "./ChatFab";
 
 const HIDE_TABS = [/^\/property\/[^/]+/, /^\/owner\/new/, /^\/agent\/lead\//, /^\/chat\/[^/]+/, /^\/agent\/chat\//];
 
@@ -60,6 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </motion.main>
           {showTabs && <CompareTray />}
+          {showTabs && <ChatFab />}
           {showTabs && <TabBar />}
           <AnimatePresence>{!onboarded && <Onboarding />}</AnimatePresence>
           <Toaster />

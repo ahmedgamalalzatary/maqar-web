@@ -139,7 +139,8 @@ body {
 }
 
 .pb-tabbar {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  /* room for the tab bar plus the floating chat button */
+  padding-bottom: calc(164px + env(safe-area-inset-bottom));
 }
 
 .shimmer {
