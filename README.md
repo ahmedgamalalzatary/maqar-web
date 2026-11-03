@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# مقر MAQAR — mobile front-end demo
 
-## Getting Started
+A phone-only Next.js demo of the Maqar real-estate app. It is front-end only: all data is sample data, and state (favorites, viewings, listings, leads) is kept in the browser's localStorage.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
+npm install
+npm run dev        # http://localhost:3000
 # or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build && npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open it on a phone, or use the browser's device toolbar. On a wide screen the app stays a 440 px phone column on the brand navy.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What's in it
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Area | Where | Notes |
+|---|---|---|
+| Onboarding + smart picks | first launch, `/` | Purpose, budget, areas, must-haves. Each home gets an explainable match % (`src/lib/logic.ts → matchScore`). |
+| Explore | `/explore` | Search, Buy / Rent / Stays / New projects, quick filters (360°, installments, ready, price dropped), full filter sheet, sorting. |
+| Property | `/property/[id]` | Gallery, price per m², price-drop alert, named sales advisor, installment calculator, amenities, map, similar homes. |
+| 360° virtual tour | `/property/[id]/tour` | three.js viewer: drag with inertia, pinch/wheel zoom, gyroscope, in-scene hotspots, cross-fade between rooms. |
+| Book a viewing | `/property/[id]/book` | On site or live video, day strip, hour slots, assigned advisor, reminders (1 day / 2 h / 30 min), confirm, `.ics` calendar file. |
+| My viewings | `/viewings` | Upcoming and past, reschedule, cancel, directions, contact the advisor. Reminders fire as in-app and phone notifications. |
+| Saved + price alerts | `/saved` | Turning on an alert simulates a 5% price drop after ~8 s (demo). |
+| Installment calculator | `/calculator` | Developer 0% plan or bank finance, monthly or quarterly. |
+| Owner portal | `/owner`, `/owner/new` | Views chart, interested clients, listing wizard. A submitted listing is "approved" after ~12 s (demo) and then shows in Explore. |
+| Sales agent app | `/agent`, `/agent/leads` | Today's viewings, monthly target, pipeline, lead details with status and notes. Viewings booked in the client app show up here. |
 
-## Learn More
+Switch roles (client / owner / sales agent), language (Arabic / English) and dark mode from **حسابي / Me**. "Reset demo" clears the stored state.
 
-To learn more about Next.js, take a look at the following resources:
+## How it compares with MQR (the competing demo app)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+From MQR's Android build (Expo / React Native, Arabic and English):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| | MQR | Maqar |
+|---|---|---|
+| Sale, rent, short stays, new projects | ✓ | ✓ |
+| Search and filters | ✓ | ✓ plus one-tap quick filters |
+| Contact with the seller | Blocked. Tap "I'm interested" and wait for their admin team to call | Named sales advisor with rating and reply time, plus WhatsApp and call |
+| Book a viewing | Call to book | Pick the day and hour yourself, reschedule, cancel, get reminders, add to calendar |
+| 360° virtual tour | — | ✓ room to room, gyroscope |
+| Recommendations | Matching against a posted request | Match % for every home, with the reasons |
+| Installment calculator | — | ✓ developer and bank plans |
+| Price drop alerts | — | ✓ |
+| Owner tools | Owners and brokers list units after ID review, with plan limits | Owner portal with views, interested clients and saves, plus review-before-publish |
+| Sales agent app | — | ✓ leads pipeline, today's viewings, notes |
 
-## Deploy on Vercel
+## Project layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+  app/                 routes (all client-rendered behind a splash while state loads)
+  components/          AppShell, TabBar, PanoViewer, InstallmentCalculator, PropertyCard, ui
+  lib/
+    data.ts            sample listings, areas, sales agents, tour rooms
+    store.ts           persisted Zustand store (favorites, viewings, notifications, listings, leads)
+    logic.ts           match score, installments, booking slots, .ics export
+    agent.ts           sales agent leads
+    demo.ts            simulated price drops, listing approval, notification permission
+    i18n.ts            t("عربي", "English") helper and number/date formatting
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Assets
+
+- Logo: the chosen Kufic lock-up, split into colour layers in `public/brand/` so it adapts to light and dark themes; the square mark is a vector (`components/Logo.tsx`).
+- Photos: Unsplash. Panoramas: Poly Haven (CC0), resized to 4096×2048.
+- Font: Readex Pro (Arabic + Latin).
