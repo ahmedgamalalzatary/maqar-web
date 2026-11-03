@@ -151,11 +151,11 @@ export default function NewListing() {
                   </div>
                   <label className="flex items-center justify-between p-4">
                     <span className="text-[14px]">{t("المساحة (م²)", "Area (m²)")}</span>
-                    <input type="number" inputMode="numeric" value={size} onChange={(e) => setSize(Number(e.target.value))} className="tabular w-24 rounded-xl bg-surface-2 px-3 py-2 text-center text-[15px] font-semibold outline-none" />
+                    <input type="number" inputMode="numeric" value={size} onChange={(e) => setSize(Number(e.target.value))} className="tabular w-24 rounded-xl bg-surface-2 px-3 py-2 text-center text-[15px] font-semibold outline-none focus:ring-2 focus:ring-accent" />
                   </label>
                   <label className="flex items-center justify-between p-4">
                     <span className="text-[14px]">{cat === "rent" ? t("الإيجار الشهري", "Monthly rent") : t("السعر المطلوب", "Asking price")}</span>
-                    <input type="number" inputMode="numeric" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="tabular w-36 rounded-xl bg-surface-2 px-3 py-2 text-center text-[15px] font-semibold outline-none" />
+                    <input type="number" inputMode="numeric" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="tabular w-36 rounded-xl bg-surface-2 px-3 py-2 text-center text-[15px] font-semibold outline-none focus:ring-2 focus:ring-accent" />
                   </label>
                 </div>
                 <div className="mt-1.5 px-1 text-[12px] text-ink-3">{fmtMoney(price, lang, false)}</div>

@@ -35,7 +35,7 @@ function Leads() {
     <div>
       <PageHeader back={false} title={t("عملائي", "My leads")} subtitle={t(`${fmtNum(leads.length, "ar")} عميل مخصصين ليك`, `${leads.length} clients assigned to you`)} />
       <div className="px-4">
-        <label className="flex h-11 items-center gap-2 rounded-2xl bg-surface px-3.5 ring-1 ring-line">
+        <label className="flex h-11 items-center gap-2 rounded-2xl bg-surface px-3.5 ring-1 ring-line focus-within:ring-2 focus-within:ring-accent">
           <Search className="size-4 text-ink-3" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("ابحث باسم العميل", "Search by client name")} className="flex-1 bg-transparent text-[14px] outline-none" />
         </label>

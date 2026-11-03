@@ -136,7 +136,7 @@ export function InstallmentCalculator({
           ]}
         />
         {mode === "bank" && (
-          <label className="flex h-11 items-center gap-1 rounded-2xl bg-surface-2 px-3 text-[13px]">
+          <label className="flex h-11 items-center gap-1 rounded-2xl bg-surface-2 px-3 text-[13px] focus-within:ring-2 focus-within:ring-accent">
             <input
               type="number"
               inputMode="decimal"
