@@ -111,7 +111,7 @@ export default function AgentToday() {
                       {t(l.name)} {l.hot && <Flame className="size-4 text-[#e0574b]" />}
                     </div>
                     <div className="truncate text-[12px] text-ink-2">
-                      {t(p.title)} · {t(l.source)}
+                      {t(p.title)} | {t(l.source)}
                     </div>
                   </div>
                   <ChevronLeft className="size-4 text-ink-3 ltr:rotate-180" />
@@ -145,7 +145,7 @@ function ViewingItem({ l, showDate }: { l: ReturnType<typeof useLeads>[number]; 
         <div className="mt-0.5 truncate text-[12px] text-ink-2">{t(p.title)}</div>
         <div className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-3">
           {l.viewing.mode === "video" ? <Video className="size-3.5" /> : <MapPin className="size-3.5" />}
-          {l.viewing.mode === "video" ? t("فيديو لايف", "Live video") : `${t(p.compound)} · ${t(areaById(p.areaId).name)}`}
+          {l.viewing.mode === "video" ? t("فيديو لايف", "Live video") : `${t(p.compound)} | ${t(areaById(p.areaId).name)}`}
         </div>
       </div>
       <span className="relative size-14 shrink-0 self-center overflow-hidden rounded-2xl">

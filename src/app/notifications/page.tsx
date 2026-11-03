@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { BellRing, TrendingDown, CalendarCheck, BadgeCheck, Sparkles, Users, BellOff } from "lucide-react";
+import { BellRing, TrendingDown, CalendarCheck, BadgeCheck, Sparkles, Users, BellOff, MessageCircle } from "lucide-react";
 import { useStore, type NotifKind } from "@/lib/store";
 import { relTime, useLang, useT } from "@/lib/i18n";
 import { Empty, PageHeader, cx } from "@/components/ui";
@@ -14,6 +14,7 @@ const ICON: Record<NotifKind, [typeof BellRing, string]> = {
   approval: [BadgeCheck, "bg-sage-soft text-sage-ink"],
   match: [Sparkles, "bg-accent-soft text-accent-ink"],
   lead: [Users, "bg-sage-soft text-sage-ink"],
+  chat: [MessageCircle, "bg-accent-soft text-accent-ink"],
 };
 
 export default function NotificationsPage() {

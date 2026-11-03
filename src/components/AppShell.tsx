@@ -11,8 +11,9 @@ import { viewingDate } from "@/lib/logic";
 import { TabBar } from "./TabBar";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
+import { CompareTray } from "./Compare";
 
-const HIDE_TABS = [/^\/property\/[^/]+/, /^\/owner\/new/, /^\/agent\/lead\//];
+const HIDE_TABS = [/^\/property\/[^/]+/, /^\/owner\/new/, /^\/agent\/lead\//, /^\/chat\/[^/]+/, /^\/agent\/chat\//];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const hydrated = useSyncExternalStore(
@@ -58,6 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {children}
           </motion.main>
+          {showTabs && <CompareTray />}
           {showTabs && <TabBar />}
           <AnimatePresence>{!onboarded && <Onboarding />}</AnimatePresence>
           <Toaster />

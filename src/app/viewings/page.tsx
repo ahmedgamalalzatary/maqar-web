@@ -113,7 +113,7 @@ function ViewingCard({ v, onCancel }: { v: Viewing; onCancel: () => void }) {
         <span className="absolute inset-x-3 bottom-3 text-white">
           <span className="block truncate text-[15px] font-semibold">{t(p.title)}</span>
           <span className="flex items-center gap-1 text-[12px] opacity-85">
-            <MapPin className="size-3.5" /> {t(p.compound)} · {t(area.name)}
+            <MapPin className="size-3.5" /> {t(p.compound)} | {t(area.name)}
           </span>
         </span>
       </Link>
@@ -124,8 +124,8 @@ function ViewingCard({ v, onCancel }: { v: Viewing; onCancel: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold">{fmtDate(v.date, lang, { weekday: "long", day: "numeric", month: "long" })}</div>
           <div className="tabular text-[12.5px] text-ink-2">
-            {fmtTime(v.time, lang)} · {v.mode === "video" ? t("فيديو لايف", "Live video") : t("في الموقع", "On site")}
-            {active && <span className="text-accent-ink"> · {relTime(at.getTime(), lang)}</span>}
+            {fmtTime(v.time, lang)} | {v.mode === "video" ? t("فيديو لايف", "Live video") : t("في الموقع", "On site")}
+            {active && <span className="text-accent-ink"> | {relTime(at.getTime(), lang)}</span>}
           </div>
           {v.rescheduledFrom && <div className="text-[11px] text-ink-3">{t("كانت", "Was")} {v.rescheduledFrom}</div>}
         </div>
@@ -136,9 +136,9 @@ function ViewingCard({ v, onCancel }: { v: Viewing; onCancel: () => void }) {
           <div className="text-[11px] text-ink-3">{t("مسؤول المبيعات", "Sales advisor")}</div>
           <div className="truncate text-[13px] font-semibold">{t(agent.name)}</div>
         </div>
-        <button aria-label="WhatsApp" onClick={() => pushNotify(t("(ديمو) فتح واتساب", "(Demo) Opening WhatsApp"), t(agent.name), undefined, "sage")} className="grid size-9 place-items-center rounded-full bg-surface text-success ring-1 ring-line">
+        <Link aria-label={t("شات", "Chat")} href={`/chat/${p.id}`} className="grid size-9 place-items-center rounded-full bg-surface text-accent-ink ring-1 ring-line">
           <MessageCircle className="size-4" />
-        </button>
+        </Link>
         <button aria-label="Call" onClick={() => pushNotify(t("(ديمو) اتصال", "(Demo) Calling"), agent.phone, undefined, "sage")} className="grid size-9 place-items-center rounded-full bg-surface ring-1 ring-line">
           <Phone className="size-4" />
         </button>

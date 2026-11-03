@@ -10,10 +10,13 @@ import { fmtMoney, fmtNum, useLang, useT } from "@/lib/i18n";
 import { matchScore, useProperties } from "@/lib/logic";
 import { PropertyCard, dropPct } from "@/components/PropertyCard";
 import { Button, Chip, Empty, Sheet, cx } from "@/components/ui";
-import { RangeInput } from "@/components/Onboarding";
+import { DualRange } from "@/components/DualRange";
 
 type Sort = "match" | "low" | "high" | "new";
 type Quick = "tour" | "ready" | "plan" | "drop";
+type Delivery = "ready" | "2027" | "2028" | "2029";
+
+const SIZE: [number, number] = [50, 500];
 
 export default function ExplorePage() {
   return (
@@ -36,8 +39,11 @@ function Explore() {
   const [types, setTypes] = useState<PropType[]>([]);
   const [finish, setFinish] = useState<Finishing[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
-  const [beds, setBeds] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(0);
+  const [beds, setBeds] = useState<number[]>([]);
+  const [baths, setBaths] = useState<number[]>([]);
+  const [delivery, setDelivery] = useState<Delivery[]>([]);
+  const [price, setPrice] = useState<[number, number] | null>(null);
+  const [size, setSize] = useState<[number, number] | null>(null);
   const [quick, setQuick] = useState<Quick[]>([]);
   const [sort, setSort] = useState<Sort>("match");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -48,8 +54,10 @@ function Explore() {
     if (sp.get("focus")) inputRef.current?.focus();
   }, [sp]);
 
-  const priceMax = cat === "rent" ? 200_000 : cat === "stay" ? 15_000 : 30_000_000;
-  const priceStep = cat === "rent" ? 5_000 : cat === "stay" ? 500 : 500_000;
+  // Price scale follows the category: monthly rent, nightly stays, or purchase price.
+  const scale = cat === "rent" ? { max: 200_000, step: 5_000 } : cat === "stay" ? { max: 15_000, step: 500 } : { max: 30_000_000, step: 250_000 };
+  const priceCats: Category[] = cat === "all" ? ["sale", "project"] : [cat];
+  const priceSamples = all.filter((p) => priceCats.includes(p.cat)).map((p) => p.price);
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -59,8 +67,11 @@ function Explore() {
       .filter((p) => !types.length || types.includes(p.type))
       .filter((p) => !finish.length || finish.includes(p.finishing))
       .filter((p) => features.every((f) => p.features.includes(f)))
-      .filter((p) => !beds || p.beds >= beds)
-      .filter((p) => !maxPrice || cat === "all" || p.price <= maxPrice)
+      .filter((p) => !beds.length || beds.some((b) => (b === 5 ? p.beds >= 5 : p.beds === b)))
+      .filter((p) => !baths.length || baths.some((b) => (b === 4 ? p.baths >= 4 : p.baths === b)))
+      .filter((p) => !delivery.length || delivery.includes(p.delivery === "ready" ? "ready" : (String(p.delivery) as Delivery)))
+      .filter((p) => !price || (priceCats.includes(p.cat) && p.price >= price[0] && (price[1] >= scale.max || p.price <= price[1])))
+      .filter((p) => !size || (p.size >= size[0] && (size[1] >= SIZE[1] || p.size <= size[1])))
       .filter((p) => !quick.includes("tour") || !!p.tour)
       .filter((p) => !quick.includes("ready") || p.delivery === "ready")
       .filter((p) => !quick.includes("plan") || !!p.plan)
@@ -81,17 +92,22 @@ function Explore() {
       new: (a: (typeof list)[0], b: (typeof list)[0]) => a.p.listedDays - b.p.listedDays,
     }[sort];
     return list.sort(s);
-  }, [all, cat, areas, types, finish, features, beds, maxPrice, quick, q, sort, prefs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, cat, areas, types, finish, features, beds, baths, delivery, price, size, quick, q, sort, prefs]);
 
-  const filterCount = areas.length + types.length + finish.length + features.length + (beds ? 1 : 0) + (maxPrice ? 1 : 0);
+  const filterCount =
+    areas.length + types.length + finish.length + features.length + beds.length + baths.length + delivery.length + (price ? 1 : 0) + (size ? 1 : 0);
   const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
   const clearAll = () => {
     setAreas([]);
     setTypes([]);
     setFinish([]);
     setFeatures([]);
-    setBeds(0);
-    setMaxPrice(0);
+    setBeds([]);
+    setBaths([]);
+    setDelivery([]);
+    setPrice(null);
+    setSize(null);
     setQuick([]);
   };
 
@@ -134,11 +150,11 @@ function Explore() {
           </button>
         </div>
         <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4">
-          <Chip active={cat === "all"} onClick={() => setCat("all")}>
+          <Chip active={cat === "all"} onClick={() => { setCat("all"); setPrice(null); }}>
             {t("الكل", "All")}
           </Chip>
           {(Object.keys(CAT_LABEL) as Category[]).map((c) => (
-            <Chip key={c} active={cat === c} onClick={() => { setCat(c); setMaxPrice(0); }}>
+            <Chip key={c} active={cat === c} onClick={() => { setCat(c); setPrice(null); }}>
               {t(CAT_LABEL[c])}
             </Chip>
           ))}
@@ -173,6 +189,56 @@ function Explore() {
           {{ match: t("الأنسب ليك", "Best match"), low: t("الأقل سعراً", "Lowest price"), high: t("الأعلى سعراً", "Highest price"), new: t("الأحدث", "Newest") }[sort]}
         </button>
       </div>
+
+      {filterCount > 0 && (
+        <div className="no-scrollbar -mt-1 flex gap-1.5 overflow-x-auto px-4 pb-3">
+          {price && (
+            <ActiveChip onRemove={() => setPrice(null)}>
+              {fmtMoney(price[0], lang)} – {price[1] >= scale.max ? t("أي سعر", "any") : fmtMoney(price[1], lang)}
+            </ActiveChip>
+          )}
+          {size && (
+            <ActiveChip onRemove={() => setSize(null)}>
+              {fmtNum(size[0], lang)}–{size[1] >= SIZE[1] ? "+" : fmtNum(size[1], lang)} {t("م²", "m²")}
+            </ActiveChip>
+          )}
+          {areas.map((a) => (
+            <ActiveChip key={a} onRemove={() => setAreas((v) => v.filter((x) => x !== a))}>
+              {t(areaById(a).name)}
+            </ActiveChip>
+          ))}
+          {types.map((k) => (
+            <ActiveChip key={k} onRemove={() => setTypes((v) => v.filter((x) => x !== k))}>
+              {t(TYPE_LABEL[k])}
+            </ActiveChip>
+          ))}
+          {beds.map((n) => (
+            <ActiveChip key={`b${n}`} onRemove={() => setBeds((v) => v.filter((x) => x !== n))}>
+              {t(`${fmtNum(n, "ar")}${n === 5 ? "+" : ""} غرف`, `${n}${n === 5 ? "+" : ""} bed`)}
+            </ActiveChip>
+          ))}
+          {baths.map((n) => (
+            <ActiveChip key={`h${n}`} onRemove={() => setBaths((v) => v.filter((x) => x !== n))}>
+              {t(`${fmtNum(n, "ar")}${n === 4 ? "+" : ""} حمام`, `${n}${n === 4 ? "+" : ""} bath`)}
+            </ActiveChip>
+          ))}
+          {delivery.map((d) => (
+            <ActiveChip key={d} onRemove={() => setDelivery((v) => v.filter((x) => x !== d))}>
+              {d === "ready" ? t("استلام فوري", "Ready") : t(`استلام ${fmtNum(+d, "ar", { useGrouping: false })}`, `Delivery ${d}`)}
+            </ActiveChip>
+          ))}
+          {finish.map((k) => (
+            <ActiveChip key={k} onRemove={() => setFinish((v) => v.filter((x) => x !== k))}>
+              {t(FINISH_LABEL[k])}
+            </ActiveChip>
+          ))}
+          {features.map((k) => (
+            <ActiveChip key={k} onRemove={() => setFeatures((v) => v.filter((x) => x !== k))}>
+              {t(FEATURE_LABEL[k])}
+            </ActiveChip>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-6 px-4">
         {results.map(({ p, m }, i) => (
@@ -231,47 +297,103 @@ function Explore() {
           </div>
         }
       >
+        <div className="mt-2">
+          <div className="flex items-baseline justify-between">
+            <h4 className="text-[14px] font-semibold">
+              {cat === "rent" ? t("الإيجار الشهري", "Monthly rent") : cat === "stay" ? t("سعر الليلة", "Price per night") : t("نطاق السعر", "Price range")}
+            </h4>
+            {cat === "all" && <span className="text-[11px] text-ink-3">{t("للبيع والمشروعات", "for sale & projects")}</span>}
+          </div>
+          <DualRange
+            label={t("السعر", "Price")}
+            min={0}
+            max={scale.max}
+            step={scale.step}
+            value={price ?? [0, scale.max]}
+            onChange={(v) => setPrice(v[0] <= 0 && v[1] >= scale.max ? null : v)}
+            samples={priceSamples}
+          />
+          <div className="mt-1 grid grid-cols-2 gap-2">
+            <PriceBox
+              label={t("من", "Min")}
+              value={price?.[0] ?? 0}
+              onChange={(n) => setPrice([Math.min(n, (price?.[1] ?? scale.max) - scale.step), price?.[1] ?? scale.max])}
+            />
+            <PriceBox
+              label={t("إلى", "Max")}
+              value={price?.[1] ?? scale.max}
+              any={!price || price[1] >= scale.max}
+              onChange={(n) => setPrice([price?.[0] ?? 0, Math.max(n, (price?.[0] ?? 0) + scale.step)])}
+            />
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-baseline justify-between">
+            <h4 className="text-[14px] font-semibold">{t("المساحة", "Size")}</h4>
+            <span className="tabular text-[13px] font-semibold text-accent-ink">
+              {fmtNum(size?.[0] ?? SIZE[0], lang)} – {size && size[1] < SIZE[1] ? fmtNum(size[1], lang) : `${fmtNum(SIZE[1], lang)}+`} {t("م²", "m²")}
+            </span>
+          </div>
+          <DualRange
+            label={t("المساحة", "Size")}
+            min={SIZE[0]}
+            max={SIZE[1]}
+            step={10}
+            value={size ?? SIZE}
+            onChange={(v) => setSize(v[0] <= SIZE[0] && v[1] >= SIZE[1] ? null : v)}
+            samples={all.map((p) => p.size)}
+          />
+        </div>
+
+        <FilterGroup title={t("نوع الوحدة", "Unit type")} hint={t("اختار أكتر من نوع", "Pick any")}>
+          {(Object.keys(TYPE_LABEL) as PropType[]).map((k) => (
+            <Chip key={k} active={types.includes(k)} onClick={() => setTypes((v) => toggle(v, k))}>
+              {types.includes(k) && <Check className="size-3.5" />} {t(TYPE_LABEL[k])}
+            </Chip>
+          ))}
+        </FilterGroup>
+        <FilterGroup title={t("الغرف", "Bedrooms")} hint={t("اختار أكتر من رقم", "Pick any")}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Chip key={n} active={beds.includes(n)} onClick={() => setBeds((v) => toggle(v, n))} className="min-w-12 justify-center">
+              {fmtNum(n, lang)}
+              {n === 5 ? "+" : ""}
+            </Chip>
+          ))}
+        </FilterGroup>
+        <FilterGroup title={t("الحمامات", "Bathrooms")}>
+          {[1, 2, 3, 4].map((n) => (
+            <Chip key={n} active={baths.includes(n)} onClick={() => setBaths((v) => toggle(v, n))} className="min-w-12 justify-center">
+              {fmtNum(n, lang)}
+              {n === 4 ? "+" : ""}
+            </Chip>
+          ))}
+        </FilterGroup>
         <FilterGroup title={t("المنطقة", "Area")}>
           {AREAS.map((a) => (
             <Chip key={a.id} active={areas.includes(a.id)} onClick={() => setAreas((v) => toggle(v, a.id))}>
-              {t(a.name)}
+              {areas.includes(a.id) && <Check className="size-3.5" />} {t(a.name)}
             </Chip>
           ))}
         </FilterGroup>
-        {cat !== "all" && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[14px] font-semibold">{t("أقصى سعر", "Max price")}</h4>
-              <span className="tabular text-[14px] font-semibold text-accent-ink">{maxPrice ? fmtMoney(maxPrice, lang) : t("أي سعر", "Any")}</span>
-            </div>
-            <RangeInput min={0} max={priceMax} step={priceStep} value={maxPrice || priceMax} onChange={(v) => setMaxPrice(v >= priceMax ? 0 : v)} className="mt-2" />
-          </div>
-        )}
-        <FilterGroup title={t("نوع الوحدة", "Unit type")}>
-          {(Object.keys(TYPE_LABEL) as PropType[]).map((k) => (
-            <Chip key={k} active={types.includes(k)} onClick={() => setTypes((v) => toggle(v, k))}>
-              {t(TYPE_LABEL[k])}
-            </Chip>
-          ))}
-        </FilterGroup>
-        <FilterGroup title={t("الغرف", "Bedrooms")}>
-          {[0, 1, 2, 3, 4, 5].map((n) => (
-            <Chip key={n} active={beds === n} onClick={() => setBeds(n)} className="min-w-12 justify-center">
-              {n === 0 ? t("أي", "Any") : `+${fmtNum(n, lang)}`}
+        <FilterGroup title={t("الاستلام", "Delivery")}>
+          {(["ready", "2027", "2028", "2029"] as Delivery[]).map((d) => (
+            <Chip key={d} active={delivery.includes(d)} onClick={() => setDelivery((v) => toggle(v, d))}>
+              {d === "ready" ? t("فوري", "Ready now") : fmtNum(+d, lang, { useGrouping: false })}
             </Chip>
           ))}
         </FilterGroup>
         <FilterGroup title={t("التشطيب", "Finishing")}>
           {(Object.keys(FINISH_LABEL) as Finishing[]).map((k) => (
             <Chip key={k} active={finish.includes(k)} onClick={() => setFinish((v) => toggle(v, k))}>
-              {t(FINISH_LABEL[k])}
+              {finish.includes(k) && <Check className="size-3.5" />} {t(FINISH_LABEL[k])}
             </Chip>
           ))}
         </FilterGroup>
-        <FilterGroup title={t("المميزات", "Amenities")}>
+        <FilterGroup title={t("المميزات", "Amenities")} hint={t("لازم تكون كلها موجودة", "Must have all")}>
           {(Object.keys(FEATURE_LABEL) as Feature[]).map((k) => (
             <Chip key={k} active={features.includes(k)} onClick={() => setFeatures((v) => toggle(v, k))}>
-              {t(FEATURE_LABEL[k])}
+              {features.includes(k) && <Check className="size-3.5" />} {t(FEATURE_LABEL[k])}
             </Chip>
           ))}
         </FilterGroup>
@@ -280,11 +402,46 @@ function Explore() {
   );
 }
 
-function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function FilterGroup({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="mt-6 first:mt-2">
-      <h4 className="mb-3 text-[14px] font-semibold">{title}</h4>
+    <div className="mt-6">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h4 className="text-[14px] font-semibold">{title}</h4>
+        {hint && <span className="text-[11px] text-ink-3">{hint}</span>}
+      </div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
+  );
+}
+
+function ActiveChip({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
+  return (
+    <button onClick={onRemove} className="tabular inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-ink pe-2 ps-3 text-[12px] font-medium text-bg active:scale-95">
+      {children}
+      <X className="size-3.5 opacity-70" />
+    </button>
+  );
+}
+
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+
+/** Typed price entry; accepts Arabic or Latin digits. */
+function PriceBox({ label, value, onChange, any }: { label: string; value: number; onChange: (n: number) => void; any?: boolean }) {
+  const lang = useLang();
+  const t = useT();
+  return (
+    <label className="flex h-12 flex-col justify-center rounded-2xl bg-surface-2 px-3 focus-within:ring-2 focus-within:ring-accent">
+      <span className="text-[10.5px] text-ink-3">{label}</span>
+      <input
+        inputMode="numeric"
+        className="tabular w-full bg-transparent text-[14px] font-semibold outline-none"
+        value={any ? t("أي سعر", "Any") : fmtNum(value, lang)}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d))).replace(/\D/g, "");
+          if (digits) onChange(Number(digits));
+        }}
+      />
+    </label>
   );
 }

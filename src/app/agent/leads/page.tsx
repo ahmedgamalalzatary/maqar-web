@@ -42,11 +42,11 @@ function Leads() {
       </div>
       <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4">
         <Chip active={stage === "all"} onClick={() => setStage("all")}>
-          {t("الكل", "All")} · {fmtNum(leads.length, lang)}
+          {t("الكل", "All")} | {fmtNum(leads.length, lang)}
         </Chip>
         {STAGES.map((s) => (
           <Chip key={s.k} active={stage === s.k} onClick={() => setStage(s.k)}>
-            <span className="size-2 rounded-full" style={{ background: s.tone }} /> {t(s.label)} · {fmtNum(leads.filter((l) => l.stage === s.k).length, lang)}
+            <span className="size-2 rounded-full" style={{ background: s.tone }} /> {t(s.label)} | {fmtNum(leads.filter((l) => l.stage === s.k).length, lang)}
           </Chip>
         ))}
       </div>
@@ -65,7 +65,7 @@ function Leads() {
                     </div>
                     <div className="truncate text-[12px] text-ink-2">{t(p.title)}</div>
                     <div className="tabular mt-0.5 text-[11.5px] text-ink-3">
-                      {t("ميزانية", "Budget")} {fmtMoney(l.budget, lang)} · {relTime(l.lastAt, lang)}
+                      {t("ميزانية", "Budget")} {fmtMoney(l.budget, lang)} | {relTime(l.lastAt, lang)}
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium text-white" style={{ background: st.tone }}>

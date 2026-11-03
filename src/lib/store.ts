@@ -32,7 +32,7 @@ export type Viewing = {
   rescheduledFrom?: string;
 };
 
-export type NotifKind = "price" | "reminder" | "booking" | "approval" | "match" | "lead";
+export type NotifKind = "price" | "reminder" | "booking" | "approval" | "match" | "lead" | "chat";
 export type Notif = {
   id: string;
   kind: NotifKind;
@@ -82,6 +82,10 @@ type State = {
   ownerListings: OwnerListing[];
   leadStages: Record<string, LeadStage>;
   leadNotes: Record<string, string[]>;
+  /** Up to two homes picked for side-by-side comparison. */
+  compare: string[];
+  /** In-app switch for phone notifications (the browser permission cannot be revoked from a page). */
+  pushEnabled: boolean;
   toasts: Toast[];
 
   set: (p: Partial<State>) => void;
@@ -99,6 +103,7 @@ type State = {
   updateOwnerListing: (id: string, patch: Partial<OwnerListing>) => void;
   setLeadStage: (id: string, s: LeadStage) => void;
   addLeadNote: (id: string, note: string) => void;
+  toggleCompare: (id: string) => "added" | "removed" | "replaced";
   resetDemo: () => void;
 };
 
@@ -142,6 +147,8 @@ const initial = {
   ownerListings: [] as OwnerListing[],
   leadStages: {},
   leadNotes: {},
+  compare: [] as string[],
+  pushEnabled: false,
   toasts: [] as Toast[],
 };
 
@@ -183,6 +190,19 @@ export const useStore = create<State>()(
       setLeadStage: (id, s) => set({ leadStages: { ...get().leadStages, [id]: s } }),
       addLeadNote: (id, note) =>
         set({ leadNotes: { ...get().leadNotes, [id]: [note, ...(get().leadNotes[id] ?? [])] } }),
+      toggleCompare: (id) => {
+        const c = get().compare;
+        if (c.includes(id)) {
+          set({ compare: c.filter((x) => x !== id) });
+          return "removed";
+        }
+        if (c.length >= 2) {
+          set({ compare: [c[1], id] });
+          return "replaced";
+        }
+        set({ compare: [...c, id] });
+        return "added";
+      },
       resetDemo: () => set({ ...initial, notifications: seedNotifications(), lang: get().lang, theme: get().theme }),
     }),
     {
@@ -201,7 +221,7 @@ export const useStore = create<State>()(
 export function pushNotify(title: string, body?: string, href?: string, tone: Toast["tone"] = "gold") {
   useStore.getState().toast({ title, body, href, tone });
   try {
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+    if (useStore.getState().pushEnabled && typeof Notification !== "undefined" && Notification.permission === "granted") {
       new Notification(title, { body, icon: "/brand/icon-192.png" });
     }
   } catch {

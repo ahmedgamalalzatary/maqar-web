@@ -10,6 +10,7 @@ import { PROPERTIES, areaById } from "@/lib/data";
 import { useStore, pushNotify } from "@/lib/store";
 import { fmtDate, fmtMoney, fmtNum, fmtTime, relTime, useLang, useT } from "@/lib/i18n";
 import { STAGES, useLeads } from "@/lib/agent";
+import { useChat } from "@/lib/chat";
 import { Avatar, Button, Card, PageHeader, cx } from "@/components/ui";
 
 const NO_NOTES: string[] = [];
@@ -23,11 +24,13 @@ export default function LeadDetail() {
   const addNote = useStore((s) => s.addLeadNote);
   const notes = useStore((s) => s.leadNotes[id]) ?? NO_NOTES;
   const [note, setNote] = useState("");
+  const threads = useChat((s) => s.threads);
 
   if (!lead) return <PageHeader title={t("العميل غير موجود", "Lead not found")} fallback="/agent/leads" />;
   const p = PROPERTIES.find((x) => x.id === lead.propertyId)!;
   const idx = STAGES.findIndex((s) => s.k === lead.stage);
   const st = STAGES[idx];
+  const thread = threads.find((th) => (lead.fromApp ? th.id === `c-${lead.propertyId}` : th.leadId === lead.id));
 
   return (
     <div className="pb-10">
@@ -49,9 +52,15 @@ export default function LeadDetail() {
           <Button variant="soft" onClick={() => pushNotify(t("(ديمو) اتصال", "(Demo) Calling"), t(lead.name), undefined, "sage")}>
             <Phone className="size-4" /> {t("اتصال", "Call")}
           </Button>
-          <Button variant="soft" onClick={() => pushNotify(t("(ديمو) واتساب", "(Demo) WhatsApp"), t(lead.name), undefined, "sage")}>
-            <MessageCircle className="size-4" /> {t("واتساب", "WhatsApp")}
-          </Button>
+          {thread ? (
+            <Button href={`/agent/chat/${thread.id}`}>
+              <MessageCircle className="size-4" /> {t("الشات", "Chat")}
+            </Button>
+          ) : (
+            <Button variant="soft" onClick={() => pushNotify(t("(ديمو) واتساب", "(Demo) WhatsApp"), t(lead.name), undefined, "sage")}>
+              <MessageCircle className="size-4" /> {t("واتساب", "WhatsApp")}
+            </Button>
+          )}
         </div>
 
         {/* Stage */}
@@ -92,7 +101,7 @@ export default function LeadDetail() {
           <span className="min-w-0">
             <span className="block truncate text-[14px] font-semibold">{t(p.title)}</span>
             <span className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-ink-2">
-              <MapPin className="size-3.5" /> {t(p.compound)} · {t(areaById(p.areaId).name)}
+              <MapPin className="size-3.5" /> {t(p.compound)} | {t(areaById(p.areaId).name)}
             </span>
             <span className="tabular mt-0.5 block text-[13px] font-semibold">{fmtMoney(p.price, lang)}</span>
           </span>
@@ -106,7 +115,7 @@ export default function LeadDetail() {
               <div className="flex-1">
                 <div className="text-[14px] font-semibold">{fmtDate(lead.viewing.date, lang, { weekday: "long", day: "numeric", month: "long" })}</div>
                 <div className="tabular text-[12.5px] opacity-70">
-                  {fmtTime(lead.viewing.time, lang)} · {lead.viewing.mode === "video" ? t("فيديو لايف", "Live video") : t("في الموقع", "On site")}
+                  {fmtTime(lead.viewing.time, lang)} | {lead.viewing.mode === "video" ? t("فيديو لايف", "Live video") : t("في الموقع", "On site")}
                 </div>
               </div>
               {lead.viewing.mode === "video" && (

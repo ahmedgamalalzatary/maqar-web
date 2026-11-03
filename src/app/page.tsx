@@ -19,7 +19,12 @@ import {
   TrendingDown,
   CalendarClock,
   Store,
+  MessageCircle,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useChat, unreadFor } from "@/lib/chat";
 import { AREAS, agentById, type Category } from "@/lib/data";
 import { useStore, haptic } from "@/lib/store";
 import { fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime, useLang, useT } from "@/lib/i18n";
@@ -36,8 +41,10 @@ export default function HomePage() {
   const name = useStore((s) => s.name);
   const prefs = useStore((s) => s.prefs);
   const unread = useStore((s) => s.notifications.filter((n) => !n.read).length);
+  const chatUnread = useChat((s) => unreadFor(s.threads, "client"));
   const viewings = useStore((s) => s.viewings);
   const setS = useStore((s) => s.set);
+  const theme = useStore((s) => s.theme);
   const all = useProperties();
   const now = useNow();
 
@@ -79,6 +86,34 @@ export default function HomePage() {
           <div className="text-[12px] text-ink-2">{greet}</div>
           <div className="truncate text-[18px] font-semibold">{name ? name : t("لكل طموح مقر", "A home for every ambition")}</div>
         </div>
+        <button
+          onClick={() => {
+            haptic(8);
+            setS({ theme: theme === "dark" ? "light" : "dark" });
+          }}
+          aria-label={theme === "dark" ? t("الوضع الفاتح", "Light mode") : t("الوضع الداكن", "Dark mode")}
+          className="grid size-11 place-items-center overflow-hidden rounded-full bg-surface ring-1 ring-line shadow-card active:scale-90"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={theme}
+              initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+              animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
+              transition={{ duration: 0.22 }}
+            >
+              {theme === "dark" ? <Sun className="size-5 text-accent" /> : <Moon className="size-5" />}
+            </motion.span>
+          </AnimatePresence>
+        </button>
+        <Link href="/chat" aria-label={t("المحادثات", "Messages")} className="relative grid size-11 place-items-center rounded-full bg-surface ring-1 ring-line shadow-card active:scale-90">
+          <MessageCircle className="size-5" />
+          {chatUnread > 0 && (
+            <span className="tabular absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[10.5px] font-semibold text-navy ring-2 ring-bg">
+              {fmtNum(chatUnread, lang)}
+            </span>
+          )}
+        </Link>
         <Link href="/notifications" aria-label={t("التنبيهات", "Notifications")} className="relative grid size-11 place-items-center rounded-full bg-surface ring-1 ring-line shadow-card active:scale-90">
           <Bell className="size-5" />
           {unread > 0 && <span className="absolute end-2.5 top-2.5 size-2.5 rounded-full bg-accent ring-2 ring-surface" />}
@@ -133,7 +168,7 @@ export default function HomePage() {
             </span>
             <span className="mt-0.5 block truncate text-[14px] font-semibold">{t(nextP.title)}</span>
             <span className="tabular block text-[12px] opacity-70">
-              {fmtDate(next.date, lang, { weekday: "long", day: "numeric", month: "short" })} · {fmtTime(next.time, lang)}
+              {fmtDate(next.date, lang, { weekday: "long", day: "numeric", month: "short" })} | {fmtTime(next.time, lang)}
             </span>
           </span>
           <Avatar name={agentById(next.agentId).name.en} tone={agentById(next.agentId).tone} size={36} />

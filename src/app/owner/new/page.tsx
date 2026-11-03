@@ -61,7 +61,7 @@ export default function NewListing() {
 
   const steps = [t("النوع", "Type"), t("المكان", "Location"), t("التفاصيل", "Details"), t("الصور", "Photos"), t("مراجعة", "Review")];
   const canNext = [true, true, price > 0 && size > 0, images.length >= 1, true][step];
-  const autoTitle = title.trim() || `${t(TYPE_LABEL[type])} ${fmtNum(beds, lang)} ${t("غرف", "beds")} · ${t(AREAS.find((a) => a.id === areaId)!.name)}`;
+  const autoTitle = title.trim() || `${t(TYPE_LABEL[type])} ${fmtNum(beds, lang)} ${t("غرف", "beds")} | ${t(AREAS.find((a) => a.id === areaId)!.name)}`;
 
   const submit = () => {
     const id = `o-${uid()}`;
@@ -74,7 +74,7 @@ export default function NewListing() {
 
   return (
     <div className="pb-[calc(100px+env(safe-area-inset-bottom))]">
-      <PageHeader title={t("أضف عقارك", "List your property")} subtitle={`${fmtNum(step + 1, lang)} / ${fmtNum(steps.length, lang)} · ${steps[step]}`} fallback="/owner" />
+      <PageHeader title={t("أضف عقارك", "List your property")} subtitle={`${fmtNum(step + 1, lang)} / ${fmtNum(steps.length, lang)} | ${steps[step]}`} fallback="/owner" />
       <div className="flex gap-1.5 px-4">
         {steps.map((_, i) => (
           <div key={i} className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
@@ -241,7 +241,7 @@ export default function NewListing() {
                     <div className="tabular text-[20px] font-semibold">{fmtMoney(price, lang, false)}</div>
                     <div className="mt-0.5 text-[14px]">{autoTitle}</div>
                     <div className="tabular mt-2 text-[12.5px] text-ink-2">
-                      {fmtNum(beds, lang)} {t("غرف", "beds")} · {fmtNum(baths, lang)} {t("حمام", "baths")} · {fmtNum(size, lang)} {t("م²", "m²")} · {t(FINISH_LABEL[finishing])}
+                      {fmtNum(beds, lang)} {t("غرف", "beds")} | {fmtNum(baths, lang)} {t("حمام", "baths")} | {fmtNum(size, lang)} {t("م²", "m²")} | {t(FINISH_LABEL[finishing])}
                     </div>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import { UserRound, Store, Briefcase, Languages, Moon, Bell, Sparkles, RotateCcw
 import { useStore, pushNotify, type Role } from "@/lib/store";
 import { fmtMoney, useLang, useT } from "@/lib/i18n";
 import { askNotificationPermission } from "@/lib/demo";
+import { useChat } from "@/lib/chat";
 import { Button, Card, PageHeader, Sheet, Toggle, cx } from "@/components/ui";
 import { Logo } from "@/components/Logo";
 import Link from "next/link";
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const s = useStore();
   const [resetOpen, setResetOpen] = useState(false);
   const [perm, setPerm] = useState<string>(() => (typeof Notification !== "undefined" ? Notification.permission : "unsupported"));
+  const pushOn = s.pushEnabled && perm === "granted";
 
   const roles: { k: Role; icon: typeof UserRound; title: string; body: string; home: string }[] = [
     { k: "buyer", icon: UserRound, title: t("عميل", "Client"), body: t("دوّر، احجز معاينة، تابع الأسعار", "Search, book viewings, follow prices"), home: "/" },
@@ -86,13 +88,35 @@ export default function ProfilePage() {
           <Row icon={Moon} label={t("الوضع الداكن", "Dark mode")}>
             <Toggle on={s.theme === "dark"} onChange={(v) => s.set({ theme: v ? "dark" : "light" })} label="Dark mode" />
           </Row>
-          <Row icon={Bell} label={t("إشعارات الموبايل", "Phone notifications")} sub={perm === "granted" ? t("مفعّلة", "On") : perm === "denied" ? t("مقفولة من المتصفح", "Blocked in browser") : undefined}>
+          <Row
+            icon={Bell}
+            label={t("إشعارات الموبايل", "Phone notifications")}
+            sub={
+              perm === "denied"
+                ? t("مقفولة من إعدادات المتصفح", "Blocked in browser settings")
+                : perm === "unsupported"
+                  ? t("المتصفح ده مش بيدعمها", "Not supported in this browser")
+                  : pushOn
+                    ? t("مفعّلة", "On")
+                    : t("مقفولة", "Off")
+            }
+          >
             <Toggle
-              on={perm === "granted"}
-              onChange={async () => {
+              on={pushOn}
+              onChange={async (v) => {
+                if (!v) {
+                  s.set({ pushEnabled: false });
+                  pushNotify(t("اتقفلت إشعارات الموبايل", "Phone notifications off"), t("هتفضل توصلك التنبيهات جوه التطبيق.", "You’ll still see alerts inside the app."), undefined, "sage");
+                  return;
+                }
                 const r = await askNotificationPermission();
                 setPerm(r);
-                if (r === "granted") pushNotify(t("الإشعارات شغالة", "Notifications are on"), t("هيوصلك تذكير المعاينات ونزول الأسعار.", "You’ll get viewing reminders and price drops."), undefined, "sage");
+                if (r === "granted") {
+                  s.set({ pushEnabled: true });
+                  pushNotify(t("الإشعارات شغالة", "Notifications are on"), t("هيوصلك تذكير المعاينات ونزول الأسعار.", "You’ll get viewing reminders and price drops."), undefined, "sage");
+                } else if (r === "denied") {
+                  pushNotify(t("المتصفح مانع الإشعارات", "Notifications are blocked"), t("اسمح بيها من إعدادات الموقع في المتصفح وجرّب تاني.", "Allow them in the browser’s site settings, then try again."), undefined, "danger");
+                }
               }}
               label="Notifications"
             />
@@ -104,7 +128,7 @@ export default function ProfilePage() {
 
         <div className="mt-10 flex flex-col items-center gap-2 pb-4 text-center">
           <Logo width={96} />
-          <p className="text-[11px] text-ink-3">{t("نسخة تجريبية · كل البيانات للعرض فقط", "Demo build · all data is sample data")}</p>
+          <p className="text-[11px] text-ink-3">{t("نسخة تجريبية | كل البيانات للعرض فقط", "Demo build | all data is sample data")}</p>
         </div>
       </div>
 
@@ -118,6 +142,7 @@ export default function ProfilePage() {
             variant="danger"
             onClick={() => {
               s.resetDemo();
+              useChat.getState().reset();
               setResetOpen(false);
               router.push("/");
             }}

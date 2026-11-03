@@ -107,7 +107,7 @@ export function InstallmentCalculator({
         <div className="flex items-center justify-between">
           <label className="text-[13px] font-medium text-ink-2">{t("المقدم", "Down payment")}</label>
           <span className="tabular text-[15px] font-semibold">
-            {fmtPct(down, lang)} <span className="text-[12px] font-normal text-ink-3">· {fmtMoney(r.down, lang)}</span>
+            {fmtPct(down, lang)} <span className="text-[12px] font-normal text-ink-3">| {fmtMoney(r.down, lang)}</span>
           </span>
         </div>
         <RangeInput min={0} max={60} step={5} value={down} onChange={setDown} className="mt-1" />

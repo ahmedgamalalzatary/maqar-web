@@ -228,6 +228,7 @@ export function SectionTitle({ title, action, href }: { title: ReactNode; action
 export function Avatar({ name, tone = "var(--gold)", size = 44 }: { name: string; tone?: string; size?: number }) {
   const initials = name
     .split(" ")
+    .filter((w) => /^\p{L}/u.test(w))
     .map((w) => w[0])
     .slice(0, 2)
     .join("");

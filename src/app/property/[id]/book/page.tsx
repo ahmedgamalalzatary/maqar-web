@@ -100,7 +100,7 @@ function Book() {
     setTimeout(() => {
       pushNotify(
         t("تذكير: معاينتك قربت", "Reminder: your viewing is coming up"),
-        t(`${p.title.ar} · ${fmtTime(time!, "ar")} · ${agent.name.ar} في انتظارك`, `${p.title.en} · ${fmtTime(time!, "en")} · ${agent.name.en} will meet you`),
+        t(`${p.title.ar} | ${fmtTime(time!, "ar")} | ${agent.name.ar} في انتظارك`, `${p.title.en} | ${fmtTime(time!, "en")} | ${agent.name.en} will meet you`),
         "/viewings",
       );
     }, 2500);
@@ -126,7 +126,7 @@ function Book() {
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold">{t(p.title)}</div>
               <div className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-ink-2">
-                <MapPin className="size-3.5" /> {t(p.compound)} · {t(area.name)}
+                <MapPin className="size-3.5" /> {t(p.compound)} | {t(area.name)}
               </div>
             </div>
           </div>
@@ -184,7 +184,7 @@ function Book() {
           <span className="min-w-0">
             <span className="block truncate text-[14px] font-semibold">{t(p.title)}</span>
             <span className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-ink-2">
-              <MapPin className="size-3.5" /> {t(p.compound)} · {t(area.name)}
+              <MapPin className="size-3.5" /> {t(p.compound)} | {t(area.name)}
             </span>
           </span>
         </Link>
@@ -275,7 +275,7 @@ function Book() {
             </div>
             <div className="text-[12px] text-ink-2">{t(agent.role)}</div>
             <div className="tabular mt-0.5 flex items-center gap-2 text-[11.5px] text-ink-2">
-              <Star className="size-3 fill-accent text-accent" /> {agent.rating} · {t(agent.langs)}
+              <Star className="size-3 fill-accent text-accent" /> {agent.rating} | {t(agent.langs)}
             </div>
           </div>
         </Card>
@@ -313,7 +313,7 @@ function Book() {
         <div className="mb-2 text-center text-[12px] text-ink-2">
           {time ? (
             <span className="tabular">
-              {fmtDate(date, lang, { weekday: "long", day: "numeric", month: "long" })} · {fmtTime(time, lang)}
+              {fmtDate(date, lang, { weekday: "long", day: "numeric", month: "long" })} | {fmtTime(time, lang)}
             </span>
           ) : (
             t("اختار ساعة عشان تكمل", "Pick a time to continue")

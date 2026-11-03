@@ -44,6 +44,7 @@ import { followPrice } from "@/lib/demo";
 import { BackButton, Badge, Button, Card, IconButton, Sheet, Avatar, cx } from "@/components/ui";
 import { FavButton, PropertyCard, dropPct, priceSuffix } from "@/components/PropertyCard";
 import { InstallmentCalculator } from "@/components/InstallmentCalculator";
+import { CompareButton } from "@/components/Compare";
 
 const FEATURE_ICON: Record<Feature, typeof Waves> = {
   pool: Waves,
@@ -144,6 +145,7 @@ export default function PropertyPage() {
           <IconButton glass label={t("مشاركة", "Share")} onClick={share}>
             <Share2 className="size-[18px]" />
           </IconButton>
+          <CompareButton id={p.id} />
           <FavButton id={p.id} />
         </div>
         <div className="absolute inset-x-4 bottom-10 flex items-end justify-between">
@@ -180,7 +182,7 @@ export default function PropertyPage() {
         </div>
         <h1 className="mt-3 text-[22px] font-semibold leading-snug">{t(p.title)}</h1>
         <div className="mt-1.5 flex items-center gap-1 text-[13px] text-ink-2">
-          <MapPin className="size-4" /> {t(p.compound)} · {t(area.name)}، {t(area.city)}
+          <MapPin className="size-4" /> {t(p.compound)} | {t(area.name)}، {t(area.city)}
         </div>
         {p.developer && <div className="mt-1 text-[12px] text-ink-3">{t(p.developer)}</div>}
 
@@ -256,7 +258,7 @@ export default function PropertyPage() {
               </span>
               <span className="text-[18px] font-semibold">{t("ادخل الوحدة من موبايلك", "Step inside from your phone")}</span>
               <span className="text-[12px] text-cream/70">
-                {t(`${fmtNum(p.tour.length, "ar")} غرف · اسحب أو حرّك الموبايل`, `${p.tour.length} rooms · drag or move your phone`)}
+                {t(`${fmtNum(p.tour.length, "ar")} غرف | اسحب أو حرّك الموبايل`, `${p.tour.length} rooms | drag or move your phone`)}
               </span>
             </span>
           </Link>
@@ -284,11 +286,8 @@ export default function PropertyPage() {
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button
-              variant="soft"
-              onClick={() => pushNotify(t("(ديمو) فتح واتساب", "(Demo) Opening WhatsApp"), t(`محادثة مع ${agent.name.ar}`, `Chat with ${agent.name.en}`), undefined, "sage")}
-            >
-              <MessageCircle className="size-4" /> {t("واتساب", "WhatsApp")}
+            <Button href={`/chat/${p.id}`}>
+              <MessageCircle className="size-4" /> {t("شات مباشر", "Live chat")}
             </Button>
             <Button variant="soft" onClick={() => pushNotify(t("(ديمو) اتصال", "(Demo) Calling"), agent.phone, undefined, "sage")}>
               <Phone className="size-4" /> {t("اتصال", "Call")}
@@ -298,7 +297,7 @@ export default function PropertyPage() {
 
         {/* Installments */}
         {(p.cat === "sale" || p.cat === "project") && (
-          <section className="mt-8">
+          <section id="installments" className="mt-8 scroll-mt-24">
             <h2 className="mb-1 text-[17px] font-semibold">{t("احسب قسطك", "Your installment")}</h2>
             <p className="mb-4 text-[12.5px] text-ink-2">
               {p.plan
@@ -412,7 +411,7 @@ export default function PropertyPage() {
               pushNotify(t("تم إرسال طلب الحجز", "Stay request sent"), t(`${agent.name.ar} هيأكد معاك خلال دقايق.`, `${agent.name.en} will confirm within minutes.`), undefined, "sage");
             }}
           >
-            {t(`أكّد · ${fmtMoney(p.price * nights, "ar", false)}`, `Confirm · ${fmtMoney(p.price * nights, "en", false)}`)}
+            {t(`أكّد | ${fmtMoney(p.price * nights, "ar", false)}`, `Confirm | ${fmtMoney(p.price * nights, "en", false)}`)}
           </Button>
         }
       >

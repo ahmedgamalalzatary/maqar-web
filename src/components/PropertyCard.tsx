@@ -9,6 +9,7 @@ import { useStore, haptic } from "@/lib/store";
 import { fmtMoney, fmtNum, fmtPct, useLang, useT } from "@/lib/i18n";
 import { installment } from "@/lib/logic";
 import { Badge, cx } from "./ui";
+import { CompareButton } from "./Compare";
 
 export function priceSuffix(p: Property, t: ReturnType<typeof useT>) {
   return p.cat === "rent" ? t("/ شهر", "/ mo") : p.cat === "stay" ? t("/ ليلة", "/ night") : "";
@@ -90,7 +91,10 @@ export function PropertyCard({
               </Badge>
             )}
           </div>
-          <FavButton id={p.id} />
+          <div className="flex gap-1.5">
+            <CompareButton id={p.id} />
+            <FavButton id={p.id} />
+          </div>
         </div>
         <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-2 text-white">
           <div className="flex gap-1.5">
@@ -116,7 +120,7 @@ export function PropertyCard({
         <div className="mt-1 flex items-center gap-1 text-[12px] text-ink-2">
           <MapPin className="size-3.5 shrink-0" />
           <span className="truncate">
-            {t(p.compound)} · {t(area.name)}
+            {t(p.compound)} | {t(area.name)}
           </span>
         </div>
         <div className="mt-2.5 flex items-center gap-3 text-[12px] text-ink-2">
@@ -153,7 +157,7 @@ export function PropertyRow({ p, right, sub }: { p: Property; right?: React.Reac
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[14px] font-medium">{t(p.title)}</span>
         <span className="mt-0.5 block truncate text-[12px] text-ink-2">
-          {t(p.compound)} · {t(areaById(p.areaId).name)}
+          {t(p.compound)} | {t(areaById(p.areaId).name)}
         </span>
         <span className="tabular mt-1 block text-[14px] font-semibold">
           {fmtMoney(p.price, lang)} <span className="text-[11px] font-normal text-ink-3">{priceSuffix(p, t)}</span>

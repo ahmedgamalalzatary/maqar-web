@@ -210,6 +210,55 @@ input[type="range"].range::-moz-range-thumb {
   background: var(--surface);
   border: 2px solid var(--accent);
 }
+/* Two stacked range inputs: only the thumbs take pointer input. */
+input[type="range"].range-dual {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+}
+input[type="range"].range-dual::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+input[type="range"].range-dual::-moz-range-track {
+  background: transparent;
+}
+input[type="range"].range-dual::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 26px;
+  height: 26px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px -2px rgba(4, 21, 37, 0.35);
+  cursor: grab;
+  transition: transform 0.15s;
+}
+input[type="range"].range-dual:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+  cursor: grabbing;
+}
+input[type="range"].range-dual::-moz-range-thumb {
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+}
+input[type="range"].range-dual:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 [dir="rtl"] input[type="range"].range {
   --range-dir: left;
 }
