@@ -2,6 +2,8 @@
 
 Real-estate platform for buyers, owners and sales agents. pnpm + Turborepo monorepo.
 
+**[docs/project-contract.md](docs/project-contract.md) is the project contract.** Every feature, rule and decision lives there, and anything new is added there first. [docs/phases.md](docs/phases.md) is the build plan: one vertical feature per phase, each finished green before the next.
+
 ## Layout
 
 | Path | Package | What |
