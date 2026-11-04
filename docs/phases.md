@@ -19,7 +19,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
    - Arabic RTL and English LTR both work, in light and dark.
    - Loading, empty and error states are designed.
    - Data comes from the real API, not sample data.
-4. **Green:** `pnpm build lint typecheck test` passes at the repo root with no errors.
+4. **Green:** `pnpm build lint typecheck test test:e2e` passes at the repo root with no errors. Mobile logic and screens have Jest + Testing Library tests: each new screen gets at least a render test plus tests for its states and main actions.
 5. **Checked by hand:** the flow is run end to end on a phone or emulator against a local API and MySQL.
 6. **Docs:** the phase's status is updated here. Contract items that moved from [Open] to decided are updated in the contract, with a change log line.
 7. **Commit:** the phase is committed and pushed to `main`.
@@ -35,7 +35,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 
 | # | Phase | Status | Decide first (§16.1) |
 |---|---|---|---|
-| 0 | Foundation | ⬜ | 7 (local MySQL: Docker or VPS) |
+| 0 | Foundation | ⬜ | none (database decided) |
 | 1 | Accounts and sign-in | ⬜ | 1, 9 |
 | 2 | Browse listings | ⬜ | 2 (images) |
 | 3 | Property page | ⬜ | 4 |
@@ -63,14 +63,14 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 The skeleton every feature plugs into. The only feature in this phase is that the app shows it is connected to the API.
 
 **API**
-- `@nestjs/config` loads `.env`, and env vars are validated at start-up.
+- `@nestjs/config` loads the **root** `.env` (`envFilePath: ../../.env`), and env vars are validated at start-up.
 - A Drizzle MySQL connection module.
 - `/v1` prefix, global validation pipe, a standard error shape, and CORS.
 - Swagger at `/docs`.
 - `GET /v1/health` reports whether the API and the database are up.
 
 **Database**
-- Local MySQL 8.
+- Local MySQL 8.0 (`localhost:3306`, database `maqar`; already created and connected).
 - First migration.
 - Seed script structure (`db:seed`).
 
@@ -81,7 +81,7 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 - Expo Router root layout and a font loader for Readex Pro.
 - Theme tokens for light and dark (contract §6.2) and the logo.
 - i18n with Arabic as the default, RTL handling, digit, money, date and percent formatting, and the language setting (contract §7).
-- An API client with a base URL taken from the env.
+- An API client whose base URL (`EXPO_PUBLIC_API_URL`) comes from the **root** `.env`. Expo only reads `.env` from its own folder, so the root file is loaded in `app.config.ts` or by setting the Metro env.
 - Data fetching with React Query.
 - Splash screen.
 - Empty role-based tab layouts (contract §12).
@@ -553,7 +553,7 @@ Contract §9.1.
 
 ## Phase 19: Release
 
-**Decide first:** hosting (§16.1 #7) and analytics and crash reporting (#14).
+**Decide first:** the server and domain (§16.1 #7) and analytics and crash reporting (#14).
 
 Contract §15.
 

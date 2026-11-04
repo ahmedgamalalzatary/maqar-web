@@ -116,10 +116,17 @@ Rules:
 | Mobile packages | Installed with `npx expo install` so versions match the SDK |
 | Mobile lint | ESLint 9 with `eslint-config-expo` (ESLint 10 is not compatible yet) |
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
-| API lint and test | oxlint, vitest, supertest |
+| API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
+| Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
+| Not installed yet (waiting on §16.1) | Maps (#4), push sender (#3), job queue (#13), file storage SDK (#2), video (#5) |
+| API tests | vitest. **Unit:** `src/**/*.spec.ts`, for business rules and services, with no database (`pnpm test`). **e2e:** `test/**/*.e2e-spec.ts`, which runs the real Nest app over HTTP with supertest against the `maqar_test` database (`pnpm test:e2e`). Both test configs load the root `.env.test`. |
+| Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Logic and UI:** `*.test.ts(x)` next to the code, never inside `src/app`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
+| API lint | oxlint |
 | Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations (`src/db/schema.ts` → `drizzle/`) |
+| Local database | The MySQL 8.0 already installed on the PC (`localhost:3306`, user `root`, the same password as the other work projects), database `maqar` (utf8mb4). root `.env` → `DATABASE_URL=mysql://root:…@localhost:3306/maqar` |
+| Production database | A `mysql` service in the project's Docker Compose, configured by `.env.docker` (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`). This is the same pattern as the Capella projects; see `.env.docker.example` at the repo root. |
 | Demo | Next.js 16, React 19.3, Tailwind v4, motion, three.js, Zustand |
-| Approved pnpm build scripts | `esbuild` (in `pnpm-workspace.yaml`) |
+| pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
 [Open] Auth method, file storage, push provider, maps, hosting and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
 
@@ -131,7 +138,7 @@ Rules:
 - Commit only when asked.
 - Commit messages: a short imperative subject and a body that says what and why.
 - `pnpm build lint typecheck test` must pass before pushing.
-- Secrets live only in `.env` files, which are git-ignored. Each app keeps an up-to-date `.env.example`.
+- **One `.env` at the repo root** is used by every app (API, Drizzle, mobile). **Tests use the root `.env.test` instead** (`NODE_ENV=test`, port 4001, the `maqar_test` database). Both files are git-ignored. The root `.env.example` (development), `.env.test.example` (tests) and `.env.docker.example` (production) list every variable and are kept up to date. Apps load the root file explicitly; they never have their own `.env`.
 - Database changes go only through Drizzle migrations. Never edit a production database by hand.
 - Production server rules (shared VPS, see the owner's notes): never touch other projects; run `nginx -t` before any reload; delete only the database backups you made yourself.
 - Any text a user sees exists in both Arabic and English.
@@ -610,7 +617,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 4 | Maps provider for the property map and directions. |
 | 5 | Video viewings: which video service (or WhatsApp video)? |
 | 6 | Admin UI form (web dashboard, in-app, or API only first). |
-| 7 | Hosting: API and MySQL on the shared VPS (Docker Compose, nginx) or elsewhere? |
+| 7 | Hosting: which server the API runs on. Decided: MySQL runs locally on the PC and in Docker Compose in production. Still open: the shared VPS or a new server, and the domain. |
 | 8 | Agent working hours and availability rules beyond the default 10:00–20:00 and Friday after 14:00. |
 | 9 | Can one account be both client and owner? |
 | 10 | Owner verification (ID review) and listing limits. |
@@ -634,3 +641,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | Date | Change |
 |---|---|
 | 2026-11-04 | First version: all demo features, monorepo layout, stack, target data model and API. |
+| 2026-11-04 | Database setup decided: the local MySQL 8.0 for development, Docker Compose MySQL with `.env.docker` for production. |
+| 2026-11-04 | One `.env` at the repo root for all apps. |
+| 2026-11-04 | Tests read the root `.env.test`. |
+| 2026-11-04 | API and mobile libraries installed; test setup for both apps (vitest unit + e2e on `maqar_test`; Jest + Testing Library on mobile). |

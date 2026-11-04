@@ -29,7 +29,8 @@ pnpm dev          # every app
 pnpm build
 pnpm lint
 pnpm typecheck
-pnpm test
+pnpm test         # unit + UI tests (api: vitest, mobile: Jest + Testing Library)
+pnpm test:e2e     # api e2e against the maqar_test database
 ```
 
 One app:
@@ -43,7 +44,8 @@ pnpm --filter @maqar/api dev       # NestJS in watch mode
 ## API database
 
 ```sh
-cp apps/api/.env.example apps/api/.env   # then set DATABASE_URL
+cp .env.example .env                     # one .env at the repo root for every app
+cp .env.test.example .env.test           # used by tests (maqar_test database)
 pnpm --filter @maqar/api db:generate     # SQL migrations from src/db/schema.ts
 pnpm --filter @maqar/api db:migrate
 pnpm --filter @maqar/api db:studio
