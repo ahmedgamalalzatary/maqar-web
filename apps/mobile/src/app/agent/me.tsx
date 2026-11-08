@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/placeholder';
+import { MeScreen } from '@/features/account/screens/me-screen';
 
-export default function Route() {
-  return <Placeholder title={{ ar: 'حسابي', en: 'My account' }} phase={1} />;
+export default function MeRoute() {
+  return <MeScreen />;
 }

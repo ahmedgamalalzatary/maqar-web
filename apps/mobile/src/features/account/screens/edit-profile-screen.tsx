@@ -1,0 +1,49 @@
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Button } from '@/components/button';
+import { Screen } from '@/components/screen';
+import { Txt } from '@/components/text';
+import { TextField } from '@/components/text-field';
+import { toast } from '@/components/toast';
+import { useT } from '@/core/i18n';
+import { useSession } from '@/features/auth/store/session.store';
+import { useUpdateMe } from '../hooks/use-account';
+
+export function EditProfileScreen() {
+  const t = useT();
+  const router = useRouter();
+  const user = useSession((s) => s.user);
+  const update = useUpdateMe();
+  const [name, setName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+
+  const save = () =>
+    update.mutate(
+      { name: name.trim(), phone: phone.trim() || null },
+      {
+        onSuccess: () => {
+          toast.show({ title: t('اتحفظت بياناتك', 'Profile saved'), tone: 'sage' });
+          router.back();
+        },
+      },
+    );
+
+  return (
+    <Screen title={t('عدّل بياناتك', 'Edit profile')}>
+      <TextField label={t('الاسم', 'Name')} value={name} onChangeText={setName} autoComplete="name" />
+      <TextField
+        label={t('رقم الموبايل', 'Mobile number')}
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        placeholder="+20 100 000 0000"
+      />
+      {update.isError ? (
+        <Txt color="danger">{t('اتأكد من الاسم ورقم الموبايل', 'Check the name and mobile number')}</Txt>
+      ) : null}
+      <Button label={t('احفظ', 'Save')} disabled={name.trim().length < 2} loading={update.isPending} onPress={save} />
+      <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={() => router.back()} />
+    </Screen>
+  );
+}

@@ -19,22 +19,50 @@ export function apiBaseUrl(): string {
   return baseUrl;
 }
 
+/**
+ * How the client talks to the session (the auth feature registers these at start-up,
+ * so core does not depend on a feature).
+ */
+export type AuthHandlers = {
+  getAccessToken: () => string | null;
+  /** Gets a new access token. False when the session is over. */
+  refresh: () => Promise<boolean>;
+  /** The session cannot be renewed: sign the user out locally. */
+  onAuthFailure: () => void;
+};
+
+let auth: AuthHandlers | undefined;
+let refreshing: Promise<boolean> | undefined;
+
+export function setAuthHandlers(handlers: AuthHandlers | undefined): void {
+  auth = handlers;
+}
+
+/** Requests that fail together share one refresh. */
+function refreshOnce(handlers: AuthHandlers): Promise<boolean> {
+  refreshing ??= handlers.refresh().finally(() => {
+    refreshing = undefined;
+  });
+  return refreshing;
+}
+
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /** Do not send the access token or try to refresh (the auth routes themselves). */
+  anonymous?: boolean;
 };
 
-/** JSON request to the Maqar API. `path` starts with "/", e.g. "/health". */
-export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
+async function send(path: string, opts: ApiOptions): Promise<Response> {
   const headers = new Headers(opts.headers);
   headers.set('Accept', 'application/json');
   if (opts.body !== undefined) headers.set('Content-Type', 'application/json');
-
-  let res: Response;
+  const token = opts.anonymous ? null : auth?.getAccessToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
   try {
-    res = await fetch(apiBaseUrl() + path, {
+    return await fetch(apiBaseUrl() + path, {
       method: opts.method ?? 'GET',
       headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
@@ -42,6 +70,18 @@ export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<
     });
   } catch {
     throw new ApiError(0, 'Network request failed');
+  }
+}
+
+/** JSON request to the Maqar API. `path` starts with "/", e.g. "/health". */
+export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
+  let res = await send(path, opts);
+
+  // An expired access token: renew it once and retry.
+  if (res.status === 401 && auth && !opts.anonymous && auth.getAccessToken()) {
+    const handlers = auth;
+    if (await refreshOnce(handlers)) res = await send(path, opts);
+    else handlers.onAuthFailure();
   }
 
   const text = await res.text();

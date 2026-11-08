@@ -39,7 +39,7 @@ One app:
 ```sh
 pnpm --filter @maqar/demo dev      # http://localhost:3210
 pnpm --filter @maqar/mobile dev    # Expo dev server
-pnpm --filter @maqar/api dev       # NestJS in watch mode, http://localhost:4010/v1 (docs at /docs)
+pnpm --filter @maqar/api dev       # NestJS in watch mode, http://localhost:4000/v1 (docs at /docs)
 ```
 
 ## Environment

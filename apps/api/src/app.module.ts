@@ -3,7 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { HealthModule } from './modules/health/health.module.js';
     }),
     DbModule,
     HealthModule,
+    AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

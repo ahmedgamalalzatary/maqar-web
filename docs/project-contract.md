@@ -81,7 +81,7 @@ MQR is the competing app (Expo / React Native, Arabic and English). We analysed 
 
 Rules:
 
-- One account has one role. [Open] whether one person can hold both client and owner.
+- One account has one role. Someone who is both a client and an owner uses two accounts (decided 2026-11-08).
 - In the demo the role is switched from the Me tab. [Real] The role comes from the account: clients and owners sign up themselves, while agents and admins are created by an admin.
 - Guests are asked to sign in at the moment they need an account (save, alert, chat, book), not before.
 
@@ -128,7 +128,7 @@ Rules:
 | Demo | Next.js 16, React 19.3, Tailwind v4, motion, three.js, Zustand |
 | pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
-[Open] Auth method, file storage, push provider, maps, hosting and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
+[Open] File storage, push provider, maps, hosting and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
 
 ---
 
@@ -139,7 +139,7 @@ Rules:
 - Commit messages: a short imperative subject and a body that says what and why.
 - `pnpm build lint typecheck test` must pass before pushing.
 - **One `.env` at the repo root** is used by every app (API, Drizzle, mobile). **Tests use the root `.env.test` instead** (`NODE_ENV=test`, port 4001, the `maqar_test` database). Both files are git-ignored. The root `.env.example` lists every variable and is kept up to date; `.env.test` holds the same variables with test values (the README lists them). Apps load the root file explicitly; they never have their own `.env`.
-- The dev API runs on port **4010**, because the Capella store API on this PC already uses 4000.
+- Ports: the dev API runs on **4000** (tests on 4001), the demo on 3210, the Expo dev server on its default 8081.
 - **Test first (TDD), only where it matters.** A test is written and seen to fail before the code. Tests cover business rules, formatters, auth and role guards, data rules and each screen's main flow and key states, not plumbing. All tests live in `test/` next to `src/`, sorted by kind.
 - **Code layout.** API: `src/modules/<feature>/` (controller, service, repository, DTOs, module), plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), plus `src/core`, `src/components`, and `src/app` for routes only.
 - Database changes go only through Drizzle migrations. Never edit a production database by hand.
@@ -536,9 +536,10 @@ Conventions:
 
 | Entity | Main fields |
 |---|---|
-| **users** | id, role (`client` / `owner` / `agent` / `admin`), name, phone, email, lang (`ar` / `en`), theme, push_enabled, created_at, deleted_at |
+| **users** | id, role (`client` / `owner` / `agent` / `admin`), name, phone, email (unique; cleared on deletion), password_hash (argon2id; empty for Google-only accounts later), lang (`ar` / `en`), theme (`system` / `light` / `dark`), push_enabled, created_at, updated_at, deleted_at |
+| **refresh_tokens** | id, user_id, token_hash (SHA-256 of the token), expires_at, revoked_at, created_at. A token is used once: refresh revokes it and issues a new one; replaying a revoked token revokes all of that user's tokens. |
 | **client_prefs** | user_id, purposes[], budget_max, area_ids[], types[], min_beds, interests[] |
-| **agents** (profile) | user_id, role_title_ar / role_title_en, rating, deals_count, years, languages, avg_reply_mins, phone, colour, monthly_target, active |
+| **agents** (profile) | user_id, name_ar / name_en, role_title_ar / role_title_en, rating, deals_count, years, languages, avg_reply_mins, phone, colour, monthly_target, active |
 | **areas** | id (slug), name_ar / name_en, city_ar / city_en, image |
 | **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id, owner_id (nullable), status (`draft` / `pending` / `approved` / `changes` / `sold` / `rented` / `unpublished`), review_note, featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
 | **property_features** | property_id, feature (`pool`, `garden`, `sea`, `parking`, `elevator`, `security`, `gym`, `clubhouse`, `smart`, `roof`) |
@@ -570,8 +571,8 @@ Supporting rules:
 
 | Module | Endpoints (planned) | Who |
 |---|---|---|
-| auth | sign up, sign in, refresh, sign out [Open: method] | all |
-| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST /me/push-tokens`, `DELETE /me` | signed in |
+| auth | `POST /auth/sign-up` (client or owner only), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
+| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
 | areas | `GET /areas` | public |
 | properties | `GET /properties` (search, filters, sort incl. match, paging, histogram), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/recommended` | public; match needs sign-in |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
@@ -615,7 +616,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 
 | # | Question |
 |---|---|
-| 1 | Auth: phone + OTP (SMS or WhatsApp), email + password, or both? Which SMS provider? |
+| 1 | ~~Auth method~~ **Decided:** email + password now; Google sign-in (OAuth) is added later. Access tokens (JWT, 15 min) plus rotating refresh tokens (30 days). |
 | 2 | File storage for photos and panoramas: S3-compatible or local on the VPS? CDN? |
 | 3 | Push: Expo push service or FCM/APNs directly? |
 | 4 | Maps provider for the property map and directions. |
@@ -623,7 +624,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 6 | Admin UI form (web dashboard, in-app, or API only first). |
 | 7 | Hosting: which server the API runs on. Decided: MySQL runs locally on the PC and in Docker Compose in production. Still open: the shared VPS or a new server, and the domain. |
 | 8 | Agent working hours and availability rules beyond the default 10:00–20:00 and Friday after 14:00. |
-| 9 | Can one account be both client and owner? |
+| 9 | ~~Client and owner on one account?~~ **Decided:** no, one role per account. |
 | 10 | Owner verification (ID review) and listing limits. |
 | 11 | Which owner edits need review again. |
 | 12 | Chat when the agent is away: auto-reply or AI help? |
@@ -649,4 +650,5 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-04 | One `.env` at the repo root for all apps. |
 | 2026-11-04 | Tests read the root `.env.test`. |
 | 2026-11-04 | API and mobile libraries installed; test setup for both apps (vitest unit + e2e on `maqar_test`; Jest + Testing Library on mobile). |
-| 2026-11-08 | Phase 0 done: `packages/shared`, API foundation (env check, Drizzle MySQL, `/v1`, validation, helmet, CORS, Swagger at `/docs`, `GET /v1/health`), mobile foundation (fonts, splash, theme, Arabic-first i18n with RTL, API client, React Query, toasts, role tab layouts). Dev API port moved to 4010. TDD made a working rule. `.env.test.example` and `.env.docker.example` removed. |
+| 2026-11-08 | Phase 0 done: `packages/shared`, API foundation (env check, Drizzle MySQL, `/v1`, validation, helmet, CORS, Swagger at `/docs`, `GET /v1/health`), mobile foundation (fonts, splash, theme, Arabic-first i18n with RTL, API client, React Query, toasts, role tab layouts).  TDD made a working rule. `.env.test.example` and `.env.docker.example` removed. |
+| 2026-11-08 | Phase 1 done. Decided: email + password sign-in (Google OAuth later) and one role per account. Added `refresh_tokens`, `users.password_hash`, `agents.name_ar/name_en`. Ports back to 4000 (API) and 4001 (tests). Prettier removed. |

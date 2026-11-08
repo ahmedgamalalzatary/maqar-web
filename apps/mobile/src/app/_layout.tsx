@@ -1,10 +1,19 @@
-import { AppProviders } from '@/core/providers/app-providers';
 import { Stack } from 'expo-router';
+import { AppProviders } from '@/core/providers/app-providers';
+import { AuthPromptHost } from '@/features/auth/components/auth-prompt';
+import { useSession } from '@/features/auth/store/session.store';
+
+// Resume the saved session before the splash screen hides.
+const restoreSession = () => useSession.getState().restore();
 
 export default function RootLayout() {
   return (
-    <AppProviders>
-      <Stack screenOptions={{ headerShown: false }} />
+    <AppProviders boot={restoreSession}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="sign-up" options={{ presentation: 'modal' }} />
+      </Stack>
+      <AuthPromptHost />
     </AppProviders>
   );
 }

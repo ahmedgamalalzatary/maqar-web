@@ -305,15 +305,15 @@ importers:
       pino-pretty:
         specifier: ^13.2.0
         version: 13.2.0
-      prettier:
-        specifier: ^3.4.2
-        version: 3.9.10
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
       supertest:
         specifier: ^7.0.0
         version: 7.3.1(supports-color@7.2.0)
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
@@ -15808,7 +15808,8 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.9.10: {}
+  prettier@3.9.10:
+    optional: true
 
   pretty-format@29.7.0:
     dependencies:

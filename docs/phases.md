@@ -42,7 +42,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | # | Phase | Status | Decide first (§16.1) |
 |---|---|---|---|
 | 0 | Foundation | ✅ | none (database decided) |
-| 1 | Accounts and sign-in | ⬜ | ~~1, 9~~ decided |
+| 1 | Accounts and sign-in | ✅ | ~~1, 9~~ decided |
 | 2 | Browse listings | ⬜ | 2 (images) |
 | 3 | Property page | ⬜ | 4 |
 | 4 | Search, filters and sort | ⬜ | |
@@ -99,7 +99,6 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 **Done when** the app launches in Arabic and English, in light and dark, and shows that the API is healthy.
 
 **Status (2026-11-08): done.** Notes:
-- The dev API port is 4010 (the Capella store API uses 4000 on this PC).
 - Layout direction is set on the root view from the language setting, so switching is instant.
 - Navigation themes come from `expo-router` (SDK 58 bundles React Navigation).
 - Checked by hand on a phone: still to do, since no emulator is installed on this PC.
@@ -108,7 +107,7 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 
 ## Phase 1: Accounts and sign-in
 
-**Decide first:** the auth method (§16.1 #1) and whether one account can be both client and owner (#9).
+**Decided:** email + password now, Google OAuth later (§16.1 #1); one role per account (#9).
 
 Contract §2 and §8.14.
 
@@ -133,6 +132,12 @@ Contract §2 and §8.14.
 - Account deletion.
 
 **Done when** a client, an owner and an agent can each sign in and land on their own home screen.
+
+**Status (2026-11-08): done.** Notes:
+- The first migration (`users`, `agents`, `refresh_tokens`) and `pnpm --filter @maqar/api db:seed` arrived here. The seed adds the 4 demo agents, 1 admin, and a demo client and owner (`client@maqar.app`, `owner@maqar.app`), all with `SEED_PASSWORD` from `.env`.
+- Mobile keeps the refresh token in the phone's secure storage and the access token in memory. A 401 triggers one shared refresh and a retry; a failed refresh signs the user out.
+- An admin lands on `/admin`, which shows their account until the admin tools are decided (§16.1 #6).
+- Checked by hand: every seeded role signed in against the running API and got its own profile. The phone run is for the owner to do in Expo Go.
 
 ---
 

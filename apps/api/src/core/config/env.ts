@@ -1,5 +1,5 @@
 import { plainToInstance, Transform } from 'class-transformer';
-import { IsIn, IsInt, IsString, Matches, Max, Min, validateSync } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator';
 
 const NODE_ENVS = ['development', 'test', 'production'] as const;
 
@@ -8,11 +8,11 @@ export class Env {
   @IsIn(NODE_ENVS)
   NODE_ENV: (typeof NODE_ENVS)[number] = 'development';
 
-  @Transform(({ value }) => (value === undefined || value === '' ? 4010 : Number(value)))
+  @Transform(({ value }) => (value === undefined || value === '' ? 4000 : Number(value)))
   @IsInt()
   @Min(1)
   @Max(65535)
-  PORT = 4010;
+  PORT = 4000;
 
   @IsString()
   @Matches(/^mysql:\/\//, { message: 'DATABASE_URL must be a mysql:// URL' })
@@ -29,6 +29,32 @@ export class Env {
   )
   @IsString({ each: true })
   CORS_ORIGINS: string[] = [];
+
+  /** Signs access tokens. Long and random; never shared with the app. */
+  @IsString()
+  @MinLength(32)
+  JWT_ACCESS_SECRET: string;
+
+  /** Access token lifetime, e.g. "15m" (contract §15: short-lived). */
+  @IsString()
+  @Matches(/^\d+[smhd]$/)
+  JWT_ACCESS_TTL = '15m';
+
+  @Transform(({ value }) => (value === undefined || value === '' ? 30 : Number(value)))
+  @IsInt()
+  @Min(1)
+  REFRESH_TTL_DAYS = 30;
+
+  /** Sign-in and sign-up attempts per minute per IP. */
+  @Transform(({ value }) => (value === undefined || value === '' ? 10 : Number(value)))
+  @IsInt()
+  @Min(1)
+  AUTH_RATE_LIMIT = 10;
+
+  /** Password for the seeded demo accounts. Only the seed script reads it. */
+  @IsOptional()
+  @IsString()
+  SEED_PASSWORD?: string;
 }
 
 /** Used by ConfigModule's `validate`. Throws one error that lists every bad variable. */

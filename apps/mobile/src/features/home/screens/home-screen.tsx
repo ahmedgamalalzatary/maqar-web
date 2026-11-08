@@ -4,15 +4,15 @@ import { IconButton } from '@/components/icon-button';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
 import { useLang } from '@/core/i18n';
-import { useSettings } from '@/core/settings/store';
 import { useTheme } from '@/core/theme';
+import { usePreferences } from '@/features/account/hooks/use-account';
 import { ApiStatus } from '@/features/health/components/api-status';
 
 /** Client home. Phase 0: the logo, one-tap language and theme switches, and the API status. */
 export function Home() {
   const lang = useLang();
   const { scheme, colors } = useTheme();
-  const { setLang, setTheme } = useSettings();
+  const { setLang, setTheme } = usePreferences();
   return (
     <Screen>
       <View style={styles.header}>

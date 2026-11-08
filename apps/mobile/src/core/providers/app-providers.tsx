@@ -9,7 +9,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '@/components/toast';
@@ -22,13 +22,25 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Waits for saved settings to load from storage. */
 function useSettingsReady() {
-  const [ready, setReady] = useState(() => useSettings.persist.hasHydrated());
-  useEffect(() => useSettings.persist.onFinishHydration(() => setReady(true)), []);
-  return ready;
+  return useSyncExternalStore(
+    (onChange) => useSettings.persist.onFinishHydration(onChange),
+    () => useSettings.persist.hasHydrated(),
+  );
+}
+
+/** Runs the app's start-up work (such as resuming the session) once, behind the splash. */
+function useBoot(boot?: () => Promise<void>) {
+  const [done, setDone] = useState(!boot);
+  useEffect(() => {
+    if (boot) boot().finally(() => setDone(true));
+    // Start-up runs once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return done;
 }
 
 /** Everything around the routes: fonts, splash, data fetching, theme, direction and toasts. */
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({ children, boot }: { children: ReactNode; boot?: () => Promise<void> }) {
   const [fontsLoaded, fontError] = useFonts({
     ReadexPro_400Regular,
     ReadexPro_500Medium,
@@ -36,7 +48,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
     ReadexPro_700Bold,
   });
   const settingsReady = useSettingsReady();
-  const ready = (fontsLoaded || !!fontError) && settingsReady;
+  const booted = useBoot(boot);
+  const ready = (fontsLoaded || !!fontError) && settingsReady && booted;
   const { scheme, colors } = useTheme();
   const dir = useDir();
 
