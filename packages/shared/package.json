@@ -1,0 +1,32 @@
+{
+  "name": "@maqar/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Types, enums, constants and formatters shared by the API and the mobile app.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc",
+    "lint": "oxlint src/ test/",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@maqar/tsconfig": "workspace:*",
+    "oxlint": "^1.91.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.12"
+  }
+}
