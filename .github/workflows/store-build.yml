@@ -58,7 +58,10 @@ jobs:
         if: env.HAS_UPLOAD_KEY == 'true'
         run: |
           echo "${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          # The generated file has no final newline: start with one, or the first
+          # line gets glued onto Expo's last property.
           {
+            echo ""
             echo "MAQAR_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.keystore"
             echo "MAQAR_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}"
             echo "MAQAR_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}"
