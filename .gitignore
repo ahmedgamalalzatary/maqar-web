@@ -30,3 +30,7 @@ npm-debug.log*
 *.pem
 coverage/
 apk-out/
+
+# Generated native projects (expo prebuild)
+apps/mobile/android/
+apps/mobile/ios/
