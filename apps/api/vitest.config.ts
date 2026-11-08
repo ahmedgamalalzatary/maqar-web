@@ -9,8 +9,8 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['src/**/*.spec.ts'],
+    include: ['test/unit/**/*.spec.ts'],
     env,
-    coverage: { provider: 'v8', include: ['src/**/*.ts'], exclude: ['src/**/*.spec.ts', 'src/main.ts'] },
+    coverage: { provider: 'v8', include: ['src/**/*.ts'], exclude: ['src/main.ts'] },
   },
 });

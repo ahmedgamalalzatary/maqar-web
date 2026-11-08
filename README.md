@@ -11,6 +11,7 @@ Real-estate platform for buyers, owners and sales agents. pnpm + Turborepo monor
 | `apps/demo` | `@maqar/demo` | Next.js front-end demo (mobile layout, all data in localStorage) |
 | `apps/mobile` | `@maqar/mobile` | Expo (SDK 58, Expo Router) app for iOS and Android |
 | `apps/api` | `@maqar/api` | NestJS 12 API, MySQL through Drizzle ORM |
+| `packages/shared` | `@maqar/shared` | Enums, labels, API types and formatters used by api and mobile |
 | `packages/tsconfig` | `@maqar/tsconfig` | Shared TypeScript configs |
 
 ## Requirements
@@ -38,14 +39,29 @@ One app:
 ```sh
 pnpm --filter @maqar/demo dev      # http://localhost:3210
 pnpm --filter @maqar/mobile dev    # Expo dev server
-pnpm --filter @maqar/api dev       # NestJS in watch mode
+pnpm --filter @maqar/api dev       # NestJS in watch mode, http://localhost:4010/v1 (docs at /docs)
+```
+
+## Environment
+
+One `.env` at the repo root is used by every app. Tests read the root `.env.test` instead.
+
+```sh
+cp .env.example .env
+```
+
+Create `.env.test` next to it with the same variables and test values:
+
+```sh
+NODE_ENV=test
+PORT=4001
+DATABASE_URL=mysql://root:<password>@localhost:3306/maqar_test
+EXPO_PUBLIC_API_URL=http://localhost:4001/v1
 ```
 
 ## API database
 
 ```sh
-cp .env.example .env                     # one .env at the repo root for every app
-cp .env.test.example .env.test           # used by tests (maqar_test database)
 pnpm --filter @maqar/api db:generate     # SQL migrations from src/db/schema.ts
 pnpm --filter @maqar/api db:migrate
 pnpm --filter @maqar/api db:studio

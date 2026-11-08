@@ -19,10 +19,16 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
    - Arabic RTL and English LTR both work, in light and dark.
    - Loading, empty and error states are designed.
    - Data comes from the real API, not sample data.
-4. **Green:** `pnpm build lint typecheck test test:e2e` passes at the repo root with no errors. Mobile logic and screens have Jest + Testing Library tests: each new screen gets at least a render test plus tests for its states and main actions.
-5. **Checked by hand:** the flow is run end to end on a phone or emulator against a local API and MySQL.
-6. **Docs:** the phase's status is updated here. Contract items that moved from [Open] to decided are updated in the contract, with a change log line.
-7. **Commit:** the phase is committed and pushed to `main`.
+4. **Green:** `pnpm build lint typecheck test test:e2e` passes at the repo root with no errors.
+5. **Tests, written first, only where they matter.** Every test starts red and is seen to fail before the code is written. Test business rules, formatters, auth and role guards, data rules and each screen's main flow and key states. Do not test plumbing (framework wiring, trivial hooks, health internals) just to have more tests.
+   - All tests live in `test/` next to `src/`, sorted by kind: API `test/unit` and `test/e2e`; mobile `test/unit` and `test/ui`; shared helpers in `test/utils`.
+6. **Checked by hand:** the flow is run end to end on a phone or emulator against a local API and MySQL.
+7. **Docs:** the phase's status is updated here. Contract items that moved from [Open] to decided are updated in the contract, with a change log line.
+8. **Commit:** each phase is its own commit, pushed to `main`.
+
+**Code layout:**
+- API: one folder per feature under `src/modules/<feature>/`, holding its controller (router), service, repository, DTOs and Nest module. Shared infrastructure goes in `src/core` (config, database) and `src/common` (decorators, guards).
+- Mobile: one folder per feature under `src/features/<feature>/` with `api/`, `hooks/`, `components/` and `screens/`. `src/app` holds routes only, `src/core` holds app-wide parts (API client, i18n, theme, settings, providers, navigation), and `src/components` holds shared UI.
 
 **Order:**
 - Phases run in order, because later phases build on earlier ones.
@@ -35,8 +41,8 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 
 | # | Phase | Status | Decide first (§16.1) |
 |---|---|---|---|
-| 0 | Foundation | ⬜ | none (database decided) |
-| 1 | Accounts and sign-in | ⬜ | 1, 9 |
+| 0 | Foundation | ✅ | none (database decided) |
+| 1 | Accounts and sign-in | ⬜ | ~~1, 9~~ decided |
 | 2 | Browse listings | ⬜ | 2 (images) |
 | 3 | Property page | ⬜ | 4 |
 | 4 | Search, filters and sort | ⬜ | |
@@ -71,8 +77,7 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 
 **Database**
 - Local MySQL 8.0 (`localhost:3306`, database `maqar`; already created and connected).
-- First migration.
-- Seed script structure (`db:seed`).
+- First migration and the seed script (`db:seed`): moved to Phase 1, where the first tables (users) arrive. An empty schema has nothing to migrate.
 
 **Shared**
 - `packages/shared` holds the types, enums and constants used by both the API and the app: categories, property types, finishing, features, statuses, stages, and notification kinds (contract §13).
@@ -92,6 +97,12 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 - Shared: unit tests for the formatters, covering Arabic digits, `٪` and the money format.
 
 **Done when** the app launches in Arabic and English, in light and dark, and shows that the API is healthy.
+
+**Status (2026-11-08): done.** Notes:
+- The dev API port is 4010 (the Capella store API uses 4000 on this PC).
+- Layout direction is set on the root view from the language setting, so switching is instant.
+- Navigation themes come from `expo-router` (SDK 58 bundles React Navigation).
+- Checked by hand on a phone: still to do, since no emulator is installed on this PC.
 
 ---
 

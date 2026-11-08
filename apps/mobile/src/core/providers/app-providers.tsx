@@ -1,0 +1,71 @@
+import {
+  ReadexPro_400Regular,
+  ReadexPro_500Medium,
+  ReadexPro_600SemiBold,
+  ReadexPro_700Bold,
+  useFonts,
+} from '@expo-google-fonts/readex-pro';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { type ReactNode, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ToastHost } from '@/components/toast';
+import { useDir } from '@/core/i18n';
+import { queryClient } from '@/core/api/query';
+import { useSettings } from '@/core/settings/store';
+import { useTheme } from '@/core/theme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** Waits for saved settings to load from storage. */
+function useSettingsReady() {
+  const [ready, setReady] = useState(() => useSettings.persist.hasHydrated());
+  useEffect(() => useSettings.persist.onFinishHydration(() => setReady(true)), []);
+  return ready;
+}
+
+/** Everything around the routes: fonts, splash, data fetching, theme, direction and toasts. */
+export function AppProviders({ children }: { children: ReactNode }) {
+  const [fontsLoaded, fontError] = useFonts({
+    ReadexPro_400Regular,
+    ReadexPro_500Medium,
+    ReadexPro_600SemiBold,
+    ReadexPro_700Bold,
+  });
+  const settingsReady = useSettingsReady();
+  const ready = (fontsLoaded || !!fontError) && settingsReady;
+  const { scheme, colors } = useTheme();
+  const dir = useDir();
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (!ready) return null;
+
+  const navTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
+          value={{
+            ...navTheme,
+            colors: { ...navTheme.colors, background: colors.bg, card: colors.surface, text: colors.ink, primary: colors.accent, border: colors.line },
+          }}
+        >
+          {/* Layout direction is set here instead of I18nManager, so switching language needs no restart. */}
+          <View style={[styles.root, { direction: dir, backgroundColor: colors.bg }]}>
+            {children}
+            <ToastHost />
+          </View>
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({ root: { flex: 1 } });
