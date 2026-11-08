@@ -42,6 +42,13 @@ describe('Accounts and sign-in (e2e)', () => {
     await http().post('/v1/auth/refresh').send({ refreshToken: res.body.refreshToken }).expect(401); // live one revoked too
   });
 
+  it('PATCH /me changes profile fields only: a role change is refused and an empty body is harmless', async () => {
+    const { accessToken } = await signUp(app);
+    await http().patch('/v1/me').set(bearer(accessToken)).send({ role: 'admin' }).expect(400);
+    const res = await http().patch('/v1/me').set(bearer(accessToken)).send({}).expect(200);
+    expect(res.body.role).toBe('client');
+  });
+
   it('/me needs a valid access token', async () => {
     await http().get('/v1/me').expect(401);
     await http().get('/v1/me').set(bearer('not-a-token')).expect(401);

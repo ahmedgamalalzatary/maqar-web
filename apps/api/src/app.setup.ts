@@ -9,8 +9,11 @@ export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService<Env, true>);
 
   app.use(helmet());
+  // The phone app needs no CORS. Browsers get the listed origins; with none listed,
+  // any origin is allowed in development only, and none in production.
   const origins = config.get('CORS_ORIGINS', { infer: true });
-  app.enableCors({ origin: origins.length ? origins : true, credentials: true });
+  const dev = config.get('NODE_ENV', { infer: true }) !== 'production';
+  app.enableCors({ origin: origins.length ? origins : dev, credentials: true });
 
   app.setGlobalPrefix('v1', { exclude: ['docs', 'docs-json'] });
 

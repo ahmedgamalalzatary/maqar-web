@@ -17,6 +17,9 @@ export function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const ready = email.trim() !== '' && password !== '';
+  const submit = () => {
+    if (ready && !signIn.isPending) signIn.mutate({ email: email.trim(), password });
+  };
 
   return (
     <Screen>
@@ -42,7 +45,7 @@ export function SignInScreen() {
         secureTextEntry
         autoComplete="current-password"
         textContentType="password"
-        onSubmitEditing={() => ready && signIn.mutate({ email: email.trim(), password })}
+        onSubmitEditing={submit}
       />
       {signIn.isError ? (
         <Txt color="danger" accessibilityLiveRegion="polite">
@@ -53,7 +56,7 @@ export function SignInScreen() {
         label={t('دخول', 'Sign in')}
         disabled={!ready}
         loading={signIn.isPending}
-        onPress={() => signIn.mutate({ email: email.trim(), password })}
+        onPress={submit}
       />
       <Button label={t('معندكش حساب؟ اعمل حساب', 'No account? Create one')} variant="ghost" onPress={() => router.replace('/sign-up')} />
       <Button label={t('كمّل كضيف', 'Continue as a guest')} variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />

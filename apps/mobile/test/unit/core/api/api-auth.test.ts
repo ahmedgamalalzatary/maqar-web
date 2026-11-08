@@ -50,6 +50,19 @@ describe('apiFetch with a session', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('a late 401 for a token that was already replaced retries without a second refresh', async () => {
+    // The request went out with the old token; another request refreshed meanwhile.
+    fetchMock
+      .mockImplementationOnce(async () => {
+        token = 'new-token';
+        return json(401, {});
+      })
+      .mockImplementation(async () => json(200, {}));
+    await apiFetch('/me');
+    expect(refresh).not.toHaveBeenCalled();
+    expect(authHeader(1)).toBe('Bearer new-token');
+  });
+
   it('signs out when the refresh fails', async () => {
     fetchMock.mockImplementation(async () => json(401, { statusCode: 401, message: 'Unauthorized' }));
     refresh.mockResolvedValue(false);

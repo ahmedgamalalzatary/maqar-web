@@ -51,14 +51,13 @@ export class AuthService {
    */
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const row = await this.sessions.findByHash(sha256(refreshToken));
-    if (!row) throw new UnauthorizedException(BAD_SESSION);
+    // An expired token is simply refused: retrying it is not a sign of theft.
+    if (!row || row.expiresAt < new Date()) throw new UnauthorizedException(BAD_SESSION);
     if (row.revokedAt || !(await this.sessions.revoke(row.id))) {
       await this.sessions.revokeAllForUser(row.userId);
       throw new UnauthorizedException(BAD_SESSION);
     }
-    if (row.expiresAt < new Date() || !(await this.users.findActiveById(row.userId))) {
-      throw new UnauthorizedException(BAD_SESSION);
-    }
+    if (!(await this.users.findActiveById(row.userId))) throw new UnauthorizedException(BAD_SESSION);
     return this.issue(row.userId);
   }
 

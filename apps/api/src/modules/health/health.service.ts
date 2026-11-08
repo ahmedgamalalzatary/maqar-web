@@ -1,8 +1,10 @@
+import { createRequire } from 'node:module';
 import { Injectable } from '@nestjs/common';
 import type { HealthResponse } from '@maqar/shared';
 import { HealthRepository } from './health.repository.js';
 
-const VERSION = process.env.npm_package_version ?? '0.0.0';
+// apps/api/package.json is three levels up from both src/modules/health and dist/modules/health.
+const VERSION: string = createRequire(import.meta.url)('../../../package.json').version;
 
 @Injectable()
 export class HealthService {

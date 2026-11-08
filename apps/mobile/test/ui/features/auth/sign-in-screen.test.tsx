@@ -7,9 +7,9 @@ import { mockRouter } from '../../../utils/router';
 
 jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
-  useSession.getState().clear();
+  await useSession.getState().clear();
 });
 
 async function signIn(email: string, password: string) {

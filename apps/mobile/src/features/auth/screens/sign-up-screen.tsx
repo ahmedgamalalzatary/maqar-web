@@ -77,7 +77,11 @@ export function SignUpScreen() {
         textContentType="newPassword"
         placeholder={t('٨ حروف على الأقل، فيها حرف ورقم', '8+ characters, a letter and a digit')}
       />
-      {signUp.isError ? <Txt color="danger">{t(authErrorMessage(signUp.error))}</Txt> : null}
+      {signUp.isError ? (
+        <Txt color="danger" accessibilityLiveRegion="polite">
+          {t(authErrorMessage(signUp.error))}
+        </Txt>
+      ) : null}
       <Button
         label={t('إنشاء حساب', 'Create account')}
         disabled={!ready}

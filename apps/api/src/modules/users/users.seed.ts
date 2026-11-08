@@ -23,16 +23,21 @@ const OTHERS: { email: string; name: string; role: Role }[] = [
 export async function seedDemoAccounts(db: Db, password: string): Promise<void> {
   const passwordHash = await hashPassword(password);
 
-  const ensureUser = async (email: string, name: string, role: Role): Promise<number | null> => {
-    const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
-    if (existing) return null;
-    const [{ id }] = await db.insert(users).values({ email, name, role, passwordHash }).$returningId();
+  /** Returns the account id, creating the account if it does not exist. */
+  const ensureUser = async (tx: Db, email: string, name: string, role: Role): Promise<number> => {
+    const [existing] = await tx.select({ id: users.id }).from(users).where(eq(users.email, email));
+    if (existing) return existing.id;
+    const [{ id }] = await tx.insert(users).values({ email, name, role, passwordHash }).$returningId();
     return id;
   };
 
   for (const { email, ...profile } of AGENTS) {
-    const id = await ensureUser(email, profile.nameAr, 'agent');
-    if (id) await db.insert(agents).values({ userId: id, ...profile, monthlyTarget: 6 });
+    // Account and profile together, so a failure never leaves an agent without a profile.
+    await db.transaction(async (tx) => {
+      const id = await ensureUser(tx as unknown as Db, email, profile.nameAr, 'agent');
+      const [hasProfile] = await tx.select({ id: agents.userId }).from(agents).where(eq(agents.userId, id));
+      if (!hasProfile) await tx.insert(agents).values({ userId: id, ...profile, monthlyTarget: 6 });
+    });
   }
-  for (const { email, name, role } of OTHERS) await ensureUser(email, name, role);
+  for (const { email, name, role } of OTHERS) await ensureUser(db, email, name, role);
 }

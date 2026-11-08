@@ -14,9 +14,14 @@ export function DeleteAccountSheet({ open, onClose }: { open: boolean; onClose: 
   const remove = useDeleteAccount();
   const [password, setPassword] = useState('');
   const wrong = remove.error instanceof ApiError && remove.error.status === 401;
+  const close = () => {
+    setPassword('');
+    remove.reset();
+    onClose();
+  };
 
   return (
-    <Sheet open={open} onClose={onClose} title={t('تمسح حسابك؟', 'Delete your account?')}>
+    <Sheet open={open} onClose={close} title={t('تمسح حسابك؟', 'Delete your account?')}>
       <Txt color="ink2">
         {t(
           'هنمسح اسمك وإيميلك وبياناتك، ومش هتقدر ترجّع الحساب.',
@@ -40,7 +45,7 @@ export function DeleteAccountSheet({ open, onClose }: { open: boolean; onClose: 
           loading={remove.isPending}
           onPress={() => remove.mutate(password)}
         />
-        <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={onClose} />
+        <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={close} />
       </View>
     </Sheet>
   );

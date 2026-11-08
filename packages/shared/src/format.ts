@@ -63,7 +63,8 @@ export function fmtMoney(n: number, lang: Lang, compact = true): string {
 /** 5 → "٥٪" / "5%". A negative value reads as a drop: "٦٪-" / "-6%". */
 export function fmtPct(n: number, lang: Lang, maxFrac = 1): string {
   const v = fmtNum(Math.abs(n), lang, maxFrac);
-  const minus = n < 0 ? '-' : '';
+  // A drop that rounds to zero is shown as zero, with no sign (like fmtNum).
+  const minus = n < 0 && Number(Math.abs(n).toFixed(maxFrac)) > 0 ? '-' : '';
   return lang === 'ar' ? `${v}٪${minus}` : `${minus}${v}%`;
 }
 
@@ -145,7 +146,8 @@ export function relTime(at: Date | number, lang: Lang, now: number = Date.now())
   if (abs < 60) return lang === 'ar' ? 'الآن' : 'just now';
   if (abs >= 30 * 86_400) return fmtDate(t, lang);
   const unit = UNITS.find((u) => abs >= u.secs)!;
-  const n = Math.round(abs / unit.secs);
+  // Round down, so 59.98 minutes never shows as "60 minutes".
+  const n = Math.floor(abs / unit.secs);
   if (unit.en === 'day' && n === 1) {
     if (lang === 'ar') return past ? 'أمس' : 'غدًا';
     return past ? 'yesterday' : 'tomorrow';

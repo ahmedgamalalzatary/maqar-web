@@ -43,8 +43,13 @@ export class UsersService {
     return toMe(user, agent);
   }
 
+  /** Only profile fields are written, whatever the request carries. An empty change is a no-op. */
   async updateMe(id: number, body: UpdateMeBody): Promise<Me> {
-    await this.users.update(id, body);
+    const { name, phone, lang, theme, pushEnabled } = body;
+    const changes = Object.fromEntries(
+      Object.entries({ name, phone, lang, theme, pushEnabled }).filter(([, v]) => v !== undefined),
+    );
+    if (Object.keys(changes).length) await this.users.update(id, changes);
     return this.getMe(id);
   }
 

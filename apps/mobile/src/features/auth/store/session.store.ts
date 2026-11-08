@@ -50,8 +50,10 @@ export const useSession = create<Session>((set, get) => ({
     try {
       await get().setSession(await refreshRequest(token));
       return true;
-    } catch {
-      return false;
+    } catch (err) {
+      // Only a rejected token ends the session. Offline or a server error keeps it for a retry.
+      if (err instanceof ApiError && err.status === 401) return false;
+      throw err;
     }
   },
 

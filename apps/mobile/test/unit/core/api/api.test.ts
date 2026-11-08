@@ -23,6 +23,11 @@ describe('apiFetch', () => {
     expect(err).toMatchObject({ status: 409, message: 'Email already used' });
   });
 
+  it('keeps the status when an error page is not JSON (a proxy 502)', async () => {
+    fetchMock.mockResolvedValue(new Response('<html>Bad Gateway</html>', { status: 502, statusText: 'Bad Gateway' }));
+    await expect(apiFetch('/x')).rejects.toMatchObject({ name: 'ApiError', status: 502 });
+  });
+
   it('turns a network failure into an ApiError with status 0', async () => {
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
     await expect(apiFetch('/x')).rejects.toMatchObject({ status: 0 });

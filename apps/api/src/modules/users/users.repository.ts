@@ -36,7 +36,10 @@ export class UsersRepository {
   }
 
   async update(id: number, data: Partial<NewUserRow>): Promise<void> {
-    await this.db.update(users).set(data).where(eq(users.id, id));
+    await this.db
+      .update(users)
+      .set(data)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)));
   }
 
   /**
@@ -47,6 +50,6 @@ export class UsersRepository {
     await this.db
       .update(users)
       .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
-      .where(eq(users.id, id));
+      .where(and(eq(users.id, id), isNull(users.deletedAt)));
   }
 }

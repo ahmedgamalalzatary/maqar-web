@@ -55,11 +55,10 @@ export type ApiOptions = {
   anonymous?: boolean;
 };
 
-async function send(path: string, opts: ApiOptions): Promise<Response> {
+async function send(path: string, opts: ApiOptions, token: string | null | undefined): Promise<Response> {
   const headers = new Headers(opts.headers);
   headers.set('Accept', 'application/json');
   if (opts.body !== undefined) headers.set('Content-Type', 'application/json');
-  const token = opts.anonymous ? null : auth?.getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   try {
     return await fetch(apiBaseUrl() + path, {
@@ -75,17 +74,31 @@ async function send(path: string, opts: ApiOptions): Promise<Response> {
 
 /** JSON request to the Maqar API. `path` starts with "/", e.g. "/health". */
 export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
-  let res = await send(path, opts);
+  const sentWith = opts.anonymous ? null : auth?.getAccessToken();
+  let res = await send(path, opts, sentWith);
 
   // An expired access token: renew it once and retry.
-  if (res.status === 401 && auth && !opts.anonymous && auth.getAccessToken()) {
+  if (res.status === 401 && auth && sentWith) {
     const handlers = auth;
-    if (await refreshOnce(handlers)) res = await send(path, opts);
-    else handlers.onAuthFailure();
+    if (handlers.getAccessToken() !== sentWith) {
+      // Another request already renewed the token while this one was out.
+      res = await send(path, opts, handlers.getAccessToken());
+    } else if (await refreshOnce(handlers)) {
+      res = await send(path, opts, handlers.getAccessToken());
+    } else {
+      handlers.onAuthFailure();
+    }
   }
 
   const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : undefined;
+  let data: unknown;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    // Not JSON, e.g. a proxy's HTML error page. Keep the HTTP status.
+    if (!res.ok) throw new ApiError(res.status, res.statusText || 'Request failed');
+    throw new ApiError(res.status, 'The server sent an unreadable response');
+  }
   if (!res.ok) {
     const msg = (data as Partial<ApiErrorBody> | undefined)?.message;
     throw new ApiError(res.status, Array.isArray(msg) ? msg.join('\n') : (msg ?? res.statusText));

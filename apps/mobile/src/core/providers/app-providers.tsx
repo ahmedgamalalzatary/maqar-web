@@ -20,7 +20,7 @@ import { useTheme } from '@/core/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-/** Waits for saved settings to load from storage. */
+/** Waits for saved settings to load from storage. Subscribing first means a finish cannot be missed. */
 function useSettingsReady() {
   return useSyncExternalStore(
     (onChange) => useSettings.persist.onFinishHydration(onChange),
@@ -32,7 +32,12 @@ function useSettingsReady() {
 function useBoot(boot?: () => Promise<void>) {
   const [done, setDone] = useState(!boot);
   useEffect(() => {
-    if (boot) boot().finally(() => setDone(true));
+    if (!boot) return;
+    // Promise.resolve().then() also catches a boot() that throws before returning a promise.
+    Promise.resolve()
+      .then(boot)
+      .catch(() => {})
+      .finally(() => setDone(true));
     // Start-up runs once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

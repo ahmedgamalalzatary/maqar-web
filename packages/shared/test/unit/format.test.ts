@@ -68,6 +68,10 @@ describe('fmtPct', () => {
   it('keeps one decimal by default', () => {
     expect(fmtPct(12.34, 'en')).toBe('12.3%');
   });
+  it('drops the minus sign when a small drop rounds to zero', () => {
+    expect(fmtPct(-0.04, 'en')).toBe('0%');
+    expect(fmtPct(-0.04, 'ar')).toBe('٠٪');
+  });
 });
 
 describe('fmtTime', () => {
@@ -115,6 +119,10 @@ describe('relTime', () => {
     expect(relTime(ago(2 * 3600), 'en', now)).toBe('2 hours ago');
     expect(relTime(now + 3 * 86_400_000, 'en', now)).toBe('in 3 days');
     expect(relTime(now + 3 * 86_400_000, 'ar', now)).toBe('بعد ٣ أيام');
+  });
+  it('never rounds up to the size of the next unit', () => {
+    expect(relTime(ago(3599), 'en', now)).toBe('59 minutes ago');
+    expect(relTime(ago(86_399), 'en', now)).toBe('23 hours ago');
   });
   it('says yesterday and tomorrow', () => {
     expect(relTime(ago(86_400), 'ar', now)).toBe('أمس');
