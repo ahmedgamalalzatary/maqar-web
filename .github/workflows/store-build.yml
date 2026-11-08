@@ -43,6 +43,9 @@ jobs:
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          # Save the Gradle cache from this branch too (by default only the default branch writes it).
+          cache-read-only: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -68,18 +71,16 @@ jobs:
             echo "MAQAR_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}"
           } >> apps/mobile/android/gradle.properties
 
-      - name: Build the APK
+      - name: Build the APK and the Play bundle (AAB)
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
-
-      - name: Build the Play bundle (AAB)
-        working-directory: apps/mobile/android
+        # One Gradle run for both, and only the CPU types real phones use (no x86 emulator builds).
         run: |
           if [ "$HAS_UPLOAD_KEY" != "true" ]; then
-            echo "::error::No upload key in the repo secrets, so no Play bundle. See the comment at the top of this workflow."
-            exit 1
+            echo "::warning::No upload key in the repo secrets: building a test APK only, no Play bundle."
+            ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+            exit 0
           fi
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
 
       - name: Collect the files
         if: always()
