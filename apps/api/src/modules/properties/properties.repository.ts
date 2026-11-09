@@ -3,8 +3,15 @@ import {
   BATHS_OPTIONS,
   BEDS_OPTIONS,
   type Category,
+  type Feature,
   HISTOGRAM_BINS,
   type ListingFilters,
+  MATCH_MAX,
+  MATCH_MIN,
+  MATCH_POINTS,
+  NEAR_BUDGET_PCT,
+  PRICE_FACTOR,
+  type Prefs,
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
   priceCategories,
@@ -35,7 +42,7 @@ import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
 import { type PropertyRow, properties, propertyFeatures, propertyImages } from './properties.schema.js';
 
-export type BrowseFilter = ListingFilters & { sort: Sort; offset: number; limit: number };
+export type BrowseFilter = ListingFilters & { sort: Sort; offset: number; limit: number; prefs?: Prefs };
 
 const areaColumns = { id: areas.id, nameAr: areas.nameAr, nameEn: areas.nameEn };
 const approved = eq(properties.status, 'approved');
@@ -45,16 +52,49 @@ const MAX_WORDS = 6;
 const BEDS_TOP = BEDS_OPTIONS[BEDS_OPTIONS.length - 1];
 const BATHS_TOP = BATHS_OPTIONS[BATHS_OPTIONS.length - 1];
 
-const ORDER: Record<Sort, SQL[]> = {
-  newest: [desc(properties.publishedAt), desc(properties.id)],
+const NEWEST = [desc(properties.publishedAt), desc(properties.id)];
+
+const ORDER: Record<Exclude<Sort, 'match'>, SQL[]> = {
+  newest: NEWEST,
   low: [asc(properties.price), asc(properties.id)],
   high: [desc(properties.price), desc(properties.id)],
 };
 
+/** A whole number, inlined: only our own constants, never user input. */
+const int = (n: number) => sql.raw(String(Math.trunc(n)));
+
+/**
+ * The match score in SQL (contract §8.3), so lists can be sorted by it and paged. It must give
+ * the same numbers as the shared `matchScore`; the e2e tests compare the two on every listing.
+ * The 360° tour points arrive with tours in phase 10.
+ */
+export function matchScoreSql(prefs: Prefs): SQL<number> {
+  const P = MATCH_POINTS;
+  const f = prefs.purpose[0] === 'rent' ? PRICE_FACTOR.rentBudget : PRICE_FACTOR.buyBudget;
+  const price = sql`(case ${properties.category} when 'rent' then ${properties.price} * ${int(f.rent)} when 'stay' then ${properties.price} * ${int(f.stay)} else ${properties.price} end)`;
+  const parts: SQL[] = [
+    sql`case when ${inArray(properties.category, prefs.purpose)} then ${int(P.purpose)} else 0 end`,
+    sql`case when ${price} <= ${prefs.budgetMax} then ${int(P.withinBudget)} when ${price} * 100 <= ${prefs.budgetMax * NEAR_BUDGET_PCT} then ${int(P.nearBudget)} else ${int(P.overBudget)} end`,
+    prefs.areas.length
+      ? sql`case when ${inArray(properties.areaId, prefs.areas)} then ${int(P.area)} else 0 end`
+      : sql`${int(P.anyArea)}`,
+  ];
+  if (prefs.types.length) parts.push(sql`case when ${inArray(properties.type, prefs.types)} then ${int(P.type)} else 0 end`);
+  if (prefs.beds > 0) parts.push(sql`case when ${properties.beds} >= ${prefs.beds} then ${int(P.beds)} else 0 end`);
+  if (prefs.interests.length) {
+    parts.push(
+      sql`least(${int(P.interestsMax)}, ${int(P.perInterest)} * (select count(*) from ${propertyFeatures} where ${propertyFeatures.propertyId} = ${properties.id} and ${inArray(propertyFeatures.feature, prefs.interests)}))`,
+      sql`case when ${isNotNull(properties.planDownPct)} then ${int(P.plan)} else 0 end`,
+    );
+  }
+  const total = sql.join([sql`${int(P.start)}`, ...parts], sql` + `);
+  return sql<number>`least(${int(MATCH_MAX)}, greatest(${int(MATCH_MIN)}, ${total}))`;
+}
+
 /** `%` and `_` in a search are plain text. */
 const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
-/** One search word matches a text column, or names a unit type ("Ø´Ø§Ù„ÙŠÙ‡", "villa"). */
+/** One search word matches a text column, or names a unit type ("شاليه", "villa"). */
 function wordMatches(word: string): SQL | undefined {
   const pattern = `%${escapeLike(word)}%`;
   const lower = word.toLowerCase();
@@ -83,7 +123,7 @@ function countIn(column: MySqlColumn, picked: number[] | undefined, top: number)
 }
 
 /**
- * The WHERE for the public list (contract Â§8.4). Every filter must match; a list matches any
+ * The WHERE for the public list (contract §8.4). Every filter must match; a list matches any
  * of its values, except amenities, which must all be there. `omit` leaves out one range, so its
  * own histogram is not cut by it.
  */
@@ -134,7 +174,7 @@ export class PropertiesRepository {
         .from(properties)
         .innerJoin(areas, eq(areas.id, properties.areaId))
         .where(where)
-        .orderBy(...ORDER[f.sort])
+        .orderBy(...(f.sort === 'match' ? [desc(matchScoreSql(f.prefs!)), ...NEWEST] : ORDER[f.sort]))
         .limit(f.limit)
         .offset(f.offset),
       this.countWhere(where),
@@ -145,6 +185,23 @@ export class PropertiesRepository {
   /** Approved listings that match the filters. */
   countMatching(f: ListingFilters) {
     return this.countWhere(filterWhere(f));
+  }
+
+  /** Approved listings that fit the preferences at least `min` (onboarding's live count). */
+  countGoodMatches(prefs: Prefs, min: number) {
+    return this.countWhere(and(approved, sql`${matchScoreSql(prefs)} >= ${min}`));
+  }
+
+  /** The amenities of each listing. */
+  async findFeaturesOf(ids: number[]): Promise<Map<number, Feature[]>> {
+    const map = new Map<number, Feature[]>(ids.map((id) => [id, []]));
+    if (!ids.length) return map;
+    const rows = await this.db
+      .select({ propertyId: propertyFeatures.propertyId, feature: propertyFeatures.feature })
+      .from(propertyFeatures)
+      .where(inArray(propertyFeatures.propertyId, ids));
+    for (const r of rows) map.get(r.propertyId)?.push(r.feature);
+    return map;
   }
 
   /** Bars of the price histogram: listings that match every filter but the price range. */
@@ -231,7 +288,7 @@ export class PropertiesRepository {
   }
 
   /**
-   * Approved listings like `p` (contract Â§8.5): the same category, the same area first,
+   * Approved listings like `p` (contract §8.5): the same category, the same area first,
    * then the same type, then the closest price.
    */
   findSimilar(p: Pick<PropertyRow, 'id' | 'category' | 'areaId' | 'type' | 'price'>, limit: number) {

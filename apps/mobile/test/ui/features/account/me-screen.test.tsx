@@ -19,6 +19,17 @@ describe('MeScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/sign-in');
   });
 
+  it('a client can reopen the preference questions; an owner has none', async () => {
+    await useSession.getState().setSession(makeAuth({ role: 'client', prefs: null }));
+    const view = await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'عدّل تفضيلاتك' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/onboarding');
+
+    await useSession.getState().setSession(makeAuth({ role: 'owner' }));
+    await view.rerender(<MeScreen />);
+    expect(screen.queryByRole('button', { name: 'عدّل تفضيلاتك' })).toBeNull();
+  });
+
   it('signing out ends the session on the server and returns to the client home', async () => {
     await useSession.getState().setSession(makeAuth({ name: 'Mona Adel' }));
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(204));

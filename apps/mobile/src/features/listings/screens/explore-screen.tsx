@@ -6,6 +6,7 @@ import {
   FINISHING_LABEL,
   fmtNum,
   PROPERTY_TYPE_LABEL,
+  type Sort,
 } from '@maqar/shared';
 import { ArrowDownUp, KeyRound, type LucideIcon, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
 import { useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
+import { useIsClient } from '@/features/prefs/hooks/use-prefs';
 import { RemovableChip, ToggleChip } from '../components/chips';
 import { bathsLabel, bedsLabel, deliveryLabel, priceRangeText, sizeRangeText } from '../components/filter-labels';
 import { FilterSheet } from '../components/filter-sheet';
@@ -38,20 +40,26 @@ const without = <T,>(list: T[] | undefined, v: T) => {
  * and the active filters as removable chips. `category` and `area` are only the starting point;
  * the route remounts the screen when Home sends new ones.
  */
-export function ExploreScreen({ category, area }: { category?: Category; area?: string }) {
+export function ExploreScreen({ category, area, sort }: { category?: Category; area?: string; sort?: Sort }) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const isClient = useIsClient();
   const [filters, setFilters] = useState<ExploreFilters>(() => ({
-    sort: 'newest',
+    sort: sort ?? 'newest',
     ...(category && { category }),
     ...(area && { areas: [area] }),
   }));
   const [text, setText] = useState('');
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null);
   const q = useDebounced(text.trim(), 300);
-  const query = useMemo<ExploreFilters>(() => (q ? { ...filters, q } : filters), [filters, q]);
+  // Best match needs a client's preferences; anyone else (or after signing out) gets the newest.
+  const shown = useMemo<ExploreFilters>(
+    () => (filters.sort === 'match' && !isClient ? { ...filters, sort: 'newest' } : filters),
+    [filters, isClient],
+  );
+  const query = useMemo<ExploreFilters>(() => (q ? { ...shown, q } : shown), [shown, q]);
 
   const browse = useBrowse(query);
   const areas = useAreas();
@@ -206,14 +214,14 @@ export function ExploreScreen({ category, area }: { category?: Category; area?: 
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(`ترتيب: ${sortLabel(filters.sort, t)}`, `Sort: ${sortLabel(filters.sort, t)}`)}
+          accessibilityLabel={t(`ترتيب: ${sortLabel(shown.sort, t)}`, `Sort: ${sortLabel(shown.sort, t)}`)}
           onPress={() => setSheet('sort')}
           hitSlop={8}
           style={styles.sortBtn}
         >
           <ArrowDownUp size={16} color={colors.ink} />
           <Txt size={13} weight="medium">
-            {sortLabel(filters.sort, t)}
+            {sortLabel(shown.sort, t)}
           </Txt>
         </Pressable>
       </View>
@@ -284,7 +292,8 @@ export function ExploreScreen({ category, area }: { category?: Category; area?: 
       ) : null}
       <SortSheet
         open={sheet === 'sort'}
-        value={filters.sort}
+        value={shown.sort}
+        withMatch={isClient}
         onClose={() => setSheet(null)}
         onPick={(sort) => {
           update({ sort });

@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import type { Prefs } from '@maqar/shared';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
-import { type NewUserRow, type UserRow, users } from './users.schema.js';
+import { areas } from '../areas/areas.schema.js';
+import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schema.js';
 
 /** All database access for accounts. Deleted accounts are never returned. */
 @Injectable()
@@ -47,9 +49,43 @@ export class UsersRepository {
    * released so it can sign up again. The row stays so past records keep their links.
    */
   async softDelete(id: number): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
+        .where(and(eq(users.id, id), isNull(users.deletedAt)));
+      // Preferences are personal too.
+      await tx.delete(clientPrefs).where(eq(clientPrefs.userId, id));
+    });
+  }
+
+  /** A client's saved preferences, or undefined before onboarding. */
+  async findPrefs(userId: number): Promise<Prefs | undefined> {
+    const [row] = await this.db.select().from(clientPrefs).where(eq(clientPrefs.userId, userId));
+    return (
+      row && {
+        purpose: row.purposes,
+        budgetMax: row.budgetMax,
+        areas: row.areaIds,
+        types: row.types,
+        beds: row.minBeds,
+        interests: row.interests,
+      }
+    );
+  }
+
+  /** Saves a client's preferences, replacing any saved before. */
+  async savePrefs(userId: number, p: Prefs): Promise<void> {
+    const row = { purposes: p.purpose, budgetMax: p.budgetMax, areaIds: p.areas, types: p.types, minBeds: p.beds, interests: p.interests };
     await this.db
-      .update(users)
-      .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
-      .where(and(eq(users.id, id), isNull(users.deletedAt)));
+      .insert(clientPrefs)
+      .values({ userId, ...row })
+      .onDuplicateKeyUpdate({ set: row });
+  }
+
+  /** How many of these area ids exist. */
+  async countAreas(ids: string[]): Promise<number> {
+    if (!ids.length) return 0;
+    return this.db.$count(areas, inArray(areas.id, ids));
   }
 }

@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import {
+  DEFAULT_PREFS,
+  GOOD_MATCH,
   type ListingFacets,
+  type MatchCount,
+  matchScore,
+  type Prefs,
   type ListingFilters,
   type Page,
   type PropertyCard,
@@ -8,7 +13,9 @@ import {
   priceScale,
   SIZE_SCALE,
 } from '@maqar/shared';
+import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import type { AgentRow } from '../agents/agents.schema.js';
+import { UsersService } from '../users/users.service.js';
 import { type ListingFiltersDto, type PropertiesQueryDto, toListingFilters } from './dto/properties-query.dto.js';
 import { PropertiesRepository } from './properties.repository.js';
 import type { PropertyRow } from './properties.schema.js';
@@ -17,6 +24,8 @@ type AreaName = PropertyCard['area'];
 
 /** How many similar homes the property page shows. */
 const SIMILAR_LIMIT = 6;
+/** How many picks Home shows (contract §8.2). */
+const PICKS_LIMIT = 6;
 
 /** The query's filters. A range whose minimum is above its maximum is a 400. */
 function filtersOf(q: ListingFiltersDto): ListingFilters {
@@ -74,17 +83,42 @@ function toAgent(a: AgentRow): PropertyDetail['agent'] {
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly repo: PropertiesRepository) {}
+  constructor(
+    private readonly repo: PropertiesRepository,
+    private readonly users: UsersService,
+  ) {}
 
-  async browse(q: PropertiesQueryDto): Promise<Page<PropertyCard>> {
+  /** The list. Best match needs a signed-in client, and then every card carries its match. */
+  async browse(q: PropertiesQueryDto, user?: AuthUser): Promise<Page<PropertyCard>> {
     const { page, limit, sort } = q;
+    const prefs = sort === 'match' ? await this.prefsOf(user) : undefined;
     const { rows, total } = await this.repo.findPublicPage({
       ...filtersOf(q),
       sort,
+      prefs,
       offset: (page - 1) * limit,
       limit,
     });
-    return { items: await this.withCovers(rows), page, limit, total };
+    return { items: await this.cards(rows, prefs), page, limit, total };
+  }
+
+  /** "Picked for you" (contract §8.2): the best matches, each with its reasons. */
+  async recommended(user: AuthUser): Promise<PropertyCard[]> {
+    const prefs = await this.prefsOf(user);
+    const { rows } = await this.repo.findPublicPage({ sort: 'match', prefs, offset: 0, limit: PICKS_LIMIT });
+    return this.cards(rows, prefs);
+  }
+
+  /** Onboarding's live count: homes that fit the preferences being picked 70% or more. */
+  async matchCount(prefs: Prefs): Promise<MatchCount> {
+    return { count: await this.repo.countGoodMatches(prefs, GOOD_MATCH) };
+  }
+
+  /** A client's preferences to score with: saved ones, or the defaults if onboarding was skipped. */
+  private async prefsOf(user: AuthUser | undefined): Promise<Prefs> {
+    if (!user) throw new UnauthorizedException('Sign in to sort by best match');
+    if (user.role !== 'client') throw new ForbiddenException('Best match is for client accounts');
+    return (await this.users.prefsFor(user.id)) ?? DEFAULT_PREFS;
   }
 
   /** The filter sheet's counts: matches, price and size histograms, and the delivery years. */
@@ -131,11 +165,21 @@ export class PropertiesService {
   async similar(id: number): Promise<PropertyCard[]> {
     const row = await this.repo.findApprovedById(id);
     if (!row) throw new NotFoundException('Listing not found');
-    return this.withCovers(await this.repo.findSimilar(row.p, SIMILAR_LIMIT));
+    return this.cards(await this.repo.findSimilar(row.p, SIMILAR_LIMIT));
   }
 
-  private async withCovers(rows: { p: PropertyRow; area: AreaName }[]): Promise<PropertyCard[]> {
-    const covers = await this.repo.findCovers(rows.map((r) => r.p.id));
-    return rows.map(({ p, area }) => toCard(p, area, covers.get(p.id) ?? null));
+  /** Cards with their covers and, when scoring for a client, their match and reasons. */
+  private async cards(rows: { p: PropertyRow; area: AreaName }[], prefs?: Prefs): Promise<PropertyCard[]> {
+    const ids = rows.map((r) => r.p.id);
+    const [covers, features] = await Promise.all([
+      this.repo.findCovers(ids),
+      prefs ? this.repo.findFeaturesOf(ids) : undefined,
+    ]);
+    return rows.map(({ p, area }) => {
+      const card = toCard(p, area, covers.get(p.id) ?? null);
+      if (!prefs) return card;
+      const match = matchScore({ ...card, features: features?.get(p.id) ?? [], plan: card.plan !== null, tour: false }, prefs);
+      return { ...card, match };
+    });
   }
 }

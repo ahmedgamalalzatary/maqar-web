@@ -170,7 +170,7 @@ describe('Search, filters and sort (e2e)', () => {
   });
 
   it.each([
-    ['an unknown sort', '?sort=match'],
+    ['an unknown sort', '?sort=best'],
     ['an unknown unit type', '?type=castle'],
     ['a bedroom count past the last choice', '?beds=6'],
     ['a bathroom count of 0', '?baths=0'],

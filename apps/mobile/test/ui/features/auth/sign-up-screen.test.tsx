@@ -29,4 +29,14 @@ describe('SignUpScreen', () => {
     });
     expect(mockRouter.replace).toHaveBeenCalledWith('/owner');
   });
+
+  it('a new client goes on to the preference questions', async () => {
+    mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client', prefs: null })));
+    await renderWithProviders(<SignUpScreen />);
+    await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
+    await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/onboarding');
+  });
 });

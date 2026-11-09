@@ -2,8 +2,8 @@ import type { Category, Feature, Finishing, PropertyType } from './enums.js';
 
 // Search, filters and sort for Explore (contract §8.4).
 
-/** Lowest price, highest price, newest. Best match arrives with preferences (phase 6). */
-export const SORTS = ['newest', 'low', 'high'] as const;
+/** Newest, lowest price, highest price, and best match (signed-in clients, phase 6). */
+export const SORTS = ['newest', 'low', 'high', 'match'] as const;
 export type Sort = (typeof SORTS)[number];
 
 /** A slider's scale. The top of the scale means "any", so no upper limit applies. */

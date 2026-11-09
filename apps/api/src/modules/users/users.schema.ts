@@ -1,6 +1,6 @@
-import { LANGS, ROLES, THEMES } from '@maqar/shared';
+import { type Category, type Feature, LANGS, type PropertyType, ROLES, THEMES } from '@maqar/shared';
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
+import { bigint, boolean, json, mysqlEnum, mysqlTable, timestamp, tinyint, varchar } from 'drizzle-orm/mysql-core';
 
 /** Contract §13. One role per account (§16.1 #9). */
 export const users = mysqlTable('users', {
@@ -25,3 +25,27 @@ export const users = mysqlTable('users', {
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
+
+/**
+ * A client's preferences (contract §8.1). One row per client, written by `PUT /me/prefs`.
+ * A client with no row has not been through onboarding yet.
+ */
+export const clientPrefs = mysqlTable('client_prefs', {
+  userId: bigint('user_id', { mode: 'number', unsigned: true })
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  purposes: json('purposes').$type<Category[]>().notNull(),
+  /** Whole EGP: per month when the first purpose is rent. */
+  budgetMax: bigint('budget_max', { mode: 'number', unsigned: true }).notNull(),
+  areaIds: json('area_ids').$type<string[]>().notNull(),
+  types: json('types').$type<PropertyType[]>().notNull(),
+  /** 0 means no minimum. */
+  minBeds: tinyint('min_beds', { unsigned: true }).notNull().default(0),
+  interests: json('interests').$type<Feature[]>().notNull(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`)
+    .onUpdateNow(),
+});
+
+export type ClientPrefsRow = typeof clientPrefs.$inferSelect;

@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
-import type { Me } from '@maqar/shared';
+import type { Me, Prefs } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuthRepository } from '../auth/auth.repository.js';
 import { DeleteMeDto } from './dto/delete-me.dto.js';
+import { PrefsDto } from './dto/prefs.dto.js';
 import { UpdateMeDto } from './dto/update-me.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -25,6 +27,13 @@ export class MeController {
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body() body: UpdateMeDto): Promise<Me> {
     return this.users.updateMe(user.id, body);
+  }
+
+  /** Onboarding and "Edit your preferences" (contract §8.1). Clients only. */
+  @Put('prefs')
+  @Roles('client')
+  savePrefs(@CurrentUser() user: AuthUser, @Body() body: PrefsDto): Promise<Prefs> {
+    return this.users.savePrefs(user.id, body);
   }
 
   @Delete()

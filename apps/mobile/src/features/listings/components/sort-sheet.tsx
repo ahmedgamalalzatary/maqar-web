@@ -1,4 +1,4 @@
-import { SORTS, type Sort } from '@maqar/shared';
+import type { Sort } from '@maqar/shared';
 import { Check } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Sheet } from '@/components/sheet';
@@ -9,17 +9,28 @@ import { radius, useTheme } from '@/core/theme';
 type T = ReturnType<typeof useT>;
 
 export const sortLabel = (s: Sort, t: T) =>
-  ({ newest: t('الأحدث', 'Newest'), low: t('الأقل سعراً', 'Lowest price'), high: t('الأعلى سعراً', 'Highest price') })[s];
+  ({
+    match: t('الأنسب ليك', 'Best match'),
+    newest: t('الأحدث', 'Newest'),
+    low: t('الأقل سعراً', 'Lowest price'),
+    high: t('الأعلى سعراً', 'Highest price'),
+  })[s];
 
-/** Sort by (contract §8.4). "Best match" joins with preferences in phase 6. */
+/** Best match first, as in the demo. */
+const ORDER: Sort[] = ['match', 'newest', 'low', 'high'];
+
+/** Sort by (contract §8.4). Best match needs a signed-in client's preferences (§8.3). */
 export function SortSheet({
   open,
   value,
+  withMatch,
   onPick,
   onClose,
 }: {
   open: boolean;
   value: Sort;
+  /** Offer best match: only for a signed-in client. */
+  withMatch: boolean;
   onPick: (s: Sort) => void;
   onClose: () => void;
 }) {
@@ -28,7 +39,7 @@ export function SortSheet({
   return (
     <Sheet open={open} onClose={onClose} title={t('ترتيب حسب', 'Sort by')}>
       <View accessibilityRole="radiogroup">
-        {SORTS.map((s) => (
+        {ORDER.filter((s) => withMatch || s !== 'match').map((s) => (
           <Pressable
             key={s}
             accessibilityRole="radio"

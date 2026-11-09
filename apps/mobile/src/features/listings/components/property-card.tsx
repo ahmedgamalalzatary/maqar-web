@@ -2,7 +2,7 @@ import { CATEGORY_LABEL, fmtMoney, fmtNum, fmtPct, installment, localDigits, typ
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Bath, BedDouble, MapPin, Maximize2, TrendingDown } from 'lucide-react-native';
+import { Bath, BedDouble, MapPin, Maximize2, Sparkles, TrendingDown } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
@@ -43,6 +43,14 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
           pointerEvents="none"
         />
         <View style={styles.top}>
+          {card.match ? (
+            <Badge>
+              <Sparkles size={12} color={colors.gold} />
+              <Txt size={11} weight="semibold" style={styles.white}>
+                {t(`تطابق ${fmtNum(card.match.score, 'ar')}٪`, `${card.match.score}% match`)}
+              </Txt>
+            </Badge>
+          ) : null}
           {drop > 0 ? (
             <Badge bg={colors.danger}>
               <TrendingDown size={12} color="#fff" />

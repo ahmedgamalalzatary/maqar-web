@@ -12,6 +12,7 @@ export function ToggleChip({
   onPress,
   icon: Icon,
   tone = 'plain',
+  role = 'checkbox',
 }: {
   /** What a screen reader says; `text` is what shows, when shorter (e.g. "٥+"). */
   label: string;
@@ -21,6 +22,8 @@ export function ToggleChip({
   icon?: LucideIcon;
   /** `quick` is the gold row of one-tap filters above the list. */
   tone?: 'plain' | 'quick';
+  /** `radio` for one-of-many choices (bedrooms, budget presets). */
+  role?: 'checkbox' | 'radio';
 }) {
   const { colors } = useTheme();
   const bg =
@@ -29,7 +32,7 @@ export function ToggleChip({
   const ShowIcon = Icon ?? (selected && tone === 'plain' ? Check : undefined);
   return (
     <Pressable
-      accessibilityRole="checkbox"
+      accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
       onPress={onPress}

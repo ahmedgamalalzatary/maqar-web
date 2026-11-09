@@ -37,7 +37,7 @@ const AREA_ID = /^[a-z0-9-]{1,40}$/;
 const DELIVERY = /^(ready|20\d\d)$/;
 
 /** `a,b` or `x=a&x=b` → `['a', 'b']`. */
-const toList = ({ value }: { value: unknown }) =>
+export const toList = ({ value }: { value: unknown }) =>
   value === undefined
     ? undefined
     : (Array.isArray(value) ? value : [value])
@@ -45,7 +45,7 @@ const toList = ({ value }: { value: unknown }) =>
         .map((s) => s.trim())
         .filter(Boolean);
 
-const toIntList = (arg: { value: unknown }) => toList(arg)?.map((s) => (/^\d+$/.test(s) ? Number(s) : s));
+export const toIntList = (arg: { value: unknown }) => toList(arg)?.map((s) => (/^\d+$/.test(s) ? Number(s) : s));
 
 /** Only "true"/"1" and "false"/"0"; anything else stays a string and fails `IsBoolean`. */
 const toBool = ({ value }: { value: unknown }) =>

@@ -5,13 +5,16 @@ import { useSettings } from '@/core/settings/store';
 import { signInRequest, signOutRequest, signUpRequest } from '../api/auth.api';
 import { homeFor, useSession } from '../store/session.store';
 
-/** After sign-in or sign-up: keep the session, apply the account's settings, open the role's home. */
-function useOnSignedIn() {
+/**
+ * After sign-in or sign-up: keep the session, apply the account's settings, open the role's home.
+ * A new client goes through the preference questions first (contract §8.1).
+ */
+function useOnSignedIn(isNew = false) {
   const router = useRouter();
   return async (auth: AuthResponse) => {
     await useSession.getState().setSession(auth);
     useSettings.setState({ lang: auth.user.lang, theme: auth.user.theme });
-    router.replace(homeFor(auth.user.role));
+    router.replace(isNew && auth.user.role === 'client' ? '/onboarding' : homeFor(auth.user.role));
   };
 }
 
@@ -21,7 +24,7 @@ export function useSignIn() {
 }
 
 export function useSignUp() {
-  const onSignedIn = useOnSignedIn();
+  const onSignedIn = useOnSignedIn(true);
   return useMutation({ mutationFn: (body: SignUpBody) => signUpRequest(body), onSuccess: onSignedIn });
 }
 

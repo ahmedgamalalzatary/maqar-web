@@ -207,7 +207,7 @@ Soft variants are the same colour at 12–14% opacity. Lead stages have their ow
 
 ### 8.1 Onboarding and preferences
 
-- Shown on first launch, and can be reopened from Me → "Edit your preferences".
+- Shown to a new client right after sign-up, and can be reopened from Me → "Edit your preferences". Guests browse without it and are invited to sign up for picks.
 - Steps:
   1. Name
   2. Purpose (multi-select: sale, rent, stay, project)
@@ -576,7 +576,7 @@ Supporting rules:
 | auth | `POST /auth/sign-up` (client or owner only), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
 | me | `GET/PATCH /me`, `PUT /me/prefs`, `POST /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
 | areas | `GET /areas` | public |
-| properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/recommended` | public; match needs sign-in |
+| properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/recommended`, `GET /properties/match-count` (homes that fit given preferences 70% or more, for onboarding) | public; `sort=match` and `recommended` need a signed-in client |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
 | viewings | `GET /properties/:id/slots?from&to`, `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
@@ -658,3 +658,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 3 built (the phone check is still pending): `areas`, `properties`, `property_features`, `property_images`; `GET /areas` and `GET /properties` (category and area filters, paging); Home and Explore in the app. `UPLOADS_DIR` added to the env. The installment formula is in `packages/shared` on `main`. |
 | 2026-11-09 | Decided: maps with `react-native-maps`, directions through the phone's maps app (#4). Phase 4 built (the phone check is still pending): `GET /properties/:id` (counts views), `GET /properties/:id/similar`, `properties.lat/lng`, and the property page. `GOOGLE_MAPS_API_KEY` added for Android builds. |
 | 2026-11-09 | Phase 5 built (the phone check is still pending): search, every filter and the sorts on `GET /properties`, and the new `GET /properties/facets` for the filter sheet's counts and histograms. Search also matches unit type names. The 360° tour quick filter moved to Phase 10, which brings the tour data. |
+| 2026-11-09 | Phase 6 built (the phone check is still pending): `client_prefs`, `PUT /me/prefs`, `prefs` on `/me`, the match score on the server, `sort=match`, `GET /properties/recommended`, and the new `GET /properties/match-count` for onboarding's live count. Onboarding now follows sign-up rather than first launch, because preferences belong to the account; guests get an invitation instead. The tour's +2 waits for Phase 10. |

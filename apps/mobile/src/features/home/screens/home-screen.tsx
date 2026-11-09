@@ -1,8 +1,9 @@
 import type { Category } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Building2, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sun } from 'lucide-react-native';
+import { Building2, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
@@ -14,6 +15,7 @@ import { usePreferences } from '@/features/account/hooks/use-account';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { PropertyCardView } from '@/features/listings/components/property-card';
 import { useAreas, useProperties } from '@/features/listings/hooks/use-listings';
+import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
 
 const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string }[] = [
   { category: 'sale', icon: HomeIcon, ar: 'شراء', en: 'Buy' },
@@ -23,8 +25,9 @@ const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string 
 ];
 
 /**
- * Client home (contract §8.2), phase 3: headline, search entry, category shortcuts, areas and
- * new launches. Picks, price drops, tours and the next viewing arrive with their phases.
+ * Client home (contract §8.2): headline, search entry, category shortcuts, picks for a signed-in
+ * client (phase 6), areas and new launches. Price drops, tours and the next viewing arrive with
+ * their phases.
  */
 export function Home() {
   const t = useT();
@@ -97,6 +100,8 @@ export function Home() {
         ))}
       </View>
 
+      <Picks cardWidth={cardWidth} />
+
       <Section title={t('تصفح حسب المنطقة', 'Browse by area')}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
           {(areas.data ?? []).map((a) => {
@@ -140,23 +145,93 @@ export function Home() {
   );
 }
 
+/**
+ * "Picked for you" (contract §8.2, §8.3): a signed-in client's best matches with their reasons.
+ * A guest is invited to sign up for them instead.
+ */
+function Picks({ cardWidth }: { cardWidth: number }) {
+  const t = useT();
+  const router = useRouter();
+  const { colors } = useTheme();
+  const isClient = useIsClient();
+  const picks = useRecommended(isClient);
+
+  if (!isClient) {
+    return (
+      <View style={[styles.invite, { backgroundColor: colors.navy }]}>
+        <View style={styles.inviteHead}>
+          <Sparkles size={20} color={colors.gold} />
+          <Txt size={16} weight="semibold" style={{ color: colors.cream }}>
+            {t('ترشيحات على مقاسك', 'Picks that fit you')}
+          </Txt>
+        </View>
+        <Txt size={13} style={{ color: colors.cream, opacity: 0.75 }}>
+          {t('قولنا ميزانيتك والمناطق اللي بتحبها، ونرتب لك البيوت الأنسب.', 'Tell us your budget and favourite areas, and we’ll rank the homes that fit.')}
+        </Txt>
+        <Button label={t('ابدأ ترشيحاتك', 'Get your picks')} onPress={() => router.push('/sign-up')} />
+      </View>
+    );
+  }
+  if (picks.isSuccess && !picks.data.length) return null;
+
+  return (
+    <Section
+      title={t('مختارة ليك', 'Picked for you')}
+      icon={<Sparkles size={18} color={colors.accent} />}
+      action={{
+        label: t('الكل', 'See all'),
+        a11y: t('كل الترشيحات', 'All picks'),
+        onPress: () => router.push({ pathname: '/explore', params: { sort: 'match' } }),
+      }}
+    >
+      {picks.isError ? (
+        <ListingsError onRetry={() => picks.refetch()} />
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+          {picks.isPending
+            ? [0, 1].map((i) => <CardSkeleton key={i} width={cardWidth} />)
+            : picks.data.map((c) => (
+                <View key={c.id} style={{ width: cardWidth }}>
+                  <PropertyCardView card={c} width={cardWidth} />
+                  {c.match?.reasons.length ? (
+                    <View style={styles.reasons}>
+                      {c.match.reasons.map((r) => (
+                        <View key={r.en} style={[styles.reason, { backgroundColor: colors.sageSoft }]}>
+                          <Txt size={11} weight="medium" color="sageInk">
+                            {t(r)}
+                          </Txt>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+        </ScrollView>
+      )}
+    </Section>
+  );
+}
+
 function Section({
   title,
+  icon,
   action,
   children,
 }: {
   title: string;
-  action?: { label: string; onPress: () => void };
+  icon?: React.ReactNode;
+  action?: { label: string; a11y?: string; onPress: () => void };
   children: React.ReactNode;
 }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
+        {icon}
         <Txt accessibilityRole="header" size={18} weight="semibold" style={styles.flex}>
           {title}
         </Txt>
         {action ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={action.label} onPress={action.onPress} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={action.a11y ?? action.label} onPress={action.onPress} hitSlop={8}>
             <Txt size={13} weight="medium" color="accentInk">
               {action.label}
             </Txt>
@@ -205,5 +280,9 @@ const styles = StyleSheet.create({
   },
   areaImg: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden' },
   cards: { gap: 12 },
+  reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 4, paddingTop: 8 },
+  reason: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  invite: { gap: 10, padding: 18, borderRadius: radius.lg, marginTop: 8 },
+  inviteHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   flex: { flex: 1 },
 });

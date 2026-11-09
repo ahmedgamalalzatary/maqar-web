@@ -1,7 +1,8 @@
 import { type ListingFacets, fmtNum, type PropertyCard, priceScale, SIZE_SCALE } from '@maqar/shared';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useSession } from '@/features/auth/store/session.store';
 import { ExploreScreen } from '@/features/listings/screens/explore-screen';
-import { AREAS, makeCard, mockFetch, page, queryOf, routeFetch } from '../../../utils/api';
+import { AREAS, makeCard, makeMe, mockFetch, page, queryOf, routeFetch } from '../../../utils/api';
 import { renderWithProviders } from '../../../utils/render';
 
 jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
@@ -30,7 +31,9 @@ function api(cards = [villa, flat], limit = 20) {
   return routeFetch({
     '/areas': () => AREAS,
     '/properties': (q) => {
-      const hits = cards.filter((c) => matches(c, q));
+      const hits = cards
+        .filter((c) => matches(c, q))
+        .map((c) => (q.get('sort') === 'match' ? { ...c, match: { score: 90 - c.id, reasons: [{ ar: 'ضمن ميزانيتك', en: 'Within budget' }] } } : c));
       const n = Number(q.get('page') ?? 1);
       return page(hits.slice((n - 1) * limit, n * limit), { page: n, limit, total: hits.length });
     },
@@ -59,7 +62,10 @@ async function openFilters() {
   expect(await screen.findByRole('header', { name: 'الفلاتر' })).toBeOnTheScreen();
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(async () => {
+  jest.clearAllMocks();
+  await useSession.getState().clear();
+});
 
 describe('ExploreScreen', () => {
   it('lists the approved homes from the API', async () => {
@@ -144,6 +150,39 @@ describe('ExploreScreen', () => {
 
     await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ sort: 'low' }));
     expect(screen.getByRole('button', { name: 'ترتيب: الأقل سعراً' })).toBeOnTheScreen();
+  });
+
+  it('a signed-in client sorts by best match, and the cards show how well they match', async () => {
+    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client' }), accessToken: 'access' });
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen />);
+    await screen.findByText('شقة مفروشة للإيجار');
+    expect(screen.queryByText(/تطابق/)).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'ترتيب: الأحدث' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الأنسب ليك' }));
+
+    await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ sort: 'match' }));
+    expect(await screen.findByText(`تطابق ${fmtNum(89, 'ar')}٪`)).toBeOnTheScreen();
+    expect(screen.getByText(`تطابق ${fmtNum(88, 'ar')}٪`)).toBeOnTheScreen();
+  });
+
+  it('opens on best match when Home sends it there', async () => {
+    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client' }), accessToken: 'access' });
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen sort="match" />);
+    await screen.findByText('شقة مفروشة للإيجار');
+    expect(firstListQuery(fetchMock)).toMatchObject({ sort: 'match' });
+  });
+
+  it('does not offer best match to guests', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen sort="match" />);
+    await screen.findByText('شقة مفروشة للإيجار');
+    expect(firstListQuery(fetchMock)).not.toHaveProperty('sort');
+    await fireEvent.press(screen.getByRole('button', { name: 'ترتيب: الأحدث' }));
+    expect(await screen.findByRole('radio', { name: 'الأقل سعراً' })).toBeOnTheScreen();
+    expect(screen.queryByRole('radio', { name: 'الأنسب ليك' })).toBeNull();
   });
 
   it('applies the filter sheet: the button counts the matches first, then the chips show and clear', async () => {

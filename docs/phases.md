@@ -48,7 +48,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 3 | Browse listings | 🟨 | ~~2~~ decided |
 | 4 | Property page | 🟨 | ~~4~~ decided |
 | 5 | Search, filters and sort | 🟨 | |
-| 6 | Preferences and smart picks | ⬜ | |
+| 6 | Preferences and smart picks | 🟨 | |
 | 7 | Saved homes | ⬜ | |
 | 8 | Installment calculator | 🟨 | |
 | 9 | Compare two homes | ⬜ | |
@@ -311,6 +311,15 @@ Contract §8.1 and §8.3.
 
 **Done when** changing your preferences changes the picks and the match % the same way the demo does.
 
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- `client_prefs` holds one row per client (migration `0003`). `PUT /v1/me/prefs` replaces it whole and is for clients only; unknown areas are 400. `GET /v1/me` and the auth responses carry `prefs` for clients (`null` before onboarding). Deleting an account deletes its row.
+- The score rules live in `packages/shared` (`matchScore`). The server also scores in SQL with the same constants, so `sort=match` can be ordered and paged; the e2e tests compare the two on every seed listing.
+- `GET /v1/properties?sort=match` and `GET /v1/properties/recommended` (the top 6) need a signed-in client, and their cards carry `match: { score, reasons }`. A client who has no saved preferences is scored with the demo's defaults. Public routes still read a valid token; a missing or bad one means a guest.
+- Added beyond the plan: `GET /v1/properties/match-count`, the live "N homes match you 70% or more" on the last onboarding step, as in the demo.
+- Mobile: a new client goes from sign-up to `/onboarding`; Me → "Edit your preferences" reopens it from the saved values. The contract's seven questions fit in five screens: name and purpose, budget, areas, unit types, then bedrooms and must-haves. "Picked for you" on Home shows match % and reasons, guests get an invitation to sign up instead, and "Best match" joins the sort sheet for clients. The budget slider is mirrored for Arabic.
+- The +2 for a 360° tour scores 0 until Phase 10 brings the tour data.
+- Checked by hand in the web preview (390 px wide) against the local API: sign-up through all the steps, the slider in both directions, picks changing after editing preferences, See all opening best match, in English light and Arabic dark. `expo-secure-store` has no web version, so sign-in cannot finish on web; for this check only, the test browser swapped it for `localStorage` while loading the bundle. Nothing in the repo changed for that, and phones use the real store.
+
 ---
 
 ## Phase 7: Saved homes
@@ -381,6 +390,8 @@ Contract §8.6.
 **API:** the tour rooms are included in `GET /properties/:id`. `GET /properties` and its facets gain the `tour` quick filter (moved here from Phase 5, which had no tour data yet).
 
 **Mobile:** the "360° tour" quick chip on Explore.
+
+**Match score:** turn on the +2 for a tour, in both `matchScoreSql` and the `tour` value passed to `matchScore` (both are off until this phase).
 
 **Mobile**
 - A full-screen panorama viewer: drag with inertia, pinch zoom, gyroscope, hotspots, room list, cross-fade.

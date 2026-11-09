@@ -1,4 +1,5 @@
 import type { Category, Feature, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
+import type { Match, Prefs } from './match.js';
 import type { ListingFilters, Sort } from './search.js';
 
 // Request and response shapes shared by the API and the app.
@@ -48,6 +49,8 @@ export type Me = {
   createdAt: string;
   /** Present for sales agents only. */
   agent?: AgentProfile;
+  /** Clients only: their saved preferences, or null before onboarding. */
+  prefs?: Prefs | null;
 };
 
 export type AuthResponse = {
@@ -108,6 +111,8 @@ export type PropertyCard = {
   /** The first photo, as a path under the API host. */
   cover: string | null;
   publishedAt: string;
+  /** How well it fits the signed-in client: with sort=match and in recommendations (phase 6). */
+  match?: Match;
 };
 
 /** `GET /v1/properties` (phase 5 adds the filters and the sort; see search.ts). */
@@ -149,3 +154,11 @@ export type PropertyDetail = PropertyCard & {
   location: { lat: number; lng: number } | null;
   agent: ListingAgent;
 };
+
+// ---- Preferences and smart picks (phase 6) ----
+
+/** `PUT /v1/me/prefs` body and response. */
+export type PrefsBody = Prefs;
+
+/** `GET /v1/properties/match-count`: homes that fit these preferences 70% or more. */
+export type MatchCount = { count: number };

@@ -1,11 +1,11 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import type { Me, UpdateMeBody } from '@maqar/shared';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import type { Me, Prefs, UpdateMeBody } from '@maqar/shared';
 import { verifyPassword } from '../auth/password.js';
 import type { AgentRow } from '../agents/agents.schema.js';
 import { UsersRepository } from './users.repository.js';
 import type { UserRow } from './users.schema.js';
 
-export function toMe(user: UserRow, agent?: AgentRow): Me {
+export function toMe(user: UserRow, agent?: AgentRow, prefs?: Prefs | null): Me {
   return {
     id: user.id,
     role: user.role,
@@ -16,6 +16,7 @@ export function toMe(user: UserRow, agent?: AgentRow): Me {
     theme: user.theme,
     pushEnabled: user.pushEnabled,
     createdAt: user.createdAt.toISOString(),
+    ...(user.role === 'client' && { prefs: prefs ?? null }),
     ...(agent && {
       agent: {
         nameAr: agent.nameAr,
@@ -40,7 +41,22 @@ export class UsersService {
     const user = await this.users.findActiveById(id);
     if (!user) throw new UnauthorizedException();
     const agent = user.role === 'agent' ? await this.users.findAgentProfile(id) : undefined;
-    return toMe(user, agent);
+    const prefs = user.role === 'client' ? await this.users.findPrefs(id) : undefined;
+    return toMe(user, agent, prefs);
+  }
+
+  /** Saves a client's preferences whole (contract §8.1). Every area must exist. */
+  async savePrefs(id: number, prefs: Prefs): Promise<Prefs> {
+    if ((await this.users.countAreas(prefs.areas)) !== prefs.areas.length) {
+      throw new BadRequestException('areas must all be known area ids');
+    }
+    await this.users.savePrefs(id, prefs);
+    return prefs;
+  }
+
+  /** A client's saved preferences, or undefined before onboarding. */
+  prefsFor(id: number): Promise<Prefs | undefined> {
+    return this.users.findPrefs(id);
   }
 
   /** Only profile fields are written, whatever the request carries. An empty change is a no-op. */
