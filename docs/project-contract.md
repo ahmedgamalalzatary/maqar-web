@@ -118,7 +118,7 @@ Rules:
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
-| Not installed yet (waiting on §16.1) | Maps (#4), push sender (#3), job queue (#13), video (#5) |
+| Not installed yet (waiting on §16.1) | Push sender (#3), job queue (#13), video (#5) |
 | API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
@@ -130,7 +130,7 @@ Rules:
 | Demo | Next.js 16, React 19.3, Tailwind v4, motion, three.js, Zustand |
 | pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
-[Open] Push provider, maps and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
+[Open] Push provider and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
 
 ---
 
@@ -621,7 +621,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 1 | ~~Auth method~~ **Decided:** email + password now; Google sign-in (OAuth) is added later. Access tokens (JWT, 15 min) plus rotating refresh tokens (30 days). |
 | 2 | ~~File storage~~ **Decided:** photos and panoramas on the production server's disk, served by nginx. A CDN can be added later if needed. |
 | 3 | Push: Expo push service or FCM/APNs directly? |
-| 4 | Maps provider for the property map and directions. |
+| 4 | ~~Maps provider~~ **Decided:** `react-native-maps` (free; Apple Maps on iOS, Google Maps on Android; included in Expo Go). Directions open the phone's maps app on the listing's location, so no paid directions API. Android store builds need a free, restricted Google Maps key (`GOOGLE_MAPS_API_KEY`, passed to the config plugin in `app.config.ts`). |
 | 5 | Video viewings: which video service (or WhatsApp video)? |
 | 6 | Admin UI form (web dashboard, in-app, or API only first). |
 | 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for Maqar, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
@@ -656,3 +656,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-08 | Phase 1 built (the phone check is still pending). Decided: email + password sign-in (Google OAuth later) and one role per account. Added `refresh_tokens`, `users.password_hash`, `agents.name_ar/name_en`. Ports back to 4000 (API) and 4001 (tests). Prettier removed. |
 | 2026-11-09 | Decided: hosting on a new Hostinger KVM2 VPS with the plan's free domain (#7), and file storage on its disk (#2). Production config is `.env.production` (not `.env.docker`). Deployment became Phase 2 (deploys back up the database and images, then run migrations); the later phases moved up by one, so there are now 21 (0 to 20). The installment formula and calculator screen were built early for the store app (Phase 8, in progress). |
 | 2026-11-09 | Phase 3 built (the phone check is still pending): `areas`, `properties`, `property_features`, `property_images`; `GET /areas` and `GET /properties` (category and area filters, paging); Home and Explore in the app. `UPLOADS_DIR` added to the env. The installment formula is in `packages/shared` on `main`. |
+| 2026-11-09 | Decided: maps with `react-native-maps`, directions through the phone's maps app (#4). Phase 4 built (the phone check is still pending): `GET /properties/:id` (counts views), `GET /properties/:id/similar`, `properties.lat/lng`, and the property page. `GOOGLE_MAPS_API_KEY` added for Android builds. |

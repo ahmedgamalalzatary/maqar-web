@@ -2,6 +2,7 @@ import { CATEGORIES, FEATURES, FINISHINGS, PROPERTY_STATUSES, PROPERTY_TYPES } f
 import {
   bigint,
   boolean,
+  decimal,
   index,
   int,
   mysqlEnum,
@@ -55,6 +56,9 @@ export const properties = mysqlTable(
     planYears: tinyint('plan_years', { unsigned: true }),
     descAr: text('desc_ar').notNull(),
     descEn: text('desc_en').notNull(),
+    /** Where the map pin goes. Null until the owner or agent sets it. */
+    lat: decimal('lat', { precision: 9, scale: 6, mode: 'number' }),
+    lng: decimal('lng', { precision: 9, scale: 6, mode: 'number' }),
     views: int('views', { unsigned: true }).notNull().default(0),
     publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),

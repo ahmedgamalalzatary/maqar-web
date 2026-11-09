@@ -446,6 +446,23 @@ export const SEED_PROPERTIES: SeedProperty[] = [
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** Rough centre of each demo area. Seed listings get a small offset so pins do not overlap. */
+const AREA_CENTRE: Record<string, [number, number]> = {
+  'new-cairo': [30.0074, 31.4913],
+  zayed: [30.0444, 30.976],
+  capital: [30.0197, 31.7631],
+  'north-coast': [30.95, 28.9],
+  sokhna: [29.6, 32.32],
+  october: [29.96, 30.92],
+  maadi: [29.9602, 31.2569],
+  alamein: [30.818, 28.955],
+};
+
+function seedLocation(areaId: string, index: number) {
+  const [lat, lng] = AREA_CENTRE[areaId] ?? [30.0444, 31.2357];
+  return { lat: Number((lat + (index % 4) * 0.004).toFixed(6)), lng: Number((lng + ((index * 7) % 5) * 0.004).toFixed(6)) };
+}
+
 /**
  * Adds the demo listings, all approved, with their photos and amenities. A listing whose
  * English title already exists is skipped, so this is safe to run more than once.
@@ -456,16 +473,24 @@ export async function seedProperties(db: Db, now = Date.now()): Promise<void> {
   const agentRows = await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.email, emails));
   const agentId = new Map(agentRows.map((r) => [r.email, r.id]));
 
-  for (const { agentEmail, listedDays, features, images, ...p } of SEED_PROPERTIES) {
+  for (const [index, { agentEmail, listedDays, features, images, ...p }] of SEED_PROPERTIES.entries()) {
     const agent = agentId.get(agentEmail);
     if (!agent) throw new Error(`Seed agent ${agentEmail} is missing: run seedDemoAccounts first`);
-    const [exists] = await db.select({ id: properties.id }).from(properties).where(eq(properties.titleEn, p.titleEn));
-    if (exists) continue;
+    const location = seedLocation(p.areaId, index);
+    const [exists] = await db
+      .select({ id: properties.id, lat: properties.lat })
+      .from(properties)
+      .where(eq(properties.titleEn, p.titleEn));
+    if (exists) {
+      // Listings seeded before they had a location get one.
+      if (exists.lat === null) await db.update(properties).set(location).where(eq(properties.id, exists.id));
+      continue;
+    }
 
     await db.transaction(async (tx) => {
       const [{ id }] = await tx
         .insert(properties)
-        .values({ ...p, agentId: agent, status: 'approved', publishedAt: new Date(now - listedDays * DAY) })
+        .values({ ...p, ...location, agentId: agent, status: 'approved', publishedAt: new Date(now - listedDays * DAY) })
         .$returningId();
       await tx.insert(propertyFeatures).values(features.map((feature) => ({ propertyId: id, feature })));
       await tx

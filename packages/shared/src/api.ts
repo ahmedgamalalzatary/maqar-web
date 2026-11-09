@@ -1,4 +1,4 @@
-import type { Category, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
+import type { Category, Feature, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
 
 // Request and response shapes shared by the API and the app.
 
@@ -110,3 +110,40 @@ export type PropertyCard = {
 };
 
 export type PropertiesQuery = { category?: Category; area?: string; page?: number; limit?: number };
+
+// ---- Property page (phase 4) ----
+
+/** The sales advisor shown on a listing (contract §8.5). */
+export type ListingAgent = {
+  id: number;
+  nameAr: string;
+  nameEn: string;
+  roleTitleAr: string;
+  roleTitleEn: string;
+  rating: number;
+  dealsCount: number;
+  years: number;
+  languagesAr: string;
+  languagesEn: string;
+  avgReplyMins: number;
+  phone: string;
+  colour: string;
+};
+
+/** `GET /v1/properties/:id`: everything the property page shows. */
+export type PropertyDetail = PropertyCard & {
+  developerAr: string | null;
+  developerEn: string | null;
+  floor: number | null;
+  /** Maintenance deposit, % of the price. */
+  maintenanceFee: number | null;
+  descAr: string;
+  descEn: string;
+  features: Feature[];
+  /** Photo paths under the API host, cover first. */
+  images: string[];
+  /** Views, including this one. */
+  views: number;
+  location: { lat: number; lng: number } | null;
+  agent: ListingAgent;
+};

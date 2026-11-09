@@ -46,7 +46,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 1 | Accounts and sign-in | 🟨 | ~~1, 9~~ decided |
 | 2 | Production server and deploys | ⬜ | ~~7~~ decided; waits for the server to be bought |
 | 3 | Browse listings | 🟨 | ~~2~~ decided |
-| 4 | Property page | ⬜ | 4 |
+| 4 | Property page | 🟨 | ~~4~~ decided |
 | 5 | Search, filters and sort | ⬜ | |
 | 6 | Preferences and smart picks | ⬜ | |
 | 7 | Saved homes | ⬜ | |
@@ -215,7 +215,7 @@ Contract §8.2 (Home) and §13 (areas, properties, property_features, property_i
 
 ## Phase 4: Property page
 
-**Decide first:** the maps provider (§16.1 #4).
+**Decided (§16.1 #4):** `react-native-maps`; directions open the phone's maps app.
 
 Contract §8.5.
 
@@ -244,6 +244,14 @@ Contract §8.5.
 - The similar-homes rules.
 
 **Done when** every listing opens with all of its sections working in both languages.
+
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- `GET /v1/properties/:id` (photos, amenities, advisor, location; each request counts a view) and `GET /v1/properties/:id/similar` (up to 6: same category, same area first, then same type, then the closest price). Missing or unapproved listings are 404; a non-numeric id is 400.
+- Migration `0002` adds `lat` and `lng` (they were in the contract but missing from Phase 3). The seed places each demo listing near its area's centre, and fills in listings seeded before.
+- Mobile: the property page at `/property/[id]` (outside the tabs, so no tab bar) with gallery, price and price per m², old price and drop, key facts, views and days listed, the advisor card with Call, description and maintenance, amenities, a still map with Directions (opens Apple Maps or Google Maps), share, and similar homes. Loading, not-found and error states.
+- Not in this phase: the interested count (it needs chats, bookings and alerts), save, price alert, compare, the 360° tour, the built-in calculator, chat and booking. Each arrives with its phase.
+- `react-native-maps` works in Expo Go as is. Android store builds need `GOOGLE_MAPS_API_KEY` (a free key restricted to the app); the APK workflow reads it from a repo secret, and without it the map is empty in that build. The web preview shows the coordinates instead of a map.
+- Checked by hand in the web preview (390 px wide) against the local API: every section in Arabic and dark mode. The phone run is for the owner to do in Expo Go.
 
 ---
 

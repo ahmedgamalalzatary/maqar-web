@@ -1,0 +1,105 @@
+import type { PropertyDetail } from '@maqar/shared';
+import { fmtMoney } from '@maqar/shared';
+import { fireEvent, screen } from '@testing-library/react-native';
+import { Linking, Share } from 'react-native';
+import { PropertyScreen } from '@/features/property/screens/property-screen';
+import { jsonResponse, makeCard, mockFetch, routeFetch } from '../../../utils/api';
+import { renderWithProviders } from '../../../utils/render';
+import { mockRouter } from '../../../utils/router';
+
+jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
+
+const villa: PropertyDetail = {
+  ...makeCard({ id: 1, price: 24_500_000, oldPrice: null, sizeM2: 420 }),
+  developerAr: null,
+  developerEn: null,
+  floor: null,
+  maintenanceFee: 8,
+  descAr: 'فيلا بتصميم معاصر على زاوية.',
+  descEn: 'A contemporary corner villa.',
+  features: ['pool', 'garden'],
+  images: ['/uploads/seed/p1.jpg', '/uploads/seed/p3.jpg'],
+  views: 2141,
+  location: { lat: 30.0074, lng: 31.4913 },
+  agent: {
+    id: 3,
+    nameAr: 'عمر حسن',
+    nameEn: 'Omar Hassan',
+    roleTitleAr: 'مستشار مبيعات أول',
+    roleTitleEn: 'Senior sales advisor',
+    rating: 4.9,
+    dealsCount: 184,
+    years: 7,
+    languagesAr: 'العربية، الإنجليزية',
+    languagesEn: 'Arabic, English',
+    avgReplyMins: 4,
+    phone: '+201000000001',
+    colour: '#b38959',
+  },
+};
+const duplex = makeCard({ id: 13, titleAr: 'دوبلكس بحديقة في التجمع' });
+
+function api() {
+  return routeFetch({ '/properties/1': () => villa, '/properties/1/similar': () => [duplex] });
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+});
+
+describe('PropertyScreen', () => {
+  it('shows the listing: price per m², facts, description, amenities and the advisor', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+
+    expect(await screen.findByText('فيلا مستقلة بحمام سباحة خاص')).toBeOnTheScreen();
+    expect(screen.getByText(fmtMoney(24_500_000, 'ar', false))).toBeOnTheScreen();
+    expect(screen.getByText(`${fmtMoney(58_333, 'ar', false)} للمتر`)).toBeOnTheScreen();
+    expect(screen.getByText('تشطيب كامل')).toBeOnTheScreen();
+    expect(screen.getByText('فيلا بتصميم معاصر على زاوية.')).toBeOnTheScreen();
+    expect(screen.getByText('حمام سباحة')).toBeOnTheScreen();
+    expect(screen.getByText('حديقة')).toBeOnTheScreen();
+    expect(screen.getByText('مصاريف الصيانة: ٨٪ من سعر الوحدة')).toBeOnTheScreen();
+    expect(screen.getByText('عمر حسن')).toBeOnTheScreen();
+    expect(screen.getByText('مستشار مبيعات أول')).toBeOnTheScreen();
+    expect(screen.getByText('٢٬١٤١ مشاهدة')).toBeOnTheScreen();
+  });
+
+  it('calls the advisor', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'اتصال' }));
+    expect(Linking.openURL).toHaveBeenCalledWith('tel:+201000000001');
+  });
+
+  it('opens directions to the listing in the maps app', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'الاتجاهات' }));
+    expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining('30.0074,31.4913'));
+  });
+
+  it('shares the listing', async () => {
+    api();
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction', activityType: undefined });
+    await renderWithProviders(<PropertyScreen id={1} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'مشاركة' }));
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('فيلا مستقلة بحمام سباحة خاص') }));
+  });
+
+  it('suggests similar homes', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    expect(await screen.findByText('دوبلكس بحديقة في التجمع')).toBeOnTheScreen();
+  });
+
+  it('says so when the listing is gone, and goes back', async () => {
+    mockFetch().mockResolvedValue(jsonResponse(404, { statusCode: 404, message: 'Listing not found' }));
+    await renderWithProviders(<PropertyScreen id={99} />);
+
+    expect(await screen.findByText('الوحدة دي مش متاحة دلوقتي.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'رجوع' }));
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
+});

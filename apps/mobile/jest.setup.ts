@@ -13,3 +13,11 @@ jest.mock('expo-secure-store', () => {
     deleteItemAsync: jest.fn(async (k: string) => void store.delete(k)),
   };
 });
+
+// react-native-maps is a native view: render plain Views under Jest.
+jest.mock('react-native-maps', () => {
+  const { View } = require('react-native');
+  const MapView = (props: object) => require('react').createElement(View, { ...props, testID: 'map' });
+  const Marker = (props: object) => require('react').createElement(View, props);
+  return { __esModule: true, default: MapView, Marker, PROVIDER_GOOGLE: 'google' };
+});
