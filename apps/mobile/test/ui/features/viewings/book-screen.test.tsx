@@ -150,12 +150,20 @@ describe('Booking a viewing', () => {
     expect(screen.getByText('اختار ساعة عشان تكمل')).toBeOnTheScreen();
   });
 
+  it('does not spin for ever when a guest opens a reschedule link', async () => {
+    serve();
+    await renderWithProviders(<Page reschedule={50} />);
+    expect(await screen.findByText('مش قادرين نفتح الحجز دلوقتي.')).toBeOnTheScreen();
+  });
+
   it('reschedules: starts from the current time and sends the new one', async () => {
     await useSession.getState().setSession(makeAuth());
     const writes = serve(undefined, [viewing()]);
     await renderWithProviders(<Page reschedule={50} />);
     expect(await screen.findByRole('header', { name: 'غيّر الموعد' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: '٥:٠٠ م', selected: true })).toBeOnTheScreen();
+    // The same time is not a change.
+    expect(screen.getByRole('button', { name: 'أكّد الموعد الجديد' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('button', { name: '٦:٠٠ م' }));
     await fireEvent.press(screen.getByRole('button', { name: 'أكّد الموعد الجديد' }));
     expect(await screen.findByRole('header', { name: 'اتغير الموعد' })).toBeOnTheScreen();

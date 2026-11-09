@@ -127,6 +127,16 @@ describe('My viewings', () => {
     expect(mockWrite).toHaveBeenCalledWith('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n');
   });
 
+  it('keeps a viewing that just started in Upcoming, without Change or Cancel', async () => {
+    await useSession.getState().setSession(makeAuth());
+    serve([viewing({ startsAt: at(-30 * 60_000) })]);
+    await renderWithProviders(<ViewingsScreen />);
+    expect(await screen.findByRole('button', { name: 'فيلا في التجمع' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'تغيير' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'إلغاء' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'الاتجاهات' })).toBeOnTheScreen();
+  });
+
   it('has an empty state for each tab', async () => {
     await useSession.getState().setSession(makeAuth());
     serve([]);

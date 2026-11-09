@@ -1,4 +1,4 @@
-import { fmtDate, fmtTime, isActiveViewing, isUpcoming, relTime, type ViewingItem, type ViewingStatus } from '@maqar/shared';
+import { fmtDate, fmtTime, canChangeViewing, isActiveViewing, isUpcoming, relTime, type ViewingItem, type ViewingStatus } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -127,6 +127,8 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
   const status = STATUS[v.status];
   const [bg, fg] = status.tone(colors);
   const active = isActiveViewing(v) && isUpcoming(v);
+  // Once it has started the server refuses a change or a cancel, so the card stops offering them.
+  const changeable = canChangeViewing(v);
   const cover = mediaUrl(p.cover);
 
   return (
@@ -198,7 +200,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
 
       {active ? (
         <View style={styles.actions}>
-          <Action icon={RefreshCw} label={t('تغيير', 'Change')} onPress={() => router.push(`/property/${p.id}/book?reschedule=${v.id}`)} />
+          {changeable ? <Action icon={RefreshCw} label={t('تغيير', 'Change')} onPress={() => router.push(`/property/${p.id}/book?reschedule=${v.id}`)} /> : null}
           <Action
             icon={CalendarPlus}
             label={t('للتقويم', 'Calendar')}
@@ -207,7 +209,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
             }
           />
           {v.location ? <Action icon={Navigation} label={t('الاتجاهات', 'Directions')} onPress={() => void Linking.openURL(directionsUrl(v.location!))} /> : null}
-          <Action icon={XCircle} label={t('إلغاء', 'Cancel')} onPress={onCancel} danger />
+          {changeable ? <Action icon={XCircle} label={t('إلغاء', 'Cancel')} onPress={onCancel} danger /> : null}
         </View>
       ) : p.category !== 'stay' ? (
         <View style={styles.again}>

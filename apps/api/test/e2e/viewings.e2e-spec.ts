@@ -258,12 +258,18 @@ describe('Viewings (e2e)', () => {
       await http().get(`/v1/viewings/${v.id}/ics`).set(bearer(stranger.accessToken)).expect(404);
     });
 
-    it('cancels the coming viewings of a deleted account', async () => {
+    it('cancels the coming viewings of a deleted account, and leaves the past ones as they were', async () => {
       const home = aHome();
       const [a] = await freeHours(home.id);
       await book(client.accessToken, { propertyId: home.id, ...a, reminders: [] }).expect(201);
+      const other = aHome();
+      const [c] = await freeHours(other.id);
+      const past = (await book(client.accessToken, { propertyId: other.id, ...c, reminders: [] }).expect(201)).body as ViewingItem;
+      await db.update(viewings).set({ startsAt: new Date(Date.now() - 86_400_000) }).where(eq(viewings.id, past.id));
       await http().delete('/v1/me').set(bearer(client.accessToken)).send({ password: 'Secret123' }).expect(204);
       expect(stateOf((await slots(home.id)).days, a!.date, a!.time)).toBe('free');
+      const [row] = await db.select().from(viewings).where(eq(viewings.id, past.id));
+      expect(row!.status).toBe('confirmed');
     });
   });
 });
