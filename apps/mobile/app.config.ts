@@ -10,8 +10,9 @@ loadEnv({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
 /**
- * Google Maps key for Android builds (contract §16.1 #4). Expo Go needs none; without it a
- * release build shows an empty map. Restrict the key to the app's package and signing SHA-1.
+ * Google Maps key for Android builds (contract §16.1 #4). Expo Go needs none; a release build
+ * without one leaves the map out, because showing it would close the app. Restrict the key to the
+ * app's package and signing SHA-1.
  */
 const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -35,5 +36,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     ['react-native-maps', { androidGoogleMapsApiKey: googleMapsKey }],
   ],
-  extra: { ...config.extra, apiUrl },
+  extra: { ...config.extra, apiUrl, hasGoogleMapsKey: !!googleMapsKey },
 });

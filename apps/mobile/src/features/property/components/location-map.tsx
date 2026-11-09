@@ -1,13 +1,25 @@
-import { StyleSheet, View } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { radius, useTheme } from '@/core/theme';
 
 /**
+ * Google Maps with no key closes the app on Android, so a build without one leaves the map out.
+ * Apple Maps needs no key, and Expo Go brings its own.
+ */
+const canShowMap = () =>
+  Platform.OS !== 'android' ||
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+  Constants.expoConfig?.extra?.hasGoogleMapsKey === true;
+
+/**
  * A small, still map with the listing's pin (react-native-maps: Apple Maps on iOS, Google
- * Maps on Android). Panning is off so the page scrolls; directions open the maps app.
+ * Maps on Android). Panning is off so the page scrolls; directions open the maps app, and still
+ * work when there is no map to show.
  */
 export function LocationMap({ lat, lng, title }: { lat: number; lng: number; title: string }) {
   const { colors, scheme } = useTheme();
+  if (!canShowMap()) return null;
   return (
     <View style={[styles.box, { borderColor: colors.line }]}>
       <MapView

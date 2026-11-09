@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_PUBLIC_API_URL: ${{ inputs.api_url || vars.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4000/v1' }}
-      # Optional: without it the property map is empty in this build (Expo Go is fine).
+      # Optional: without it this build leaves the property map out (Expo Go is fine).
       GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
