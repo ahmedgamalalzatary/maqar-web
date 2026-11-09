@@ -1,0 +1,52 @@
+# Maqar in production (contract §4). The server is shared with another live project, so everything
+# here is Maqar's own: project name, network, volume, and a host port on loopback only (nginx is
+# the way in). Memory is capped so Maqar cannot starve its neighbour.
+name: maqar
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: maqar-mysql
+    restart: unless-stopped
+    env_file: /root/maqar/.env.production
+    command:
+      - --innodb-buffer-pool-size=134217728
+      - --performance-schema=OFF
+      - --disable-log-bin
+    volumes:
+      - mysql-data:/var/lib/mysql
+    mem_limit: 640m
+    healthcheck:
+      test: ['CMD-SHELL', 'MYSQL_PWD="$$MYSQL_PASSWORD" mysqladmin ping -h 127.0.0.1 -u "$$MYSQL_USER" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  api:
+    image: maqar-api:${MAQAR_TAG:-latest}
+    container_name: maqar-api
+    restart: unless-stopped
+    env_file: /root/maqar/.env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4010
+      TRUST_PROXY_HOPS: 1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:4010:4010'
+    volumes:
+      # On the host too, because nginx serves the photos (contract §16.1 #2).
+      - /srv/maqar/uploads:/app/apps/api/uploads
+    mem_limit: 384m
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4010/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+volumes:
+  mysql-data:

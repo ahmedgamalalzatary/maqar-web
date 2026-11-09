@@ -44,7 +44,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 |---|---|---|---|
 | 0 | Foundation | 🟨 | none (database decided) |
 | 1 | Accounts and sign-in | 🟨 | ~~1, 9~~ decided |
-| 2 | Production server and deploys | ⬜ | ~~7~~ decided; waits for the server to be bought |
+| 2 | Production server and deploys | 🟨 | ~~7~~ decided; running on a temporary server for now |
 | 3 | Browse listings | 🟨 | ~~2~~ decided |
 | 4 | Property page | 🟨 | ~~4~~ decided |
 | 5 | Search, filters and sort | 🟨 | |
@@ -157,7 +157,7 @@ Contract §4 (production database) and §5 (production server rules).
 - nginx on the server (not in Docker): HTTPS with a Let's Encrypt certificate that renews itself, proxies `/v1` to the API container, and serves the property images from the uploads folder with long cache headers. Run `nginx -t` before every reload.
 
 **Docker**
-- `apps/api/Dockerfile`: a multi-stage build that ships only the built API and its production packages.
+- `Dockerfile.api` at the repo root: a multi-stage build that ships only the built API and its production packages.
 - `docker-compose.yml`: the `api` and `mysql` services. MySQL data and the uploaded images live in named volumes, so a new deploy never loses them.
 - Configuration comes from **`.env.production`** on the server (git-ignored). `.env.production.example` in the repo lists every variable.
 
@@ -174,6 +174,15 @@ Contract §4 (production database) and §5 (production server rules).
 **Tests:** no new code tests. The deploy itself checks the health endpoint, and a smoke check signs in over HTTPS.
 
 **Done when** a push to `main` deploys by itself, the app signs in against `https://api.<domain>` on mobile data (not the home Wi-Fi), and a backup has been restored once.
+
+**Status (2026-11-09): in progress, on a temporary server.** The API and MySQL run on `187.55.224.15` at `https://187-55-224-15.sslip.io`, so testing does not need this PC. It differs from the plan above until the real server exists:
+- The server is shared with another live project (minikoshk), so Maqar only adds its own parts: compose project `maqar`, port `127.0.0.1:4010`, capped memory, builds at half a CPU, and the nginx site `zz-maqar`. That name keeps it after the other site, which stays the default for unknown hosts. HTTP/2 stays off because it is set per port.
+- No domain: `sslip.io` gives the IP a name, with a real Let's Encrypt certificate.
+- No backups, by decision, because the server is temporary and holds only demo data.
+- Deploys are by hand: `sh deploy/deploy.sh` makes the server's Git clone build the exact commit on `origin/main`, migrate, start and health-check, rolling back if the new API is not healthy. The nightly image clean-up on this server can remove an older image, so a rollback may not always have one to go to.
+- The seeded demo accounts are test data, with a random password in `/root/maqar/.env.production` on the server. Remove them before a real release.
+- Behind nginx the API reads the client's address from the proxy (`TRUST_PROXY_HOPS=1`), so the sign-in limit stays per client.
+- Still to do on the real server: everything above, plus the deploy on push, backups and a restore test.
 
 ---
 
