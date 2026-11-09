@@ -208,3 +208,11 @@ export type PushData = { id: number; href: string | null };
 
 /** The most inbox entries one request returns. */
 export const NOTIFICATIONS_LIMIT = 50;
+
+// ---- Price drop alerts (phase 12) ----
+
+/** `PATCH /v1/admin/listings/:id/price`: the new price, in whole EGP. */
+export type PriceChangeBody = { price: number };
+
+/** What the listing shows after a price change. */
+export type PriceChangeResponse = { price: number; oldPrice: number | null };

@@ -339,7 +339,7 @@ The price is compared on the client's terms:
   - The client gets an in-app notification ("Price dropped 5%: X is now Y, was Z") and a phone notification.
   - The home appears under "price dropped" filters.
 - In the demo a 5% drop is simulated about 8 seconds after following.
-- [Real] An alert fires whenever an owner, agent or admin lowers the price of a followed listing. Every price change is stored in price history.
+- [Real] An alert fires whenever an admin lowers the price of a followed, live listing (owners have no accounts; agents may be allowed later). Every price change is stored in price history. The struck-through old price is the highest price before the latest drops, and it clears once the price is back up to it. Stays have no price alerts (their price is per night).
 
 ### 8.10 Compare two homes
 
@@ -580,6 +580,7 @@ Supporting rules:
 | properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/compare?ids=` (one or two homes for the compare screen; counts no view), `GET /properties/recommended`, `GET /properties/match-count` (homes that fit given preferences 70% or more, for onboarding) | public; `sort=match` and `recommended` need a signed-in client |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
+| admin: prices | `PATCH /admin/listings/:id/price` (the rest of the admin listing routes come in Phase 17) | admin |
 | viewings | `GET /properties/:id/slots?from&to`, `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
 | chat | `GET /chats`, `POST /chats` (property), `GET /chats/:id/messages`, `POST /chats/:id/messages`, `POST /chats/:id/read`, WebSocket: message, typing, read | client, agent |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
@@ -668,3 +669,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | The backend runs on a temporary server (`187.55.224.15`, shared with another project) at `https://187-55-224-15.sslip.io`, with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |
 | 2026-11-09 | Phase 11 built (the phone check is still pending): `notifications` and `push_tokens`, the notify service, the inbox routes, `DELETE /me/push-tokens` and `POST /notifications/test`. The `approval` kind is removed with the owner role, and `system` added. Real pushes need Firebase (Android) and APNs (iOS) credentials (Phase 11 status). Expo project `@alzatary/maqar` created; its id is in `app.json`. |
 | 2026-11-09 | ⚑ Pushes need, from the owner: a Firebase project (Android, free, no Play Console) and the Apple Developer Program (iOS, $99 a year, for the APNs key). The Play Console ($25 once) and the App Store are needed only to publish. Details in Phase 11's status. |
+| 2026-11-09 | Phase 12 built (the phone check is still pending): `price_alerts`, `price_history`, the alerts routes, and `PATCH /admin/listings/:id/price`, which records every change and notifies followers of a drop. Only admins change prices (no owner accounts); stays have no alerts. |

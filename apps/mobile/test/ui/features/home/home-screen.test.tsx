@@ -17,8 +17,15 @@ const pick = makeCard({
   match: { score: 87, reasons: [{ ar: 'ضمن ميزانيتك', en: 'Within budget' }, { ar: 'التجمع الخامس', en: 'New Cairo' }] },
 });
 
-function api() {
-  return routeFetch({ '/areas': () => AREAS, '/properties': () => page([launch]), '/properties/recommended': () => [pick] });
+const dropped = makeCard({ id: 5, titleAr: 'شاليه صف أول في أزور باي', price: 11_400_000, oldPrice: 12_000_000 });
+
+/** Price drops (`dropped=true`) and launches answer separately; `drops` sets the first. */
+function api(drops = [dropped]) {
+  return routeFetch({
+    '/areas': () => AREAS,
+    '/properties': (q) => page(q.get('dropped') === 'true' ? drops : [launch]),
+    '/properties/recommended': () => [pick],
+  });
 }
 
 beforeEach(async () => {
@@ -34,8 +41,27 @@ describe('Home', () => {
     expect(screen.getByText('واحجز معاينته بنفسك.')).toBeOnTheScreen();
     expect(await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات')).toBeOnTheScreen();
     expect(await screen.findByText('الشيخ زايد')).toBeOnTheScreen();
-    const launches = fetchMock.mock.calls.findIndex(([url]) => String(url).includes('/properties'));
-    expect(queryOf(fetchMock, launches)).toMatchObject({ category: 'project' });
+    const launches = fetchMock.mock.calls.findIndex(([url]) => String(url).includes('category=project'));
+    expect(queryOf(fetchMock, launches)).toMatchObject({ category: 'project', limit: '10' });
+  });
+
+  it('lists price drops with the old price and the drop %, and opens one', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<Home />);
+    expect(await screen.findByRole('header', { name: 'السعر نزل' })).toBeOnTheScreen();
+    expect(screen.getByText('٥٪-')).toBeOnTheScreen();
+    expect(screen.getByText('١٢ مليون ج.م')).toBeOnTheScreen();
+    const call = fetchMock.mock.calls.findIndex(([url]) => String(url).includes('dropped=true'));
+    expect(queryOf(fetchMock, call)).toMatchObject({ dropped: 'true', limit: '3' });
+    await fireEvent.press(screen.getByRole('button', { name: 'شاليه صف أول في أزور باي' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/property/5');
+  });
+
+  it('has no price drops section when nothing dropped', async () => {
+    api([]);
+    await renderWithProviders(<Home />);
+    await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات');
+    expect(screen.queryByRole('header', { name: 'السعر نزل' })).toBeNull();
   });
 
   it('leads to the calculator', async () => {

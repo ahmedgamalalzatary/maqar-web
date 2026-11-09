@@ -6,6 +6,7 @@ import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
 import { favorites } from '../favorites/favorites.schema.js';
 import { notifications, pushTokens } from '../notifications/notifications.schema.js';
+import { priceAlerts } from '../prices/prices.schema.js';
 import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schema.js';
 
 /** All database access for accounts. Deleted accounts are never returned. */
@@ -56,9 +57,10 @@ export class UsersRepository {
         .update(users)
         .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
         .where(and(eq(users.id, id), isNull(users.deletedAt)));
-      // Preferences, saved homes and notifications are personal too, and the phones get no more pushes.
+      // Preferences, saved homes, price alerts and notifications are personal too, and the phones get no more pushes.
       await tx.delete(clientPrefs).where(eq(clientPrefs.userId, id));
       await tx.delete(favorites).where(eq(favorites.userId, id));
+      await tx.delete(priceAlerts).where(eq(priceAlerts.userId, id));
       await tx.delete(notifications).where(eq(notifications.userId, id));
       await tx.delete(pushTokens).where(eq(pushTokens.userId, id));
     });

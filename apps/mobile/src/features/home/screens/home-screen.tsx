@@ -1,7 +1,7 @@
-import type { Category } from '@maqar/shared';
+import { type Category, fmtMoney, fmtPct } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun } from 'lucide-react-native';
+import { Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -14,7 +14,8 @@ import { radius, useTheme } from '@/core/theme';
 import { usePreferences } from '@/features/account/hooks/use-account';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
-import { PropertyCardView } from '@/features/listings/components/property-card';
+import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
+import { PropertyRow } from '@/features/listings/components/property-row';
 import { useAreas, useProperties } from '@/features/listings/hooks/use-listings';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
@@ -28,7 +29,7 @@ const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string 
 
 /**
  * Client home (contract §8.2): headline, search entry, category shortcuts, picks for a signed-in
- * client (phase 6), areas and new launches. Price drops, tours and the next viewing arrive with
+ * client (phase 6), areas, price drops (phase 12) and new launches. Tours and the next viewing arrive with
  * their phases.
  */
 export function Home() {
@@ -151,6 +152,8 @@ export function Home() {
         </View>
       </Pressable>
 
+      <PriceDrops />
+
       <Section
         title={t('مشروعات جديدة بالتقسيط', 'New launches on installments')}
         action={{ label: t('الكل', 'See all'), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
@@ -236,6 +239,42 @@ function Picks({ cardWidth }: { cardWidth: number }) {
   );
 }
 
+/** "Price drops" (contract §8.2, as in the demo): up to three homes whose price just fell. Hidden when there are none. */
+function PriceDrops() {
+  const t = useT();
+  const lang = useLang();
+  const { colors } = useTheme();
+  const drops = useProperties({ dropped: true, limit: 3 });
+  const items = drops.data?.items ?? [];
+  if (!items.length) return null;
+  return (
+    <Section title={t('السعر نزل', 'Price drops')} icon={<TrendingDown size={18} color={colors.danger} />}>
+      <View style={styles.rows}>
+        {items.map((c) => (
+          <PropertyRow
+            key={c.id}
+            card={c}
+            sub={
+              c.oldPrice ? (
+                <Txt size={11} color="ink3" style={styles.struck}>
+                  {fmtMoney(c.oldPrice, lang)}
+                </Txt>
+              ) : null
+            }
+            right={
+              <View style={[styles.dropBadge, { backgroundColor: colors.dangerSoft }]}>
+                <Txt size={12} weight="semibold" color="danger">
+                  {fmtPct(-dropPct(c), lang, 0)}
+                </Txt>
+              </View>
+            }
+          />
+        ))}
+      </View>
+    </Section>
+  );
+}
+
 function Section({
   title,
   icon,
@@ -271,6 +310,9 @@ const styles = StyleSheet.create({
   calculator: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: radius.lg, padding: 20 },
   calculatorIcon: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rows: { gap: 10 },
+  struck: { textDecorationLine: 'line-through' },
+  dropBadge: { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
   headline: { lineHeight: 34 },
   search: {
     flexDirection: 'row',
