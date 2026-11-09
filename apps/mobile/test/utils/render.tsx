@@ -16,7 +16,10 @@ const metrics = {
  */
 export function renderWithProviders(ui: ReactElement, opts: { lang?: Lang } = {}) {
   useSettings.setState({ lang: opts.lang ?? 'ar', theme: 'light' });
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  // gcTime Infinity starts no cleanup timer; the 5-minute default kept Jest alive after the run.
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
+  });
   const Providers = ({ children }: { children: React.ReactNode }) => (
     <SafeAreaProvider initialMetrics={metrics}>
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
