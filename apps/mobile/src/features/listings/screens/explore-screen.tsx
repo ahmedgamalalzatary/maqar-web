@@ -8,7 +8,7 @@ import {
   PROPERTY_TYPE_LABEL,
   type Sort,
 } from '@maqar/shared';
-import { ArrowDownUp, KeyRound, type LucideIcon, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
+import { ArrowDownUp, KeyRound, type LucideIcon, Rotate3d, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +27,7 @@ import { useAreas, useBrowse, useDebounced } from '../hooks/use-listings';
 
 type Tab = Category | 'all';
 const TABS: Tab[] = ['all', ...CATEGORIES];
-type Quick = 'plan' | 'ready' | 'dropped';
+type Quick = 'tour' | 'plan' | 'ready' | 'dropped';
 
 /** Removes one value from a list filter; an empty list is no filter. */
 const without = <T,>(list: T[] | undefined, v: T) => {
@@ -67,13 +67,14 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   const total = browse.data?.pages[0]?.total;
   const tab: Tab = filters.category ?? 'all';
   const sheetCount = activeFilterCount(filters);
-  const anyQuick = !!(filters.plan || filters.ready || filters.dropped);
+  const anyQuick = !!(filters.tour || filters.plan || filters.ready || filters.dropped);
   const filtered = sheetCount > 0 || anyQuick || !!q;
 
   const update = (patch: Partial<ExploreFilters>) => setFilters((f) => ({ ...f, ...patch }));
   const clearAll = () => setFilters(clearFilters(filters));
 
   const quicks: { k: Quick; icon: LucideIcon; label: string }[] = [
+    { k: 'tour', icon: Rotate3d, label: t('جولة ٣٦٠°', '360° tour') },
     { k: 'plan', icon: Sparkles, label: t('تقسيط', 'Installments') },
     { k: 'ready', icon: KeyRound, label: t('استلام فوري', 'Ready to move') },
     { k: 'dropped', icon: TrendingDown, label: t('السعر نزل', 'Price dropped') },

@@ -71,8 +71,8 @@ describe('Compare on cards', () => {
     expect(screen.queryByText('اختار وحدة كمان')).toBeNull();
   });
 
-  it('is not offered to owners', async () => {
-    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'owner' }), accessToken: 'a' });
+  it('is not offered to agents or admins', async () => {
+    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'agent' }), accessToken: 'a' });
     await renderWithProviders(<Cards />);
     expect(screen.queryAllByRole('button', { name: 'قارن' })).toHaveLength(0);
   });

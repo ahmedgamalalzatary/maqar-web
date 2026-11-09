@@ -299,7 +299,8 @@ The price is compared on the client's terms:
 - Controls: drag with inertia, pinch and wheel zoom, gyroscope (with permission), hotspots inside the scene that move to other rooms, and a cross-fade between rooms. There is also a room list.
 - Demo rooms: living room, kitchen and dining, master bedroom, bathroom, study, second bedroom.
 - Panoramas are 4096×2048 or sharper.
-- [Real] Owners and agents upload panoramas per room. [Open] How panoramas are captured and checked.
+- [Real] Admins upload panoramas per room (Phase 17; there are no owner accounts). [Open] How panoramas are captured and checked.
+- [Real] Rooms are stored per listing (`tour_rooms`) and sent with the listing; cards say whether a home has a tour, and Explore's "360° tour" quick filter uses it.
 
 ### 8.7 Viewing booking
 
@@ -663,4 +664,5 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Decided: admin tools are a web dashboard plus screens inside the app (#6); analytics and crash reporting are out of scope for now (#14). |
 | 2026-11-09 | Decided: Expo push (#3); a scheduler inside the API for timed jobs (#13); in-person viewings only, video may come later (#5); admins set agents' weekly hours (#8); an out-of-hours auto-reply in chat (#12). **Scope change:** the owner role is removed. Owners deal with Maqar directly, and admins create and manage every listing, so owner screens and accounts go and their work moves to the admin tools; #10 and #11 no longer apply. Phases 17–19 are to be re-planned. |
 | 2026-11-09 | Decided: chats stay with each home's advisor; agents' hours can be set one by one or for several at once, plus holidays; owner insights move to the admin tools. Phases re-planned: owner clean-up in 10, hours and holidays data in 13, 17 Admin listings, 18 Admin tools, 19 Listing insights. The owner sections of §2, §9 and §11 are to be rewritten when those phases start. |
+| 2026-11-09 | Phase 10 built (the phone check is still pending): `tour_rooms`, `tourRooms` on the property detail, `tour` on cards and as a filter, the +2 match points for a tour, and the 360° viewer. The owner role is removed from the code and the database (migration `0005` deletes owner accounts and drops `properties.owner_id`); sign-up is for clients only and its `role` field is optional. |
 | 2026-11-09 | The backend runs on a temporary server (`187.55.224.15`, shared with another project) at `https://187-55-224-15.sslip.io`, with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |

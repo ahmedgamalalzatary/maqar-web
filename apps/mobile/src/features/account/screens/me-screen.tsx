@@ -27,7 +27,7 @@ export function MeScreen() {
   const signOut = useSignOut();
   const prefs = usePreferences();
   const [deleting, setDeleting] = useState(false);
-  const selfDelete = user?.role === 'client' || user?.role === 'owner';
+  const selfDelete = user?.role === 'client';
 
   return (
     <Screen title={t('حسابي', 'My account')}>

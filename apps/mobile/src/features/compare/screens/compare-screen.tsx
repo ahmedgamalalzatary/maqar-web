@@ -111,7 +111,7 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
   const prefs = useSession((s) => (s.user?.role === 'client' ? (s.user.prefs ?? DEFAULT_PREFS) : null));
   const pair = [a, b] as const;
   const scores = prefs
-    ? (pair.map((p) => matchScore({ ...p, plan: p.plan !== null, tour: false }, prefs).score) as [number, number])
+    ? (pair.map((p) => matchScore({ ...p, plan: p.plan !== null }, prefs).score) as [number, number])
     : undefined;
   const verdict = compareVerdict(a, b, scores);
   const sameCategory = a.category === b.category;
@@ -208,22 +208,24 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
         <TextRow label={t('الكمبوند', 'Compound')} vals={[t({ ar: a.compoundAr, en: a.compoundEn }), t({ ar: b.compoundAr, en: b.compoundEn })]} />
       </Group>
 
-      {features.length ? (
-        <Group title={t('المميزات', 'Amenities')}>
-          {features.map((f, i) => (
-            <View
-              key={f}
-              style={[styles.amenity, i < features.length - 1 && { borderBottomColor: colors.line, borderBottomWidth: StyleSheet.hairlineWidth }]}
-            >
-              <Yes on={a.features.includes(f)} label={`${t(FEATURE_LABEL[f])} A`} />
-              <Txt size={12} color="ink2" align="center" style={styles.amenityLabel}>
-                {t(FEATURE_LABEL[f])}
-              </Txt>
-              <Yes on={b.features.includes(f)} label={`${t(FEATURE_LABEL[f])} B`} />
-            </View>
-          ))}
-        </Group>
-      ) : null}
+      <Group title={t('المميزات', 'Amenities')}>
+        {/* The amenities either home has, then the 360° tour, as in the demo. */}
+        {[
+          ...features.map((f) => ({ key: f, label: t(FEATURE_LABEL[f]), on: [a.features.includes(f), b.features.includes(f)] })),
+          { key: 'tour', label: t('جولة ٣٦٠°', '360° tour'), on: [a.tour, b.tour] },
+        ].map((row, i) => (
+          <View
+            key={row.key}
+            style={[styles.amenity, i < features.length && { borderBottomColor: colors.line, borderBottomWidth: StyleSheet.hairlineWidth }]}
+          >
+            <Yes on={row.on[0]!} label={`${row.label} A`} />
+            <Txt size={12} color="ink2" align="center" style={styles.amenityLabel}>
+              {row.label}
+            </Txt>
+            <Yes on={row.on[1]!} label={`${row.label} B`} />
+          </View>
+        ))}
+      </Group>
 
       <Group title={t('الاهتمام', 'Demand')}>
         <Row label={t('المشاهدات', 'Views')} better={null} vals={num((p) => p.views)} fmt={(v) => fmtNum(v, lang)} />

@@ -14,7 +14,7 @@ const LISTS = {
 } as const satisfies Partial<Record<keyof ListingFilters, string>>;
 
 const NUMBERS = ['minPrice', 'maxPrice', 'minSize', 'maxSize'] as const;
-const QUICK = ['plan', 'ready', 'dropped'] as const;
+const QUICK = ['tour', 'plan', 'ready', 'dropped'] as const;
 
 /** The query string for `GET /v1/properties` and its facets. Only what is set; lists are comma-separated. */
 export function listingParams(q: PropertiesQuery): URLSearchParams {

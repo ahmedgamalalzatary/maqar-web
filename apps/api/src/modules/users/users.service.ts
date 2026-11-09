@@ -69,7 +69,7 @@ export class UsersService {
     return this.getMe(id);
   }
 
-  /** Clients and owners can delete their own account. Agents and admins are removed by an admin. */
+  /** Clients can delete their own account. Agents and admins are removed by an admin. */
   async deleteMe(id: number, password: string, onDeleted: () => Promise<void>): Promise<void> {
     const user = await this.users.findActiveById(id);
     if (!user) throw new UnauthorizedException();

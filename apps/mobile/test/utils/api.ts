@@ -38,6 +38,7 @@ export function makeCard(overrides: Partial<PropertyCard> = {}): PropertyCard {
     delivery: 'ready',
     plan: null,
     cover: '/uploads/seed/p1.jpg',
+    tour: false,
     publishedAt: '2026-11-08T10:00:00.000Z',
     ...overrides,
   };

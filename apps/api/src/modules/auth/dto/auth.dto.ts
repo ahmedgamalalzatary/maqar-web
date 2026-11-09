@@ -28,8 +28,9 @@ export class SignUpDto implements SignUpBody {
   @Matches(/(?=.*[A-Za-z])(?=.*\d)/, { message: 'password needs a letter and a digit' })
   password: string;
 
-  @ApiProperty({ enum: SIGN_UP_ROLES }) @IsIn(SIGN_UP_ROLES)
-  role: SignUpRole;
+  /** Optional: every sign-up is a client. Older apps still send it. */
+  @ApiPropertyOptional({ enum: SIGN_UP_ROLES, default: 'client' }) @IsOptional() @IsIn(SIGN_UP_ROLES)
+  role?: SignUpRole;
 
   @ApiPropertyOptional({ enum: LANGS }) @IsOptional() @IsIn(LANGS)
   lang?: Lang;

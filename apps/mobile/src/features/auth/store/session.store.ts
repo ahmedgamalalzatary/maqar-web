@@ -77,6 +77,6 @@ setAuthHandlers({
 });
 
 /** Where each role lands after sign-in (contract §2). */
-export function homeFor(role: Role): '/' | '/owner' | '/agent' | '/admin' {
-  return ({ client: '/', owner: '/owner', agent: '/agent', admin: '/admin' } as const)[role];
+export function homeFor(role: Role): '/' | '/agent' | '/admin' {
+  return ({ client: '/', agent: '/agent', admin: '/admin' } as const)[role];
 }

@@ -61,7 +61,8 @@ export type AuthResponse = {
   expiresIn: number;
 };
 
-export type SignUpBody = { name: string; email: string; password: string; role: SignUpRole; lang?: Lang };
+/** `role` may be left out: every sign-up is a client. */
+export type SignUpBody = { name: string; email: string; password: string; role?: SignUpRole; lang?: Lang };
 export type SignInBody = { email: string; password: string };
 export type RefreshBody = { refreshToken: string };
 export type UpdateMeBody = Partial<Pick<Me, 'name' | 'phone' | 'lang' | 'theme' | 'pushEnabled'>>;
@@ -110,6 +111,8 @@ export type PropertyCard = {
   plan: { downPct: number; years: number } | null;
   /** The first photo, as a path under the API host. */
   cover: string | null;
+  /** Has a 360° tour (phase 10). */
+  tour: boolean;
   publishedAt: string;
   /** How well it fits the signed-in client: with sort=match and in recommendations (phase 6). */
   match?: Match;
@@ -137,6 +140,9 @@ export type ListingAgent = {
   colour: string;
 };
 
+/** One room of a 360° tour (contract §8.6). `pano` is an equirectangular photo under the API host. */
+export type TourRoom = { id: number; nameAr: string; nameEn: string; pano: string };
+
 /** `GET /v1/properties/:id`: everything the property page shows. */
 export type PropertyDetail = PropertyCard & {
   developerAr: string | null;
@@ -151,6 +157,8 @@ export type PropertyDetail = PropertyCard & {
   images: string[];
   /** Views, including this one. */
   views: number;
+  /** The 360° tour's rooms in order; empty when the home has no tour. */
+  tourRooms: TourRoom[];
   location: { lat: number; lng: number } | null;
   agent: ListingAgent;
 };

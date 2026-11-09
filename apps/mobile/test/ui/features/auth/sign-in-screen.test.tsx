@@ -21,7 +21,7 @@ async function signIn(email: string, password: string) {
 describe('SignInScreen', () => {
   it.each([
     ['agent', '/agent'],
-    ['owner', '/owner'],
+    ['admin', '/admin'],
     ['client', '/'],
   ] as const)('a %s lands on their own home screen', async (role, home) => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(200, makeAuth({ role })));

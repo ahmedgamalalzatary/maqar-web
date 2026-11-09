@@ -16,7 +16,6 @@ import {
 } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
-import { users } from '../users/users.schema.js';
 
 /** A listing (contract §13). Money is whole EGP: per month for rent, per night for stays. */
 export const properties = mysqlTable(
@@ -46,7 +45,6 @@ export const properties = mysqlTable(
     agentId: bigint('agent_id', { mode: 'number', unsigned: true })
       .notNull()
       .references(() => agents.userId),
-    ownerId: bigint('owner_id', { mode: 'number', unsigned: true }).references(() => users.id),
     status: mysqlEnum('status', PROPERTY_STATUSES).notNull().default('draft'),
     reviewNote: text('review_note'),
     featured: boolean('featured').notNull().default(false),
@@ -56,7 +54,7 @@ export const properties = mysqlTable(
     planYears: tinyint('plan_years', { unsigned: true }),
     descAr: text('desc_ar').notNull(),
     descEn: text('desc_en').notNull(),
-    /** Where the map pin goes. Null until the owner or agent sets it. */
+    /** Where the map pin goes. Null until an admin sets it. */
     lat: decimal('lat', { precision: 9, scale: 6, mode: 'number' }),
     lng: decimal('lng', { precision: 9, scale: 6, mode: 'number' }),
     views: int('views', { unsigned: true }).notNull().default(0),
@@ -93,6 +91,25 @@ export const propertyImages = mysqlTable(
     sort: tinyint('sort', { unsigned: true }).notNull().default(0),
   },
   (t) => [index('property_images_property_idx').on(t.propertyId, t.sort)],
+);
+
+/**
+ * The rooms of a listing's 360° tour (contract §8.6), in tour order: `sort` 0 opens first.
+ * `pano` is an equirectangular photo (2:1, 4096×2048 or sharper) under the API host.
+ */
+export const tourRooms = mysqlTable(
+  'tour_rooms',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    propertyId: bigint('property_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => properties.id, { onDelete: 'cascade' }),
+    nameAr: varchar('name_ar', { length: 80 }).notNull(),
+    nameEn: varchar('name_en', { length: 80 }).notNull(),
+    pano: varchar('pano', { length: 255 }).notNull(),
+    sort: tinyint('sort', { unsigned: true }).notNull().default(0),
+  },
+  (t) => [index('tour_rooms_property_idx').on(t.propertyId, t.sort)],
 );
 
 export type PropertyRow = typeof properties.$inferSelect;

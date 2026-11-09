@@ -52,7 +52,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 7 | Saved homes | 🟨 | |
 | 8 | Installment calculator | 🟨 | |
 | 9 | Compare two homes | 🟨 | |
-| 10 | 360° virtual tour | ⬜ | ~~2~~ decided |
+| 10 | 360° virtual tour | 🟨 | ~~2~~ decided |
 | 11 | Notifications and push | ⬜ | ~~3, 13~~ decided |
 | 12 | Price drop alerts | ⬜ | |
 | 13 | Viewing booking | ⬜ | ~~5, 8~~ decided |
@@ -431,6 +431,16 @@ Contract §8.6.
 **Tests:** API tests for the room order, and that sign-up refuses the `owner` role. On a real device, check the frame rate and the gyroscope.
 
 **Done when** the tour runs smoothly on a mid-range Android phone and on an iPhone, and no owner role is left in the app, the API or the database.
+
+**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left, and it matters most here: the frame rate and the gyroscope can only be judged on real phones. Notes:
+- Database (migration `0005`): `tour_rooms` (name in both languages, the panorama's path, order). The seed copies the demo's 6 panoramas (4096×2048) to `uploads/seed/pano` and gives the 13 demo homes that have a tour the demo's rooms; re-running the seed adds tours to homes seeded before.
+- API: `GET /properties/:id` (and `/properties/compare`) carry `tourRooms`; every card carries `tour` (has one). `GET /properties` and its facets take `tour=true|false`. The match score's +2 for a tour is on, in SQL and in the shared rules, and the e2e test still finds them equal on every listing.
+- Mobile: a "360° tour" button over the gallery on homes that have one opens `/property/:id/tour` (the property route moved to `property/[id]/index.tsx`). The viewer draws with expo-gl and a small shader of its own instead of the demo's three.js: each pixel reads the panorama in its direction, so there is no sphere mesh, and it runs the same on phones and the web. Drag with inertia, pinch zoom, the gyroscope (expo-sensors, asks permission; the button only shows when the phone has the sensor), white dots that lead to the other rooms (placed as in the demo), a cross-fade between rooms, the room list, the compass and the first-time hint. Rooms load one at a time. It stops drawing when nothing moves, to save the battery.
+- The "360° tour" quick chip is first on Explore, as in the demo. Compare gained its "360° tour" amenity row, and the "better fit" line counts the tour.
+- Left out: the demo's "Like it? Book a real viewing" button waits for booking (Phase 13); the demo's fullscreen button is web-only.
+- Owner role removed: `owner` is gone from `packages/shared`, sign-up (clients only; `role` is now optional and only `client` is accepted, so older apps still work), the seed, the role guards' tests, and the database. Migration `0005` deletes owner accounts (their sessions, saved homes and preferences go with them) before removing `owner` from the role list, and drops `properties.owner_id`. In the app, the owner tabs are gone, sign-up has no role choice, and admins get their own tab bar (Listings and Add a property, built in Phase 17, plus Me), which is where the owner's planned screens moved.
+- Checked by hand in the web preview (390 px, Arabic) against the local API: the button, the panorama, dragging, the dots, changing rooms and the cross-fade. The test browser draws without a GPU, so its frame rate says nothing about phones.
+- Deploying this needs the panoramas on the server (`/srv/maqar/uploads/seed/pano`) and the seed run again for the tour rooms.
 
 ---
 

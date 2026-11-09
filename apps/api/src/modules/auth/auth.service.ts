@@ -23,13 +23,13 @@ export class AuthService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  /** Clients and owners sign up themselves (contract §2). The DTO refuses other roles. */
+  /** Only clients sign up themselves (contract §2). The DTO refuses other roles. */
   async signUp(body: SignUpBody): Promise<AuthResponse> {
     if (await this.users.findActiveByEmail(body.email)) throw new ConflictException('This email already has an account');
     const id = await this.users.create({
       name: body.name,
       email: body.email,
-      role: body.role,
+      role: 'client',
       lang: body.lang ?? 'ar',
       passwordHash: await hashPassword(body.password),
     });

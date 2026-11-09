@@ -26,6 +26,7 @@ import {
   MapPin,
   Maximize2,
   Navigation,
+  Rotate3d,
   Share2,
   ShieldCheck,
   Sun,
@@ -68,7 +69,7 @@ const FEATURE_ICON: Record<Feature, LucideIcon> = {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The property page (contract §8.5), phase 4. Price alerts, the 360° tour,
+ * The property page (contract §8.5), phase 4. Price alerts,
  * chat and booking arrive with their own phases.
  */
 export function PropertyScreen({ id }: { id: number }) {
@@ -108,6 +109,7 @@ export function PropertyScreen({ id }: { id: number }) {
 
 function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const t = useT();
+  const router = useRouter();
   const lang = useLang();
   const dir = useDir();
   const { colors } = useTheme();
@@ -136,7 +138,24 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-        <Gallery images={p.images} label={title} />
+        <View>
+          <Gallery images={p.images} label={title} />
+          {p.tourRooms.length ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('جولة ٣٦٠°', '360° tour')}
+              onPress={() => router.push(`/property/${p.id}/tour`)}
+              style={({ pressed }) => [styles.tour, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+            >
+              <View style={[styles.tourIcon, { backgroundColor: colors.navy }]}>
+                <Rotate3d size={18} color={colors.gold} />
+              </View>
+              <Txt size={13} weight="semibold" style={{ color: colors.navy }}>
+                {t('جولة ٣٦٠°', '360° tour')}
+              </Txt>
+            </Pressable>
+          ) : null}
+        </View>
 
         <View style={[styles.body, { backgroundColor: colors.bg }]}>
           <View style={styles.badges}>
@@ -419,6 +438,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   similar: { gap: 12 },
+  tour: {
+    position: 'absolute',
+    bottom: 36,
+    start: 16,
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingStart: 6,
+    paddingEnd: 16,
+  },
+  tourIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   topBar: { position: 'absolute', start: 16, end: 16, flexDirection: 'row', justifyContent: 'space-between' },
   topActions: { flexDirection: 'row', gap: 8 },
   glass: {

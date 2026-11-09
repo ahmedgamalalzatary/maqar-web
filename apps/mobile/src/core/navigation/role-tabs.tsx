@@ -2,10 +2,10 @@ import type { Bi } from '@maqar/shared';
 import { Tabs } from 'expo-router';
 import {
   Bell,
+  Building2,
   CalendarCheck,
   Heart,
   Home,
-  LayoutDashboard,
   type LucideIcon,
   MessagesSquare,
   PlusSquare,
@@ -19,7 +19,7 @@ import { useT } from '@/core/i18n';
 import { fonts, useTheme } from '@/core/theme';
 
 type Tab = { name: string; label: Bi; icon: LucideIcon };
-export type TabRole = 'client' | 'owner' | 'agent';
+export type TabRole = 'client' | 'agent' | 'admin';
 
 /** The tab bar's height above the bottom safe area. */
 export const TAB_BAR_HEIGHT = 64;
@@ -36,17 +36,17 @@ export const TABS: Record<TabRole, Tab[]> = {
     { name: 'saved', label: { ar: 'المحفوظة', en: 'Saved' }, icon: Heart },
     me,
   ],
-  owner: [
-    { name: 'index', label: { ar: 'لوحتي', en: 'Portal' }, icon: LayoutDashboard },
-    { name: 'new', label: { ar: 'أضف عقار', en: 'Add' }, icon: PlusSquare },
-    alerts,
-    me,
-  ],
   agent: [
     { name: 'index', label: { ar: 'اليوم', en: 'Today' }, icon: Sun },
     { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
     { name: 'chats', label: { ar: 'الشات', en: 'Chats' }, icon: MessagesSquare },
     alerts,
+    me,
+  ],
+  // Admins list every home for owners (2026-11-09: there are no owner accounts).
+  admin: [
+    { name: 'index', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
+    { name: 'new', label: { ar: 'أضف عقار', en: 'Add' }, icon: PlusSquare },
     me,
   ],
 };

@@ -10,7 +10,7 @@ import { properties } from '../../src/modules/properties/properties.schema.js';
 import { seedProperties } from '../../src/modules/properties/properties.seed.js';
 import { seedDemoAccounts } from '../../src/modules/users/users.seed.js';
 import { createTestApp } from '../utils/app.js';
-import { bearer, signUp } from '../utils/auth.js';
+import { bearer, signInSeeded, signUp } from '../utils/auth.js';
 import { resetDb } from '../utils/db.js';
 
 // Phase 7: saved homes belong to the account, not the phone (contract §8.9, §14).
@@ -49,10 +49,10 @@ describe('Saved homes (e2e)', () => {
   });
 
   it('is for clients only', async () => {
-    const owner = await signUp(app, { role: 'owner' });
-    await http().get('/v1/favorites').set(bearer(owner.accessToken)).expect(403);
-    await save(owner.accessToken, homes[0]!.id).expect(403);
-    await unsave(owner.accessToken, homes[0]!.id).expect(403);
+    const agent = await signInSeeded(app, 'omar@maqar.app');
+    await http().get('/v1/favorites').set(bearer(agent)).expect(403);
+    await save(agent, homes[0]!.id).expect(403);
+    await unsave(agent, homes[0]!.id).expect(403);
   });
 
   it('starts empty, then lists a saved home the same way browsing shows it', async () => {

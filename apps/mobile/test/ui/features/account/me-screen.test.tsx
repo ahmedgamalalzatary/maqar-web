@@ -19,24 +19,24 @@ describe('MeScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/sign-in');
   });
 
-  it('a client can reopen the preference questions; an owner has none', async () => {
+  it('a client can reopen the preference questions; an agent has none', async () => {
     await useSession.getState().setSession(makeAuth({ role: 'client', prefs: null }));
     const view = await renderWithProviders(<MeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'عدّل تفضيلاتك' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/onboarding');
 
-    await useSession.getState().setSession(makeAuth({ role: 'owner' }));
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
     await view.rerender(<MeScreen />);
     expect(screen.queryByRole('button', { name: 'عدّل تفضيلاتك' })).toBeNull();
   });
 
-  it('guests and clients can open the calculator; an owner has no row for it', async () => {
+  it('guests and clients can open the calculator; an agent has no row for it', async () => {
     const { unmount } = await renderWithProviders(<MeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'حاسبة التقسيط' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/calculator');
     await unmount();
 
-    await useSession.getState().setSession(makeAuth({ role: 'owner' }));
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
     await renderWithProviders(<MeScreen />);
     expect(screen.queryByRole('button', { name: 'حاسبة التقسيط' })).toBeNull();
   });
