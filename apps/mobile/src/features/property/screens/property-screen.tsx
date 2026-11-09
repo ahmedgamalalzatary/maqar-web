@@ -44,6 +44,7 @@ import { radius, useTheme } from '@/core/theme';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
+import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
 import { AdvisorCard } from '../components/advisor-card';
 import { Gallery } from '../components/gallery';
@@ -67,7 +68,7 @@ const FEATURE_ICON: Record<Feature, LucideIcon> = {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The property page (contract §8.5), phase 4. Price alerts, compare, the 360° tour,
+ * The property page (contract §8.5), phase 4. Price alerts, the 360° tour,
  * chat and booking arrive with their own phases.
  */
 export function PropertyScreen({ id }: { id: number }) {
@@ -312,6 +313,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           <Glass label={t('مشاركة', 'Share')} onPress={share}>
             <Share2 size={18} color="#fff" />
           </Glass>
+          <CompareButton card={p} size={44} />
           <SaveButton card={p} size={44} />
         </View>
       </View>

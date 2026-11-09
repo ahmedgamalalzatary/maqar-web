@@ -21,6 +21,9 @@ import { fonts, useTheme } from '@/core/theme';
 type Tab = { name: string; label: Bi; icon: LucideIcon };
 export type TabRole = 'client' | 'owner' | 'agent';
 
+/** The tab bar's height above the bottom safe area. */
+export const TAB_BAR_HEIGHT = 64;
+
 const me: Tab = { name: 'me', label: { ar: 'حسابي', en: 'Me' }, icon: UserRound };
 const alerts: Tab = { name: 'alerts', label: { ar: 'التنبيهات', en: 'Alerts' }, icon: Bell };
 
@@ -63,7 +66,7 @@ export function RoleTabs({ role }: { role: TabRole }) {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.line,
-          height: 64 + insets.bottom,
+          height: TAB_BAR_HEIGHT + insets.bottom,
           paddingTop: 4,
           paddingBottom: insets.bottom + 4,
         },

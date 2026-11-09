@@ -4,6 +4,7 @@ import type { ListingFacets, MatchCount, Page, PropertyCard, PropertyDetail } fr
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { CompareQueryDto } from './dto/compare-query.dto.js';
 import { MatchCountQueryDto, prefsOfQuery } from './dto/match-count-query.dto.js';
 import { ListingFiltersDto, PropertiesQueryDto } from './dto/properties-query.dto.js';
 import { PropertiesService } from './properties.service.js';
@@ -42,6 +43,13 @@ export class PropertiesController {
   @Get('facets')
   facets(@Query() query: ListingFiltersDto): Promise<ListingFacets> {
     return this.properties.facets(query);
+  }
+
+  /** Up to two homes for the compare screen, with what the property page shows. Counts no view. */
+  @Public()
+  @Get('compare')
+  compare(@Query() query: CompareQueryDto): Promise<PropertyDetail[]> {
+    return this.properties.compare(query.ids);
   }
 
   /** The property page. Each request counts as a view. */

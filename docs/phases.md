@@ -51,7 +51,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 6 | Preferences and smart picks | 🟨 | |
 | 7 | Saved homes | 🟨 | |
 | 8 | Installment calculator | 🟨 | |
-| 9 | Compare two homes | ⬜ | |
+| 9 | Compare two homes | 🟨 | |
 | 10 | 360° virtual tour | ⬜ | ~~2~~ decided |
 | 11 | Notifications and push | ⬜ | 3, 13 |
 | 12 | Price drop alerts | ⬜ | |
@@ -395,6 +395,13 @@ Contract §8.10.
 **Tests:** the rule for which value is better and the verdict (unit tests in shared).
 
 **Done when** comparing any two seed homes matches the demo.
+
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- The rules are in `packages/shared` (`winner`, `compareMonthly`, `compareVerdict`). Checked against the demo's own code on all 240 ordered pairs of its 16 homes, in Arabic and English: every row's better value and every verdict line match. The only differences are invisible spacing characters, "K" where the demo's browser writes "k", and the monthly difference rounded to whole pounds where the demo showed fractions.
+- Added beyond the plan: `GET /v1/properties/compare?ids=4,9` (one or two ids, public). It returns the property page's details in the order asked, leaves out missing or unapproved homes, and counts no view. `GET /properties/:id` counts a view on every call, so using it would have inflated views each time the compare screen opened.
+- Mobile: the scale button sits next to the heart on every card and on the property page, for guests and clients (not owners or agents). The third pick replaces the oldest, with the demo's toasts; the "ready" toast opens `/compare`. The tray sits above the client tab bar. `/compare` has the column heads with Change and Remove, a "Pick a home" sheet (search; saved homes first, then the other home's category), the verdict, and the rows. The better value is tinted gold with a crown, and screen readers hear "better". Signed-in clients also get the "better fit" line from their match score. The list is kept on the device (`maqar.compare`), and homes no longer listed drop out of it.
+- Left for later phases: the "interested" demand row (12, 13 and 16 bring follows, bookings and chats), the 360° tour amenity row (10), the "Book viewing" buttons (13), and lifting the chat button above the tray (16).
+- Checked by hand in the web preview (390 px wide, Arabic dark) against the local API: picking from Explore cards, the tray, and the compare screen.
 
 ---
 

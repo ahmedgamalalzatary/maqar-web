@@ -143,9 +143,19 @@ export class PropertiesService {
   async detail(id: number): Promise<PropertyDetail> {
     const row = await this.repo.findApprovedById(id);
     if (!row) throw new NotFoundException('Listing not found');
-    const { p, area, agent } = row;
-    const [images, features] = await Promise.all([this.repo.findImages(id), this.repo.findFeatures(id)]);
+    const detail = await this.toDetail(row);
     await this.repo.addView(id);
+    return { ...detail, views: detail.views + 1 };
+  }
+
+  /** The compare screen: these homes in the order asked, leaving out missing and unapproved ones. Counts no view. */
+  async compare(ids: number[]): Promise<PropertyDetail[]> {
+    const rows = await Promise.all([...new Set(ids)].map((id) => this.repo.findApprovedById(id)));
+    return Promise.all(rows.filter((r) => r !== undefined).map((r) => this.toDetail(r)));
+  }
+
+  private async toDetail({ p, area, agent }: NonNullable<Awaited<ReturnType<PropertiesRepository['findApprovedById']>>>): Promise<PropertyDetail> {
+    const [images, features] = await Promise.all([this.repo.findImages(p.id), this.repo.findFeatures(p.id)]);
     return {
       ...toCard(p, area, images[0] ?? null),
       developerAr: p.developerAr,
@@ -156,7 +166,7 @@ export class PropertiesService {
       descEn: p.descEn,
       features,
       images,
-      views: p.views + 1,
+      views: p.views,
       location: p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null,
       agent: toAgent(agent),
     };
