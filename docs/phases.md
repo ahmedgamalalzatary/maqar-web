@@ -55,7 +55,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 10 | 360° virtual tour | 🟨 | ~~2~~ decided |
 | 11 | Notifications and push | 🟨 | ~~3, 13~~ decided |
 | 12 | Price drop alerts | 🟨 | |
-| 13 | Viewing booking | ⬜ | ~~5, 8~~ decided |
+| 13 | Viewing booking | 🟨 | ~~5, 8~~ decided |
 | 14 | Viewing reminders | ⬜ | ~~13~~ decided |
 | 15 | Sales agent app | ⬜ | |
 | 16 | Live chat | ⬜ | ~~12~~ decided |
@@ -559,6 +559,17 @@ Contract §8.7 and §8.8.
 - Reschedule and cancel.
 - A client can only change their own viewings.
 
+**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+- Database (migration `0008`): `viewings`, `viewing_reminders`, `leads`, `agent_hours`, `agent_days_off`. A viewing has one `starts_at` in UTC; the app gets the Cairo day and hour (Egypt has summer time, so the API converts with `@date-fns/tz`). A generated `active` column (1 while confirmed or rescheduled) is part of the unique key (agent, hour, active), so the database itself refuses a second live booking of an agent's hour, and a cancelled viewing frees it. The e2e test books one hour twice at the same moment: one 201, one 409.
+- Agent hours: the first and last hour a viewing can start, per weekday. The seed writes the default (10–20, Friday 14–20) for the demo agents; an agent with no rows uses the default; a day off closes the whole day. The admin screens for them are Phase 18.
+- Slot rules (unit-tested in `slots.ts`): 14 days from Cairo's today; past (today up to the current hour) before closed (outside the agent's hours or a day off) before taken before free. The default day is today, or tomorrow from 19:00, moved on to the first day with a free hour.
+- API: `GET /properties/:id/slots` (public, so a guest sees the times; `?reschedule=<id>` shows that viewing's own hour free), `POST /viewings` (clients; checks the slot, then the unique key settles races), `GET /viewings` (a client's own, an agent's with who is coming), `PATCH /viewings/:id` (the client's own: reschedule keeps `rescheduledFrom` and makes the reminders unsent again, or cancel; not once it has started), `GET /viewings/:id/ics` (45 minutes, alarm 2 hours before). A client has one live viewing per home. Stays are refused (stay booking is not in any phase yet). Booking creates the client's lead with the home's agent at `viewing`, or moves it there from new, contacted or lost. The client gets `booking` notifications and the agent `lead` ones, for booking, moving and cancelling. Deleting an account cancels its coming viewings.
+- Reminders: the choices are saved in `viewing_reminders` now; Phase 14 adds the job that sends them.
+- Video (decision #5) is left out: no mode choice, every viewing is "on site".
+- Mobile: "Book a viewing" bar on the property page (not for stays or staff); `/property/:id/book` (`?reschedule=<id>` to move one) with the 14-day strip, hours grouped Morning / Afternoon / Evening with their states, the advisor by name, the reminder chips and confirm; a guest is asked to sign in at confirm; a taken hour says so and asks for another. The success screen has the summary, the reminders, Add to calendar and My viewings. My viewings: Upcoming and Past & cancelled, each card with its status, where it was before a reschedule, the advisor and a call button, and Change, Calendar, Directions and Cancel (asks first); past ones offer Book again. Home shows "Your next viewing"; the Viewings tab shows the upcoming count.
+- Add to calendar fetches the `.ics` file: a phone saves it and opens the share sheet (pick the calendar app); the web downloads it. Chat with the advisor comes with the chat phase; for now the card has a call button.
+- Checked by hand: the booking screen and the property page bar in the web preview (as a guest), and booking, the calendar file and cancelling against the local API.
+
 **Done when** two phones racing for the same slot can't both get it, and booking, rescheduling and cancelling all work end to end.
 
 ---
@@ -569,7 +580,7 @@ Contract §8.7 and §8.8.
 
 Contract §8.7 (reminders) and §8.8.
 
-**Database:** `viewing_reminders`.
+**Database:** `viewing_reminders` already exists from Phase 13, with the client's choices.
 
 **API**
 - A scheduled job sends `reminder` notifications at 1 day, 2 hours and 30 minutes before, as the client chose.

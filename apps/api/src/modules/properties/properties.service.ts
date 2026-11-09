@@ -1,7 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import {
+  type Category,
   DEFAULT_PREFS,
   GOOD_MATCH,
+  type ListingAgent,
   type ListingFacets,
   type MatchCount,
   matchScore,
@@ -194,6 +196,27 @@ export class PropertiesService {
     const rows = await this.repo.findApprovedByIds(ids);
     const byId = new Map(rows.map((r) => [r.p.id, r]));
     return this.cards(ids.flatMap((id) => byId.get(id) ?? []));
+  }
+
+  /** Cards of these listings whatever their status, by id. For viewings, whose home may be unpublished since. */
+  async cardsById(ids: number[]): Promise<Map<number, PropertyCard & { location: { lat: number; lng: number } | null }>> {
+    const rows = await this.repo.findByIds([...new Set(ids)]);
+    const cards = await this.cards(rows);
+    const at = new Map(rows.map(({ p }) => [p.id, p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null]));
+    return new Map(cards.map((c) => [c.id, { ...c, location: at.get(c.id) ?? null }]));
+  }
+
+  /** Sales advisors by id, as the property page shows them. */
+  async agentsById(ids: number[]): Promise<Map<number, ListingAgent>> {
+    const rows = await this.repo.findAgents([...new Set(ids)]);
+    return new Map(rows.map((a) => [a.userId, toAgent(a)]));
+  }
+
+  /** What booking a viewing needs to know about an approved listing; 404 otherwise. */
+  async bookingTarget(id: number): Promise<{ id: number; category: Category; agent: ListingAgent; titleAr: string; titleEn: string }> {
+    const row = await this.repo.findApprovedById(id);
+    if (!row) throw new NotFoundException('Listing not found');
+    return { id, category: row.p.category, agent: toAgent(row.agent), titleAr: row.p.titleAr, titleEn: row.p.titleEn };
   }
 
   /** Cards with their covers and, when scoring for a client, their match and reasons. */

@@ -7,3 +7,5 @@ export * from '../../modules/properties/properties.schema.js';
 export * from '../../modules/favorites/favorites.schema.js';
 export * from '../../modules/notifications/notifications.schema.js';
 export * from '../../modules/prices/prices.schema.js';
+export * from '../../modules/viewings/viewings.schema.js';
+export * from '../../modules/leads/leads.schema.js';

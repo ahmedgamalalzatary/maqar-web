@@ -19,6 +19,7 @@ import { PropertyRow } from '@/features/listings/components/property-row';
 import { useAreas, useProperties } from '@/features/listings/hooks/use-listings';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
+import { NextViewingCard } from '@/features/viewings/components/next-viewing-card';
 
 const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string }[] = [
   { category: 'sale', icon: HomeIcon, ar: 'شراء', en: 'Buy' },
@@ -29,8 +30,7 @@ const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string 
 
 /**
  * Client home (contract §8.2): headline, search entry, category shortcuts, picks for a signed-in
- * client (phase 6), areas, price drops (phase 12) and new launches. Tours and the next viewing arrive with
- * their phases.
+ * client (phase 6), the next viewing (phase 13), areas, price drops (phase 12) and new launches.
  */
 export function Home() {
   const t = useT();
@@ -105,6 +105,8 @@ export function Home() {
           </Pressable>
         ))}
       </View>
+
+      <NextViewingCard />
 
       <Picks cardWidth={cardWidth} />
 

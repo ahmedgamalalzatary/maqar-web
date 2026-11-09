@@ -132,3 +132,10 @@ describe('relTime', () => {
     expect(relTime(new Date(2026, 8, 1), 'en', now)).toBe('1 Sep');
   });
 });
+
+describe('fmtDate long', () => {
+  it('has the weekday and the day, without the year', () => {
+    expect(fmtDate('2026-11-12', 'ar', 'long')).toBe('الخميس ١٢ نوفمبر');
+    expect(fmtDate('2026-11-12', 'en', 'long')).toBe('Thursday, 12 November');
+  });
+});

@@ -1,7 +1,8 @@
 import type { Role } from '@maqar/shared';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../core/db/db.module.js';
-import { agents } from '../agents/agents.schema.js';
+import { agentHours, agents } from '../agents/agents.schema.js';
+import { DEFAULT_HOURS } from '../viewings/slots.js';
 import { hashPassword } from '../auth/password.js';
 import { users } from './users.schema.js';
 
@@ -36,6 +37,11 @@ export async function seedDemoAccounts(db: Db, password: string): Promise<void> 
       const id = await ensureUser(tx as unknown as Db, email, profile.nameAr, 'agent');
       const [hasProfile] = await tx.select({ id: agents.userId }).from(agents).where(eq(agents.userId, id));
       if (!hasProfile) await tx.insert(agents).values({ userId: id, ...profile, monthlyTarget: 6 });
+      // The default working hours (contract §8.7), written out so admins can change them later.
+      const [hasHours] = await tx.select({ id: agentHours.agentId }).from(agentHours).where(eq(agentHours.agentId, id));
+      if (!hasHours) {
+        await tx.insert(agentHours).values([...DEFAULT_HOURS].map(([weekday, h]) => ({ agentId: id, weekday, fromHour: h.from, toHour: h.to })));
+      }
     });
   }
   for (const { email, name, role } of OTHERS) await ensureUser(db, email, name, role);

@@ -321,7 +321,8 @@ The price is compared on the client's terms:
 - **Add to calendar:** an `.ics` file with a 45-minute event and a built-in alarm 2 hours before.
 - **Reschedule:** the same screen with the current slot preselected. Status becomes `rescheduled`, and the old date and time are kept (`rescheduledFrom`).
 - A booking automatically creates or updates the client's **lead** for that agent, at stage `viewing`.
-- [Real] The API checks the slot (one viewing per agent per hour, and the property must be open), so two people can never book the same slot. It also books from the agent's real availability. [Open] How agents set their working hours.
+- [Real] The API checks the slot (one viewing per agent per hour, and the property must be open), so two people can never book the same slot. It books from the agent's real availability: their weekly hours and days off (§16.1 #8), which admins set (Phase 18). A client has one live viewing per home; to change it, they reschedule. Stays are not booked as viewings.
+- [Real] Live video is not offered for now (§16.1 #5): every viewing is on site.
 
 ### 8.8 My viewings
 
@@ -543,6 +544,8 @@ Conventions:
 | **refresh_tokens** | id, user_id, token_hash (SHA-256 of the token), expires_at, revoked_at, created_at. A token is used once: refresh revokes it and issues a new one; replaying a revoked token revokes all of that user's tokens. |
 | **client_prefs** | user_id, purposes[], budget_max, area_ids[], types[], min_beds, interests[] |
 | **agents** (profile) | user_id, name_ar / name_en, role_title_ar / role_title_en, rating, deals_count, years, languages, avg_reply_mins, phone, colour, monthly_target, active |
+| **agent_hours** | agent_id, weekday (0 = Sunday), from_hour, to_hour: the first and last hour a viewing can start. No row for a weekday = not working that day; no rows at all = the default (10–20, Friday 14–20). |
+| **agent_days_off** | agent_id, date (Cairo), reason: holidays and single days off |
 | **areas** | id (slug), name_ar / name_en, city_ar / city_en, image |
 | **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id, status (`draft` / `pending` / `approved` / `changes` / `sold` / `rented` / `unpublished`), review_note, featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
 | **property_features** | property_id, feature (`pool`, `garden`, `sea`, `parking`, `elevator`, `security`, `gym`, `clubhouse`, `smart`, `roof`) |
@@ -551,7 +554,7 @@ Conventions:
 | **price_history** | id, property_id, old_price, new_price, changed_by, at |
 | **favorites** | user_id, property_id, created_at |
 | **price_alerts** | user_id, property_id, created_at |
-| **viewings** | id, property_id, client_id, agent_id, date, time, mode (`visit` / `video`), status (`confirmed` / `rescheduled` / `cancelled` / `completed`), rescheduled_from, video_url, created_at. Unique (agent_id, date, time) for active statuses. |
+| **viewings** | id, property_id, client_id, agent_id, starts_at (UTC; shown as the Cairo day and hour), mode (`visit` / `video`; `visit` only for now), status (`confirmed` / `rescheduled` / `cancelled` / `completed`), rescheduled_from, video_url, created_at, updated_at, active (generated: 1 while confirmed or rescheduled, else NULL). Unique (agent_id, starts_at, active), so an agent has one live viewing per hour. |
 | **viewing_reminders** | viewing_id, offset (`1d` / `2h` / `30m`), sent_at |
 | **leads** | id, client_id or name and phone, property_id, agent_id, budget, source, stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at |
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
@@ -581,7 +584,7 @@ Supporting rules:
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
 | admin: prices | `PATCH /admin/listings/:id/price` (the rest of the admin listing routes come in Phase 17) | admin |
-| viewings | `GET /properties/:id/slots?from&to`, `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
+| viewings | `GET /properties/:id/slots?reschedule` (public; the next 14 days), `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
 | chat | `GET /chats`, `POST /chats` (property), `GET /chats/:id/messages`, `POST /chats/:id/messages`, `POST /chats/:id/read`, WebSocket: message, typing, read | client, agent |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
 | owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
@@ -670,3 +673,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 11 built (the phone check is still pending): `notifications` and `push_tokens`, the notify service, the inbox routes, `DELETE /me/push-tokens` and `POST /notifications/test`. The `approval` kind is removed with the owner role, and `system` added. Real pushes need Firebase (Android) and APNs (iOS) credentials (Phase 11 status). Expo project `@alzatary/maqar` created; its id is in `app.json`. |
 | 2026-11-09 | ⚑ Pushes need, from the owner: a Firebase project (Android, free, no Play Console) and the Apple Developer Program (iOS, $99 a year, for the APNs key). The Play Console ($25 once) and the App Store are needed only to publish. Details in Phase 11's status. |
 | 2026-11-09 | Phase 12 built (the phone check is still pending): `price_alerts`, `price_history`, the alerts routes, and `PATCH /admin/listings/:id/price`, which records every change and notifies followers of a drop. Only admins change prices (no owner accounts); stays have no alerts. |
+| 2026-11-09 | Phase 13 built (the phone check is still pending): `viewings` (one `starts_at` instead of date and time; the unique key counts live viewings only), `viewing_reminders` (the choices are saved now; Phase 14 sends them), `leads`, `agent_hours` and `agent_days_off`. Slots follow each agent's hours and days off. Video is left out (#5). `GET /properties/:id/slots` is public and takes `reschedule` instead of `from`/`to`. |

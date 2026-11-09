@@ -86,7 +86,7 @@ const WEEKDAYS: Record<Lang, string[]> = {
   en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
 };
 
-export type DateStyle = 'dayMonth' | 'full' | 'weekday' | 'monthYear';
+export type DateStyle = 'dayMonth' | 'full' | 'long' | 'weekday' | 'monthYear';
 
 /** "2026-11-12" is a local calendar day, not UTC midnight. */
 function toDate(d: Date | string | number): Date {
@@ -100,6 +100,7 @@ function toDate(d: Date | string | number): Date {
 /**
  * dayMonth:  "١٢ نوفمبر" / "12 Nov"
  * full:      "الخميس ١٢ نوفمبر ٢٠٢٦" / "Thursday, 12 November 2026"
+ * long:      "الخميس ١٢ نوفمبر" / "Thursday, 12 November"
  * weekday:   "الخميس" / "Thu"
  * monthYear: "نوفمبر ٢٠٢٦" / "November 2026"
  */
@@ -117,6 +118,8 @@ export function fmtDate(input: Date | string | number, lang: Lang, style: DateSt
       return `${month} ${year}`;
     case 'full':
       return ar ? `${weekday} ${day} ${month} ${year}` : `${weekday}, ${day} ${month} ${year}`;
+    case 'long':
+      return ar ? `${weekday} ${day} ${month}` : `${weekday}, ${day} ${month}`;
     default:
       return ar ? `${day} ${month}` : `${day} ${month.slice(0, 3)}`;
   }
