@@ -1,4 +1,4 @@
-import { fmtMoney, fmtNum, fmtPct, installment } from '@maqar/shared';
+import { fmtMoney, fmtNum, fmtPct, installment, localDigits } from '@maqar/shared';
 import { Info } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -42,7 +42,7 @@ export function InstallmentCalculator({
   const [years, setYears] = useState(defaultYears);
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [mode, setMode] = useState<Mode>('dev');
-  const [rateText, setRateText] = useState(String(DEFAULT_RATE));
+  const [rateText, setRateText] = useState(localDigits(String(DEFAULT_RATE), lang));
 
   const price = editablePrice ? typedPrice : initialPrice;
   const rate = parseRate(rateText);
@@ -146,7 +146,7 @@ export function InstallmentCalculator({
           label={t('نسبة الفايدة السنوية ٪', 'Annual interest %')}
           value={rateText}
           onChangeText={setRateText}
-          onEndEditing={() => setRateText(String(rate))}
+          onEndEditing={() => setRateText(localDigits(String(rate), lang))}
           keyboardType="decimal-pad"
         />
       ) : null}

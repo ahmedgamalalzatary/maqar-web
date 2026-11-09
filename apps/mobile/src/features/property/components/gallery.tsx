@@ -1,8 +1,8 @@
 import { fmtNum } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang } from '@/core/i18n';
@@ -15,6 +15,21 @@ export function Gallery({ images, label }: { images: string[]; label: string }) 
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const height = Math.round(width * 0.9);
+  // Whether scroll positions count down from the far end. Only known once scrolling starts.
+  const fromFarEnd = useRef<boolean | null>(null);
+
+  /**
+   * Which photo is showing. In a right-to-left layout the position depends on the platform: the web
+   * counts down from 0 into negatives, phones count from the physical left, so the first photo is
+   * at the highest position. The first event comes from beside the first photo, which tells them apart.
+   */
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const position = Math.abs(e.nativeEvent.contentOffset.x);
+    const last = images.length - 1;
+    fromFarEnd.current ??= position > (last * width) / 2;
+    const page = Math.round(position / width);
+    setIndex(Math.min(last, Math.max(0, fromFarEnd.current ? last - page : page)));
+  };
 
   return (
     <View style={{ height, backgroundColor: colors.surface2 }} accessibilityLabel={label} accessibilityRole="image">
@@ -22,7 +37,9 @@ export function Gallery({ images, label }: { images: string[]; label: string }) 
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setIndex(Math.round(Math.abs(e.nativeEvent.contentOffset.x) / width))}
+        testID="gallery"
+        scrollEventThrottle={16}
+        onScroll={onScroll}
       >
         {images.map((path, i) => {
           const uri = mediaUrl(path);

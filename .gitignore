@@ -41,3 +41,4 @@ uploads/
 
 # Playwright screenshots and logs
 .playwright-mcp/
+.dev-logs/
