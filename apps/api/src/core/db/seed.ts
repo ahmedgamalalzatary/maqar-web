@@ -11,7 +11,9 @@ import * as schema from './schema.js';
 
 config({ path: '../../.env', quiet: true });
 
-const { DATABASE_URL, SEED_PASSWORD, UPLOADS_DIR = 'uploads' } = process.env;
+const { DATABASE_URL, SEED_PASSWORD } = process.env;
+// Same default as the API's env check, also when .env leaves it empty.
+const UPLOADS_DIR = process.env.UPLOADS_DIR || 'uploads';
 if (!DATABASE_URL || !SEED_PASSWORD) throw new Error('DATABASE_URL and SEED_PASSWORD must be set in the root .env');
 
 // The demo photos become the seed listings' photos (uploads/seed, git-ignored).

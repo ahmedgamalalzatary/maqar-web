@@ -55,7 +55,9 @@ export class Env {
    * Folder for uploaded photos, relative to apps/api. The API serves it at /uploads in
    * development; in production nginx serves the same folder (contract §16.1 #2).
    */
+  @Transform(({ value }) => (value === undefined || value === '' ? 'uploads' : value))
   @IsString()
+  @MinLength(1)
   UPLOADS_DIR = 'uploads';
 
   /** Password for the seeded demo accounts. Only the seed script reads it. */

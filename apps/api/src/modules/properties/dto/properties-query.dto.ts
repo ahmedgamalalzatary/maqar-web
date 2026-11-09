@@ -3,6 +3,8 @@ import { CATEGORIES, type Category, PAGE_LIMIT_MAX, type PropertiesQuery } from 
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 
+const PAGE_MAX = 1_000_000;
+
 /** `GET /v1/properties` query. Unknown parameters are refused by the global pipe. */
 export class PropertiesQueryDto implements PropertiesQuery {
   @ApiPropertyOptional({ enum: CATEGORIES }) @IsOptional() @IsIn(CATEGORIES)
@@ -13,8 +15,9 @@ export class PropertiesQueryDto implements PropertiesQuery {
   @Matches(/^[a-z0-9-]{1,40}$/)
   area?: string;
 
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  /** Capped so the database offset ((page - 1) * limit) stays a normal number. */
+  @ApiPropertyOptional({ default: 1, minimum: 1, maximum: PAGE_MAX })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(PAGE_MAX)
   page = 1;
 
   @ApiPropertyOptional({ default: 20, minimum: 1, maximum: PAGE_LIMIT_MAX })

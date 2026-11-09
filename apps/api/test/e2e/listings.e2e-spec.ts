@@ -116,6 +116,8 @@ describe('Areas and listings (e2e)', () => {
   it.each([
     ['an unknown category', '?category=castle'],
     ['a page below 1', '?page=0'],
+    ['a page past the last one we allow', '?page=1000001'],
+    ['a page too large for the database', '?page=100000000000000000000'],
     ['more than 50 a page', '?limit=51'],
     ['an unknown filter', '?colour=red'],
   ])('refuses %s', async (_name, query) => {

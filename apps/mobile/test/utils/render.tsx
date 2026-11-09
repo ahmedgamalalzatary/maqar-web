@@ -10,13 +10,17 @@ const metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-/** Renders with the app's providers. Queries do not retry, so error states show at once. */
+/**
+ * Renders with the app's providers. Queries do not retry, so error states show at once.
+ * The providers are a wrapper, so `rerender` keeps the same query cache.
+ */
 export function renderWithProviders(ui: ReactElement, opts: { lang?: Lang } = {}) {
   useSettings.setState({ lang: opts.lang ?? 'ar', theme: 'light' });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
-  return render(
+  const Providers = ({ children }: { children: React.ReactNode }) => (
     <SafeAreaProvider initialMetrics={metrics}>
-      <QueryClientProvider client={client}>{ui}</QueryClientProvider>
-    </SafeAreaProvider>,
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </SafeAreaProvider>
   );
+  return render(ui, { wrapper: Providers });
 }

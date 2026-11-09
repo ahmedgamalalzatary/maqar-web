@@ -94,6 +94,19 @@ describe('PropertyScreen', () => {
     expect(await screen.findByText('دوبلكس بحديقة في التجمع')).toBeOnTheScreen();
   });
 
+  it('counts one view per visit: opening the page again soon after does not fetch it again', async () => {
+    const fetchMock = api();
+    const view = await renderWithProviders(<PropertyScreen key="first" id={1} />);
+    expect(await screen.findByText('فيلا مستقلة بحمام سباحة خاص')).toBeOnTheScreen();
+
+    // Back from a similar home: the screen mounts again with the same cache.
+    await view.rerender(<PropertyScreen key="again" id={1} />);
+    expect(await screen.findByText('فيلا مستقلة بحمام سباحة خاص')).toBeOnTheScreen();
+
+    const detailFetches = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/properties/1'));
+    expect(detailFetches).toHaveLength(1);
+  });
+
   it('says so when the listing is gone, and goes back', async () => {
     mockFetch().mockResolvedValue(jsonResponse(404, { statusCode: 404, message: 'Listing not found' }));
     await renderWithProviders(<PropertyScreen id={99} />);
