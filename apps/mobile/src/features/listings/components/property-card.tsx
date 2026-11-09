@@ -9,6 +9,7 @@ import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
+import { SaveButton } from '@/features/saved/components/save-button';
 
 /** Percent the price fell from the old price, rounded; 0 when it did not fall. */
 export const dropPct = (c: Pick<PropertyCard, 'price' | 'oldPrice'>) =>
@@ -29,94 +30,98 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
   const icon = { size: 14, color: colors.ink3, strokeWidth: 1.8 };
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={() => router.push(`/property/${card.id}`)}
-      style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-    >
-      <View style={[styles.photo, { backgroundColor: colors.surface2 }]}>
-        {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
-        <LinearGradient
-          colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.55)']}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <View style={styles.top}>
-          {card.match ? (
-            <Badge>
-              <Sparkles size={12} color={colors.gold} />
-              <Txt size={11} weight="semibold" style={styles.white}>
-                {t(`تطابق ${fmtNum(card.match.score, 'ar')}٪`, `${card.match.score}% match`)}
-              </Txt>
-            </Badge>
-          ) : null}
-          {drop > 0 ? (
-            <Badge bg={colors.danger}>
-              <TrendingDown size={12} color="#fff" />
-              <Txt size={11} weight="semibold" style={styles.white}>
-                {fmtPct(-drop, lang)}
-              </Txt>
-            </Badge>
-          ) : null}
-        </View>
-        <View style={styles.bottom}>
-          <Badge>
-            <Txt size={11} weight="medium" style={styles.white}>
-              {t(CATEGORY_LABEL[card.category])}
-            </Txt>
-          </Badge>
-          {card.delivery !== 'ready' ? (
+    // The heart sits beside the card, not inside it: a screen reader cannot reach a button within a button.
+    <View style={{ width }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        onPress={() => router.push(`/property/${card.id}`)}
+        style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+      >
+        <View style={[styles.photo, { backgroundColor: colors.surface2 }]}>
+          {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.55)']}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={styles.top}>
+            {card.match ? (
+              <Badge>
+                <Sparkles size={12} color={colors.gold} />
+                <Txt size={11} weight="semibold" style={styles.white}>
+                  {t(`تطابق ${fmtNum(card.match.score, 'ar')}٪`, `${card.match.score}% match`)}
+                </Txt>
+              </Badge>
+            ) : null}
+            {drop > 0 ? (
+              <Badge bg={colors.danger}>
+                <TrendingDown size={12} color="#fff" />
+                <Txt size={11} weight="semibold" style={styles.white}>
+                  {fmtPct(-drop, lang)}
+                </Txt>
+              </Badge>
+            ) : null}
+          </View>
+          <View style={styles.bottom}>
             <Badge>
               <Txt size={11} weight="medium" style={styles.white}>
-                {t(`استلام ${localDigits(String(card.delivery), 'ar')}`, `Delivery ${card.delivery}`)}
+                {t(CATEGORY_LABEL[card.category])}
               </Txt>
             </Badge>
-          ) : null}
+            {card.delivery !== 'ready' ? (
+              <Badge>
+                <Txt size={11} weight="medium" style={styles.white}>
+                  {t(`استلام ${localDigits(String(card.delivery), 'ar')}`, `Delivery ${card.delivery}`)}
+                </Txt>
+              </Badge>
+            ) : null}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.body}>
-        <View style={styles.priceRow}>
-          <View style={styles.price}>
-            <Txt size={17} weight="semibold">
-              {fmtMoney(card.price, lang, buying)}
-            </Txt>
-            {suffix ? (
-              <Txt size={12} color="ink3">
-                {suffix}
+        <View style={styles.body}>
+          <View style={styles.priceRow}>
+            <View style={styles.price}>
+              <Txt size={17} weight="semibold">
+                {fmtMoney(card.price, lang, buying)}
+              </Txt>
+              {suffix ? (
+                <Txt size={12} color="ink3">
+                  {suffix}
+                </Txt>
+              ) : null}
+            </View>
+            {card.oldPrice && drop > 0 ? (
+              <Txt size={12} color="ink3" style={styles.struck}>
+                {fmtMoney(card.oldPrice, lang)}
               </Txt>
             ) : null}
           </View>
-          {card.oldPrice && drop > 0 ? (
-            <Txt size={12} color="ink3" style={styles.struck}>
-              {fmtMoney(card.oldPrice, lang)}
-            </Txt>
-          ) : null}
-        </View>
-        <Txt size={14} weight="medium" numberOfLines={1}>
-          {title}
-        </Txt>
-        <View style={styles.place}>
-          <MapPin {...icon} color={colors.ink2} />
-          <Txt size={12} color="ink2" numberOfLines={1} style={styles.flex}>
-            {lang === 'ar' ? `${card.compoundAr} | ${card.area.nameAr}` : `${card.compoundEn} | ${card.area.nameEn}`}
+          <Txt size={14} weight="medium" numberOfLines={1}>
+            {title}
           </Txt>
+          <View style={styles.place}>
+            <MapPin {...icon} color={colors.ink2} />
+            <Txt size={12} color="ink2" numberOfLines={1} style={styles.flex}>
+              {lang === 'ar' ? `${card.compoundAr} | ${card.area.nameAr}` : `${card.compoundEn} | ${card.area.nameEn}`}
+            </Txt>
+          </View>
+          <View style={styles.specs}>
+            <Spec icon={<BedDouble {...icon} />} text={fmtNum(card.beds, lang)} />
+            <Spec icon={<Bath {...icon} />} text={fmtNum(card.baths, lang)} />
+            <Spec icon={<Maximize2 {...icon} />} text={`${fmtNum(card.sizeM2, lang)} ${t('م²', 'm²')}`} />
+            {monthly !== null ? (
+              <View style={[styles.plan, { backgroundColor: colors.sageSoft }]}>
+                <Txt size={11} weight="medium" color="sageInk">
+                  {`${fmtMoney(monthly, lang)}/${t('شهر', 'mo')}`}
+                </Txt>
+              </View>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.specs}>
-          <Spec icon={<BedDouble {...icon} />} text={fmtNum(card.beds, lang)} />
-          <Spec icon={<Bath {...icon} />} text={fmtNum(card.baths, lang)} />
-          <Spec icon={<Maximize2 {...icon} />} text={`${fmtNum(card.sizeM2, lang)} ${t('م²', 'm²')}`} />
-          {monthly !== null ? (
-            <View style={[styles.plan, { backgroundColor: colors.sageSoft }]}>
-              <Txt size={11} weight="medium" color="sageInk">
-                {`${fmtMoney(monthly, lang)}/${t('شهر', 'mo')}`}
-              </Txt>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </Pressable>
+      </Pressable>
+      <SaveButton card={card} style={styles.heart} />
+    </View>
   );
 }
 
@@ -138,7 +143,8 @@ function Spec({ icon, text }: { icon: ReactNode; text: string }) {
 
 const styles = StyleSheet.create({
   photo: { aspectRatio: 4 / 3, borderRadius: 26, overflow: 'hidden' },
-  top: { position: 'absolute', top: 12, start: 12, end: 12, flexDirection: 'row', gap: 6 },
+  top: { position: 'absolute', top: 12, start: 12, end: 60, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  heart: { position: 'absolute', top: 8, end: 8 },
   bottom: { position: 'absolute', bottom: 12, start: 12, end: 12, flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 10, height: 26 },
   white: { color: '#fff' },

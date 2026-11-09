@@ -4,3 +4,4 @@ export * from '../../modules/agents/agents.schema.js';
 export * from '../../modules/auth/auth.schema.js';
 export * from '../../modules/areas/areas.schema.js';
 export * from '../../modules/properties/properties.schema.js';
+export * from '../../modules/favorites/favorites.schema.js';

@@ -1,5 +1,1 @@
-import { Placeholder } from '@/components/placeholder';
-
-export default function Route() {
-  return <Placeholder title={{ ar: 'المحفوظة', en: 'Saved' }} phase={7} />;
-}
+export { SavedScreen as default } from '@/features/saved/screens/saved-screen';

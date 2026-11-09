@@ -348,6 +348,12 @@ Contract §8.9 (saving part).
 
 **Done when** saved homes stay saved across devices and after reinstalling.
 
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- `favorites` is keyed by client and listing (migration `0004`), with millisecond times so quick saves stay in order. `GET /v1/favorites` returns every saved home as cards, most recently saved first, with no paging, because the hearts need the whole list. `PUT` and `DELETE` answer 204 and do nothing extra when repeated. Deleting an account deletes its rows.
+- A listing that is not approved cannot be saved (404). One that stops being approved leaves the list but keeps its row, so it comes back if it is approved again; it can still be removed meanwhile.
+- Mobile: the heart is on every card and on the property page, and changes on screen before the server answers. If the server refuses, it goes back and a toast says so. Quick taps reach the server one at a time, in order. Guests get the sign-in prompt; owners, agents and admins see no heart. The cached list is kept per account.
+- The Saved tab shows the list, an empty state leading to Explore, a retry when it cannot load, and a sign-in invitation for guests. The Price alerts tab and the bell arrive with Phase 12, so the empty state does not mention following prices yet.
+
 ---
 
 ## Phase 8: Installment calculator
