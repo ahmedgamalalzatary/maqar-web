@@ -440,7 +440,7 @@ Contract §8.6.
 - Left out: the demo's "Like it? Book a real viewing" button waits for booking (Phase 13); the demo's fullscreen button is web-only.
 - Owner role removed: `owner` is gone from `packages/shared`, sign-up (clients only; `role` is now optional and only `client` is accepted, so older apps still work), the seed, the role guards' tests, and the database. Migration `0005` deletes owner accounts (their sessions, saved homes and preferences go with them) before removing `owner` from the role list, and drops `properties.owner_id`. In the app, the owner tabs are gone, sign-up has no role choice, and admins get their own tab bar (Listings and Add a property, built in Phase 17, plus Me), which is where the owner's planned screens moved.
 - Checked by hand in the web preview (390 px, Arabic) against the local API: the button, the panorama, dragging, the dots, changing rooms and the cross-fade. The test browser draws without a GPU, so its frame rate says nothing about phones.
-- Deploying this needs the panoramas on the server (`/srv/maqar/uploads/seed/pano`) and the seed run again for the tour rooms.
+- Deployed 2026-11-09 (`e0664c1`): migration `0005` ran, and the seed was run again with the demo's `img` and `pano` folders mounted (`docker compose run --rm --no-deps -T -v /root/maqar/apps/demo/public/img:/app/apps/demo/public/img:ro -v /root/maqar/apps/demo/public/pano:/app/apps/demo/public/pano:ro api node dist/core/db/seed.js`), which copied the 6 panoramas to `/srv/maqar/uploads/seed/pano` and added the tour rooms. 13 homes have tours on the server.
 
 ---
 
@@ -481,7 +481,7 @@ Contract §8.13.
   - **iOS: the Apple Developer Program** ($99 a year). Apple sends every iPhone push, and the APNs key can only be made in a paid account; a free Apple ID cannot receive pushes. Upload the key to the Expo project (Credentials → iOS). The store publisher's account can be used if they have one.
   - **Store accounts are for publishing only:** the Google Play Console ($25 once) for the Play Store, and the same Apple membership for the App Store and TestFlight.
   - Expo Go cannot receive pushes on Android since SDK 53, so the check needs a build. Without these the app still runs; the switch then says it could not turn notifications on.
-- Deploying this needs only migration `0006`.
+- Deployed 2026-11-09 (`e0664c1`, migration `0006`). GitHub Actions builds are not run yet (kept in progress).
 
 ---
 
