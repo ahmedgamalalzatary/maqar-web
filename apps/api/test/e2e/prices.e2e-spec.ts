@@ -75,9 +75,13 @@ describe('Price drop alerts (e2e)', () => {
     expect(await followed(client.accessToken)).toEqual([other.id]);
   });
 
-  it('will not follow a missing home', async () => {
+  it('will not follow a missing home, or a stay (priced per night)', async () => {
     await follow(client.accessToken, 999999).expect(404);
     await follow(client.accessToken, 'abc').expect(400);
+    const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items;
+    const stay = all.find((c) => c.category === 'stay')!;
+    await follow(client.accessToken, stay.id).expect(400);
+    expect(await followed(client.accessToken)).toEqual([]);
   });
 
   it('a drop notifies everyone following the home, in the app and on the phone', async () => {

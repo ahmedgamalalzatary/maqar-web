@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { type PriceChangeResponse, type PropertyCard, priceDropText } from '@maqar/shared';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
@@ -19,7 +19,9 @@ export class PricesService {
   }
 
   async follow(userId: number, propertyId: number): Promise<void> {
-    await this.properties.assertApproved(propertyId);
+    // bookingTarget is approved-only (404 otherwise). Stays are priced per night, so they have no drops to follow.
+    const home = await this.properties.bookingTarget(propertyId);
+    if (home.category === 'stay') throw new BadRequestException('Stays have no price alerts');
     await this.repo.follow(userId, propertyId);
   }
 

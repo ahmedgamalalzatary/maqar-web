@@ -47,7 +47,8 @@ export function BookScreen({ id, reschedule }: { id: number; reschedule?: number
   const property = useProperty(id);
   const existing = useViewings((items) => items.find((v) => v.id === reschedule));
   const { colors } = useTheme();
-  if (property.isPending || (reschedule && existing.isPending)) {
+  // isLoading, not isPending: for a guest the viewings query is off and would stay pending for ever.
+  if (property.isPending || (reschedule && existing.isLoading)) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: colors.bg }]}>
         <ActivityIndicator color={colors.accent} />
@@ -338,7 +339,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
         <Button
           label={existing ? t('أكّد الموعد الجديد', 'Confirm new time') : t('أكّد المعاينة', 'Confirm viewing')}
           onPress={confirm}
-          disabled={!date || !time || busy}
+          disabled={!date || !time || busy || (!!existing && date === existing.date && time === existing.time)}
           loading={busy}
         />
       </View>

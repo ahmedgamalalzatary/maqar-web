@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prefs } from '@maqar/shared';
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
@@ -62,8 +62,8 @@ export class UsersRepository {
       await tx.delete(clientPrefs).where(eq(clientPrefs.userId, id));
       await tx.delete(favorites).where(eq(favorites.userId, id));
       await tx.delete(priceAlerts).where(eq(priceAlerts.userId, id));
-      // Their coming viewings are cancelled, so the agents' hours are free again.
-      await tx.update(viewings).set({ status: 'cancelled' }).where(and(eq(viewings.clientId, id), isNotNull(viewings.active)));
+      // Their coming viewings are cancelled, so the agents' hours are free again; past ones stay as they were.
+      await tx.update(viewings).set({ status: 'cancelled' }).where(and(eq(viewings.clientId, id), isNotNull(viewings.active), gt(viewings.startsAt, new Date())));
       await tx.delete(notifications).where(eq(notifications.userId, id));
       await tx.delete(pushTokens).where(eq(pushTokens.userId, id));
     });

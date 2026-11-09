@@ -14,3 +14,8 @@ export const isActiveViewing = (v: Pick<ViewingItem, 'status'>) => v.status === 
 export function isUpcoming(v: Pick<ViewingItem, 'status' | 'startsAt'>, now = Date.now()): boolean {
   return isActiveViewing(v) && new Date(v.startsAt).getTime() > now - 3_600_000;
 }
+
+/** Can still be moved or cancelled: active and not started yet (the server refuses once it has). */
+export function canChangeViewing(v: Pick<ViewingItem, 'status' | 'startsAt'>, now = Date.now()): boolean {
+  return isActiveViewing(v) && new Date(v.startsAt).getTime() > now;
+}
