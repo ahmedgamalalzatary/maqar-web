@@ -620,17 +620,17 @@ Access is checked by role guards on every route. Owners and agents can only reac
 |---|---|
 | 1 | ~~Auth method~~ **Decided:** email + password now; Google sign-in (OAuth) is added later. Access tokens (JWT, 15 min) plus rotating refresh tokens (30 days). |
 | 2 | ~~File storage~~ **Decided:** photos and panoramas on the production server's disk, served by nginx. A CDN can be added later if needed. |
-| 3 | Push: Expo push service or FCM/APNs directly? |
+| 3 | ~~Push~~ **Decided:** Expo push service. |
 | 4 | ~~Maps provider~~ **Decided:** `react-native-maps` (free; Apple Maps on iOS, Google Maps on Android; included in Expo Go). Directions open the phone's maps app on the listing's location, so no paid directions API. Android store builds need a free, restricted Google Maps key (`GOOGLE_MAPS_API_KEY`, passed to the config plugin in `app.config.ts`). |
-| 5 | Video viewings: which video service (or WhatsApp video)? |
+| 5 | ~~Video viewings~~ **Decided:** none for now; in-person visits only. ⚑ May be added later, so keep the `mode` column (`visit` only for now). |
 | 6 | ~~Admin UI form~~ **Decided:** both a web dashboard and admin screens inside the app. |
 | 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for Maqar, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
-| 8 | Agent working hours and availability rules beyond the default 10:00–20:00 and Friday after 14:00. |
+| 8 | ~~Agent working hours~~ **Decided:** an admin sets each agent's weekly working hours (per day). Viewing slots and the chat auto-reply follow them. [Open: details, see Phase 13.] |
 | 9 | ~~Client and owner on one account?~~ **Decided:** no, one role per account. |
-| 10 | Owner verification (ID review) and listing limits. |
-| 11 | Which owner edits need review again. |
-| 12 | Chat when the agent is away: auto-reply or AI help? |
-| 13 | Background jobs and queue (for example BullMQ with Redis) for reminders and pushes. |
+| 10 | ~~Owner verification and limits~~ **Removed:** there are no owner accounts (see the 2026-11-09 change log). |
+| 11 | ~~Owner edits~~ **Removed:** only admins edit listings. |
+| 12 | ~~Agent away~~ **Decided:** outside working hours, an automatic reply says to contact Maqar during working hours, until an agent picks up the chat. |
+| 13 | ~~Background jobs~~ **Decided (for now):** a simple scheduler inside the API, no Redis or queue. |
 | 14 | ~~Analytics and crash reporting~~ **Decided:** out of scope for now. |
 
 ### 16.2 Out of scope (until this file says otherwise)
@@ -661,4 +661,5 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 6 built (the phone check is still pending): `client_prefs`, `PUT /me/prefs`, `prefs` on `/me`, the match score on the server, `sort=match`, `GET /properties/recommended`, and the new `GET /properties/match-count` for onboarding's live count. Onboarding now follows sign-up rather than first launch, because preferences belong to the account; guests get an invitation instead. The tour's +2 waits for Phase 10. |
 | 2026-11-09 | Phase 9 built (the phone check is still pending): compare two homes. The new `GET /properties/compare?ids=` returns both homes' details in one call without counting views, unlike `GET /properties/:id`. The better-value rule and the verdict live in `packages/shared`. The "interested" demand row and the 360° tour amenity row wait for the phases that bring that data (12, 13, 16 and 10). |
 | 2026-11-09 | Decided: admin tools are a web dashboard plus screens inside the app (#6); analytics and crash reporting are out of scope for now (#14). |
+| 2026-11-09 | Decided: Expo push (#3); a scheduler inside the API for timed jobs (#13); in-person viewings only, video may come later (#5); admins set agents' weekly hours (#8); an out-of-hours auto-reply in chat (#12). **Scope change:** the owner role is removed. Owners deal with Maqar directly, and admins create and manage every listing, so owner screens and accounts go and their work moves to the admin tools; #10 and #11 no longer apply. Phases 17–19 are to be re-planned. |
 | 2026-11-09 | The backend runs on a temporary server (`187.55.224.15`, shared with another project) at `https://187-55-224-15.sslip.io`, with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |
