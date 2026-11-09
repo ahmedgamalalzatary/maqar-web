@@ -2,6 +2,7 @@
 # - an .xcarchive, for whoever publishes the app to sign under their Apple Developer account
 # - an .ipa, for testing (sign it first, for example with a free Apple ID through Sideloadly)
 # A second job opens a Release build on a simulator and keeps a screenshot and the crash reports.
+# The build logs show one line per file compiled, plus errors.
 name: iOS IPA
 
 on:
@@ -20,6 +21,10 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
+      - name: Check the release settings
+        run: |
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
+
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -46,7 +51,7 @@ jobs:
         run: |
           xcodebuild archive -workspace Maqar.xcworkspace -scheme Maqar -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Maqar.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -40
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
           test "${PIPESTATUS[0]}" -eq 0
 
       - name: Package the archive and the .ipa
@@ -66,6 +71,10 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
+      - name: Check the release settings
+        run: |
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
+
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -87,12 +96,13 @@ jobs:
         working-directory: apps/mobile/ios
         run: pod install
 
+      # This runner's chip only: Release otherwise compiles everything once per simulator chip.
       - name: Build a Release app for the simulator
         working-directory: apps/mobile/ios
         run: |
           xcodebuild -workspace Maqar.xcworkspace -scheme Maqar -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO | tail -40
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
           test "${PIPESTATUS[0]}" -eq 0
 
       - name: Open the app and keep what happens
