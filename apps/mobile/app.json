@@ -48,6 +48,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dee8faab-c392-40ce-a1ab-2b3d5380c35a"
+      }
+    },
+    "owner": "alzatary"
   }
 }
