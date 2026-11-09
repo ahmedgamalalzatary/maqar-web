@@ -1,8 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { Page, PropertyCard, PropertyDetail } from '@maqar/shared';
+import type { ListingFacets, Page, PropertyCard, PropertyDetail } from '@maqar/shared';
 import { Public } from '../../common/decorators/public.decorator.js';
-import { PropertiesQueryDto } from './dto/properties-query.dto.js';
+import { ListingFiltersDto, PropertiesQueryDto } from './dto/properties-query.dto.js';
 import { PropertiesService } from './properties.service.js';
 
 /** Router for `/v1/properties` (contract §14). Browsing needs no sign-in. */
@@ -11,11 +11,18 @@ import { PropertiesService } from './properties.service.js';
 export class PropertiesController {
   constructor(private readonly properties: PropertiesService) {}
 
-  /** Approved listings, newest first, filtered by category and area, one page at a time. */
+  /** Approved listings: search, filters and sort, one page at a time. */
   @Public()
   @Get()
   browse(@Query() query: PropertiesQueryDto): Promise<Page<PropertyCard>> {
     return this.properties.browse(query);
+  }
+
+  /** Counts for the filter sheet, for the same filters as the list. Before `:id`, so "facets" is not read as an id. */
+  @Public()
+  @Get('facets')
+  facets(@Query() query: ListingFiltersDto): Promise<ListingFacets> {
+    return this.properties.facets(query);
   }
 
   /** The property page. Each request counts as a view. */

@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Page, PropertyCard, PropertyDetail } from '@maqar/shared';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  type ListingFacets,
+  type ListingFilters,
+  type Page,
+  type PropertyCard,
+  type PropertyDetail,
+  priceScale,
+  SIZE_SCALE,
+} from '@maqar/shared';
 import type { AgentRow } from '../agents/agents.schema.js';
-import type { PropertiesQueryDto } from './dto/properties-query.dto.js';
+import { type ListingFiltersDto, type PropertiesQueryDto, toListingFilters } from './dto/properties-query.dto.js';
 import { PropertiesRepository } from './properties.repository.js';
 import type { PropertyRow } from './properties.schema.js';
 
@@ -9,6 +17,18 @@ type AreaName = PropertyCard['area'];
 
 /** How many similar homes the property page shows. */
 const SIMILAR_LIMIT = 6;
+
+/** The query's filters. A range whose minimum is above its maximum is a 400. */
+function filtersOf(q: ListingFiltersDto): ListingFilters {
+  const f = toListingFilters(q);
+  if (f.minPrice !== undefined && f.maxPrice !== undefined && f.minPrice > f.maxPrice) {
+    throw new BadRequestException('minPrice must not be above maxPrice');
+  }
+  if (f.minSize !== undefined && f.maxSize !== undefined && f.minSize > f.maxSize) {
+    throw new BadRequestException('minSize must not be above maxSize');
+  }
+  return f;
+}
 
 function toCard(p: PropertyRow, area: AreaName, cover: string | null): PropertyCard {
   return {
@@ -57,14 +77,32 @@ export class PropertiesService {
   constructor(private readonly repo: PropertiesRepository) {}
 
   async browse(q: PropertiesQueryDto): Promise<Page<PropertyCard>> {
-    const { page, limit } = q;
+    const { page, limit, sort } = q;
     const { rows, total } = await this.repo.findPublicPage({
-      category: q.category,
-      area: q.area,
+      ...filtersOf(q),
+      sort,
       offset: (page - 1) * limit,
       limit,
     });
     return { items: await this.withCovers(rows), page, limit, total };
+  }
+
+  /** The filter sheet's counts: matches, price and size histograms, and the delivery years. */
+  async facets(q: ListingFiltersDto): Promise<ListingFacets> {
+    const f = filtersOf(q);
+    const price = priceScale(f.category);
+    const [total, priceCounts, sizeCounts, deliveryYears] = await Promise.all([
+      this.repo.countMatching(f),
+      this.repo.priceHistogram(f, price),
+      this.repo.sizeHistogram(f, SIZE_SCALE),
+      this.repo.deliveryYears(f.category),
+    ]);
+    return {
+      total,
+      price: { ...price, counts: priceCounts },
+      size: { ...SIZE_SCALE, counts: sizeCounts },
+      deliveryYears,
+    };
   }
 
   /** The property page. Each call counts as one view. Missing and unapproved listings are 404. */

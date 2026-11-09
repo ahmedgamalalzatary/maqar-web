@@ -576,7 +576,7 @@ Supporting rules:
 | auth | `POST /auth/sign-up` (client or owner only), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
 | me | `GET/PATCH /me`, `PUT /me/prefs`, `POST /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
 | areas | `GET /areas` | public |
-| properties | `GET /properties` (search, filters, sort incl. match, paging, histogram), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/recommended` | public; match needs sign-in |
+| properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/recommended` | public; match needs sign-in |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
 | viewings | `GET /properties/:id/slots?from&to`, `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
@@ -657,3 +657,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Decided: hosting on a new Hostinger KVM2 VPS with the plan's free domain (#7), and file storage on its disk (#2). Production config is `.env.production` (not `.env.docker`). Deployment became Phase 2 (deploys back up the database and images, then run migrations); the later phases moved up by one, so there are now 21 (0 to 20). The installment formula and calculator screen were built early for the store app (Phase 8, in progress). |
 | 2026-11-09 | Phase 3 built (the phone check is still pending): `areas`, `properties`, `property_features`, `property_images`; `GET /areas` and `GET /properties` (category and area filters, paging); Home and Explore in the app. `UPLOADS_DIR` added to the env. The installment formula is in `packages/shared` on `main`. |
 | 2026-11-09 | Decided: maps with `react-native-maps`, directions through the phone's maps app (#4). Phase 4 built (the phone check is still pending): `GET /properties/:id` (counts views), `GET /properties/:id/similar`, `properties.lat/lng`, and the property page. `GOOGLE_MAPS_API_KEY` added for Android builds. |
+| 2026-11-09 | Phase 5 built (the phone check is still pending): search, every filter and the sorts on `GET /properties`, and the new `GET /properties/facets` for the filter sheet's counts and histograms. Search also matches unit type names. The 360° tour quick filter moved to Phase 10, which brings the tour data. |

@@ -17,18 +17,22 @@ export function CardSkeleton({ width }: { width?: number }) {
   );
 }
 
-export function EmptyListings() {
+/** No listings. With `onClear`, the filters are the reason, so it offers to clear them. */
+export function EmptyListings({ onClear }: { onClear?: () => void }) {
   const t = useT();
   const { colors } = useTheme();
   return (
     <View style={styles.center}>
       <SearchX size={32} color={colors.ink3} strokeWidth={1.6} />
       <Txt weight="medium" align="center">
-        {t('مفيش وحدات هنا لسه', 'No homes here yet')}
+        {onClear ? t('مفيش نتايج بالفلاتر دي', 'No homes match these filters') : t('مفيش وحدات هنا لسه', 'No homes here yet')}
       </Txt>
       <Txt size={13} color="ink2" align="center">
-        {t('جرّب فئة أو منطقة تانية.', 'Try another category or area.')}
+        {onClear
+          ? t('وسّع الميزانية أو شيل فلتر.', 'Widen the budget or remove a filter.')
+          : t('جرّب فئة أو منطقة تانية.', 'Try another category or area.')}
       </Txt>
+      {onClear ? <Button label={t('مسح الفلاتر', 'Clear filters')} variant="secondary" onPress={onClear} style={styles.retry} /> : null}
     </View>
   );
 }

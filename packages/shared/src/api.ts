@@ -1,4 +1,5 @@
 import type { Category, Feature, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
+import type { ListingFilters, Sort } from './search.js';
 
 // Request and response shapes shared by the API and the app.
 
@@ -109,7 +110,8 @@ export type PropertyCard = {
   publishedAt: string;
 };
 
-export type PropertiesQuery = { category?: Category; area?: string; page?: number; limit?: number };
+/** `GET /v1/properties` (phase 5 adds the filters and the sort; see search.ts). */
+export type PropertiesQuery = ListingFilters & { sort?: Sort; page?: number; limit?: number };
 
 // ---- Property page (phase 4) ----
 

@@ -47,7 +47,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 2 | Production server and deploys | ⬜ | ~~7~~ decided; waits for the server to be bought |
 | 3 | Browse listings | 🟨 | ~~2~~ decided |
 | 4 | Property page | 🟨 | ~~4~~ decided |
-| 5 | Search, filters and sort | ⬜ | |
+| 5 | Search, filters and sort | 🟨 | |
 | 6 | Preferences and smart picks | ⬜ | |
 | 7 | Saved homes | ⬜ | |
 | 8 | Installment calculator | 🟨 | |
@@ -279,6 +279,15 @@ Contract §8.4.
 
 **Done when** every filter in the demo works against the API and the result counts match.
 
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- `GET /v1/properties` takes `q`, `minPrice`/`maxPrice`, `minSize`/`maxSize`, `type`, `beds` (5 means 5 or more), `baths` (4 means 4 or more), `area`, `delivery` (`ready` or a year), `finishing`, `feature` (all must be there), `plan`, `ready`, `dropped` and `sort` (`newest`, `low`, `high`). Lists are comma-separated or repeated. A minimum above its maximum, unknown values and a search over 100 characters are 400.
+- Search matches every word against title, compound, area and developer in both languages, and unit type names ("شاليه", "villa"). `%` and `_` are plain text.
+- With All, a price filter limits the list to sale and project listings (contract §8.4). The price scale per category lives in `packages/shared` (`priceScale`), shared by the API and the app.
+- `GET /v1/properties/facets` (same filters) gives the filter sheet its numbers: the match count for "Show N homes", 28-bar price and size histograms (each leaves out its own range, so the bars stay still while a thumb moves) and the delivery years of the category.
+- Mobile: search (sent once typing pauses), quick chips, the filter sheet (it edits a copy; closing without "Show" keeps the old filters), typed min and max in Arabic or Latin digits, removable active chips, "clear filters", the sort sheet, and an empty state that offers to clear. The two-thumb slider is mirrored for Arabic and its thumbs are adjustable controls for screen readers.
+- Moved: the 360° tour quick filter goes to Phase 10, which adds `tour_rooms`. "Best match" sort stays in Phase 6.
+- Checked by hand in the web preview (390 px wide) against the local API: Rent sheet (monthly scale, histograms mirrored in Arabic, dragging the minimum to 50,000 leaves 1 home), the applied chip and badge, and search plus sheet counts in English and light mode. React Native Web ignores the `direction` style, so the slider relies on rows flipping by themselves and places its thumbs in code.
+
 ---
 
 ## Phase 6: Preferences and smart picks
@@ -369,7 +378,9 @@ Contract §8.6.
 
 **Database:** `tour_rooms`. The seed has the 6 demo panoramas.
 
-**API:** the tour rooms are included in `GET /properties/:id`.
+**API:** the tour rooms are included in `GET /properties/:id`. `GET /properties` and its facets gain the `tour` quick filter (moved here from Phase 5, which had no tour data yet).
+
+**Mobile:** the "360° tour" quick chip on Explore.
 
 **Mobile**
 - A full-screen panorama viewer: drag with inertia, pinch zoom, gyroscope, hotspots, room list, cross-fade.
