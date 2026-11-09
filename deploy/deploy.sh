@@ -6,7 +6,7 @@ set -eu
 KEY="$HOME/.ssh/minikoshk-ssh"
 SERVER=root@187.55.224.15
 REPO=https://github.com/ahmedgamalalzatary/maqar-web.git
-SRC=/root/maqar/src
+DIR=/root/maqar
 SSH="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes $SERVER"
 
 cd "$(git rev-parse --show-toplevel)"
@@ -21,13 +21,15 @@ if [ "$COMMIT" != "$(git rev-parse origin/main)" ]; then
   exit 1
 fi
 
+# The project is the folder itself. .env.production sits in it too: Git ignores it, so it stays.
 $SSH "set -eu
-  mkdir -p /root/maqar
-  if [ ! -d $SRC/.git ]; then rm -rf $SRC; git clone -q $REPO $SRC; fi
-  git -C $SRC fetch -q origin main
-  git -C $SRC checkout -q --force --detach $COMMIT"
+  mkdir -p $DIR
+  cd $DIR
+  if [ ! -d .git ]; then git init -q; git remote add origin $REPO; fi
+  git fetch -q origin main
+  git checkout -q --force --detach $COMMIT"
 
 if [ "${1:-}" = "--setup" ]; then
-  $SSH "sh $SRC/deploy/setup-server.sh"
+  $SSH "sh $DIR/deploy/setup-server.sh"
 fi
-$SSH "sh $SRC/deploy/server-deploy.sh $(git rev-parse --short HEAD)"
+$SSH "sh $DIR/deploy/server-deploy.sh $(git rev-parse --short HEAD)"

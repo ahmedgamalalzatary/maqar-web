@@ -3,7 +3,7 @@
 # It only ever acts on Maqar's compose project. This server is temporary, so there are no backups.
 set -eu
 TAG="$1"
-SRC=/root/maqar/src
+SRC=/root/maqar
 COMPOSE="docker compose -f $SRC/docker-compose.yml"
 PREVIOUS="$(docker inspect --format '{{.Config.Image}}' maqar-api 2>/dev/null || true)"
 
