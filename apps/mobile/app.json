@@ -36,7 +36,14 @@
       "expo-secure-store",
       "expo-localization",
       "expo-sharing",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#b38959",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

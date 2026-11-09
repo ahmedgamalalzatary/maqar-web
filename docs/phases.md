@@ -53,7 +53,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 8 | Installment calculator | 🟨 | |
 | 9 | Compare two homes | 🟨 | |
 | 10 | 360° virtual tour | 🟨 | ~~2~~ decided |
-| 11 | Notifications and push | ⬜ | ~~3, 13~~ decided |
+| 11 | Notifications and push | 🟨 | ~~3, 13~~ decided |
 | 12 | Price drop alerts | ⬜ | |
 | 13 | Viewing booking | ⬜ | ~~5, 8~~ decided |
 | 14 | Viewing reminders | ⬜ | ~~13~~ decided |
@@ -468,6 +468,15 @@ Contract §8.13.
 **Tests:** a notification is created and sent; no push when the switch is off; read state.
 
 **Done when** a test notification arrives in the app and as a phone push, and tapping it opens the right screen.
+
+**Status (2026-11-09): in progress.** Code and tests are green. The phone check (rule 6) is left, and real pushes first need two things only the project owner can set up (see the last note). Notes:
+- Database (migration `0006`): `notifications` (text in both languages, `href`, `read_at`) and `push_tokens` (one row per phone; the token is unique, so it moves to whoever signs in on that phone). Deleting an account deletes both.
+- API: `NotificationsService.notify(userId, …)` is the one way other modules tell someone something: it saves the inbox entry, then, unless the account turned phone notifications off, pushes it to every phone of the account in the account's language, with `{ id, href }` as data and the unread count as the badge. Expo's push service is called over HTTPS (`EXPO_ACCESS_TOKEN` is optional, for Expo's "enhanced security"); a token Expo reports as `DeviceNotRegistered` is deleted, and a failed push is logged, never thrown. The e2e tests swap the sender for one that records messages. Routes: `GET /notifications` (newest first, at most 50, plus the unread count), `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` (a "Notifications are on" entry for yourself), `POST` and `DELETE /me/push-tokens`.
+- Kinds: `approval` is gone with the owner role; `system` is new, for Maqar's own messages such as the test one. Nothing else sends notifications yet: price drops come in Phase 12, bookings and reminders in 13, chat in 14.
+- Mobile: the inbox at `/notifications` (the bell on Home, with a dot while something is unread) and as the agent's Alerts tab (with a count badge). Unread entries are tinted with a dot; "Mark all read"; a tap marks it read and opens its screen; pull to refresh; designed empty, guest and error states. It refreshes every minute while the app is open, when the app comes back to the front, and when a push lands. Me has the "Phone notifications" switch: on asks the phone (once), sends this phone's token, saves the choice and sends the test notification; off keeps the permission but stops pushes to the account; when the phone blocks them it says so and links to the phone's settings. Tapping a push opens its screen, also when the tap starts the app, and only for the app's own paths. Signing out removes the phone's token first. The app icon's badge follows the unread count.
+- Not on the web: phone pushes, and the switch says "Not available on this device". Found while checking: signing in has never worked in the web preview, because `expo-secure-store` has no web version (not new; earlier previews ran as a guest). The inbox was checked by the UI tests instead.
+- **Needed before a real push can arrive:** an Expo (EAS) project, whose id goes in `EAS_PROJECT_ID` (free; `eas init`), and for Android a Firebase project: its `google-services.json` (path in `GOOGLE_SERVICES_JSON`) and its FCM v1 key uploaded to the Expo project. iOS needs an APNs key from the Apple developer account, also uploaded to Expo. Expo Go cannot receive pushes on Android since SDK 53, so the check needs a build. Without the project id the app still runs; the switch then says it could not turn notifications on.
+- Deploying this needs only migration `0006`.
 
 ---
 

@@ -51,7 +51,8 @@ export const TABS: Record<TabRole, Tab[]> = {
   ],
 };
 
-export function RoleTabs({ role }: { role: TabRole }) {
+/** `badges`: a count to show on a tab, by the tab's `name` (the role's layout passes them in). */
+export function RoleTabs({ role, badges = {} }: { role: TabRole; badges?: Record<string, number> }) {
   const t = useT();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -75,17 +76,22 @@ export function RoleTabs({ role }: { role: TabRole }) {
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
-      {TABS[role].map(({ name, label, icon: Icon }) => (
-        <Tabs.Screen
-          key={name}
-          name={name}
-          options={{
-            title: t(label),
-            tabBarAccessibilityLabel: t(label),
-            tabBarIcon: ({ color, size }) => <Icon color={color} size={size - 2} strokeWidth={1.8} />,
-          }}
-        />
-      ))}
+      {TABS[role].map(({ name, label, icon: Icon }) => {
+        const count = badges[name] ?? 0;
+        return (
+          <Tabs.Screen
+            key={name}
+            name={name}
+            options={{
+              title: t(label),
+              tabBarAccessibilityLabel: count ? t(`${label.ar}، ${count} جديد`, `${label.en}, ${count} new`) : t(label),
+              tabBarBadge: count ? (count > 9 ? '9+' : count) : undefined,
+              tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.navy, fontFamily: fonts.semibold, fontSize: 10 },
+              tabBarIcon: ({ color, size }) => <Icon color={color} size={size - 2} strokeWidth={1.8} />,
+            }}
+          />
+        );
+      })}
     </Tabs>
   );
 }

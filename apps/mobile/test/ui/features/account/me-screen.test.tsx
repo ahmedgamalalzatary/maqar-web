@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { MeScreen } from '@/features/account/screens/me-screen';
 import { useSession } from '@/features/auth/store/session.store';
@@ -52,6 +53,29 @@ describe('MeScreen', () => {
     expect(requestOf(fetchMock)).toMatchObject({ path: '/auth/sign-out', body: { refreshToken: 'refresh-token-1234567890' } });
     expect(useSession.getState().user).toBeNull();
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
+  });
+
+  it('signing out first stops this phone getting the account’s pushes', async () => {
+    await AsyncStorage.setItem('maqar.pushToken', 'ExponentPushToken[phone-1234567890]');
+    await useSession.getState().setSession(makeAuth());
+    const fetchMock = mockFetch().mockResolvedValue(jsonResponse(204));
+    await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'تسجيل الخروج' }));
+    const sent = fetchMock.mock.calls.map((_, k) => requestOf(fetchMock, k)).filter((r) => r.method !== undefined && r.method !== 'GET');
+    expect(sent.slice(0, 2)).toEqual([
+      { method: 'DELETE', path: '/me/push-tokens', body: { token: 'ExponentPushToken[phone-1234567890]' } },
+      { method: 'POST', path: '/auth/sign-out', body: { refreshToken: 'refresh-token-1234567890' } },
+    ]);
+    expect(await AsyncStorage.getItem('maqar.pushToken')).toBeNull();
+  });
+
+  it('shows the phone notifications switch to a signed-in user only', async () => {
+    mockFetch().mockResolvedValue(jsonResponse(200, { items: [], unread: 0 }));
+    const view = await renderWithProviders(<MeScreen />);
+    expect(screen.queryByLabelText('إشعارات الموبايل')).toBeNull();
+    await useSession.getState().setSession(makeAuth());
+    await view.rerender(<MeScreen />);
+    expect(screen.getByLabelText('إشعارات الموبايل')).toBeOnTheScreen();
   });
 
   it('deleting the account asks for the password first', async () => {

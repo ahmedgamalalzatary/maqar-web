@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/placeholder';
+import { NotificationsScreen } from '@/features/notifications/screens/notifications-screen';
 
 export default function Route() {
-  return <Placeholder title={{ ar: 'التنبيهات', en: 'Alerts' }} phase={11} />;
+  return <NotificationsScreen />;
 }

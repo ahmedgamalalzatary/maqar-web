@@ -73,8 +73,15 @@ export type ViewingStatus = (typeof VIEWING_STATUSES)[number];
 export const REMINDER_OFFSETS = ['1d', '2h', '30m'] as const;
 export type ReminderOffset = (typeof REMINDER_OFFSETS)[number];
 
-export const NOTIFICATION_KINDS = ['price', 'reminder', 'booking', 'approval', 'match', 'lead', 'chat'] as const;
+/**
+ * What a notification is about (contract §8.13). `system` is Maqar's own, such as the one sent when
+ * phone notifications are turned on. There is no `approval`: owners have no accounts (2026-11-09).
+ */
+export const NOTIFICATION_KINDS = ['price', 'reminder', 'booking', 'match', 'lead', 'chat', 'system'] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+export const PUSH_PLATFORMS = ['ios', 'android'] as const;
+export type PushPlatform = (typeof PUSH_PLATFORMS)[number];
 
 export const CHAT_SENDERS = ['client', 'agent'] as const;
 export type ChatSender = (typeof CHAT_SENDERS)[number];

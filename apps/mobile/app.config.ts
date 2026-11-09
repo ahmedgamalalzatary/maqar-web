@@ -24,8 +24,17 @@ const KEEP_RULES = `
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 `;
 
+/**
+ * Phone pushes go through Expo's push service (contract §16.1 #3). Its tokens need the Expo
+ * project's id, and Android ones need the Firebase project's `google-services.json`, whose path
+ * is given here. Without them the app still runs; it just cannot get a push token.
+ */
+const easProjectId = process.env.EAS_PROJECT_ID;
+const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...(config as ExpoConfig),
+  android: { ...config.android, ...(googleServicesFile && { googleServicesFile }) },
   plugins: [
     ...(config.plugins ?? []),
     // Android release builds refuse plain http:// unless allowed. Only needed while
@@ -36,5 +45,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     ['react-native-maps', { androidGoogleMapsApiKey: googleMapsKey }],
   ],
-  extra: { ...config.extra, apiUrl, hasGoogleMapsKey: !!googleMapsKey },
+  extra: {
+    ...config.extra,
+    apiUrl,
+    hasGoogleMapsKey: !!googleMapsKey,
+    ...(easProjectId && { eas: { ...config.extra?.eas, projectId: easProjectId } }),
+  },
 });
