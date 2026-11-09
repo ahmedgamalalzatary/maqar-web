@@ -506,7 +506,7 @@ Contract §8.9 (alerts part).
 
 **Done when** lowering a price notifies everyone who follows that home.
 
-**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Deployed 2026-11-09 (`8a76a85`, migration `0007`, after the CodeRabbit fixes). Notes:
 - Database (migration `0007`): `price_alerts` (client, home) and `price_history` (old and new price, who changed it, when). Deleting an account deletes its alerts; the history keeps the change with `changed_by` emptied.
 - API: `GET /alerts` (followed homes as cards, newest first), `PUT/DELETE /alerts/:propertyId` (clients only; a missing or unapproved home is 404). `PATCH /admin/listings/:id/price` (admins only) is the one way a price changes for now; the admin listing tools in Phase 17 build on the same `PricesService.changePrice`. The change runs in one transaction with the listing locked and writes a `price_history` row; the same price writes nothing.
 - The rule (`applyPriceChange` in `packages/shared`, unit-tested): a drop keeps the highest earlier price as `old_price`, so a home cut twice shows its whole fall; the notification gives this drop's %. A rise is never announced, and clears `old_price` once the price is back up to it. A drop on a live (`approved`) listing notifies every follower through Phase 11's service, in the app and on the phone: "السعر نزل ٦٪" / "Price dropped 6%", "X is now Y (was Z)", opening the home.
@@ -559,7 +559,7 @@ Contract §8.7 and §8.8.
 - Reschedule and cancel.
 - A client can only change their own viewings.
 
-**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Deployed 2026-11-09 (`8a76a85`, migration `0008`, with the seed run again for the agents' default hours). Notes:
 - Database (migration `0008`): `viewings`, `viewing_reminders`, `leads`, `agent_hours`, `agent_days_off`. A viewing has one `starts_at` in UTC; the app gets the Cairo day and hour (Egypt has summer time, so the API converts with `@date-fns/tz`). A generated `active` column (1 while confirmed or rescheduled) is part of the unique key (agent, hour, active), so the database itself refuses a second live booking of an agent's hour, and a cancelled viewing frees it. The e2e test books one hour twice at the same moment: one 201, one 409.
 - Agent hours: the first and last hour a viewing can start, per weekday. The seed writes the default (10–20, Friday 14–20) for the demo agents; an agent with no rows uses the default; a day off closes the whole day. The admin screens for them are Phase 18.
 - Slot rules (unit-tested in `slots.ts`): 14 days from Cairo's today; past (today up to the current hour) before closed (outside the agent's hours or a day off) before taken before free. The default day is today, or tomorrow from 19:00, moved on to the first day with a free hour.
