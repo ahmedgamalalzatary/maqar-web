@@ -59,9 +59,9 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 14 | Viewing reminders | ⬜ | ~~13~~ decided |
 | 15 | Sales agent app | ⬜ | |
 | 16 | Live chat | ⬜ | ~~12~~ decided |
-| 17 | Owner listings | ⬜ | owner role removed: to be re-planned |
-| 18 | Admin review | ⬜ | ~~6~~ decided |
-| 19 | Owner insights | ⬜ | owner role removed: to be re-planned |
+| 17 | Admin listings | ⬜ | decided |
+| 18 | Admin tools | ⬜ | ~~6~~ decided |
+| 19 | Listing insights (for admins) | ⬜ | decided |
 | 20 | Release | ⬜ | ~~14~~ out of scope |
 
 ---
@@ -423,9 +423,14 @@ Contract §8.6.
 - A full-screen panorama viewer: drag with inertia, pinch zoom, gyroscope, hotspots, room list, cross-fade.
 - Rooms load one at a time.
 
-**Tests:** API tests for the room order. On a real device, check the frame rate and the gyroscope.
+**Owner role removed (2026-11-09 decision).** Owners deal with Maqar directly, and admins create and manage every listing. In this phase:
+- The `owner` role goes from `packages/shared`, sign-up (clients only), the API's role checks, the seed (`owner@maqar.app`) and any owner accounts in the database (a migration moves the role enum).
+- The owner tab area in the app (`src/app/owner`) and its screens go.
+- Anything built for owners that admins can use moves to the admin side instead of being deleted.
 
-**Done when** the tour runs smoothly on a mid-range Android phone and on an iPhone.
+**Tests:** API tests for the room order, and that sign-up refuses the `owner` role. On a real device, check the frame rate and the gyroscope.
+
+**Done when** the tour runs smoothly on a mid-range Android phone and on an iPhone, and no owner role is left in the app, the API or the database.
 
 ---
 
@@ -481,7 +486,7 @@ Contract §8.9 (alerts part).
 
 ## Phase 13: Viewing booking
 
-**Decide first:** video viewings (§16.1 #5) and agent availability (#8).
+**Decided:** in-person visits only for now (§16.1 #5; ⚑ video may come later, so `viewings.mode` stays, with `visit` only). Agent availability (#8): each agent has weekly working hours per day, plus holidays and days off (single dates). An admin can set the same hours for several agents at once, or one agent's alone. This phase adds the tables (`agent_hours`, `agent_days_off`), seeds the default 10:00–20:00 with Friday from 14:00, and makes slots follow them; the admin screens for them come in Phase 18.
 
 Contract §8.7 and §8.8.
 
@@ -602,72 +607,60 @@ Contract §8.12 and §10.3.
 
 ---
 
-## Phase 17: Owner listings
+## Phase 17: Admin listings
 
-**Decide first:** owner verification and listing limits (#10), and which edits need review (#11).
+**Decided (2026-11-09):** there are no owner accounts. An owner talks to Maqar, and an admin creates and manages the listing for them. The owner's name and phone are kept on the listing, visible to admins only. Listings go live when the admin publishes them; there is no review step and no "Verified owner listing" badge.
 
-Contract §9.2.
+Contract §9.2 and §11 (to be updated to match).
 
 **API**
 - `POST /uploads` for photos: type and size checks, resizing.
-- `POST /owner/listings` (draft).
-- `PATCH /owner/listings/:id`.
-- `POST /owner/listings/:id/submit` (sets `pending`).
-- `GET /owner/listings`.
-- Mark as sold or rented, and unpublish.
+- `POST /admin/listings` (draft), `PATCH /admin/listings/:id`, `GET /admin/listings` (every status).
+- Publish (assigns an advisor), unpublish, mark sold or rented.
 
-**Mobile**
-- The 5-step wizard: type, location, details, photos (resized on the phone; the first one is the cover), review and submit.
-- The owner's listings with status badges.
+**Admin UI:** both the web dashboard (§16.1 #6; it starts in this phase) and screens inside the app: the 5-step listing form (type, location, details, photos with the first as the cover, review), and the list of listings with status badges.
 
-**Tests:** wizard validation (at least one photo), the status changes, upload limits, and that an owner can only reach their own listings.
+**Tests:** admin-only access, form validation (at least one photo), the status changes, upload limits, and that a published listing appears in public search and an unpublished one does not.
 
-**Done when** an owner can list a property with real photos and it shows as "in review".
+**Done when** an admin creates a listing with real photos on the web dashboard or in the app, publishes it, and it appears in Explore.
 
 ---
 
-## Phase 18: Admin review
-
-**Decide first:** what form the admin UI takes (§16.1 #6).
+## Phase 18: Admin tools
 
 Contract §11.
 
 **API**
-- `GET /admin/listings?status=pending`.
-- Approve, which assigns an advisor and publishes the listing.
-- Request changes, with a reason.
 - Agents CRUD.
+- Agents' weekly working hours, for one agent or several at once, and their holidays and days off (the data arrives in Phase 13).
 - Reassign a lead.
 - Areas CRUD.
 - Featured listings.
-- `approval` notifications go to owners.
 
-**Admin UI:** in whatever form #6 decides.
+**Admin UI:** the same pages on the web dashboard and in the app.
 
-**Mobile (owner):** the listing status updates, the change request is shown with its reason, and the owner can edit and resubmit.
+**Tests:** admin-only access, setting hours for several agents at once, a holiday closing that agent's viewing slots and switching on the chat auto-reply, and reassigning a lead.
 
-**Tests:** admin-only access, approve and request changes, assignment, and that an approved listing appears in public search.
-
-**Done when** a listing submitted by an owner can be approved by an admin, the owner gets notified, and the listing appears in Explore as a "Verified owner listing".
+**Done when** an admin changes an agent's hours or adds a holiday, and the booking slots and the chat follow at once.
 
 ---
 
-## Phase 19: Owner insights
+## Phase 19: Listing insights (for admins)
 
-Contract §9.1.
+Contract §9.1 (to be moved under the admin tools).
 
 **Database:** `listing_stats` (or events).
 
 **API**
 - Daily counts of views, saves and interested people.
-- `GET /owner/listings/:id/stats`.
-- `GET /owner/listings/:id/interested`, showing the clients who saved, followed, chatted or booked, with privacy rules applied.
+- `GET /admin/listings/:id/stats`.
+- `GET /admin/listings/:id/interested`: the clients who saved, followed, chatted or booked.
 
-**Mobile:** the owner portal overview, with the views chart, the totals, and the interested clients for each listing.
+**Admin UI:** per listing, the views chart, the totals and the interested clients, on the web dashboard and in the app, so the admin can pass the numbers to the owner.
 
-**Tests:** the counters, the date buckets, and the privacy of interested clients.
+**Tests:** the counters, the date buckets, and admin-only access.
 
-**Done when** what clients do in phases 7, 12, 13 and 16 shows up in the owner's numbers.
+**Done when** what clients do in phases 7, 12, 13 and 16 shows up in the listing's numbers.
 
 ---
 
