@@ -4,7 +4,7 @@ import { createConnection } from 'mysql2/promise';
 export async function resetDb(): Promise<void> {
   const conn = await createConnection({ uri: process.env.DATABASE_URL! });
   await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-  for (const t of ['client_prefs', 'property_images', 'property_features', 'properties', 'areas', 'refresh_tokens', 'agents', 'users']) await conn.query(`TRUNCATE TABLE \`${t}\``);
+  for (const t of ['favorites', 'client_prefs', 'property_images', 'property_features', 'properties', 'areas', 'refresh_tokens', 'agents', 'users']) await conn.query(`TRUNCATE TABLE \`${t}\``);
   await conn.query('SET FOREIGN_KEY_CHECKS = 1');
   await conn.end();
 }

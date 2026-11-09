@@ -8,5 +8,6 @@ import { PropertiesService } from './properties.service.js';
   imports: [UsersModule],
   controllers: [PropertiesController],
   providers: [PropertiesRepository, PropertiesService],
+  exports: [PropertiesService],
 })
 export class PropertiesModule {}

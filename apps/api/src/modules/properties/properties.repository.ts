@@ -252,6 +252,21 @@ export class PropertiesRepository {
     return counts;
   }
 
+  /** Whether the listing exists and is approved. */
+  async isApproved(id: number): Promise<boolean> {
+    return (await this.countWhere(and(eq(properties.id, id), approved))) > 0;
+  }
+
+  /** These listings with their area names, where approved. In no particular order. */
+  async findApprovedByIds(ids: number[]) {
+    if (!ids.length) return [];
+    return this.db
+      .select({ p: properties, area: areaColumns })
+      .from(properties)
+      .innerJoin(areas, eq(areas.id, properties.areaId))
+      .where(and(inArray(properties.id, ids), approved));
+  }
+
   /** An approved listing with its area and sales advisor, or undefined. */
   async findApprovedById(id: number) {
     const [row] = await this.db

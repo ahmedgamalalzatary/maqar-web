@@ -5,6 +5,7 @@ import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
 import { AreasModule } from './modules/areas/areas.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -40,6 +41,7 @@ import { UsersModule } from './modules/users/users.module.js';
     UsersModule,
     AreasModule,
     PropertiesModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

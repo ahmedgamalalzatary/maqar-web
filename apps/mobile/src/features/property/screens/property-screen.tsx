@@ -43,6 +43,7 @@ import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
+import { SaveButton } from '@/features/saved/components/save-button';
 import { AdvisorCard } from '../components/advisor-card';
 import { Gallery } from '../components/gallery';
 import { LocationMap } from '../components/location-map';
@@ -65,7 +66,7 @@ const FEATURE_ICON: Record<Feature, LucideIcon> = {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The property page (contract §8.5), phase 4. Save, price alerts, compare, the 360° tour,
+ * The property page (contract §8.5), phase 4. Price alerts, compare, the 360° tour,
  * the installment calculator, chat and booking arrive with their own phases.
  */
 export function PropertyScreen({ id }: { id: number }) {
@@ -292,9 +293,12 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         <Glass label={t('رجوع', 'Back')} onPress={onBack}>
           <BackIcon size={20} color="#fff" />
         </Glass>
-        <Glass label={t('مشاركة', 'Share')} onPress={share}>
-          <Share2 size={18} color="#fff" />
-        </Glass>
+        <View style={styles.topActions}>
+          <Glass label={t('مشاركة', 'Share')} onPress={share}>
+            <Share2 size={18} color="#fff" />
+          </Glass>
+          <SaveButton card={p} size={44} />
+        </View>
       </View>
     </View>
   );
@@ -399,6 +403,7 @@ const styles = StyleSheet.create({
   },
   similar: { gap: 12 },
   topBar: { position: 'absolute', start: 16, end: 16, flexDirection: 'row', justifyContent: 'space-between' },
+  topActions: { flexDirection: 'row', gap: 8 },
   glass: {
     width: 44,
     height: 44,

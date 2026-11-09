@@ -168,6 +168,18 @@ export class PropertiesService {
     return this.cards(await this.repo.findSimilar(row.p, SIMILAR_LIMIT));
   }
 
+  /** 404 unless the listing exists and is approved. */
+  async assertApproved(id: number): Promise<void> {
+    if (!(await this.repo.isApproved(id))) throw new NotFoundException('Listing not found');
+  }
+
+  /** Cards of these listings in this order, leaving out any that are not approved. */
+  async approvedCards(ids: number[]): Promise<PropertyCard[]> {
+    const rows = await this.repo.findApprovedByIds(ids);
+    const byId = new Map(rows.map((r) => [r.p.id, r]));
+    return this.cards(ids.flatMap((id) => byId.get(id) ?? []));
+  }
+
   /** Cards with their covers and, when scoring for a client, their match and reasons. */
   private async cards(rows: { p: PropertyRow; area: AreaName }[], prefs?: Prefs): Promise<PropertyCard[]> {
     const ids = rows.map((r) => r.p.id);

@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
+import { favorites } from '../favorites/favorites.schema.js';
 import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schema.js';
 
 /** All database access for accounts. Deleted accounts are never returned. */
@@ -54,8 +55,9 @@ export class UsersRepository {
         .update(users)
         .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
         .where(and(eq(users.id, id), isNull(users.deletedAt)));
-      // Preferences are personal too.
+      // Preferences and saved homes are personal too.
       await tx.delete(clientPrefs).where(eq(clientPrefs.userId, id));
+      await tx.delete(favorites).where(eq(favorites.userId, id));
     });
   }
 
