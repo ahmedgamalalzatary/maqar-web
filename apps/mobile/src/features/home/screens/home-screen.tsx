@@ -1,7 +1,7 @@
 import type { Category } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Building2, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun } from 'lucide-react-native';
+import { Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -127,6 +127,25 @@ export function Home() {
         </ScrollView>
       </Section>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('احسب قسطك الشهري', 'Work out your monthly installment')}
+        onPress={() => router.push('/calculator')}
+        style={({ pressed }) => [styles.calculator, { backgroundColor: colors.navy, opacity: pressed ? 0.9 : 1 }]}
+      >
+        <View style={[styles.calculatorIcon, { backgroundColor: colors.gold }]}>
+          <Calculator size={24} color={colors.navy} />
+        </View>
+        <View style={styles.flex}>
+          <Txt size={15} weight="semibold" style={{ color: colors.cream }}>
+            {t('احسب قسطك الشهري', 'Work out your monthly installment')}
+          </Txt>
+          <Txt size={12.5} style={{ color: colors.cream, opacity: 0.7 }}>
+            {t('المقدم + عدد السنين = القسط في ثانية', 'Down payment + years = installment, instantly')}
+          </Txt>
+        </View>
+      </Pressable>
+
       <Section
         title={t('مشروعات جديدة بالتقسيط', 'New launches on installments')}
         action={{ label: t('الكل', 'See all'), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
@@ -244,6 +263,8 @@ function Section({
 }
 
 const styles = StyleSheet.create({
+  calculator: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: radius.lg, padding: 20 },
+  calculatorIcon: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headline: { lineHeight: 34 },
   search: {

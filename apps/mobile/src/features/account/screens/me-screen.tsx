@@ -1,7 +1,7 @@
 import { ROLE_LABEL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, ChevronRight, Languages, Moon, SlidersHorizontal, UserPen } from 'lucide-react-native';
+import { Calculator, ChevronLeft, ChevronRight, Languages, Moon, SlidersHorizontal, UserPen } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -105,6 +105,13 @@ export function MeScreen() {
             icon={<SlidersHorizontal size={20} color={colors.accentInk} />}
             label={t('عدّل تفضيلاتك', 'Edit your preferences')}
             onPress={() => router.push('/onboarding')}
+          />
+        ) : null}
+        {!user || user.role === 'client' ? (
+          <LinkRow
+            icon={<Calculator size={20} color={colors.accentInk} />}
+            label={t('حاسبة التقسيط', 'Installment calculator')}
+            onPress={() => router.push('/calculator')}
           />
         ) : null}
       </Card>

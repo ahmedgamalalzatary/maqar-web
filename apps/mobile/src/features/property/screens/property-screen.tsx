@@ -41,6 +41,7 @@ import { Txt } from '@/components/text';
 import { ApiError } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
+import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
 import { SaveButton } from '@/features/saved/components/save-button';
@@ -67,7 +68,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 /**
  * The property page (contract §8.5), phase 4. Price alerts, compare, the 360° tour,
- * the installment calculator, chat and booking arrive with their own phases.
+ * chat and booking arrive with their own phases.
  */
 export function PropertyScreen({ id }: { id: number }) {
   const t = useT();
@@ -222,6 +223,20 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           </View>
 
           <AdvisorCard agent={p.agent} />
+
+          {buying ? (
+            <Section title={t('احسب قسطك', 'Your installment')}>
+              <Txt size={12.5} color="ink2">
+                {p.plan
+                  ? t(
+                      `خطة الوحدة: مقدم ${fmtNum(p.plan.downPct, 'ar')}٪ على ${fmtNum(p.plan.years, 'ar')} سنين. غيّرها براحتك.`,
+                      `This home’s plan: ${p.plan.downPct}% down over ${p.plan.years} years. Adjust freely.`,
+                    )
+                  : t('جرّب مقدم ومدة تناسبك.', 'Try a down payment and period that suit you.')}
+              </Txt>
+              <InstallmentCalculator price={p.price} defaultDown={p.plan?.downPct ?? 20} defaultYears={p.plan?.years ?? 5} />
+            </Section>
+          ) : null}
 
           <Section title={t('عن الوحدة', 'About this home')}>
             <Txt size={14} color="ink2" style={styles.desc}>

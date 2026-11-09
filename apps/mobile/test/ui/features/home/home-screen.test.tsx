@@ -38,6 +38,13 @@ describe('Home', () => {
     expect(queryOf(fetchMock, launches)).toMatchObject({ category: 'project' });
   });
 
+  it('leads to the calculator', async () => {
+    api();
+    await renderWithProviders(<Home />);
+    await fireEvent.press(screen.getByRole('button', { name: 'احسب قسطك الشهري' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/calculator');
+  });
+
   it('shows a signed-in client the picks, with match and reasons', async () => {
     useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client' }), accessToken: 'access' });
     const fetchMock = api();
