@@ -1,0 +1,50 @@
+# Opens the last successful "iOS IPA" bake from this branch on a simulator, and keeps a screenshot
+# and any crash reports. It builds nothing. The run fails if the app is not running after a minute.
+name: iOS launch check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  launch:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Get the last baked app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results
+          read -r run sha < <(gh run list --repo "$GITHUB_REPOSITORY" --workflow ios-ipa.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[0] | "\(.databaseId) \(.headSha)"' || true)
+          test -n "$run" || { echo "::error::No successful iOS IPA run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
+          gh run download "$run" --repo "$GITHUB_REPOSITORY" -n maqar-ios-simulator -D downloaded || { echo "::error::Run $run has no simulator app: it is too old or expired. Bake a new one."; exit 1; }
+          ditto -x -k downloaded/Maqar-simulator.zip app
+          echo "Checked commit ${sha::7} from iOS IPA run $run" | tee results/checked.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open the app and keep what happens
+        run: |
+          device="$(xcrun simctl list devices available | grep -m1 -E 'iPhone [0-9]+ ' | grep -oE '[0-9A-F-]{36}')"
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          xcrun simctl install "$device" app/Maqar.app
+          xcrun simctl launch "$device" com.maqar.app | tee results/launch.txt
+          sleep 60
+          xcrun simctl io "$device" screenshot results/screen.png
+          if xcrun simctl spawn "$device" launchctl list | grep -q 'com.maqar.app'; then
+            echo "running" | tee results/state.txt
+          else
+            echo "NOT RUNNING" | tee results/state.txt
+          fi
+          cp ~/Library/Logs/DiagnosticReports/Maqar* results/ 2>/dev/null || true
+          grep -q '^running' results/state.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-launch-check
+          path: results
+          retention-days: 7

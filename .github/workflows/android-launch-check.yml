@@ -1,25 +1,29 @@
-# Installs an APK built by "Android APK" on an emulator, opens it, and keeps the log and a
-# screenshot, to see whether it starts and why not. Start it by hand with that build's run id.
+# Opens the last successful "Android APK" bake from this branch on an emulator, and keeps the log
+# and a screenshot. It builds nothing. The run fails if the app is not running after 45 seconds.
 name: Android launch check
 
 on:
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: Run id of the "Android APK" build to check
-        required: true
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   launch:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Get the APK
+      - name: Get the last baked APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download "${{ inputs.run_id }}" --repo "$GITHUB_REPOSITORY" -D out
-          cp out/*/*.apk app.apk
+          mkdir -p results
+          read -r run sha < <(gh run list --repo "$GITHUB_REPOSITORY" --workflow android-apk.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[0] | "\(.databaseId) \(.headSha)"' || true)
+          test -n "$run" || { echo "::error::No successful Android APK run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
+          gh run download "$run" --repo "$GITHUB_REPOSITORY" -n maqar-android-apk -D downloaded || { echo "::error::Run $run has no APK any more: it expired. Bake a new one."; exit 1; }
+          cp downloaded/*.apk app.apk
+          echo "Checked commit ${sha::7} from Android APK run $run" | tee results/checked.txt >> "$GITHUB_STEP_SUMMARY"
 
       - name: Enable the emulator's hardware acceleration
         run: |
@@ -36,7 +40,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
-            mkdir -p results
             adb install -r app.apk
             adb logcat -c
             adb shell monkey -p com.maqar.app -c android.intent.category.LAUNCHER 1
@@ -44,10 +47,11 @@ jobs:
             adb exec-out screencap -p > results/screen.png
             adb shell pidof com.maqar.app > results/pid.txt || echo "not running" > results/pid.txt
             adb logcat -d > results/logcat.txt
+            ! grep -q "not running" results/pid.txt
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: launch-check
+          name: android-launch-check
           path: results
           retention-days: 7
