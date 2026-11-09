@@ -33,9 +33,11 @@ function NativePushBridge() {
   const response = Notifications.useLastNotificationResponse();
   const opened = useRef<string | null>(null);
 
-  // Tokens can change, so send it again on every launch and sign-in.
+  // Tokens can change, so send it again on every launch and sign-in. It is sent even when the
+  // account turned pushes off (the server then sends none): the token moves to whoever is signed
+  // in, so a session that ended without signing out cannot leave this phone on the last account.
   useEffect(() => {
-    if (status === 'signedIn' && pushEnabled && pushSupported()) registerThisPhone().catch(() => {});
+    if (status === 'signedIn' && pushSupported()) registerThisPhone().catch(() => {});
   }, [status, userId, pushEnabled]);
 
   useEffect(() => {

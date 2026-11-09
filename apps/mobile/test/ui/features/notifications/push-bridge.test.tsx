@@ -78,17 +78,22 @@ describe('Phone pushes', () => {
     expect(Notifications.getExpoPushTokenAsync).toHaveBeenCalled();
   });
 
-  it('does not connect the phone or ask when they are not allowed, or not wanted', async () => {
+  it('does not connect the phone or ask the phone when notifications are not allowed', async () => {
     await useSession.getState().setSession(makeAuth({ pushEnabled: true }));
     const calls = serve();
-    const view = await renderWithProviders(<PushBridge />);
-    await view.unmount();
-    pushState.status = 'granted';
-    await useSession.getState().setSession(makeAuth({ pushEnabled: false }));
     await renderWithProviders(<PushBridge />);
     await waitFor(() => expect(Notifications.setBadgeCountAsync).toHaveBeenCalled());
     expect(calls()).toEqual([]);
     expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('moves the phone to the signed-in account even when it turned pushes off', async () => {
+    // Otherwise a session that ended without signing out would leave the phone on the last account.
+    pushState.status = 'granted';
+    await useSession.getState().setSession(makeAuth({ pushEnabled: false }));
+    const calls = serve();
+    await renderWithProviders(<PushBridge />);
+    await waitFor(() => expect(calls()).toEqual(['POST /me/push-tokens']));
   });
 
   it('keeps the app icon’s badge at the unread count', async () => {

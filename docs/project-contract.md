@@ -539,15 +539,15 @@ Conventions:
 
 | Entity | Main fields |
 |---|---|
-| **users** | id, role (`client` / `owner` / `agent` / `admin`), name, phone, email (unique; cleared on deletion), password_hash (argon2id; empty for Google-only accounts later), lang (`ar` / `en`), theme (`system` / `light` / `dark`), push_enabled, created_at, updated_at, deleted_at |
+| **users** | id, role (`client` / `agent` / `admin`), name, phone, email (unique; cleared on deletion), password_hash (argon2id; empty for Google-only accounts later), lang (`ar` / `en`), theme (`system` / `light` / `dark`), push_enabled, created_at, updated_at, deleted_at |
 | **refresh_tokens** | id, user_id, token_hash (SHA-256 of the token), expires_at, revoked_at, created_at. A token is used once: refresh revokes it and issues a new one; replaying a revoked token revokes all of that user's tokens. |
 | **client_prefs** | user_id, purposes[], budget_max, area_ids[], types[], min_beds, interests[] |
 | **agents** (profile) | user_id, name_ar / name_en, role_title_ar / role_title_en, rating, deals_count, years, languages, avg_reply_mins, phone, colour, monthly_target, active |
 | **areas** | id (slug), name_ar / name_en, city_ar / city_en, image |
-| **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id, owner_id (nullable), status (`draft` / `pending` / `approved` / `changes` / `sold` / `rented` / `unpublished`), review_note, featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
+| **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id, status (`draft` / `pending` / `approved` / `changes` / `sold` / `rented` / `unpublished`), review_note, featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
 | **property_features** | property_id, feature (`pool`, `garden`, `sea`, `parking`, `elevator`, `security`, `gym`, `clubhouse`, `smart`, `roof`) |
 | **property_images** | id, property_id, url, sort (0 = cover) |
-| **tour_rooms** | id, property_id, name_ar / name_en, pano_url, sort, hotspots (JSON) |
+| **tour_rooms** | id, property_id, name_ar / name_en, pano (the equirectangular photo's path), sort. The dots between rooms are placed by the app, so there is no hotspots column. |
 | **price_history** | id, property_id, old_price, new_price, changed_by, at |
 | **favorites** | user_id, property_id, created_at |
 | **price_alerts** | user_id, property_id, created_at |
@@ -574,8 +574,8 @@ Supporting rules:
 
 | Module | Endpoints (planned) | Who |
 |---|---|---|
-| auth | `POST /auth/sign-up` (client or owner only), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
-| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST/DELETE /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
+| auth | `POST /auth/sign-up` (clients only; `role` may be left out), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
+| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST/DELETE /me/push-tokens`, `DELETE /me` (needs the password; clients only, staff are removed by an admin) | signed in |
 | areas | `GET /areas` | public |
 | properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/compare?ids=` (one or two homes for the compare screen; counts no view), `GET /properties/recommended`, `GET /properties/match-count` (homes that fit given preferences 70% or more, for onboarding) | public; `sort=match` and `recommended` need a signed-in client |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
