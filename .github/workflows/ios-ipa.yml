@@ -1,7 +1,8 @@
-# Builds the iPhone app of apps/mobile, unsigned, and attaches it to the run:
+# Bakes the iPhone app of apps/mobile, unsigned, and attaches it to the run:
 # - an .xcarchive, for whoever publishes the app to sign under their Apple Developer account
 # - an .ipa, for testing (sign it first, for example with a free Apple ID through Sideloadly)
-# A second job opens a Release build on a simulator and keeps a screenshot and the crash reports.
+# - the same commit built for the simulator, because a simulator cannot open an .ipa.
+#   "iOS launch check" opens that copy.
 # The build logs show one line per file compiled, plus errors.
 name: iOS IPA
 
@@ -67,7 +68,7 @@ jobs:
           path: out/*
           retention-days: 14
 
-  launch-check:
+  simulator-app:
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
@@ -105,27 +106,14 @@ jobs:
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
           test "${PIPESTATUS[0]}" -eq 0
 
-      - name: Open the app and keep what happens
+      # Zipped first: an artifact would otherwise lose the app's file permissions.
+      - name: Package the simulator app
         run: |
-          mkdir -p results
-          device="$(xcrun simctl list devices available | grep -m1 -E 'iPhone [0-9]+ ' | grep -oE '[0-9A-F-]{36}')"
-          xcrun simctl boot "$device"
-          xcrun simctl bootstatus "$device" -b
-          xcrun simctl install "$device" apps/mobile/ios/build/Build/Products/Release-iphonesimulator/Maqar.app
-          xcrun simctl launch "$device" com.maqar.app | tee results/launch.txt
-          sleep 60
-          xcrun simctl io "$device" screenshot results/screen.png
-          if xcrun simctl spawn "$device" launchctl list | grep -q 'com.maqar.app'; then
-            echo "running" | tee results/state.txt
-          else
-            echo "NOT RUNNING" | tee results/state.txt
-          fi
-          cp ~/Library/Logs/DiagnosticReports/Maqar* results/ 2>/dev/null || true
-          grep -q '^running' results/state.txt
+          mkdir -p out
+          ditto -c -k --sequesterRsrc --keepParent apps/mobile/ios/build/Build/Products/Release-iphonesimulator/Maqar.app out/Maqar-simulator.zip
 
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: ios-launch-check
-          path: results
-          retention-days: 7
+          name: maqar-ios-simulator
+          path: out/Maqar-simulator.zip
+          retention-days: 14
