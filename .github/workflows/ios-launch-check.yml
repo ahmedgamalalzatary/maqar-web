@@ -19,8 +19,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p results
-          read -r run sha < <(gh run list --repo "$GITHUB_REPOSITORY" --workflow ios-ipa.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[0] | "\(.databaseId) \(.headSha)"' || true)
-          test -n "$run" || { echo "::error::No successful iOS IPA run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
+          latest="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ios-ipa.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[] | "\(.databaseId) \(.headSha)"')"
+          test -n "$latest" || { echo "::error::No successful iOS IPA run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
+          run="${latest% *}"
+          sha="${latest#* }"
           gh run download "$run" --repo "$GITHUB_REPOSITORY" -n maqar-ios-simulator -D downloaded || { echo "::error::Run $run has no simulator app: it is too old or expired. Bake a new one."; exit 1; }
           ditto -x -k downloaded/Maqar-simulator.zip app
           echo "Checked commit ${sha::7} from iOS IPA run $run" | tee results/checked.txt >> "$GITHUB_STEP_SUMMARY"
