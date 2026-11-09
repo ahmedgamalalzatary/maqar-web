@@ -49,7 +49,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 4 | Property page | 🟨 | ~~4~~ decided |
 | 5 | Search, filters and sort | 🟨 | |
 | 6 | Preferences and smart picks | 🟨 | |
-| 7 | Saved homes | ⬜ | |
+| 7 | Saved homes | 🟨 | |
 | 8 | Installment calculator | 🟨 | |
 | 9 | Compare two homes | ⬜ | |
 | 10 | 360° virtual tour | ⬜ | ~~2~~ decided |

@@ -18,6 +18,11 @@ jobs:
       GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
+      - name: Check the release settings
+        run: |
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
+          test -n "$GOOGLE_MAPS_API_KEY" || echo "::warning::No GOOGLE_MAPS_API_KEY secret: this build has no map on the property page"
+
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
