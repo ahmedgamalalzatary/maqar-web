@@ -15,13 +15,24 @@ const apiUrl = process.env.EXPO_PUBLIC_API_URL;
  */
 const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
 
+/**
+ * Release builds shrink the code with R8. Room creates its database classes by name, so R8 sees
+ * their constructors as unused and removes them; WorkManager's then crashes the app on launch.
+ */
+const KEEP_RULES = `
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+`;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...(config as ExpoConfig),
   plugins: [
     ...(config.plugins ?? []),
     // Android release builds refuse plain http:// unless allowed. Only needed while
     // the API runs on a LAN address without TLS; production uses https.
-    ['expo-build-properties', { android: { usesCleartextTraffic: apiUrl?.startsWith('http://') ?? false } }],
+    [
+      'expo-build-properties',
+      { android: { usesCleartextTraffic: apiUrl?.startsWith('http://') ?? false, extraProguardRules: KEEP_RULES } },
+    ],
     ['react-native-maps', { androidGoogleMapsApiKey: googleMapsKey }],
   ],
   extra: { ...config.extra, apiUrl },
