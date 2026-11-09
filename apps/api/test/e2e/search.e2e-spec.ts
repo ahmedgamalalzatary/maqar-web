@@ -37,6 +37,12 @@ describe('Search, filters and sort (e2e)', () => {
     await app.close();
   });
 
+  it('marks the cards of homes with a 360° tour', async () => {
+    const { items } = await list('');
+    expect(items.filter((c) => c.tour)).toHaveLength(13);
+    expect(items.find((c) => c.titleEn === 'Standalone villa with private pool')?.tour).toBe(true);
+  });
+
   describe('free-text search', () => {
     it.each([
       ['a compound', 'q=azure', ['First-row sea-view chalet', 'Lagoon-view chalet']],
@@ -94,6 +100,8 @@ describe('Search, filters and sort (e2e)', () => {
     ['the installments quick filter', 'plan=true', 10],
     ['the ready quick filter', 'ready=true', 12],
     ['the price dropped quick filter', 'dropped=true', 3],
+    ['the 360° tour quick filter', 'tour=true', 13],
+    ['homes without a tour', 'tour=false', 3],
     ['repeated parameters as well as commas', 'type=villa&type=chalet', 7],
   ])('filters by %s', async (_name, query, count) => {
     expect((await list(query)).total).toBe(count);

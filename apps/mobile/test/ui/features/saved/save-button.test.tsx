@@ -35,7 +35,7 @@ const writes = (fetchMock: jest.Mock) =>
     .filter((r) => r.method === 'PUT' || r.method === 'DELETE')
     .map((r) => `${r.method} ${r.path}`);
 
-const signIn = (role: 'client' | 'owner' = 'client', id = 1) =>
+const signIn = (role: 'client' | 'agent' = 'client', id = 1) =>
   useSession.setState({ status: 'signedIn', user: makeMe({ role, id }), accessToken: 'access' });
 
 beforeEach(async () => {
@@ -56,7 +56,7 @@ describe('The heart on a card', () => {
   });
 
   it('is not shown to other roles, who have no saved homes', async () => {
-    signIn('owner');
+    signIn('agent');
     const fetchMock = api();
     await renderWithProviders(<PropertyCardView card={villa} />);
 

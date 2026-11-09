@@ -39,7 +39,7 @@ function filtersOf(q: ListingFiltersDto): ListingFilters {
   return f;
 }
 
-function toCard(p: PropertyRow, area: AreaName, cover: string | null): PropertyCard {
+function toCard(p: PropertyRow, area: AreaName, cover: string | null, tour: boolean): PropertyCard {
   return {
     id: p.id,
     category: p.category,
@@ -58,6 +58,7 @@ function toCard(p: PropertyRow, area: AreaName, cover: string | null): PropertyC
     delivery: p.deliveryYear ?? 'ready',
     plan: p.planDownPct != null && p.planYears != null ? { downPct: p.planDownPct, years: p.planYears } : null,
     cover,
+    tour,
     // Approved listings always have a publish time; created_at only guards bad rows.
     publishedAt: (p.publishedAt ?? p.createdAt).toISOString(),
   };
@@ -155,9 +156,13 @@ export class PropertiesService {
   }
 
   private async toDetail({ p, area, agent }: NonNullable<Awaited<ReturnType<PropertiesRepository['findApprovedById']>>>): Promise<PropertyDetail> {
-    const [images, features] = await Promise.all([this.repo.findImages(p.id), this.repo.findFeatures(p.id)]);
+    const [images, features, tourRooms] = await Promise.all([
+      this.repo.findImages(p.id),
+      this.repo.findFeatures(p.id),
+      this.repo.findTourRooms(p.id),
+    ]);
     return {
-      ...toCard(p, area, images[0] ?? null),
+      ...toCard(p, area, images[0] ?? null, tourRooms.length > 0),
       developerAr: p.developerAr,
       developerEn: p.developerEn,
       floor: p.floor,
@@ -167,6 +172,7 @@ export class PropertiesService {
       features,
       images,
       views: p.views,
+      tourRooms,
       location: p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null,
       agent: toAgent(agent),
     };
@@ -193,14 +199,15 @@ export class PropertiesService {
   /** Cards with their covers and, when scoring for a client, their match and reasons. */
   private async cards(rows: { p: PropertyRow; area: AreaName }[], prefs?: Prefs): Promise<PropertyCard[]> {
     const ids = rows.map((r) => r.p.id);
-    const [covers, features] = await Promise.all([
+    const [covers, tours, features] = await Promise.all([
       this.repo.findCovers(ids),
+      this.repo.findWithTour(ids),
       prefs ? this.repo.findFeaturesOf(ids) : undefined,
     ]);
     return rows.map(({ p, area }) => {
-      const card = toCard(p, area, covers.get(p.id) ?? null);
+      const card = toCard(p, area, covers.get(p.id) ?? null, tours.has(p.id));
       if (!prefs) return card;
-      const match = matchScore({ ...card, features: features?.get(p.id) ?? [], plan: card.plan !== null, tour: false }, prefs);
+      const match = matchScore({ ...card, features: features?.get(p.id) ?? [], plan: card.plan !== null }, prefs);
       return { ...card, match };
     });
   }

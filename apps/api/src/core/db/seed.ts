@@ -20,6 +20,8 @@ if (!DATABASE_URL || !SEED_PASSWORD) throw new Error('DATABASE_URL and SEED_PASS
 const seedDir = path.resolve(UPLOADS_DIR, 'seed');
 await mkdir(seedDir, { recursive: true });
 await cp(path.resolve('../demo/public/img'), seedDir, { recursive: true });
+// And the demo's panoramas become the 360° tours' rooms (uploads/seed/pano).
+await cp(path.resolve('../demo/public/pano'), path.join(seedDir, 'pano'), { recursive: true });
 
 const pool = createPool({ uri: DATABASE_URL });
 const db = drizzle({ client: pool, schema, mode: 'default' });
@@ -27,4 +29,4 @@ await seedDemoAccounts(db, SEED_PASSWORD);
 await seedAreas(db);
 await seedProperties(db);
 await pool.end();
-console.log('Seeded: 4 agents, 1 admin, 1 client, 1 owner (password: SEED_PASSWORD in .env), 8 areas, 16 listings');
+console.log('Seeded: 4 agents, 1 admin, 1 client (password: SEED_PASSWORD in .env), 8 areas, 16 listings');

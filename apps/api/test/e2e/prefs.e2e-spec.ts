@@ -17,7 +17,7 @@ import { seedProperties } from '../../src/modules/properties/properties.seed.js'
 import { clientPrefs } from '../../src/modules/users/users.schema.js';
 import { seedDemoAccounts } from '../../src/modules/users/users.seed.js';
 import { createTestApp } from '../utils/app.js';
-import { bearer, signUp } from '../utils/auth.js';
+import { bearer, signInSeeded, signUp } from '../utils/auth.js';
 import { resetDb } from '../utils/db.js';
 
 // Phase 6: preferences, the match score on the server, best-match sort and picks (contract §8.1, §8.3).
@@ -25,7 +25,7 @@ import { resetDb } from '../utils/db.js';
 describe('Preferences and smart picks (e2e)', () => {
   let app: INestApplication<App>;
   let client: string;
-  let owner: string;
+  let agent: string;
   let details: PropertyDetail[];
   const http = () => request(app.getHttpServer());
 
@@ -37,7 +37,7 @@ describe('Preferences and smart picks (e2e)', () => {
     of
       .map((d) => ({
         d,
-        m: matchScore({ ...d, features: d.features, plan: d.plan !== null, tour: false }, prefs),
+        m: matchScore({ ...d, features: d.features, plan: d.plan !== null }, prefs),
       }))
       .sort((a, b) => b.m.score - a.m.score || b.d.publishedAt.localeCompare(a.d.publishedAt) || b.d.id - a.d.id);
 
@@ -53,7 +53,7 @@ describe('Preferences and smart picks (e2e)', () => {
     await seedAreas(db);
     await seedProperties(db);
     client = (await signUp(app)).accessToken;
-    owner = (await signUp(app, { role: 'owner' })).accessToken;
+    agent = await signInSeeded(app, 'omar@maqar.app');
     const all = (await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>;
     details = await Promise.all(all.items.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
   });
@@ -90,8 +90,8 @@ describe('Preferences and smart picks (e2e)', () => {
 
     it('needs a signed-in client', async () => {
       await http().put('/v1/me/prefs').send(renter).expect(401);
-      await putPrefs(owner, renter).expect(403);
-      const me = (await http().get('/v1/me').set(bearer(owner)).expect(200)).body as Me;
+      await putPrefs(agent, renter).expect(403);
+      const me = (await http().get('/v1/me').set(bearer(agent)).expect(200)).body as Me;
       expect(me).not.toHaveProperty('prefs');
     });
 
@@ -146,7 +146,7 @@ describe('Preferences and smart picks (e2e)', () => {
 
     it('needs a signed-in client; other sorts carry no match', async () => {
       await http().get('/v1/properties?sort=match').expect(401);
-      await http().get('/v1/properties?sort=match').set(bearer(owner)).expect(403);
+      await http().get('/v1/properties?sort=match').set(bearer(agent)).expect(403);
       // A bad token on a public route is ignored for other sorts, but match needs the account.
       await http().get('/v1/properties?sort=match').set(bearer('nope')).expect(401);
       const plain = (await http().get('/v1/properties').set(bearer(client)).expect(200)).body as Page<PropertyCard>;
@@ -168,7 +168,7 @@ describe('Preferences and smart picks (e2e)', () => {
 
     it('needs a signed-in client', async () => {
       await http().get('/v1/properties/recommended').expect(401);
-      await http().get('/v1/properties/recommended').set(bearer(owner)).expect(403);
+      await http().get('/v1/properties/recommended').set(bearer(agent)).expect(403);
     });
   });
 

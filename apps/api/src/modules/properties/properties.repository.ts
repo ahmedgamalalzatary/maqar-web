@@ -32,6 +32,7 @@ import {
   like,
   lte,
   ne,
+  not,
   or,
   type SQL,
   sql,
@@ -40,7 +41,7 @@ import type { MySqlColumn } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
-import { type PropertyRow, properties, propertyFeatures, propertyImages } from './properties.schema.js';
+import { type PropertyRow, properties, propertyFeatures, propertyImages, tourRooms } from './properties.schema.js';
 
 export type BrowseFilter = ListingFilters & { sort: Sort; offset: number; limit: number; prefs?: Prefs };
 
@@ -60,13 +61,15 @@ const ORDER: Record<Exclude<Sort, 'match'>, SQL[]> = {
   high: [desc(properties.price), desc(properties.id)],
 };
 
+/** The listing has at least one 360° tour room. */
+const hasTour = sql`exists (select 1 from ${tourRooms} where ${tourRooms.propertyId} = ${properties.id})`;
+
 /** A whole number, inlined: only our own constants, never user input. */
 const int = (n: number) => sql.raw(String(Math.trunc(n)));
 
 /**
  * The match score in SQL (contract §8.3), so lists can be sorted by it and paged. It must give
  * the same numbers as the shared `matchScore`; the e2e tests compare the two on every listing.
- * The 360° tour points arrive with tours in phase 10.
  */
 export function matchScoreSql(prefs: Prefs): SQL<number> {
   const P = MATCH_POINTS;
@@ -87,6 +90,7 @@ export function matchScoreSql(prefs: Prefs): SQL<number> {
       sql`case when ${isNotNull(properties.planDownPct)} then ${int(P.plan)} else 0 end`,
     );
   }
+  parts.push(sql`case when ${hasTour} then ${int(P.tour)} else 0 end`);
   const total = sql.join([sql`${int(P.start)}`, ...parts], sql` + `);
   return sql<number>`least(${int(MATCH_MAX)}, greatest(${int(MATCH_MIN)}, ${total}))`;
 }
@@ -157,6 +161,7 @@ function filterWhere(f: ListingFilters, omit?: 'price' | 'size'): SQL | undefine
     f.plan === true ? isNotNull(properties.planDownPct) : f.plan === false ? isNull(properties.planDownPct) : undefined,
     f.ready === true ? isNull(properties.deliveryYear) : f.ready === false ? isNotNull(properties.deliveryYear) : undefined,
     f.dropped === true ? gt(properties.oldPrice, properties.price) : undefined,
+    f.tour === true ? hasTour : f.tour === false ? not(hasTour) : undefined,
   );
 }
 
@@ -323,6 +328,25 @@ export class PropertiesRepository {
   }
 
   /** The cover (first) photo of each listing. */
+  /** Which of these listings have a 360° tour. */
+  async findWithTour(ids: number[]): Promise<Set<number>> {
+    if (!ids.length) return new Set();
+    const rows = await this.db
+      .selectDistinct({ propertyId: tourRooms.propertyId })
+      .from(tourRooms)
+      .where(inArray(tourRooms.propertyId, ids));
+    return new Set(rows.map((r) => r.propertyId));
+  }
+
+  /** A listing's tour rooms, in tour order. */
+  async findTourRooms(id: number) {
+    return this.db
+      .select({ id: tourRooms.id, nameAr: tourRooms.nameAr, nameEn: tourRooms.nameEn, pano: tourRooms.pano })
+      .from(tourRooms)
+      .where(eq(tourRooms.propertyId, id))
+      .orderBy(asc(tourRooms.sort), asc(tourRooms.id));
+  }
+
   async findCovers(ids: number[]): Promise<Map<number, string>> {
     if (!ids.length) return new Map();
     const rows = await this.db

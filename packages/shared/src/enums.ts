@@ -1,11 +1,14 @@
 // Enums from the contract (§2, §13). Each one is a readonly tuple plus its union type,
 // so the API can validate with `IsIn(LIST)` and the app can loop over the values.
 
-export const ROLES = ['client', 'owner', 'agent', 'admin'] as const;
+export const ROLES = ['client', 'agent', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Roles a person can pick at sign-up. Agents and admins are created by an admin. */
-export const SIGN_UP_ROLES = ['client', 'owner'] as const satisfies readonly Role[];
+/**
+ * Roles a person can pick at sign-up: clients only. Agents and admins are created by an admin, and
+ * there are no owner accounts: owners deal with Maqar, and admins list their homes (2026-11-09).
+ */
+export const SIGN_UP_ROLES = ['client'] as const satisfies readonly Role[];
 export type SignUpRole = (typeof SIGN_UP_ROLES)[number];
 
 export const LANGS = ['ar', 'en'] as const;

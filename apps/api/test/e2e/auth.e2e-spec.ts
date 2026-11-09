@@ -18,11 +18,19 @@ describe('Accounts and sign-in (e2e)', () => {
     await app.close();
   });
 
-  it('nobody can sign up as an agent or admin', async () => {
+  it.each(['agent', 'admin', 'owner'])('nobody can sign up as %s (owners were removed)', async (role) => {
     await http()
       .post('/v1/auth/sign-up')
-      .send({ name: 'X', email: 'x@test.maqar', password: 'Secret123', role: 'admin' })
+      .send({ name: 'X', email: 'x@test.maqar', password: 'Secret123', role })
       .expect(400);
+  });
+
+  it('signs up a client when the role is left out', async () => {
+    const res = await http()
+      .post('/v1/auth/sign-up')
+      .send({ name: 'No Role', email: 'no-role@test.maqar', password: 'Secret123' })
+      .expect(201);
+    expect(res.body.user.role).toBe('client');
   });
 
   it('a wrong password and an unknown email get the same 401', async () => {

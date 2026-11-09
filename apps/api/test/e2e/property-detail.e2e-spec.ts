@@ -59,6 +59,15 @@ describe('Property page (e2e)', () => {
     expect([...p.features].sort()).toEqual(['clubhouse', 'garden', 'parking', 'pool', 'security', 'smart']);
     expect(p.location).toEqual({ lat: expect.any(Number), lng: expect.any(Number) });
     expect(p.developerEn).toBeNull();
+    expect(p.tour).toBe(true);
+    expect(p.tourRooms.map((r) => r.nameEn)).toEqual(['Living room', 'Kitchen & dining', 'Master bedroom', 'Bathroom', 'Study']);
+    expect(p.tourRooms[0]).toMatchObject({ nameAr: 'المعيشة', pano: '/uploads/seed/pano/lebombo.jpg' });
+  });
+
+  it('has no tour rooms for a home without a tour', async () => {
+    const page = (await get('/v1/properties?tour=false&limit=1').expect(200)).body as Page<PropertyCard>;
+    const p = (await get(`/v1/properties/${page.items[0]!.id}`).expect(200)).body as PropertyDetail;
+    expect(p).toMatchObject({ tour: false, tourRooms: [] });
   });
 
   it('counts each view', async () => {

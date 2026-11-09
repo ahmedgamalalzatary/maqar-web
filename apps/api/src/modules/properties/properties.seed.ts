@@ -2,7 +2,7 @@ import type { Category, Feature, Finishing, PropertyType } from '@maqar/shared';
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from '../../core/db/db.module.js';
 import { users } from '../users/users.schema.js';
-import { properties, propertyFeatures, propertyImages } from './properties.schema.js';
+import { properties, propertyFeatures, propertyImages, tourRooms } from './properties.schema.js';
 
 type SeedProperty = {
   category: Category;
@@ -33,9 +33,28 @@ type SeedProperty = {
   features: Feature[];
   /** File names in uploads/seed; the first is the cover. */
   images: string[];
+  /** The 360° tour's rooms, in order (keys of SEED_ROOMS). */
+  tour?: SeedRoom[];
   descAr: string;
   descEn: string;
 };
+
+/** The demo's 6 panoramas (apps/demo/public/pano, copied to uploads/seed/pano). */
+export const SEED_ROOMS = {
+  living: { nameAr: 'المعيشة', nameEn: 'Living room', file: 'lebombo.jpg' },
+  open: { nameAr: 'المطبخ والسفرة', nameEn: 'Kitchen & dining', file: 'kiara_interior.jpg' },
+  master: { nameAr: 'غرفة النوم الرئيسية', nameEn: 'Master bedroom', file: 'hotel_room.jpg' },
+  bath: { nameAr: 'الحمام', nameEn: 'Bathroom', file: 'modern_bathroom.jpg' },
+  study: { nameAr: 'غرفة المكتب', nameEn: 'Study', file: 'photo_studio_loft_hall.jpg' },
+  empty: { nameAr: 'الغرفة الثانية', nameEn: 'Second bedroom', file: 'small_empty_room_1.jpg' },
+} as const;
+type SeedRoom = keyof typeof SEED_ROOMS;
+
+const tourRows = (propertyId: number, tour: SeedRoom[]) =>
+  tour.map((key, sort) => {
+    const { file, ...name } = SEED_ROOMS[key];
+    return { propertyId, ...name, pano: `/uploads/seed/pano/${file}`, sort };
+  });
 
 // The demo's 16 listings (apps/demo/src/lib/data.ts). Names of compounds and developers are fictional.
 export const SEED_PROPERTIES: SeedProperty[] = [
@@ -62,6 +81,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'omar@maqar.app',
     features: ['pool', 'garden', 'parking', 'security', 'smart', 'clubhouse'],
     images: ['p1.jpg', 'p3.jpg', 'p17.jpg', 'p14.jpg', 'p29.jpg'],
+    tour: ['living', 'open', 'master', 'bath', 'study'],
     descAr: 'فيلا بتصميم معاصر على زاوية، حديقة ٣٠٠ م² وحمام سباحة خاص، تشطيب كامل بأجهزة سمارت هوم، على بعد ٥ دقائق من شارع التسعين.',
     descEn: 'A contemporary corner villa with a 300 m² garden and private pool, fully finished with smart-home controls, five minutes from 90th Street.',
   },
@@ -88,6 +108,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'omar@maqar.app',
     features: ['garden', 'parking', 'elevator', 'security', 'gym'],
     images: ['p11.jpg', 'p13.jpg', 'p28.jpg', 'p15.jpg', 'p12.jpg'],
+    tour: ['living', 'open', 'master', 'bath'],
     descAr: 'شقة واسعة في الدور الثالث بإطلالة مباشرة على اللاندسكيب، ريسبشن ٣ قطع، مطبخ مفتوح، وأمن ٢٤ ساعة.',
     descEn: 'A wide third-floor apartment with a direct landscape view, three-piece reception, open kitchen and 24/7 security.',
   },
@@ -117,6 +138,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'mariam@maqar.app',
     features: ['elevator', 'parking', 'security', 'gym', 'clubhouse', 'smart'],
     images: ['p21.jpg', 'p12.jpg', 'p10.jpg', 'p14.jpg'],
+    tour: ['living', 'empty', 'bath'],
     descAr: 'مشروع سكني في قلب الحي المالي بالعاصمة الإدارية، استلام ٢٠٢٨، نصف تشطيب، وخطة سداد مرنة حتى ٨ سنوات.',
     descEn: 'A residential tower in the New Capital financial district, handover 2028, semi-finished, with flexible plans up to 8 years.',
   },
@@ -143,6 +165,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'youssef@maqar.app',
     features: ['sea', 'pool', 'parking', 'security', 'clubhouse'],
     images: ['p19.jpg', 'p20.jpg', 'p16.jpg', 'p27.jpg'],
+    tour: ['living', 'master', 'bath'],
     descAr: 'شاليه مفروش بالكامل على الصف الأول مباشرة، تراس ٤٠ م² بإطلالة بانورامية على البحر، ويصلح للاستثمار بالإيجار الصيفي.',
     descEn: 'A fully furnished first-row chalet with a 40 m² terrace and panoramic sea view, a strong pick for summer-rental income.',
   },
@@ -166,6 +189,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'salma@maqar.app',
     features: ['parking', 'elevator', 'security', 'gym'],
     images: ['p9.jpg', 'p10.jpg', 'p28.jpg', 'p30.jpg'],
+    tour: ['living', 'open', 'master'],
     descAr: 'شقة مفروشة بالكامل بأجهزة جديدة، تكييفات في كل الغرف، عقد سنوي قابل للتجديد.',
     descEn: 'Fully furnished with new appliances, air conditioning in every room, and a renewable one-year lease.',
   },
@@ -188,6 +212,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'youssef@maqar.app',
     features: ['pool', 'sea', 'garden', 'parking', 'security'],
     images: ['p18.jpg', 'p5.jpg', 'p17.jpg', 'p20.jpg'],
+    tour: ['living', 'master', 'bath'],
     descAr: 'فيلا مجهزة للعائلات، ساعة واحدة من القاهرة، حمام سباحة خاص وشاطئ رملي على بعد دقيقتين.',
     descEn: 'A family-ready villa one hour from Cairo, with a private pool and a sandy beach two minutes away.',
   },
@@ -213,6 +238,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'omar@maqar.app',
     features: ['garden', 'parking', 'security', 'clubhouse', 'roof'],
     images: ['p2.jpg', 'p26.jpg', 'p3.jpg', 'p15.jpg'],
+    tour: ['living', 'open', 'master', 'bath', 'study'],
     descAr: 'توين هاوس على حديقة مركزية، نصف تشطيب مع إمكانية التشطيب حسب ذوقك، ورووف خاص.',
     descEn: 'A twin house on the central park, semi-finished so you can finish it your way, with a private roof.',
   },
@@ -265,6 +291,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'omar@maqar.app',
     features: ['roof', 'elevator', 'parking', 'security'],
     images: ['p27.jpg', 'p3.jpg', 'p16.jpg', 'p30.jpg'],
+    tour: ['living', 'open', 'master', 'bath'],
     descAr: 'بنتهاوس بتراس ٩٠ م² في قلب المعادي الهادئة، تشطيب فاخر وإطلالة مفتوحة على المدينة.',
     descEn: 'A penthouse with a 90 m² terrace in quiet Maadi, luxury finishing and an open city view.',
   },
@@ -287,6 +314,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'youssef@maqar.app',
     features: ['sea', 'pool', 'security'],
     images: ['p20.jpg', 'p19.jpg', 'p28.jpg'],
+    tour: ['living', 'master'],
     descAr: 'شاليه بإطلالة على اللاجون، مناسب للأزواج والعائلات الصغيرة، الحد الأدنى ليلتين.',
     descEn: 'A lagoon-view chalet for couples and small families, two-night minimum.',
   },
@@ -309,6 +337,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'salma@maqar.app',
     features: ['garden', 'pool', 'parking', 'security', 'smart'],
     images: ['p7.jpg', 'p11.jpg', 'p17.jpg', 'p14.jpg'],
+    tour: ['living', 'open', 'master', 'bath', 'study'],
     descAr: 'فيلا للإيجار طويل المدة، مناسبة للعائلات والسفارات، حديقة ٤٠٠ م².',
     descEn: 'A long-term rental villa suited to families and embassies, with a 400 m² garden.',
   },
@@ -337,6 +366,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'youssef@maqar.app',
     features: ['sea', 'pool', 'security', 'clubhouse'],
     images: ['p22.jpg', 'p20.jpg', 'p16.jpg'],
+    tour: ['living', 'master', 'bath'],
     descAr: 'شاليهات تشطيب كامل على بعد ٣٠٠ متر من البحر في العلمين الجديدة، استلام صيف ٢٠٢٧.',
     descEn: 'Fully finished chalets 300 m from the sea in New Alamein, handover summer 2027.',
   },
@@ -362,6 +392,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'mariam@maqar.app',
     features: ['garden', 'parking', 'security', 'gym', 'elevator'],
     images: ['p6.jpg', 'p13.jpg', 'p17.jpg', 'p29.jpg'],
+    tour: ['living', 'open', 'master', 'bath', 'study'],
     descAr: 'دوبلكس أرضي بحديقة ١٢٠ م²، ٤ غرف منها ماستر، وقريب من المحور.',
     descEn: 'A ground-floor duplex with a 120 m² garden, four bedrooms including a master suite, close to the main axis.',
   },
@@ -410,6 +441,7 @@ export const SEED_PROPERTIES: SeedProperty[] = [
     agentEmail: 'youssef@maqar.app',
     features: ['sea', 'pool', 'garden', 'parking', 'security'],
     images: ['p8.jpg', 'p5.jpg', 'p3.jpg', 'p16.jpg'],
+    tour: ['living', 'open', 'master', 'bath', 'study'],
     descAr: 'فيلا على اللاجون مباشرة بممر خاص للشاطئ، تشطيب كامل وجاهزة للسكن.',
     descEn: 'A villa directly on the lagoon with a private beach path, fully finished and ready to move in.',
   },
@@ -473,7 +505,7 @@ export async function seedProperties(db: Db, now = Date.now()): Promise<void> {
   const agentRows = await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.email, emails));
   const agentId = new Map(agentRows.map((r) => [r.email, r.id]));
 
-  for (const [index, { agentEmail, listedDays, features, images, ...p }] of SEED_PROPERTIES.entries()) {
+  for (const [index, { agentEmail, listedDays, features, images, tour = [], ...p }] of SEED_PROPERTIES.entries()) {
     const agent = agentId.get(agentEmail);
     if (!agent) throw new Error(`Seed agent ${agentEmail} is missing: run seedDemoAccounts first`);
     const location = seedLocation(p.areaId, index);
@@ -484,6 +516,9 @@ export async function seedProperties(db: Db, now = Date.now()): Promise<void> {
     if (exists) {
       // Listings seeded before they had a location get one.
       if (exists.lat === null) await db.update(properties).set(location).where(eq(properties.id, exists.id));
+      // Listings seeded before tours existed (phase 10) get theirs.
+      const [room] = await db.select({ id: tourRooms.id }).from(tourRooms).where(eq(tourRooms.propertyId, exists.id)).limit(1);
+      if (!room && tour.length) await db.insert(tourRooms).values(tourRows(exists.id, tour));
       continue;
     }
 
@@ -496,6 +531,7 @@ export async function seedProperties(db: Db, now = Date.now()): Promise<void> {
       await tx
         .insert(propertyImages)
         .values(images.map((file, sort) => ({ propertyId: id, url: `/uploads/seed/${file}`, sort })));
+      if (tour.length) await tx.insert(tourRooms).values(tourRows(id, tour));
     });
   }
 }

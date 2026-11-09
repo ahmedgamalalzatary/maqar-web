@@ -20,6 +20,7 @@ const villa: PropertyDetail = {
   features: ['pool', 'garden'],
   images: ['/uploads/seed/p1.jpg', '/uploads/seed/p3.jpg'],
   views: 2141,
+  tourRooms: [],
   location: { lat: 30.0074, lng: 31.4913 },
   agent: {
     id: 3,
@@ -90,6 +91,20 @@ describe('PropertyScreen', () => {
 
     await screen.findByText('عن الوحدة');
     expect(screen.queryByText('احسب قسطك')).toBeNull();
+  });
+
+  it('opens the 360° tour when the home has one, and offers none otherwise', async () => {
+    const rooms = [{ id: 7, nameAr: 'المعيشة', nameEn: 'Living room', pano: '/uploads/seed/pano/lebombo.jpg' }];
+    routeFetch({ '/properties/1': () => ({ ...villa, tour: true, tourRooms: rooms }), '/properties/1/similar': () => [] });
+    const view = await renderWithProviders(<PropertyScreen id={1} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'جولة ٣٦٠°' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/property/1/tour');
+    await view.unmount();
+
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    await screen.findByText('فيلا مستقلة بحمام سباحة خاص');
+    expect(screen.queryByRole('button', { name: 'جولة ٣٦٠°' })).toBeNull();
   });
 
   it('calls the advisor', async () => {

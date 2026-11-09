@@ -13,11 +13,12 @@ beforeEach(async () => {
 });
 
 describe('SignUpScreen', () => {
-  it('creates an owner account in the current language and opens the owner portal', async () => {
-    const fetchMock = mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'owner' })));
+  it('creates a client account in the current language, with no role to pick', async () => {
+    const fetchMock = mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client' })));
     await renderWithProviders(<SignUpScreen />);
 
-    await fireEvent.press(screen.getByRole('radio', { name: /مالك عقار/ }));
+    // There are no owner accounts (2026-11-09): sign-up offers no choice of role.
+    expect(screen.queryByRole('radio')).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
     await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
@@ -25,9 +26,9 @@ describe('SignUpScreen', () => {
 
     expect(requestOf(fetchMock)).toMatchObject({
       path: '/auth/sign-up',
-      body: { name: 'Mona Adel', email: 'mona@test.maqar', password: 'Secret123', role: 'owner', lang: 'ar' },
+      body: { name: 'Mona Adel', email: 'mona@test.maqar', password: 'Secret123', lang: 'ar' },
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith('/owner');
+    expect(requestOf(fetchMock).body).not.toHaveProperty('role');
   });
 
   it('a new client goes on to the preference questions', async () => {

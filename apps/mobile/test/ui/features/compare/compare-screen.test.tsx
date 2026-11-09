@@ -19,6 +19,7 @@ const detail = (over: Partial<PropertyDetail>): PropertyDetail => ({
   features: [],
   images: [],
   views: 100,
+  tourRooms: [],
   location: null,
   agent: {
     id: 3,
@@ -38,7 +39,7 @@ const detail = (over: Partial<PropertyDetail>): PropertyDetail => ({
   ...over,
 });
 
-const villa = detail({ id: 1, titleAr: 'فيلا', titleEn: 'Villa', price: 10_000_000, sizeM2: 200, delivery: 2028, features: ['pool'], maintenanceFee: 8 });
+const villa = detail({ id: 1, tour: true, titleAr: 'فيلا', titleEn: 'Villa', price: 10_000_000, sizeM2: 200, delivery: 2028, features: ['pool'], maintenanceFee: 8 });
 const flat = detail({ id: 2, titleAr: 'شقة', titleEn: 'Flat', price: 9_000_000, sizeM2: 150, features: ['gym'], maintenanceFee: 10 });
 const studio = makeCard({ id: 5, titleAr: 'ستوديو', titleEn: 'Studio' });
 
@@ -76,6 +77,8 @@ describe('The compare screen', () => {
     expect(screen.getByLabelText('Views A: 100')).toBeTruthy();
     expect(screen.getByLabelText('Pool A: yes')).toBeTruthy();
     expect(screen.getByLabelText('Pool B: no')).toBeTruthy();
+    expect(screen.getByLabelText('360° tour A: yes')).toBeTruthy();
+    expect(screen.getByLabelText('360° tour B: no')).toBeTruthy();
 
     const urls = fetchMock.mock.calls.map(([u]) => String(u));
     expect(urls.some((u) => u.endsWith('/properties/compare?ids=1,2'))).toBe(true);

@@ -140,6 +140,14 @@ describe('ExploreScreen', () => {
     await waitFor(() => expect(lastListQuery(fetchMock)).not.toHaveProperty('plan'));
   });
 
+  it('shows only homes with a 360° tour from the first quick filter', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen />);
+    await screen.findByText('شقة مفروشة للإيجار');
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'جولة ٣٦٠°' }));
+    await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ tour: 'true' }));
+  });
+
   it('sorts by the lowest price', async () => {
     const fetchMock = api();
     await renderWithProviders(<ExploreScreen />);

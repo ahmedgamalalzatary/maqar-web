@@ -16,7 +16,6 @@ const AGENTS = [
 const OTHERS: { email: string; name: string; role: Role }[] = [
   { email: 'admin@maqar.app', name: 'فريق مقر', role: 'admin' },
   { email: 'client@maqar.app', name: 'عميل تجريبي', role: 'client' },
-  { email: 'owner@maqar.app', name: 'مالك تجريبي', role: 'owner' },
 ];
 
 /** Creates the demo accounts that do not exist yet. Safe to run more than once. */

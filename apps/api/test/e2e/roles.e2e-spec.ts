@@ -16,7 +16,6 @@ import { resetDb } from '../utils/db.js';
 @Controller('probe')
 class ProbeController {
   @Roles('client') @Get('client') client() { return 'ok'; }
-  @Roles('owner') @Get('owner') owner() { return 'ok'; }
   @Roles('agent') @Get('agent') agent() { return 'ok'; }
   @Roles('admin') @Get('admin') admin() { return 'ok'; }
 }
@@ -38,7 +37,6 @@ describe('Role guards (e2e)', () => {
 
     for (const [role, email] of Object.entries({
       client: 'client@maqar.app',
-      owner: 'owner@maqar.app',
       agent: 'omar@maqar.app',
       admin: 'admin@maqar.app',
     })) {
@@ -54,7 +52,7 @@ describe('Role guards (e2e)', () => {
     await app.close();
   });
 
-  const roles: Role[] = ['client', 'owner', 'agent', 'admin'];
+  const roles: Role[] = ['client', 'agent', 'admin'];
 
   it.each(roles)('a %s reaches only their own role routes', async (role) => {
     for (const route of roles) {

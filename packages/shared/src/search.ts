@@ -70,6 +70,8 @@ export type ListingFilters = {
   ready?: boolean;
   /** The price has fallen. */
   dropped?: boolean;
+  /** Has a 360° tour. */
+  tour?: boolean;
 };
 
 /**

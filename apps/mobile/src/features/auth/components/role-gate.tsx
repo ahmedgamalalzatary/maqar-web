@@ -5,7 +5,7 @@ import { homeFor, useSession } from '../store/session.store';
 
 /**
  * Keeps each role in its own area. The client area is also open to guests;
- * the owner, agent and admin areas need that role.
+ * the agent and admin areas need that role.
  */
 export function RoleGate({ role, children }: { role: Role; children: ReactNode }) {
   const user = useSession((s) => s.user);

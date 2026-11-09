@@ -5,7 +5,6 @@ export type Bi = { ar: string; en: string };
 
 export const ROLE_LABEL: Record<Role, Bi> = {
   client: { ar: 'عميل', en: 'Client' },
-  owner: { ar: 'مالك عقار', en: 'Owner' },
   agent: { ar: 'مسؤول مبيعات', en: 'Sales agent' },
   admin: { ar: 'فريق مقر', en: 'Maqar admin' },
 };
