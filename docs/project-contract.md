@@ -623,7 +623,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 3 | Push: Expo push service or FCM/APNs directly? |
 | 4 | ~~Maps provider~~ **Decided:** `react-native-maps` (free; Apple Maps on iOS, Google Maps on Android; included in Expo Go). Directions open the phone's maps app on the listing's location, so no paid directions API. Android store builds need a free, restricted Google Maps key (`GOOGLE_MAPS_API_KEY`, passed to the config plugin in `app.config.ts`). |
 | 5 | Video viewings: which video service (or WhatsApp video)? |
-| 6 | Admin UI form (web dashboard, in-app, or API only first). |
+| 6 | ~~Admin UI form~~ **Decided:** both a web dashboard and admin screens inside the app. |
 | 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for Maqar, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
 | 8 | Agent working hours and availability rules beyond the default 10:00–20:00 and Friday after 14:00. |
 | 9 | ~~Client and owner on one account?~~ **Decided:** no, one role per account. |
@@ -631,7 +631,7 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 11 | Which owner edits need review again. |
 | 12 | Chat when the agent is away: auto-reply or AI help? |
 | 13 | Background jobs and queue (for example BullMQ with Redis) for reminders and pushes. |
-| 14 | Analytics and crash reporting. |
+| 14 | ~~Analytics and crash reporting~~ **Decided:** out of scope for now. |
 
 ### 16.2 Out of scope (until this file says otherwise)
 
@@ -660,4 +660,5 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 5 built (the phone check is still pending): search, every filter and the sorts on `GET /properties`, and the new `GET /properties/facets` for the filter sheet's counts and histograms. Search also matches unit type names. The 360° tour quick filter moved to Phase 10, which brings the tour data. |
 | 2026-11-09 | Phase 6 built (the phone check is still pending): `client_prefs`, `PUT /me/prefs`, `prefs` on `/me`, the match score on the server, `sort=match`, `GET /properties/recommended`, and the new `GET /properties/match-count` for onboarding's live count. Onboarding now follows sign-up rather than first launch, because preferences belong to the account; guests get an invitation instead. The tour's +2 waits for Phase 10. |
 | 2026-11-09 | Phase 9 built (the phone check is still pending): compare two homes. The new `GET /properties/compare?ids=` returns both homes' details in one call without counting views, unlike `GET /properties/:id`. The better-value rule and the verdict live in `packages/shared`. The "interested" demand row and the 360° tour amenity row wait for the phases that bring that data (12, 13, 16 and 10). |
+| 2026-11-09 | Decided: admin tools are a web dashboard plus screens inside the app (#6); analytics and crash reporting are out of scope for now (#14). |
 | 2026-11-09 | The backend runs on a temporary server (`187.55.224.15`, shared with another project) at `https://187-55-224-15.sslip.io`, with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |
