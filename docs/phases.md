@@ -60,9 +60,9 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 15 | Sales agent app | ⬜ | |
 | 16 | Live chat | ⬜ | 12 |
 | 17 | Owner listings | ⬜ | 10, 11 |
-| 18 | Admin review | ⬜ | 6 |
+| 18 | Admin review | ⬜ | ~~6~~ decided |
 | 19 | Owner insights | ⬜ | |
-| 20 | Release | ⬜ | 14 |
+| 20 | Release | ⬜ | ~~14~~ out of scope |
 
 ---
 
