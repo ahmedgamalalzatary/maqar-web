@@ -1,4 +1,15 @@
-import type { Category, Feature, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
+import type {
+  Category,
+  Feature,
+  Finishing,
+  Lang,
+  NotificationKind,
+  PropertyType,
+  PushPlatform,
+  Role,
+  SignUpRole,
+  ThemePref,
+} from './enums.js';
 import type { Match, Prefs } from './match.js';
 import type { ListingFilters, Sort } from './search.js';
 
@@ -170,3 +181,30 @@ export type PrefsBody = Prefs;
 
 /** `GET /v1/properties/match-count`: homes that fit these preferences 70% or more. */
 export type MatchCount = { count: number };
+
+// ---- Notifications (phase 11) ----
+
+/** One inbox entry (contract §8.13). `href` is the app screen a tap opens, e.g. `/property/4`. */
+export type NotificationItem = {
+  id: number;
+  kind: NotificationKind;
+  titleAr: string;
+  titleEn: string;
+  bodyAr: string;
+  bodyEn: string;
+  href: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
+/** `GET /v1/notifications`: the newest first, and how many are unread in all. */
+export type NotificationsResponse = { items: NotificationItem[]; unread: number };
+
+/** `POST` and `DELETE /v1/me/push-tokens`: this phone's Expo push token. */
+export type PushTokenBody = { token: string; platform: PushPlatform };
+
+/** What a phone push carries besides its text: the inbox entry and the screen to open. */
+export type PushData = { id: number; href: string | null };
+
+/** The most inbox entries one request returns. */
+export const NOTIFICATIONS_LIMIT = 50;

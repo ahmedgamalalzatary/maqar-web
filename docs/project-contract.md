@@ -118,7 +118,7 @@ Rules:
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
-| Not installed yet (waiting on §16.1) | Push sender (#3), job queue (#13), video (#5) |
+| Not installed yet (waiting on §16.1) | Job queue (#13), video (#5). Push is sent to Expo's HTTP API directly, with no SDK. |
 | API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
@@ -405,15 +405,15 @@ The price is compared on the client's terms:
   | `price` | A followed home's price dropped |
   | `reminder` | A viewing reminder |
   | `booking` | A viewing was confirmed, rescheduled or cancelled |
-  | `approval` | An owner's listing was approved, or changes were requested |
   | `match` | New homes match the client's preferences |
   | `lead` | Agent: new lead or new booking |
   | `chat` | New chat message |
+  | `system` | Maqar's own messages, such as "Notifications are on" when the switch is turned on |
 - **Phone notifications:** a switch in Me that the user can turn on **and off** at any time.
   - On asks for permission the first time.
   - If permission is blocked, the switch says so and explains how to allow it.
   - Off stops phone notifications, but in-app ones still arrive.
-- [Real] Push goes through Expo push notifications [Open: confirm]. Device tokens are stored per user.
+- [Real] Push goes through Expo push notifications (§16.1 #3). Device tokens are stored per phone, on the account signed in there; signing out removes the phone's token. A tapped push opens its `href`.
 
 ### 8.14 Me (profile and settings)
 
@@ -557,8 +557,8 @@ Conventions:
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
 | **chat_threads** | id, client_id, property_id, agent_id, lead_id, created_at. Unique (client_id, property_id). |
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
-| **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `approval` / `match` / `lead` / `chat`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
-| **push_tokens** | id, user_id, token, platform, created_at |
+| **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `match` / `lead` / `chat` / `system`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
+| **push_tokens** | id, user_id, token (unique), platform (`ios` / `android`), created_at, updated_at |
 | **listing_stats** (or events) | property_id, date, views, saves, interested, used for the owner chart |
 
 Supporting rules:
@@ -575,14 +575,14 @@ Supporting rules:
 | Module | Endpoints (planned) | Who |
 |---|---|---|
 | auth | `POST /auth/sign-up` (client or owner only), `POST /auth/sign-in`, `POST /auth/refresh`, `POST /auth/sign-out`. Sign-up and sign-in are rate limited per IP (`AUTH_RATE_LIMIT` a minute). | public |
-| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
+| me | `GET/PATCH /me`, `PUT /me/prefs`, `POST/DELETE /me/push-tokens`, `DELETE /me` (needs the password; clients and owners only, staff are removed by an admin) | signed in |
 | areas | `GET /areas` | public |
 | properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/compare?ids=` (one or two homes for the compare screen; counts no view), `GET /properties/recommended`, `GET /properties/match-count` (homes that fit given preferences 70% or more, for onboarding) | public; `sort=match` and `recommended` need a signed-in client |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
 | viewings | `GET /properties/:id/slots?from&to`, `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
 | chat | `GET /chats`, `POST /chats` (property), `GET /chats/:id/messages`, `POST /chats/:id/messages`, `POST /chats/:id/read`, WebSocket: message, typing, read | client, agent |
-| notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read` | signed in |
+| notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
 | owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
 | uploads | `POST /uploads` (photos, panoramas), stored on the server disk and served at `/uploads/...` | owner, agent, client (chat) |
 | agent | `GET /agent/today`, `GET /agent/leads`, `GET/PATCH /agent/leads/:id`, `POST /agent/leads/:id/notes` | agent |
@@ -666,3 +666,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Decided: chats stay with each home's advisor; agents' hours can be set one by one or for several at once, plus holidays; owner insights move to the admin tools. Phases re-planned: owner clean-up in 10, hours and holidays data in 13, 17 Admin listings, 18 Admin tools, 19 Listing insights. The owner sections of §2, §9 and §11 are to be rewritten when those phases start. |
 | 2026-11-09 | Phase 10 built (the phone check is still pending): `tour_rooms`, `tourRooms` on the property detail, `tour` on cards and as a filter, the +2 match points for a tour, and the 360° viewer. The owner role is removed from the code and the database (migration `0005` deletes owner accounts and drops `properties.owner_id`); sign-up is for clients only and its `role` field is optional. |
 | 2026-11-09 | The backend runs on a temporary server (`187.55.224.15`, shared with another project) at `https://187-55-224-15.sslip.io`, with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |
+| 2026-11-09 | Phase 11 built (the phone check is still pending): `notifications` and `push_tokens`, the notify service, the inbox routes, `DELETE /me/push-tokens` and `POST /notifications/test`. The `approval` kind is removed with the owner role, and `system` added. Real pushes need an EAS project id and Firebase/APNs credentials (Phase 11 status). |

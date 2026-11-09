@@ -12,9 +12,11 @@ import { mediaUrl } from '@/core/api/api';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { usePreferences } from '@/features/account/hooks/use-account';
+import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { PropertyCardView } from '@/features/listings/components/property-card';
 import { useAreas, useProperties } from '@/features/listings/hooks/use-listings';
+import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
 
 const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string }[] = [
@@ -35,6 +37,7 @@ export function Home() {
   const router = useRouter();
   const { scheme, colors } = useTheme();
   const { setTheme } = usePreferences();
+  const signedIn = useSession((s) => s.status === 'signedIn');
   const { width } = useWindowDimensions();
   const areas = useAreas();
   const launches = useProperties({ category: 'project', limit: 10 });
@@ -44,6 +47,7 @@ export function Home() {
     <Screen>
       <View style={styles.header}>
         <Logo width={64} />
+        <View style={styles.flex} />
         <IconButton
           label={scheme === 'dark' ? t('الوضع الفاتح', 'Light mode') : t('الوضع الداكن', 'Dark mode')}
           onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
@@ -55,6 +59,7 @@ export function Home() {
             )
           }
         />
+        {signedIn ? <NotificationBell /> : null}
       </View>
 
       <View>
@@ -265,7 +270,7 @@ function Section({
 const styles = StyleSheet.create({
   calculator: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: radius.lg, padding: 20 },
   calculatorIcon: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headline: { lineHeight: 34 },
   search: {
     flexDirection: 'row',

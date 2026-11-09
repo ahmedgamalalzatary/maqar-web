@@ -14,6 +14,7 @@ import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSignOut } from '@/features/auth/hooks/use-auth';
 import { useSession } from '@/features/auth/store/session.store';
+import { PushRow } from '@/features/notifications/components/push-row';
 import { DeleteAccountSheet } from '../components/delete-account-sheet';
 import { usePreferences } from '../hooks/use-account';
 
@@ -93,6 +94,7 @@ export function MeScreen() {
             onChange={(on) => prefs.setTheme(on ? 'dark' : 'light')}
           />
         </Row>
+        {user ? <PushRow /> : null}
         {user ? (
           <LinkRow
             icon={<UserPen size={20} color={colors.accentInk} />}

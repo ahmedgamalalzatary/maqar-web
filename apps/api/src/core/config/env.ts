@@ -70,6 +70,14 @@ export class Env {
   @MinLength(1)
   UPLOADS_DIR = 'uploads';
 
+  /**
+   * Optional: Expo's push security token, when "enhanced push security" is on for the Expo
+   * project. Without it Expo accepts pushes from anyone who knows a token.
+   */
+  @IsOptional()
+  @IsString()
+  EXPO_ACCESS_TOKEN?: string;
+
   /** Password for the seeded demo accounts. Only the seed script reads it. */
   @IsOptional()
   @IsString()

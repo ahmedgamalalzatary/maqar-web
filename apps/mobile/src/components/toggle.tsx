@@ -6,7 +6,17 @@ import { useTheme } from '@/core/theme';
  * the layout were left-to-right, so in Arabic it lands outside the track: keep the switch
  * itself left-to-right there. Phones draw their own native switch and mirror it correctly.
  */
-export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (on: boolean) => void }) {
+export function Toggle({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (on: boolean) => void;
+  disabled?: boolean;
+}) {
   const { colors } = useTheme();
   return (
     <View style={Platform.OS === 'web' ? { direction: 'ltr' } : undefined}>
@@ -14,6 +24,7 @@ export function Toggle({ label, value, onChange }: { label: string; value: boole
         accessibilityLabel={label}
         value={value}
         onValueChange={onChange}
+        disabled={disabled}
         trackColor={{ true: colors.accent, false: colors.surface3 }}
         thumbColor={colors.cream}
         {...(Platform.OS === 'web' && { activeThumbColor: colors.cream })}

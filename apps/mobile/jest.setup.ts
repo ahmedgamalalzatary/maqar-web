@@ -21,3 +21,7 @@ jest.mock('react-native-maps', () => {
   const Marker = (props: object) => require('react').createElement(View, props);
   return { __esModule: true, default: MapView, Marker, PROVIDER_GOOGLE: 'google' };
 });
+
+// Phone notifications have no native module under Jest: see test/utils/notifications.ts.
+jest.mock('expo-notifications', () => require('./test/utils/notifications').notificationsMock);
+jest.mock('expo-device', () => ({ isDevice: true }));
