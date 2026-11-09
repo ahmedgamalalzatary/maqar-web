@@ -102,4 +102,36 @@ describe('Property page (e2e)', () => {
     expect(similar.every((p) => p.category === 'rent')).toBe(true);
     expect(similar).toHaveLength(2);
   });
+
+  // Phase 9: the compare screen reads both homes in one call, without counting views.
+  describe('compare', () => {
+    const viewsOf = async (id: number) =>
+      (await db.select({ views: properties.views }).from(properties).where(eq(properties.id, id)))[0].views;
+
+    it('gives both homes in the order asked, with what the page shows, and counts no view', async () => {
+      const villa = ids.get('Standalone villa with private pool')!;
+      const studio = ids.get('Furnished studio')!;
+      const before = [await viewsOf(villa), await viewsOf(studio)];
+      const homes = (await get(`/v1/properties/compare?ids=${studio},${villa}`).expect(200)).body as PropertyDetail[];
+      expect(homes.map((h) => h.id)).toEqual([studio, villa]);
+      expect(homes[1]).toMatchObject({ maintenanceFee: 8, price: 24_500_000, views: before[0] });
+      expect([...homes[1].features].sort()).toEqual(['clubhouse', 'garden', 'parking', 'pool', 'security', 'smart']);
+      expect([await viewsOf(villa), await viewsOf(studio)]).toEqual(before);
+    });
+
+    it('leaves out homes that are missing or not approved', async () => {
+      const villa = ids.get('Standalone villa with private pool')!;
+      const hidden = (await get(`/v1/properties/compare?ids=${hiddenId},${villa}`).expect(200)).body as PropertyDetail[];
+      expect(hidden.map((h) => h.id)).toEqual([villa]);
+      const missing = (await get(`/v1/properties/compare?ids=999999,${villa}`).expect(200)).body as PropertyDetail[];
+      expect(missing.map((h) => h.id)).toEqual([villa]);
+    });
+
+    it.each([['nothing', ''], ['a word', '?ids=abc'], ['zero', '?ids=0'], ['three homes', '?ids=1,2,3']])(
+      'refuses %s',
+      async (_name, query) => {
+        await get(`/v1/properties/compare${query}`).expect(400);
+      },
+    );
+  });
 });

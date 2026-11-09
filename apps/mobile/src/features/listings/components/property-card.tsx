@@ -9,6 +9,7 @@ import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
+import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
 
 /** Percent the price fell from the old price, rounded; 0 when it did not fall. */
@@ -30,7 +31,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
   const icon = { size: 14, color: colors.ink3, strokeWidth: 1.8 };
 
   return (
-    // The heart sits beside the card, not inside it: a screen reader cannot reach a button within a button.
+    // The heart and the scale sit beside the card, not inside it: a screen reader cannot reach a button within a button.
     <View style={{ width }}>
       <Pressable
         accessibilityRole="button"
@@ -120,7 +121,10 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
           </View>
         </View>
       </Pressable>
-      <SaveButton card={card} style={styles.heart} />
+      <View style={styles.actions}>
+        <CompareButton card={card} />
+        <SaveButton card={card} />
+      </View>
     </View>
   );
 }
@@ -143,8 +147,8 @@ function Spec({ icon, text }: { icon: ReactNode; text: string }) {
 
 const styles = StyleSheet.create({
   photo: { aspectRatio: 4 / 3, borderRadius: 26, overflow: 'hidden' },
-  top: { position: 'absolute', top: 12, start: 12, end: 60, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  heart: { position: 'absolute', top: 8, end: 8 },
+  top: { position: 'absolute', top: 12, start: 12, end: 104, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  actions: { position: 'absolute', top: 8, end: 8, flexDirection: 'row', gap: 6 },
   bottom: { position: 'absolute', bottom: 12, start: 12, end: 12, flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 10, height: 26 },
   white: { color: '#fff' },
