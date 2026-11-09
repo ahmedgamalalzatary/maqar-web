@@ -1,5 +1,1 @@
-import { Placeholder } from '@/components/placeholder';
-
-export default function Route() {
-  return <Placeholder title={{ ar: 'معايناتي', en: 'My viewings' }} phase={13} />;
-}
+export { ViewingsScreen as default } from '@/features/viewings/screens/viewings-screen';

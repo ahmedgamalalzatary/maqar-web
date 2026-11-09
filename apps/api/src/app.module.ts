@@ -10,6 +10,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PricesModule } from './modules/prices/prices.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
+import { ViewingsModule } from './modules/viewings/viewings.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -46,6 +47,7 @@ import { UsersModule } from './modules/users/users.module.js';
     FavoritesModule,
     NotificationsModule,
     PricesModule,
+    ViewingsModule,
   ],
 })
 export class AppModule {}

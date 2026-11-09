@@ -272,6 +272,21 @@ export class PropertiesRepository {
       .where(and(inArray(properties.id, ids), approved));
   }
 
+  /** These listings with their area names, whatever their status (a past viewing's home may be gone). */
+  async findByIds(ids: number[]) {
+    if (!ids.length) return [];
+    return this.db
+      .select({ p: properties, area: areaColumns })
+      .from(properties)
+      .innerJoin(areas, eq(areas.id, properties.areaId))
+      .where(inArray(properties.id, ids));
+  }
+
+  async findAgents(ids: number[]) {
+    if (!ids.length) return [];
+    return this.db.select().from(agents).where(inArray(agents.userId, ids));
+  }
+
   /** An approved listing with its area and sales advisor, or undefined. */
   async findApprovedById(id: number) {
     const [row] = await this.db

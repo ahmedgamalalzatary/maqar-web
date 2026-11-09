@@ -6,9 +6,12 @@ import type {
   NotificationKind,
   PropertyType,
   PushPlatform,
+  ReminderOffset,
   Role,
   SignUpRole,
   ThemePref,
+  ViewingMode,
+  ViewingStatus,
 } from './enums.js';
 import type { Match, Prefs } from './match.js';
 import type { ListingFilters, Sort } from './search.js';
@@ -216,3 +219,47 @@ export type PriceChangeBody = { price: number };
 
 /** What the listing shows after a price change. */
 export type PriceChangeResponse = { price: number; oldPrice: number | null };
+
+// ---- Viewing booking (phase 13) ----
+
+/** A viewing hour's state (contract §8.7). */
+export type SlotState = 'free' | 'taken' | 'past' | 'closed';
+/** `time` is the hour in Cairo time, "16:00". */
+export type Slot = { time: string; state: SlotState };
+/** `date` is a Cairo calendar day, "2026-11-12". */
+export type SlotDay = { date: string; slots: Slot[] };
+
+/**
+ * `GET /v1/properties/:id/slots`: the next 14 days. `defaultDate` is today, or tomorrow after
+ * 19:00, moved on to the first day with a free hour.
+ */
+export type SlotsResponse = { days: SlotDay[]; defaultDate: string };
+
+/** `POST /v1/viewings`. `reminders` are the client's choices (sent from Phase 14). */
+export type BookViewingBody = { propertyId: number; date: string; time: string; reminders: ReminderOffset[] };
+
+/** `PATCH /v1/viewings/:id`: move to another free hour, or cancel. */
+export type UpdateViewingBody =
+  | { action: 'reschedule'; date: string; time: string; reminders?: ReminderOffset[] }
+  | { action: 'cancel' };
+
+/** A viewing, for the client who booked it or the agent who meets them. Dates and times are Cairo's. */
+export type ViewingItem = {
+  id: number;
+  status: ViewingStatus;
+  mode: ViewingMode;
+  date: string;
+  time: string;
+  /** The same moment as an ISO instant. */
+  startsAt: string;
+  /** Where it was before the last reschedule. */
+  rescheduledFrom: { date: string; time: string } | null;
+  reminders: ReminderOffset[];
+  property: PropertyCard;
+  /** For directions; null when the listing has no map point. */
+  location: { lat: number; lng: number } | null;
+  agent: ListingAgent;
+  /** For the agent only: who is coming. */
+  client: { name: string; phone: string | null } | null;
+  createdAt: string;
+};

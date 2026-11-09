@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { Prefs } from '@maqar/shared';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
 import { favorites } from '../favorites/favorites.schema.js';
 import { notifications, pushTokens } from '../notifications/notifications.schema.js';
 import { priceAlerts } from '../prices/prices.schema.js';
+import { viewings } from '../viewings/viewings.schema.js';
 import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schema.js';
 
 /** All database access for accounts. Deleted accounts are never returned. */
@@ -61,6 +62,8 @@ export class UsersRepository {
       await tx.delete(clientPrefs).where(eq(clientPrefs.userId, id));
       await tx.delete(favorites).where(eq(favorites.userId, id));
       await tx.delete(priceAlerts).where(eq(priceAlerts.userId, id));
+      // Their coming viewings are cancelled, so the agents' hours are free again.
+      await tx.update(viewings).set({ status: 'cancelled' }).where(and(eq(viewings.clientId, id), isNotNull(viewings.active)));
       await tx.delete(notifications).where(eq(notifications.userId, id));
       await tx.delete(pushTokens).where(eq(pushTokens.userId, id));
     });

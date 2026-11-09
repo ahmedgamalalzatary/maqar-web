@@ -39,6 +39,7 @@ import { Linking, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { FollowPriceButton } from '@/features/alerts/components/follow-price-button';
+import { BOOK_BAR_HEIGHT, BookBar, useShowsBookBar } from '@/features/viewings/components/book-bar';
 import { Txt } from '@/components/text';
 import { ApiError } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
@@ -70,8 +71,8 @@ const FEATURE_ICON: Record<Feature, LucideIcon> = {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The property page (contract §8.5), phase 4. Price alerts,
- * chat and booking arrive with their own phases.
+ * The property page (contract §8.5), phase 4, with price alerts (phase 12) and booking (phase 13).
+ * Chat arrives with its own phase.
  */
 export function PropertyScreen({ id }: { id: number }) {
   const t = useT();
@@ -129,6 +130,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const perM2 = Math.round(p.price / p.sizeM2);
   const days = Math.max(0, Math.floor((now - Date.parse(p.publishedAt)) / DAY));
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
+  const bookBar = useShowsBookBar(p);
 
   const share = () =>
     Share.share({
@@ -138,7 +140,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}>
         <View>
           <Gallery images={p.images} label={title} />
           {p.tourRooms.length ? (
@@ -342,6 +344,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           <SaveButton card={p} size={44} />
         </View>
       </View>
+      {bookBar ? <BookBar card={p} /> : null}
     </View>
   );
 }

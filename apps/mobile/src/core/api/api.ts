@@ -56,11 +56,13 @@ export type ApiOptions = {
   signal?: AbortSignal;
   /** Do not send the access token or try to refresh (the auth routes themselves). */
   anonymous?: boolean;
+  /** Return the body as text (e.g. a calendar file) instead of reading JSON. */
+  text?: boolean;
 };
 
 async function send(path: string, opts: ApiOptions, token: string | null | undefined): Promise<Response> {
   const headers = new Headers(opts.headers);
-  headers.set('Accept', 'application/json');
+  headers.set('Accept', opts.text ? 'text/plain, text/calendar, */*' : 'application/json');
   if (opts.body !== undefined) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   try {
@@ -94,6 +96,7 @@ export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<
   }
 
   const text = await res.text();
+  if (opts.text && res.ok) return text as T;
   let data: unknown;
   try {
     data = text ? JSON.parse(text) : undefined;
