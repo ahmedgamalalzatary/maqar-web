@@ -3,7 +3,7 @@
 # adds Maqar's own folders, secrets, build helper and site. It changes nothing else.
 set -eu
 HOST=old-host.invalid
-SRC=/root/maqar/src
+SRC=/root/maqar
 
 mkdir -p /srv/maqar/uploads /var/www/maqar-acme
 chown -R 1000:1000 /srv/maqar/uploads   # the "node" user in the API image
