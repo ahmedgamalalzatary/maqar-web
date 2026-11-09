@@ -1,0 +1,66 @@
+# Builds an unsigned iPhone app (.ipa) of apps/mobile and attaches it to the run.
+#
+# Apple only installs signed apps, so this file must be signed before it goes on a phone: for
+# example with a free Apple ID through Sideloadly (the install lasts 7 days). TestFlight and the
+# App Store need a paid Apple Developer account and a signed build instead.
+name: iOS IPA
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the shared package
+        run: pnpm --filter @maqar/shared build
+
+      - name: Generate the native iOS project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install the iOS libraries
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      - name: Build the app, unsigned
+        working-directory: apps/mobile/ios
+        run: |
+          workspace="$(ls -d *.xcworkspace | head -1)"
+          scheme="${workspace%.xcworkspace}"
+          xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -40
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Package the .ipa
+        run: |
+          mkdir -p out/Payload
+          cp -R apps/mobile/ios/build/Build/Products/Release-iphoneos/*.app out/Payload/
+          (cd out && zip -qry "maqar-${GITHUB_SHA::7}-unsigned.ipa" Payload && rm -rf Payload)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maqar-ios-ipa
+          path: out/*.ipa
+          retention-days: 14
