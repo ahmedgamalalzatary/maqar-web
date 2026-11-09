@@ -26,10 +26,9 @@ const KEEP_RULES = `
 
 /**
  * Phone pushes go through Expo's push service (contract §16.1 #3). Its tokens need the Expo
- * project's id, and Android ones need the Firebase project's `google-services.json`, whose path
- * is given here. Without them the app still runs; it just cannot get a push token.
+ * project's id (`extra.eas.projectId` in app.json), and Android ones need the Firebase project's
+ * `google-services.json`, whose path is given here. Without it Android gets no push token.
  */
-const easProjectId = process.env.EAS_PROJECT_ID;
 const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -49,6 +48,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config.extra,
     apiUrl,
     hasGoogleMapsKey: !!googleMapsKey,
-    ...(easProjectId && { eas: { ...config.extra?.eas, projectId: easProjectId } }),
   },
 });
