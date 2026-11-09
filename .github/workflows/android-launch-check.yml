@@ -1,0 +1,53 @@
+# Installs an APK built by "Android APK" on an emulator, opens it, and keeps the log and a
+# screenshot, to see whether it starts and why not. Start it by hand with that build's run id.
+name: Android launch check
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Run id of the "Android APK" build to check
+        required: true
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Get the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ inputs.run_id }}" --repo "$GITHUB_REPOSITORY" -D out
+          cp out/*/*.apk app.apk
+
+      - name: Enable the emulator's hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Open the app on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            mkdir -p results
+            adb install -r app.apk
+            adb logcat -c
+            adb shell monkey -p com.maqar.app -c android.intent.category.LAUNCHER 1
+            sleep 45
+            adb exec-out screencap -p > results/screen.png
+            adb shell pidof com.maqar.app > results/pid.txt || echo "not running" > results/pid.txt
+            adb logcat -d > results/logcat.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-check
+          path: results
+          retention-days: 7
