@@ -45,7 +45,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 0 | Foundation | 🟨 | none (database decided) |
 | 1 | Accounts and sign-in | 🟨 | ~~1, 9~~ decided |
 | 2 | Production server and deploys | ⬜ | ~~7~~ decided; waits for the server to be bought |
-| 3 | Browse listings | ⬜ | ~~2~~ decided |
+| 3 | Browse listings | 🟨 | ~~2~~ decided |
 | 4 | Property page | ⬜ | 4 |
 | 5 | Search, filters and sort | ⬜ | |
 | 6 | Preferences and smart picks | ⬜ | |
@@ -200,6 +200,16 @@ Contract §8.2 (Home) and §13 (areas, properties, property_features, property_i
 - Category filter.
 
 **Done when** Home and Explore show real listings from MySQL with their photos.
+
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- `GET /v1/areas` and `GET /v1/properties` (`category`, `area`, `page`, `limit` up to 50; approved only, newest first). The area filter was added here so the Home area chips open a filtered Explore; the other filters stay in Phase 5.
+- Migration `0001` adds `areas`, `properties`, `property_features` and `property_images`. `db:seed` adds the 8 areas and 16 listings and copies the demo photos to `apps/api/uploads/seed` (git-ignored). Photos are stored as paths (`/uploads/...`); the app puts them on the API host.
+- The dev API serves `UPLOADS_DIR` at `/uploads` with `Cross-Origin-Resource-Policy: cross-origin` (needed by the web preview). In production nginx serves that folder (Phase 2).
+- Mobile: Home (headline, search entry, category shortcuts, Browse by area, New launches on installments), Explore (category tabs, area chip, infinite list, pull to refresh, loading, empty and error states) and the property card. Cards open `/property/[id]`, a placeholder until Phase 4.
+- The installment formula moved from `store-release` into `packages/shared` on `main` (the card shows the monthly payment).
+- Home no longer shows the Phase 0 API status widget (its real data shows the connection), so the health feature was removed from the app. The API keeps `GET /v1/health`.
+- Fixed: Arabic tab labels were cut off when they sit under the icons (narrow screens), and the dark-mode switch thumb sat outside its track in Arabic on the web.
+- Checked by hand in the web preview (390 px wide) against the local API: Home, Explore by category, Arabic, dark mode. The phone run is for the owner to do in Expo Go.
 
 ---
 

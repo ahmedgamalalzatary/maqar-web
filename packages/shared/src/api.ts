@@ -1,4 +1,4 @@
-import type { Lang, Role, SignUpRole, ThemePref } from './enums.js';
+import type { Category, Finishing, Lang, PropertyType, Role, SignUpRole, ThemePref } from './enums.js';
 
 // Request and response shapes shared by the API and the app.
 
@@ -63,3 +63,50 @@ export type RefreshBody = { refreshToken: string };
 export type UpdateMeBody = Partial<Pick<Me, 'name' | 'phone' | 'lang' | 'theme' | 'pushEnabled'>>;
 /** Deleting an account needs the current password. */
 export type DeleteMeBody = { password: string };
+
+// ---- Browse listings (phase 3) ----
+
+/** One page of a list. `page` starts at 1. */
+export type Page<T> = { items: T[]; page: number; limit: number; total: number };
+
+/** The most items one page can hold. */
+export const PAGE_LIMIT_MAX = 50;
+
+/** `GET /v1/areas` */
+export type AreaItem = {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  cityAr: string;
+  cityEn: string;
+  /** Path under the API host, for example `/uploads/seed/p2.jpg`. */
+  image: string;
+};
+
+/** A listing as the cards and lists show it (`GET /v1/properties`). */
+export type PropertyCard = {
+  id: number;
+  category: Category;
+  type: PropertyType;
+  titleAr: string;
+  titleEn: string;
+  area: { id: string; nameAr: string; nameEn: string };
+  compoundAr: string;
+  compoundEn: string;
+  /** Whole EGP: per month for rent, per night for stays. */
+  price: number;
+  /** The price before the last drop, when it fell. */
+  oldPrice: number | null;
+  beds: number;
+  baths: number;
+  sizeM2: number;
+  finishing: Finishing;
+  delivery: 'ready' | number;
+  /** The installment plan, when the listing has one. */
+  plan: { downPct: number; years: number } | null;
+  /** The first photo, as a path under the API host. */
+  cover: string | null;
+  publishedAt: string;
+};
+
+export type PropertiesQuery = { category?: Category; area?: string; page?: number; limit?: number };

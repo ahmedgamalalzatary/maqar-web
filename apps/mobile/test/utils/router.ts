@@ -7,6 +7,7 @@ export const mockRouter = { replace: jest.fn(), push: jest.fn(), back: jest.fn()
 export const expoRouterMock = {
   router: mockRouter,
   useRouter: () => mockRouter,
+  useLocalSearchParams: () => ({}),
   Link: ({ children }: { children: unknown }) => children,
   Redirect: () => null,
   Stack: { Screen: () => null },

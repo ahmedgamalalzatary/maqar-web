@@ -3,12 +3,13 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Languages, Moon, UserPen } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
+import { Toggle } from '@/components/toggle';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSignOut } from '@/features/auth/hooks/use-auth';
@@ -86,11 +87,10 @@ export function MeScreen() {
           </View>
         </Row>
         <Row icon={<Moon size={20} color={colors.accentInk} />} label={t('الوضع الداكن', 'Dark mode')}>
-          <Switch
-            accessibilityLabel={t('الوضع الداكن', 'Dark mode')}
+          <Toggle
+            label={t('الوضع الداكن', 'Dark mode')}
             value={scheme === 'dark'}
-            onValueChange={(on) => prefs.setTheme(on ? 'dark' : 'light')}
-            trackColor={{ true: colors.accent }}
+            onChange={(on) => prefs.setTheme(on ? 'dark' : 'light')}
           />
         </Row>
         {user ? (

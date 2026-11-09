@@ -1,6 +1,6 @@
 import type { ApiErrorBody } from '@maqar/shared';
 import Constants from 'expo-constants';
-import { resolveApiUrl } from './api-url';
+import { mediaUrlFrom, resolveApiUrl } from './api-url';
 
 /** An HTTP error from the API. `status` is 0 when the server could not be reached. */
 export class ApiError extends Error {
@@ -18,6 +18,9 @@ export function apiBaseUrl(): string {
   baseUrl ??= resolveApiUrl(process.env.EXPO_PUBLIC_API_URL, Constants.expoConfig?.hostUri);
   return baseUrl;
 }
+
+/** Full URL of a photo path from the API (`/uploads/...`). */
+export const mediaUrl = (path: string | null): string | null => mediaUrlFrom(apiBaseUrl(), path);
 
 /**
  * How the client talks to the session (the auth feature registers these at start-up,

@@ -38,3 +38,6 @@ apk-out/
 
 # uploaded images in development
 uploads/
+
+# Playwright screenshots and logs
+.playwright-mcp/

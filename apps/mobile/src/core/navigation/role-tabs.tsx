@@ -14,6 +14,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '@/core/i18n';
 import { fonts, useTheme } from '@/core/theme';
 
@@ -50,14 +51,24 @@ export const TABS: Record<TabRole, Tab[]> = {
 export function RoleTabs({ role }: { role: TabRole }) {
   const t = useT();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accentInk,
         tabBarInactiveTintColor: colors.ink3,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
-        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 11 },
+        // Arabic glyphs in Readex Pro sit lower than Latin ones: give the label a real line
+        // height and the bar room for it, or the bottom of the words gets cut off.
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.line,
+          height: 64 + insets.bottom,
+          paddingTop: 4,
+          paddingBottom: insets.bottom + 4,
+        },
+        // When the label sits under the icon (narrow screens) it must not be squeezed.
+        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 18, flexShrink: 0 },
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >

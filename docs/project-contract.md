@@ -583,7 +583,7 @@ Supporting rules:
 | chat | `GET /chats`, `POST /chats` (property), `GET /chats/:id/messages`, `POST /chats/:id/messages`, `POST /chats/:id/read`, WebSocket: message, typing, read | client, agent |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read` | signed in |
 | owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
-| uploads | `POST /uploads` (photos, panoramas) [Open: storage] | owner, agent, client (chat) |
+| uploads | `POST /uploads` (photos, panoramas), stored on the server disk and served at `/uploads/...` | owner, agent, client (chat) |
 | agent | `GET /agent/today`, `GET /agent/leads`, `GET/PATCH /agent/leads/:id`, `POST /agent/leads/:id/notes` | agent |
 | admin | `GET /admin/listings?status=pending`, `POST /admin/listings/:id/approve`, `POST /admin/listings/:id/request-changes`, agents CRUD, `PATCH /admin/leads/:id/assign`, areas CRUD | admin |
 
@@ -655,3 +655,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-08 | Phase 0 built (the phone check is still pending): `packages/shared`, API foundation (env check, Drizzle MySQL, `/v1`, validation, helmet, CORS, Swagger at `/docs`, `GET /v1/health`), mobile foundation (fonts, splash, theme, Arabic-first i18n with RTL, API client, React Query, toasts, role tab layouts). TDD made a working rule. `.env.test.example` and `.env.docker.example` removed. |
 | 2026-11-08 | Phase 1 built (the phone check is still pending). Decided: email + password sign-in (Google OAuth later) and one role per account. Added `refresh_tokens`, `users.password_hash`, `agents.name_ar/name_en`. Ports back to 4000 (API) and 4001 (tests). Prettier removed. |
 | 2026-11-09 | Decided: hosting on a new Hostinger KVM2 VPS with the plan's free domain (#7), and file storage on its disk (#2). Production config is `.env.production` (not `.env.docker`). Deployment became Phase 2 (deploys back up the database and images, then run migrations); the later phases moved up by one, so there are now 21 (0 to 20). The installment formula and calculator screen were built early for the store app (Phase 8, in progress). |
+| 2026-11-09 | Phase 3 built (the phone check is still pending): `areas`, `properties`, `property_features`, `property_images`; `GET /areas` and `GET /properties` (category and area filters, paging); Home and Explore in the app. `UPLOADS_DIR` added to the env. The installment formula is in `packages/shared` on `main`. |

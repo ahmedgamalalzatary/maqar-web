@@ -51,6 +51,13 @@ export class Env {
   @Min(1)
   AUTH_RATE_LIMIT = 10;
 
+  /**
+   * Folder for uploaded photos, relative to apps/api. The API serves it at /uploads in
+   * development; in production nginx serves the same folder (contract §16.1 #2).
+   */
+  @IsString()
+  UPLOADS_DIR = 'uploads';
+
   /** Password for the seeded demo accounts. Only the seed script reads it. */
   @IsOptional()
   @IsString()

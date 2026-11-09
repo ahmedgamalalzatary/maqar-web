@@ -10,3 +10,13 @@ export function resolveApiUrl(url: string | undefined, hostUri: string | undefin
   if (!devHost) return clean;
   return clean.replace(/^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/, `$1${devHost}`);
 }
+
+/**
+ * Photos come back as paths on the API host (`/uploads/...`). Put them on the host of
+ * the API base URL, without its `/v1`. A full URL is kept as it is.
+ */
+export function mediaUrlFrom(apiBase: string, path: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path)) return path;
+  return new URL(apiBase).origin + path;
+}

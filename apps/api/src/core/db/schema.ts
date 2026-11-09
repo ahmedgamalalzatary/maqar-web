@@ -2,3 +2,5 @@
 export * from '../../modules/users/users.schema.js';
 export * from '../../modules/agents/agents.schema.js';
 export * from '../../modules/auth/auth.schema.js';
+export * from '../../modules/areas/areas.schema.js';
+export * from '../../modules/properties/properties.schema.js';
