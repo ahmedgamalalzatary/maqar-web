@@ -134,7 +134,7 @@ describe('The heart on a card', () => {
     api([villa]);
     const { unmount } = await renderWithProviders(<PropertyCardView card={villa} />);
     await screen.findByRole('button', { name: REMOVE });
-    unmount();
+    await unmount();
 
     // Same phone, session ended without the sign-out flow (rejected token): the guest sees no saved heart.
     await useSession.getState().clear();

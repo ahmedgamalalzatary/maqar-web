@@ -1,5 +1,5 @@
 import type { PropertyDetail } from '@maqar/shared';
-import { fmtMoney } from '@maqar/shared';
+import { fmtMoney, installment } from '@maqar/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { Linking, Share } from 'react-native';
 import { PropertyScreen } from '@/features/property/screens/property-screen';
@@ -64,6 +64,32 @@ describe('PropertyScreen', () => {
     expect(screen.getByText('عمر حسن')).toBeOnTheScreen();
     expect(screen.getByText('مستشار مبيعات أول')).toBeOnTheScreen();
     expect(screen.getByText('٢٬١٤١ مشاهدة')).toBeOnTheScreen();
+  });
+
+  it('fills the calculator from the listing’s plan and shows the plan line', async () => {
+    routeFetch({ '/properties/1': () => ({ ...villa, plan: { downPct: 25, years: 4 } }), '/properties/1/similar': () => [] });
+    await renderWithProviders(<PropertyScreen id={1} />);
+
+    expect(await screen.findByText('خطة الوحدة: مقدم ٢٥٪ على ٤ سنين. غيّرها براحتك.')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: '٤ سنين', checked: true })).toBeOnTheScreen();
+    expect(screen.getByText(fmtMoney(Math.round(installment(24_500_000, 25, 4).payment), 'ar', false))).toBeOnTheScreen();
+    expect(screen.queryByRole('adjustable', { name: 'سعر الوحدة' })).toBeNull();
+  });
+
+  it('starts from 20% over 5 years when a home for sale has no plan', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+
+    expect(await screen.findByText('جرّب مقدم ومدة تناسبك.')).toBeOnTheScreen();
+    expect(screen.getByText(fmtMoney(Math.round(installment(24_500_000, 20, 5).payment), 'ar', false))).toBeOnTheScreen();
+  });
+
+  it.each(['rent', 'stay'] as const)('has no calculator for a home to %s', async (category) => {
+    routeFetch({ '/properties/1': () => ({ ...villa, category }), '/properties/1/similar': () => [] });
+    await renderWithProviders(<PropertyScreen id={1} />);
+
+    await screen.findByText('عن الوحدة');
+    expect(screen.queryByText('احسب قسطك')).toBeNull();
   });
 
   it('calls the advisor', async () => {

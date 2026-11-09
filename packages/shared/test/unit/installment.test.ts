@@ -24,6 +24,17 @@ describe('installment', () => {
     expect(plan.total).toBeCloseTo(106_618.6 * 12, -1);
   });
 
+  it('adds interest quarterly too', () => {
+    // 1M over 4 quarters at 12% a year: 3% a quarter -> about 269,027 a quarter.
+    const plan = installment(1_000_000, 0, 1, 12, true);
+    expect(plan.count).toBe(4);
+    expect(plan.payment).toBeCloseTo(269_027.05, 1);
+  });
+
+  it('gives the demo calculator’s starting numbers', () => {
+    expect(installment(8_000_000, 10, 6)).toEqual({ down: 800_000, principal: 7_200_000, count: 72, payment: 100_000, total: 8_000_000 });
+  });
+
   it('treats no years as one payment instead of dividing by zero', () => {
     expect(installment(1_000_000, 50, 0).payment).toBe(500_000);
   });

@@ -30,6 +30,17 @@ describe('MeScreen', () => {
     expect(screen.queryByRole('button', { name: 'عدّل تفضيلاتك' })).toBeNull();
   });
 
+  it('guests and clients can open the calculator; an owner has no row for it', async () => {
+    const { unmount } = await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'حاسبة التقسيط' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/calculator');
+    await unmount();
+
+    await useSession.getState().setSession(makeAuth({ role: 'owner' }));
+    await renderWithProviders(<MeScreen />);
+    expect(screen.queryByRole('button', { name: 'حاسبة التقسيط' })).toBeNull();
+  });
+
   it('signing out ends the session on the server and returns to the client home', async () => {
     await useSession.getState().setSession(makeAuth({ name: 'Mona Adel' }));
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(204));

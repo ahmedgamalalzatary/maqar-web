@@ -371,7 +371,11 @@ Contract §8.11.
 
 **Done when** the calculator gives the same results as the demo for the same inputs.
 
-**Status (2026-11-09): in progress.** Built early for the store-approval app, on the `store-release` branch only: the formula (`packages/shared/src/installment.ts`) with its unit tests, and the standalone calculator screen (0% interest, monthly). Still to do: bring both to `main`, the API plan fields, the property-page calculator, the plan line, interest and quarterly options on the screen, and the check against the demo.
+**Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
+- The formula is in `packages/shared`, and it gave the same numbers as the demo's on every combination tried (price, down payment, years, interest, monthly and quarterly). The API already sent each listing's `plan`, so this phase changed nothing on the server.
+- `/calculator` opens from Home and from Me (guests and clients), and starts like the demo: 8 million, 10% down, 6 years. The property page has the calculator for homes to buy (sale and project), not rent or stays, as in the demo. It starts from the listing's plan, or 20% over 5 years with none, and shows the plan line.
+- Interest is typed in Arabic or Latin digits and capped at 40%. The demo's animated number is left out.
+- The `store-release` branch keeps its own smaller screen (0%, monthly) for the store-approval app.
 
 ---
 
