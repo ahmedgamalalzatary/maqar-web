@@ -28,5 +28,13 @@ npm-debug.log*
 # misc
 .DS_Store
 *.pem
+
+# signing keys: never commit
+maqar-keys/
+*.keystore
+*.jks
 coverage/
 apk-out/
+
+# uploaded images in development
+uploads/

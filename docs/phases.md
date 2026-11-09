@@ -33,6 +33,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 **Order:**
 - Phases run in order, because later phases build on earlier ones.
 - A phase blocked by an [Open] decision (contract §16.1) cannot start until that decision is made. Each phase's "Decide first" line lists them.
+- The one exception is Phase 2: it only waits for the server to be bought, so Phase 3 onwards can be built first and Phase 2 is done as soon as the server exists.
 - Seed data for areas, agents and sample listings comes from the demo's `src/lib/data.ts`. That way every phase can be tried with realistic data.
 
 **Status values:** ⬜ not started, 🟨 in progress, ✅ done.
@@ -43,24 +44,25 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 |---|---|---|---|
 | 0 | Foundation | 🟨 | none (database decided) |
 | 1 | Accounts and sign-in | 🟨 | ~~1, 9~~ decided |
-| 2 | Browse listings | ⬜ | 2 (images) |
-| 3 | Property page | ⬜ | 4 |
-| 4 | Search, filters and sort | ⬜ | |
-| 5 | Preferences and smart picks | ⬜ | |
-| 6 | Saved homes | ⬜ | |
-| 7 | Installment calculator | ⬜ | |
-| 8 | Compare two homes | ⬜ | |
-| 9 | 360° virtual tour | ⬜ | 2 (panoramas) |
-| 10 | Notifications and push | ⬜ | 3, 13 |
-| 11 | Price drop alerts | ⬜ | |
-| 12 | Viewing booking | ⬜ | 5, 8 |
-| 13 | Viewing reminders | ⬜ | 13 |
-| 14 | Sales agent app | ⬜ | |
-| 15 | Live chat | ⬜ | 12 |
-| 16 | Owner listings | ⬜ | 2, 10, 11 |
-| 17 | Admin review | ⬜ | 6 |
-| 18 | Owner insights | ⬜ | |
-| 19 | Release | ⬜ | 7, 14 |
+| 2 | Production server and deploys | ⬜ | ~~7~~ decided; waits for the server to be bought |
+| 3 | Browse listings | ⬜ | ~~2~~ decided |
+| 4 | Property page | ⬜ | 4 |
+| 5 | Search, filters and sort | ⬜ | |
+| 6 | Preferences and smart picks | ⬜ | |
+| 7 | Saved homes | ⬜ | |
+| 8 | Installment calculator | 🟨 | |
+| 9 | Compare two homes | ⬜ | |
+| 10 | 360° virtual tour | ⬜ | ~~2~~ decided |
+| 11 | Notifications and push | ⬜ | 3, 13 |
+| 12 | Price drop alerts | ⬜ | |
+| 13 | Viewing booking | ⬜ | 5, 8 |
+| 14 | Viewing reminders | ⬜ | 13 |
+| 15 | Sales agent app | ⬜ | |
+| 16 | Live chat | ⬜ | 12 |
+| 17 | Owner listings | ⬜ | 10, 11 |
+| 18 | Admin review | ⬜ | 6 |
+| 19 | Owner insights | ⬜ | |
+| 20 | Release | ⬜ | 14 |
 
 ---
 
@@ -141,9 +143,43 @@ Contract §2 and §8.14.
 
 ---
 
-## Phase 2: Browse listings
+## Phase 2: Production server and deploys
 
-**Decide first:** where images are stored (§16.1 #2). Seed images can be served by the API until then.
+**Decided (§16.1 #7):** Maqar gets its own new Hostinger KVM2 VPS (2 CPUs, 8 GB memory, about 100 GB disk). Nothing else runs on it. The domain is the free one that comes with the Hostinger plan; any domain works, because the HTTPS certificate is free from Let's Encrypt.
+
+**Waits for:** the server to be bought. Until then, Phase 3 onwards is built and tested locally.
+
+Contract §4 (production database) and §5 (production server rules).
+
+**Server**
+- Ubuntu, Docker and Docker Compose, a firewall that allows only SSH, 80 and 443, and SSH key sign-in only.
+- DNS: `api.<domain>` points at the server.
+- nginx on the server (not in Docker): HTTPS with a Let's Encrypt certificate that renews itself, proxies `/v1` to the API container, and serves the property images from the uploads folder with long cache headers. Run `nginx -t` before every reload.
+
+**Docker**
+- `apps/api/Dockerfile`: a multi-stage build that ships only the built API and its production packages.
+- `docker-compose.yml`: the `api` and `mysql` services. MySQL data and the uploaded images live in named volumes, so a new deploy never loses them.
+- Configuration comes from **`.env.production`** on the server (git-ignored). `.env.production.example` in the repo lists every variable.
+
+**Every deploy (a GitHub Action on push to `main`, after the checks are green)**
+1. Back up the database (`mysqldump`) and the images folder into `/root/maqar-backups`, named by date and commit.
+2. Build the new API image.
+3. Run the database migrations (`db:migrate`) against the production database. If they fail, the deploy stops and the old API keeps running.
+4. Start the new API and wait for `GET /v1/health` to answer. If it does not, roll back to the previous image.
+
+**Backups:** besides the one before each deploy, a daily backup of the database and the images, keeping the last 14 days. A restore is tried once on the server so we know the backups work.
+
+**Mobile:** release builds use `EXPO_PUBLIC_API_URL=https://api.<domain>/v1`, so plain `http://` is no longer allowed in them.
+
+**Tests:** no new code tests. The deploy itself checks the health endpoint, and a smoke check signs in over HTTPS.
+
+**Done when** a push to `main` deploys by itself, the app signs in against `https://api.<domain>` on mobile data (not the home Wi-Fi), and a backup has been restored once.
+
+---
+
+## Phase 3: Browse listings
+
+**Decided (§16.1 #2):** images are stored on the server's disk (an uploads volume) and served by nginx; on the PC they go to a local, git-ignored `uploads/` folder that the API serves in development. Uploads are resized and compressed with `sharp`, because the disk is shared with the database.
 
 Contract §8.2 (Home) and §13 (areas, properties, property_features, property_images).
 
@@ -167,7 +203,7 @@ Contract §8.2 (Home) and §13 (areas, properties, property_features, property_i
 
 ---
 
-## Phase 3: Property page
+## Phase 4: Property page
 
 **Decide first:** the maps provider (§16.1 #4).
 
@@ -185,7 +221,7 @@ Contract §8.5.
   - key facts
   - description
   - amenities
-  - the named sales advisor card, with a call action (chat comes in phase 15)
+  - the named sales advisor card, with a call action (chat comes in phase 16)
   - map
   - directions
   - share
@@ -201,7 +237,7 @@ Contract §8.5.
 
 ---
 
-## Phase 4: Search, filters and sort
+## Phase 5: Search, filters and sort
 
 Contract §8.4.
 
@@ -227,7 +263,7 @@ Contract §8.4.
 
 ---
 
-## Phase 5: Preferences and smart picks
+## Phase 6: Preferences and smart picks
 
 Contract §8.1 and §8.3.
 
@@ -250,7 +286,7 @@ Contract §8.1 and §8.3.
 
 ---
 
-## Phase 6: Saved homes
+## Phase 7: Saved homes
 
 Contract §8.9 (saving part).
 
@@ -269,7 +305,7 @@ Contract §8.9 (saving part).
 
 ---
 
-## Phase 7: Installment calculator
+## Phase 8: Installment calculator
 
 Contract §8.11.
 
@@ -284,9 +320,11 @@ Contract §8.11.
 
 **Done when** the calculator gives the same results as the demo for the same inputs.
 
+**Status (2026-11-09): in progress.** Built early for the store-approval app, on the `store-release` branch only: the formula (`packages/shared/src/installment.ts`) with its unit tests, and the standalone calculator screen (0% interest, monthly). Still to do: bring both to `main`, the API plan fields, the property-page calculator, the plan line, interest and quarterly options on the screen, and the check against the demo.
+
 ---
 
-## Phase 8: Compare two homes
+## Phase 9: Compare two homes
 
 Contract §8.10.
 
@@ -305,9 +343,9 @@ Contract §8.10.
 
 ---
 
-## Phase 9: 360° virtual tour
+## Phase 10: 360° virtual tour
 
-**Decide first:** panorama storage (§16.1 #2).
+**Decided (§16.1 #2):** panoramas are stored like photos, on the server's disk.
 
 Contract §8.6.
 
@@ -325,7 +363,7 @@ Contract §8.6.
 
 ---
 
-## Phase 10: Notifications and push
+## Phase 11: Notifications and push
 
 **Decide first:** the push provider (§16.1 #3) and the background jobs and queue (#13).
 
@@ -352,7 +390,7 @@ Contract §8.13.
 
 ---
 
-## Phase 11: Price drop alerts
+## Phase 12: Price drop alerts
 
 Contract §8.9 (alerts part).
 
@@ -375,7 +413,7 @@ Contract §8.9 (alerts part).
 
 ---
 
-## Phase 12: Viewing booking
+## Phase 13: Viewing booking
 
 **Decide first:** video viewings (§16.1 #5) and agent availability (#8).
 
@@ -395,7 +433,7 @@ Contract §8.7 and §8.8.
 - `PATCH /viewings/:id` to reschedule (keeps `rescheduledFrom`) or cancel.
 - `GET /viewings/:id/ics`.
 - Booking creates the lead or moves it to `viewing`.
-- Booking, rescheduling and cancelling send notifications (from phase 10).
+- Booking, rescheduling and cancelling send notifications (from phase 11).
 
 **Mobile**
 - The booking screen:
@@ -421,7 +459,7 @@ Contract §8.7 and §8.8.
 
 ---
 
-## Phase 13: Viewing reminders
+## Phase 14: Viewing reminders
 
 **Decide first:** background jobs and queue (§16.1 #13).
 
@@ -434,7 +472,7 @@ Contract §8.7 (reminders) and §8.8.
 - Reminders are moved on reschedule and dropped on cancel.
 - Each reminder is sent only once.
 
-**Mobile:** the reminder choices from phase 12 are saved. Reminder pushes open My viewings.
+**Mobile:** the reminder choices from phase 13 are saved. Reminder pushes open My viewings.
 
 **Tests:** each reminder fires once at the right time, moves on reschedule, and is skipped after cancel.
 
@@ -442,7 +480,7 @@ Contract §8.7 (reminders) and §8.8.
 
 ---
 
-## Phase 14: Sales agent app
+## Phase 15: Sales agent app
 
 Contract §10.1 and §10.2.
 
@@ -467,7 +505,7 @@ Contract §10.1 and §10.2.
 
 ---
 
-## Phase 15: Live chat
+## Phase 16: Live chat
 
 **Decide first:** what happens when the agent is away (§16.1 #12).
 
@@ -480,7 +518,7 @@ Contract §8.12 and §10.3.
 - Message history with paging.
 - A WebSocket gateway with the same auth as the HTTP API: messages, typing and read receipts.
 - Every message type from §8.12.
-- Booking from a `slots` card uses the phase 12 booking logic.
+- Booking from a `slots` card uses the phase 13 booking logic.
 - `chat` notifications go out when the conversation is closed.
 
 **Mobile**
@@ -498,9 +536,9 @@ Contract §8.12 and §10.3.
 
 ---
 
-## Phase 16: Owner listings
+## Phase 17: Owner listings
 
-**Decide first:** file storage (§16.1 #2), owner verification and listing limits (#10), and which edits need review (#11).
+**Decide first:** owner verification and listing limits (#10), and which edits need review (#11).
 
 Contract §9.2.
 
@@ -522,7 +560,7 @@ Contract §9.2.
 
 ---
 
-## Phase 17: Admin review
+## Phase 18: Admin review
 
 **Decide first:** what form the admin UI takes (§16.1 #6).
 
@@ -548,7 +586,7 @@ Contract §11.
 
 ---
 
-## Phase 18: Owner insights
+## Phase 19: Owner insights
 
 Contract §9.1.
 
@@ -563,21 +601,21 @@ Contract §9.1.
 
 **Tests:** the counters, the date buckets, and the privacy of interested clients.
 
-**Done when** what clients do in phases 6, 11, 12 and 15 shows up in the owner's numbers.
+**Done when** what clients do in phases 7, 12, 13 and 16 shows up in the owner's numbers.
 
 ---
 
-## Phase 19: Release
+## Phase 20: Release
 
-**Decide first:** the server and domain (§16.1 #7) and analytics and crash reporting (#14).
+**Decide first:** analytics and crash reporting (#14).
 
 Contract §15.
 
 - **Accessibility:** screen-reader labels, contrast, text scaling, reduce motion.
 - **Performance:** paging everywhere, image sizes, app start time.
 - **Security:** rate limits, upload checks, secrets, and a review of every role guard.
-- **API deployment:** Docker Compose, MySQL, nginx (run `nginx -t` before reloading), backups, and migrations run on deploy. Follow the shared VPS rules if it goes there.
-- **Mobile:** EAS builds for Android and iOS, store listings, app icons and splash in Maqar branding.
+- **Production:** the server and automatic deploys already run from Phase 2; check the backups and the restore again.
+- **Mobile:** signed store builds for Android (the `store-build` GitHub Action) and iOS, store listings, app icons and splash in Maqar branding.
 - **Full regression:** every phase's "done when" is run again.
 
 **Done when** production builds are installed from the stores, or as internal builds, and work against the production API.

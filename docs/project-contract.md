@@ -118,17 +118,19 @@ Rules:
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
-| Not installed yet (waiting on §16.1) | Maps (#4), push sender (#3), job queue (#13), file storage SDK (#2), video (#5) |
+| Not installed yet (waiting on §16.1) | Maps (#4), push sender (#3), job queue (#13), video (#5) |
 | API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
 | Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations (`src/db/schema.ts` → `drizzle/`) |
 | Local database | The MySQL 8.0 already installed on the PC (`localhost:3306`, user `root`, the same password as the other work projects), database `maqar` (utf8mb4). root `.env` → `DATABASE_URL=mysql://root:…@localhost:3306/maqar` |
-| Production database | A `mysql` service in the project's Docker Compose, configured by `.env.docker` (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`). This is the same pattern as the Capella projects. The Docker files and `.env.docker` are added in the release phase. |
+| Production database | A `mysql` service in the project's Docker Compose, configured by `.env.production` on the server (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`; `.env.production.example` in the repo lists them). The Docker files and `.env.production` are added in Phase 2. |
+| Production server | Its own Hostinger KVM2 VPS (2 CPUs, 8 GB, about 100 GB disk), used only by Maqar. nginx on the server with a Let's Encrypt certificate for `api.<domain>` (the free domain from the Hostinger plan). Each deploy backs up the database and images, then runs the migrations (Phase 2). |
+| File storage | The server's disk (an uploads volume), served by nginx; a local git-ignored `uploads/` folder in development. Images are resized with `sharp`. |
 | Demo | Next.js 16, React 19.3, Tailwind v4, motion, three.js, Zustand |
 | pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
-[Open] File storage, push provider, maps, hosting and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
+[Open] Push provider, maps and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
 
 ---
 
@@ -143,7 +145,7 @@ Rules:
 - **Test first (TDD), only where it matters.** A test is written and seen to fail before the code. Tests cover business rules, formatters, auth and role guards, data rules and each screen's main flow and key states, not plumbing. All tests live in `test/` next to `src/`, sorted by kind.
 - **Code layout.** API: `src/modules/<feature>/` (controller, service, repository, DTOs, module), plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), plus `src/core`, `src/components`, and `src/app` for routes only.
 - Database changes go only through Drizzle migrations. Never edit a production database by hand.
-- Production server rules (shared VPS, see the owner's notes): never touch other projects; run `nginx -t` before any reload; delete only the database backups you made yourself.
+- Production server rules: Maqar has its own server and never goes on the owner's shared VPS. Run `nginx -t` before any reload. Delete only the backups you made yourself.
 - Any text a user sees exists in both Arabic and English.
 
 ---
@@ -617,12 +619,12 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | # | Question |
 |---|---|
 | 1 | ~~Auth method~~ **Decided:** email + password now; Google sign-in (OAuth) is added later. Access tokens (JWT, 15 min) plus rotating refresh tokens (30 days). |
-| 2 | File storage for photos and panoramas: S3-compatible or local on the VPS? CDN? |
+| 2 | ~~File storage~~ **Decided:** photos and panoramas on the production server's disk, served by nginx. A CDN can be added later if needed. |
 | 3 | Push: Expo push service or FCM/APNs directly? |
 | 4 | Maps provider for the property map and directions. |
 | 5 | Video viewings: which video service (or WhatsApp video)? |
 | 6 | Admin UI form (web dashboard, in-app, or API only first). |
-| 7 | Hosting: which server the API runs on. Decided: MySQL runs locally on the PC and in Docker Compose in production. Still open: the shared VPS or a new server, and the domain. |
+| 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for Maqar, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
 | 8 | Agent working hours and availability rules beyond the default 10:00–20:00 and Friday after 14:00. |
 | 9 | ~~Client and owner on one account?~~ **Decided:** no, one role per account. |
 | 10 | Owner verification (ID review) and listing limits. |
@@ -652,3 +654,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-04 | API and mobile libraries installed; test setup for both apps (vitest unit + e2e on `maqar_test`; Jest + Testing Library on mobile). |
 | 2026-11-08 | Phase 0 built (the phone check is still pending): `packages/shared`, API foundation (env check, Drizzle MySQL, `/v1`, validation, helmet, CORS, Swagger at `/docs`, `GET /v1/health`), mobile foundation (fonts, splash, theme, Arabic-first i18n with RTL, API client, React Query, toasts, role tab layouts). TDD made a working rule. `.env.test.example` and `.env.docker.example` removed. |
 | 2026-11-08 | Phase 1 built (the phone check is still pending). Decided: email + password sign-in (Google OAuth later) and one role per account. Added `refresh_tokens`, `users.password_hash`, `agents.name_ar/name_en`. Ports back to 4000 (API) and 4001 (tests). Prettier removed. |
+| 2026-11-09 | Decided: hosting on a new Hostinger KVM2 VPS with the plan's free domain (#7), and file storage on its disk (#2). Production config is `.env.production` (not `.env.docker`). Deployment became Phase 2 (deploys back up the database and images, then run migrations); the later phases moved up by one, so there are now 21 (0 to 20). The installment formula and calculator screen were built early for the store app (Phase 8, in progress). |
