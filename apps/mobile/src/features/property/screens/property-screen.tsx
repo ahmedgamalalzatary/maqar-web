@@ -38,6 +38,7 @@ import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
+import { FollowPriceButton } from '@/features/alerts/components/follow-price-button';
 import { Txt } from '@/components/text';
 import { ApiError } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
@@ -190,32 +191,37 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           </View>
 
           <View style={[styles.priceBox, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-            <View style={styles.inline}>
-              <Txt size={24} weight="semibold">
-                {fmtMoney(p.price, lang, false)}
-              </Txt>
-              {suffix ? (
-                <Txt size={13} color="ink3">
-                  {suffix}
-                </Txt>
-              ) : null}
-            </View>
-            {p.oldPrice && drop > 0 ? (
-              <View style={styles.inline}>
-                <Txt size={12} color="ink3" style={styles.struck}>
-                  {fmtMoney(p.oldPrice, lang, false)}
-                </Txt>
-                <TrendingDown size={14} color={colors.danger} />
-                <Txt size={12} weight="semibold" color="danger">
-                  {t(`نزل ${fmtNum(drop, 'ar')}٪`, `${drop}% lower`)}
-                </Txt>
+            <View style={styles.priceTop}>
+              <View style={styles.priceText}>
+                <View style={styles.inline}>
+                  <Txt size={24} weight="semibold">
+                    {fmtMoney(p.price, lang, false)}
+                  </Txt>
+                  {suffix ? (
+                    <Txt size={13} color="ink3">
+                      {suffix}
+                    </Txt>
+                  ) : null}
+                </View>
+                {p.oldPrice && drop > 0 ? (
+                  <View style={styles.inline}>
+                    <Txt size={12} color="ink3" style={styles.struck}>
+                      {fmtMoney(p.oldPrice, lang, false)}
+                    </Txt>
+                    <TrendingDown size={14} color={colors.danger} />
+                    <Txt size={12} weight="semibold" color="danger">
+                      {t(`نزل ${fmtNum(drop, 'ar')}٪`, `${drop}% lower`)}
+                    </Txt>
+                  </View>
+                ) : null}
+                {buying ? (
+                  <Txt size={12} color="ink3">
+                    {t(`${fmtMoney(perM2, 'ar', false)} للمتر`, `${fmtMoney(perM2, 'en', false)} per m²`)}
+                  </Txt>
+                ) : null}
               </View>
-            ) : null}
-            {buying ? (
-              <Txt size={12} color="ink3">
-                {t(`${fmtMoney(perM2, 'ar', false)} للمتر`, `${fmtMoney(perM2, 'en', false)} per m²`)}
-              </Txt>
-            ) : null}
+              <FollowPriceButton card={p} />
+            </View>
           </View>
 
           <View style={styles.specs}>
@@ -401,7 +407,9 @@ const styles = StyleSheet.create({
   gap4: { gap: 4 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   flex: { flex: 1 },
-  priceBox: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 6 },
+  priceBox: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: 16 },
+  priceTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  priceText: { flex: 1, gap: 6 },
   struck: { textDecorationLine: 'line-through' },
   specs: { flexDirection: 'row', gap: 8 },
   spec: {

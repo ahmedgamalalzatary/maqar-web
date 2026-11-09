@@ -54,7 +54,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 9 | Compare two homes | 🟨 | |
 | 10 | 360° virtual tour | 🟨 | ~~2~~ decided |
 | 11 | Notifications and push | 🟨 | ~~3, 13~~ decided |
-| 12 | Price drop alerts | ⬜ | |
+| 12 | Price drop alerts | 🟨 | |
 | 13 | Viewing booking | ⬜ | ~~5, 8~~ decided |
 | 14 | Viewing reminders | ⬜ | ~~13~~ decided |
 | 15 | Sales agent app | ⬜ | |
@@ -505,6 +505,15 @@ Contract §8.9 (alerts part).
 **Tests:** a drop notifies followers; a price rise notifies no one; unfollowing stops alerts.
 
 **Done when** lowering a price notifies everyone who follows that home.
+
+**Status (2026-11-09): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+- Database (migration `0007`): `price_alerts` (client, home) and `price_history` (old and new price, who changed it, when). Deleting an account deletes its alerts; the history keeps the change with `changed_by` emptied.
+- API: `GET /alerts` (followed homes as cards, newest first), `PUT/DELETE /alerts/:propertyId` (clients only; a missing or unapproved home is 404). `PATCH /admin/listings/:id/price` (admins only) is the one way a price changes for now; the admin listing tools in Phase 17 build on the same `PricesService.changePrice`. The change runs in one transaction with the listing locked and writes a `price_history` row; the same price writes nothing.
+- The rule (`applyPriceChange` in `packages/shared`, unit-tested): a drop keeps the highest earlier price as `old_price`, so a home cut twice shows its whole fall; the notification gives this drop's %. A rise is never announced, and clears `old_price` once the price is back up to it. A drop on a live (`approved`) listing notifies every follower through Phase 11's service, in the app and on the phone: "السعر نزل ٦٪" / "Price dropped 6%", "X is now Y (was Z)", opening the home.
+- `old_price`, the drop % and the "price dropped" filter already worked since Phase 3; they now follow real changes.
+- Mobile: "Alert on drop" / "Following" beside the price on the property page (clients only, not for stays; a guest is asked to sign in), with a toast. Saved has two tabs, as in the demo: Saved and Price alerts. Price alerts lists followed homes, then other homes whose price fell, each with its switch. Home has "Price drops": up to three homes, with the old price and the drop %. A new compact `PropertyRow` serves both.
+- Checked by hand: the Home section and the property page button in the web preview (as a guest; signing in does not work on the web, see Phase 11), and the whole flow against the local API (a client follows, the admin lowers the price, the client's inbox gets "السعر نزل ٦٪").
+- Admins cannot change a price from the app yet: that screen is Phase 17. Until then the check uses the API route.
 
 ---
 
