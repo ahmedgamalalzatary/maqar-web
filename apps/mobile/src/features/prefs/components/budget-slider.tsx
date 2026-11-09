@@ -1,6 +1,7 @@
 import type { Scale } from '@maqar/shared';
 import { useRef, useState } from 'react';
 import { type AccessibilityActionEvent, type GestureResponderEvent, type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { thumbResponder, thumbStyle } from '@/components/slider-thumb';
 import { useDir } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 
@@ -53,9 +54,7 @@ export function BudgetSlider({
         ]}
       />
       <View
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderTerminationRequest={() => false}
+        {...thumbResponder}
         onResponderGrant={(e: GestureResponderEvent) => {
           drag.current = { x: e.nativeEvent.pageX, from: value };
         }}
@@ -70,7 +69,7 @@ export function BudgetSlider({
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={onAction}
         hitSlop={12}
-        style={[styles.thumb, { left: x, backgroundColor: colors.surface, borderColor: colors.accent }]}
+        style={[styles.thumb, thumbStyle(), { left: x, backgroundColor: colors.surface, borderColor: colors.accent }]}
       />
     </View>
   );

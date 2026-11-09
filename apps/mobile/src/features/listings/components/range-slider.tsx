@@ -1,6 +1,7 @@
 import type { Scale } from '@maqar/shared';
 import { useMemo, useRef, useState } from 'react';
 import { type AccessibilityActionEvent, type GestureResponderEvent, type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { thumbResponder, thumbStyle } from '@/components/slider-thumb';
 import { useDir } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 
@@ -48,9 +49,7 @@ export function RangeSlider({ scale, value, onChange, counts, minLabel, maxLabel
 
   /** Touch handlers for one thumb: the thumb follows the finger, mirrored in Arabic. */
   const touch = (which: 0 | 1) => ({
-    onStartShouldSetResponder: () => true,
-    onMoveShouldSetResponder: () => true,
-    onResponderTerminationRequest: () => false,
+    ...thumbResponder,
     onResponderGrant: (e: GestureResponderEvent) => {
       drag.current = { x: e.nativeEvent.pageX, from: value[which] };
     },
@@ -114,6 +113,7 @@ export function RangeSlider({ scale, value, onChange, counts, minLabel, maxLabel
               hitSlop={10}
               style={[
                 styles.thumb,
+                thumbStyle(),
                 // The max thumb sits above the min one, unless the min one is pushed to the top end.
                 { left: x(v), zIndex: which === 1 || lo >= max - step * 2 ? 2 : 1 },
                 { backgroundColor: colors.surface, borderColor: colors.accent },

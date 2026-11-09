@@ -56,7 +56,7 @@ describe('The installment calculator', () => {
     expect(screen.queryByLabelText(RATE)).toBeNull();
 
     await pick('radio', 'تمويل بنكي');
-    expect(screen.getByLabelText(RATE).props.value).toBe('18');
+    expect(screen.getByLabelText(RATE).props.value).toBe('١٨');
     expect(screen.getByText(money(installment(PRICE, 20, 5, 18).payment))).toBeOnTheScreen();
 
     await fireEvent.changeText(screen.getByLabelText(RATE), '٢٠');
@@ -78,7 +78,7 @@ describe('The installment calculator', () => {
     await fireEvent.changeText(field(), '99');
     await fireEvent(field(), 'endEditing');
 
-    expect(field().props.value).toBe('40');
+    expect(field().props.value).toBe('٤٠');
     expect(screen.getByText(money(installment(PRICE, 20, 5, 40).payment))).toBeOnTheScreen();
   });
 
