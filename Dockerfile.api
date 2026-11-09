@@ -1,0 +1,26 @@
+# The API image, built from the repo root: `docker build -f Dockerfile.api .`
+# Ships only the built API, its migrations and its production packages.
+FROM node:22-slim AS build
+RUN corepack enable
+WORKDIR /repo
+# The manifests first, so a code change does not reinstall the packages.
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/tsconfig packages/tsconfig
+COPY apps/api/package.json apps/api/
+COPY apps/mobile/package.json apps/mobile/
+COPY apps/demo/package.json apps/demo/
+RUN pnpm install --frozen-lockfile --filter "@maqar/api..."
+COPY packages/shared packages/shared
+COPY apps/api apps/api
+RUN pnpm --filter @maqar/shared build && pnpm --filter @maqar/api build
+RUN pnpm --filter @maqar/api deploy --legacy --prod /out \
+  && rm -rf /out/dist /out/drizzle \
+  && cp -r apps/api/dist apps/api/drizzle /out/
+
+FROM node:22-slim
+ENV NODE_ENV=production
+WORKDIR /app/apps/api
+COPY --from=build --chown=node:node /out ./
+USER node
+CMD ["node", "dist/main.js"]

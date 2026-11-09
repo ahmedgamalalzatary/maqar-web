@@ -1,4 +1,4 @@
-import type { AreaItem, ListingFacets, ListingFilters, Page, PropertiesQuery, PropertyCard } from '@maqar/shared';
+import type { AreaItem, ListingFacets, Page, PropertiesQuery, PropertyCard } from '@maqar/shared';
 import { apiFetch } from '@/core/api/api';
 import { listingParams } from '../filters';
 
@@ -9,8 +9,12 @@ export function getProperties(q: PropertiesQuery, signal?: AbortSignal) {
   return apiFetch<Page<PropertyCard>>(`/properties?${params}`, { signal });
 }
 
-/** Counts for the filter sheet: matches, histograms and delivery years. */
-export function getFacets(f: ListingFilters, signal?: AbortSignal) {
-  const params = listingParams(f);
+/**
+ * Counts for the filter sheet: matches, histograms and delivery years. The sheet's filters also
+ * carry Explore's sort, which this endpoint refuses (400), so only the filters are sent.
+ */
+export function getFacets(f: PropertiesQuery, signal?: AbortSignal) {
+  const { sort: _sort, page: _page, limit: _limit, ...filters } = f;
+  const params = listingParams(filters);
   return apiFetch<ListingFacets>(`/properties/facets${params.size ? `?${params}` : ''}`, { signal });
 }

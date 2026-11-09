@@ -52,6 +52,16 @@ export class Env {
   AUTH_RATE_LIMIT = 10;
 
   /**
+   * How many proxies stand in front of the API: 1 behind nginx, 0 when reached directly. The
+   * per-client sign-in limit reads the address those proxies report, so it must not be above
+   * the real number, or a client could fake its address.
+   */
+  @Transform(({ value }) => (value === undefined || value === '' ? 0 : Number(value)))
+  @IsInt()
+  @Min(0)
+  TRUST_PROXY_HOPS = 0;
+
+  /**
    * Folder for uploaded photos, relative to apps/api. The API serves it at /uploads in
    * development; in production nginx serves the same folder (contract §16.1 #2).
    */

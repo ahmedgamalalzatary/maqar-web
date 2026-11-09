@@ -1,0 +1,20 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.expo
+**/uploads
+**/*.tsbuildinfo
+.git
+.github
+.env
+.env.*
+maqar-keys
+apk-out
+.playwright-mcp
+docs
+deploy
+# Only the API image is built from here; the other apps give just their manifests.
+apps/mobile/*
+!apps/mobile/package.json
+apps/demo/*
+!apps/demo/package.json

@@ -229,6 +229,9 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
+      dotenv:
+        specifier: ^18.0.9
+        version: 18.0.9
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(mysql2@3.24.6(@types/node@24.19.2))
@@ -293,9 +296,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.2
         version: 4.1.12(vitest@4.1.12)
-      dotenv:
-        specifier: ^18.0.9
-        version: 18.0.9
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11

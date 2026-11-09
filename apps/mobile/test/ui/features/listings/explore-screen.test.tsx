@@ -152,6 +152,21 @@ describe('ExploreScreen', () => {
     expect(screen.getByRole('button', { name: 'ترتيب: الأقل سعراً' })).toBeOnTheScreen();
   });
 
+  it('the filter sheet still gets its counts after sorting: the facets request carries no sort', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen />);
+    await screen.findByText('شقة مفروشة للإيجار');
+    await fireEvent.press(screen.getByRole('button', { name: 'ترتيب: الأحدث' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الأقل سعراً' }));
+    await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ sort: 'low' }));
+
+    await openFilters();
+    const facetCalls = () => fetchMock.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('/properties/facets'));
+    await waitFor(() => expect(facetCalls().length).toBeGreaterThan(0));
+    // The API refuses parameters it does not know, so a sort here would be a 400.
+    for (const url of facetCalls()) expect(url).not.toMatch(/[?&](sort|page|limit)=/);
+  });
+
   it('a signed-in client sorts by best match, and the cards show how well they match', async () => {
     useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client' }), accessToken: 'access' });
     const fetchMock = api();

@@ -11,6 +11,9 @@ export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService<Env, true>);
 
   app.use(helmet());
+  // Behind nginx every request comes from nginx; take the client's address from what it reports.
+  const hops = config.get('TRUST_PROXY_HOPS', { infer: true });
+  if (hops > 0) (app as NestExpressApplication).set('trust proxy', hops);
   // The phone app needs no CORS. Browsers get the listed origins; with none listed,
   // any origin is allowed in development only, and none in production.
   const origins = config.get('CORS_ORIGINS', { infer: true });
