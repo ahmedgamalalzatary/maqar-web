@@ -1,4 +1,4 @@
-import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
+import { Platform, Text as RNText, type TextProps, type TextStyle } from 'react-native';
 import { useDir } from '@/core/i18n';
 import { type Colors, fonts, useTheme } from '@/core/theme';
 
@@ -15,7 +15,9 @@ export type TxtProps = TextProps & {
 export function Txt({ size = 15, weight = 'regular', color = 'ink', align = 'start', style, ...rest }: TxtProps) {
   const { colors } = useTheme();
   const dir = useDir();
-  const startIsRight = dir === 'rtl';
+  // On phones "left" means start and "right" means end: a right-to-left layout swaps them.
+  // Only the web takes them literally.
+  const startIsRight = Platform.OS === 'web' && dir === 'rtl';
   const textAlign: TextStyle['textAlign'] =
     align === 'center' ? 'center' : (align === 'start') === startIsRight ? 'right' : 'left';
   return (
