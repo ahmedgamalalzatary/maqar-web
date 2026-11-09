@@ -1,5 +1,7 @@
 # Builds an installable Android APK of apps/mobile and attaches it to the run.
 # Started by hand only: a push never builds a new version.
+# It also bakes the same commit for the emulator's chip, which a phone's APK cannot run on.
+# "Android launch check" opens that copy.
 #
 # The app talks to the API at EXPO_PUBLIC_API_URL, baked in at build time. Set the
 # repo variable EXPO_PUBLIC_API_URL (Settings > Secrets and variables > Actions > Variables),
@@ -21,6 +23,11 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - { abis: 'arm64-v8a,armeabi-v7a', artifact: maqar-android-apk, suffix: '' }
+          - { abis: x86_64, artifact: maqar-android-emulator, suffix: -emulator }
     env:
       EXPO_PUBLIC_API_URL: ${{ inputs.api_url || vars.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4000/v1' }}
       # Optional: without it this build leaves the property map out (Expo Go is fine).
@@ -56,15 +63,15 @@ jobs:
       - name: Build the release APK
         working-directory: apps/mobile/android
         # Expo's template signs release builds with the debug key: fine for testing, not for the Play Store.
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=${{ matrix.abis }}
 
       - name: Name the APK
         run: |
           mkdir -p out
-          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/maqar-${GITHUB_SHA::7}.apk"
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/maqar-${GITHUB_SHA::7}${{ matrix.suffix }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: maqar-android-apk
+          name: ${{ matrix.artifact }}
           path: out/*.apk
           retention-days: 14
