@@ -53,15 +53,15 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 8 | Installment calculator | 🟨 | |
 | 9 | Compare two homes | 🟨 | |
 | 10 | 360° virtual tour | ⬜ | ~~2~~ decided |
-| 11 | Notifications and push | ⬜ | 3, 13 |
+| 11 | Notifications and push | ⬜ | ~~3, 13~~ decided |
 | 12 | Price drop alerts | ⬜ | |
-| 13 | Viewing booking | ⬜ | 5, 8 |
-| 14 | Viewing reminders | ⬜ | 13 |
+| 13 | Viewing booking | ⬜ | ~~5, 8~~ decided |
+| 14 | Viewing reminders | ⬜ | ~~13~~ decided |
 | 15 | Sales agent app | ⬜ | |
-| 16 | Live chat | ⬜ | 12 |
-| 17 | Owner listings | ⬜ | 10, 11 |
+| 16 | Live chat | ⬜ | ~~12~~ decided |
+| 17 | Owner listings | ⬜ | owner role removed: to be re-planned |
 | 18 | Admin review | ⬜ | ~~6~~ decided |
-| 19 | Owner insights | ⬜ | |
+| 19 | Owner insights | ⬜ | owner role removed: to be re-planned |
 | 20 | Release | ⬜ | ~~14~~ out of scope |
 
 ---
