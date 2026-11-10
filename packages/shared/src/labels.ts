@@ -1,4 +1,4 @@
-import type { Category, Feature, Finishing, LeadStage, PropertyType, Role } from './enums.js';
+import type { Category, Feature, Finishing, LeadSource, LeadStage, PropertyType, Role } from './enums.js';
 
 /** Text in both languages (contract §7). */
 export type Bi = { ar: string; en: string };
@@ -54,4 +54,25 @@ export const LEAD_STAGE_LABEL: Record<LeadStage, Bi> = {
   negotiation: { ar: 'تفاوض', en: 'Negotiation' },
   won: { ar: 'تم البيع', en: 'Won' },
   lost: { ar: 'مغلق', en: 'Lost' },
+};
+
+/** The stage colours of the pipeline (contract §10.2), the same in both themes. */
+export const LEAD_STAGE_COLOUR: Record<LeadStage, string> = {
+  new: '#b38959',
+  contacted: '#3d5a80',
+  viewing: '#61766d',
+  negotiation: '#8c5e58',
+  won: '#3f7d5c',
+  lost: '#8a929a',
+};
+
+export const LEAD_SOURCE_LABEL: Record<LeadSource, Bi> = {
+  booking: { ar: 'حجز من التطبيق', en: 'Booked in app' },
+  tour: { ar: 'جولة ٣٦٠°', en: '360° tour' },
+  price_alert: { ar: 'تنبيه سعر', en: 'Price alert' },
+  smart_pick: { ar: 'ترشيح ذكي', en: 'Smart pick' },
+  calculator: { ar: 'حاسبة التقسيط', en: 'Calculator' },
+  chat: { ar: 'شات', en: 'Chat' },
+  call: { ar: 'مكالمة', en: 'Phone call' },
+  walk_in: { ar: 'زيارة للمكتب', en: 'Walk-in' },
 };

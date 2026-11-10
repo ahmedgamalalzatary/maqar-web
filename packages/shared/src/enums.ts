@@ -64,6 +64,10 @@ export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 export const LEAD_STAGES = ['new', 'contacted', 'viewing', 'negotiation', 'won', 'lost'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
+/** Where a lead came from (contract §10.2). Owner listings are gone with the owner role. */
+export const LEAD_SOURCES = ['booking', 'tour', 'price_alert', 'smart_pick', 'calculator', 'chat', 'call', 'walk_in'] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
+
 export const VIEWING_MODES = ['visit', 'video'] as const;
 export type ViewingMode = (typeof VIEWING_MODES)[number];
 

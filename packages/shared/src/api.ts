@@ -3,6 +3,8 @@ import type {
   Feature,
   Finishing,
   Lang,
+  LeadSource,
+  LeadStage,
   NotificationKind,
   PropertyType,
   PushPlatform,
@@ -263,3 +265,65 @@ export type ViewingItem = {
   client: { name: string; phone: string | null } | null;
   createdAt: string;
 };
+
+// Sales agent (contract §10.1, §10.2). Agents only ever see their own leads.
+
+/** A lead in lists: the phone is masked. `isNew`: booked in the app and the agent has not opened it since. */
+export type LeadCard = {
+  id: number;
+  /** The client's name; empty for a deleted account. */
+  name: string;
+  phone: string | null;
+  stage: LeadStage;
+  source: LeadSource;
+  hot: boolean;
+  fromApp: boolean;
+  isNew: boolean;
+  budget: number | null;
+  property: { id: number; titleAr: string; titleEn: string } | null;
+  lastActivityAt: string;
+};
+
+/** A live viewing on the agent's day. `newFromApp`: booked in the app since the agent last opened the lead. */
+export type AgentViewing = {
+  id: number;
+  leadId: number | null;
+  date: string;
+  time: string;
+  startsAt: string;
+  mode: ViewingMode;
+  clientName: string;
+  newFromApp: boolean;
+  property: PropertyCard;
+};
+
+/** `GET /v1/agent/today`. `won` counts deals moved to Won this month (Cairo time). */
+export type AgentToday = {
+  firstNameAr: string;
+  firstNameEn: string;
+  stats: { today: number; fresh: number; active: number };
+  target: { won: number; target: number; teamAvg: number };
+  today: AgentViewing[];
+  upcoming: AgentViewing[];
+  pipeline: Record<LeadStage, number>;
+  firstCall: LeadCard[];
+};
+
+export type LeadNote = { id: number; text: string; createdAt: string };
+
+/** `GET /v1/agent/leads/:id`: the phone in full, for calling. Opening it marks the lead as seen. */
+export type LeadDetail = Omit<LeadCard, 'property'> & {
+  property: PropertyCard | null;
+  /** The client's next live viewing with this agent, or else the last one. */
+  viewing: AgentViewing | null;
+  notes: LeadNote[];
+  createdAt: string;
+};
+
+/** `PATCH /v1/agent/leads/:id`. */
+export type UpdateLeadBody = { stage?: LeadStage; hot?: boolean };
+
+/** `POST /v1/agent/leads/:id/notes`. */
+export type AddLeadNoteBody = { text: string };
+
+export const LEAD_NOTE_MAX = 1000;

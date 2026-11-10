@@ -13,14 +13,24 @@ const DB_POOL = Symbol('DB_POOL');
 /** Inject the Drizzle database: `constructor(@InjectDb() db: Db)`. */
 export const InjectDb = () => Inject(DB);
 
+/**
+ * A pool that reads and writes times as UTC (`timezone: 'Z'`), with every MySQL session in UTC too.
+ * Without the second part, a server whose MySQL runs in local time (a Windows PC in Cairo) shifts
+ * the times MySQL fills in itself, such as `created_at`, by its offset. Production's MySQL is UTC.
+ */
+export function utcPool(uri: string): Pool {
+  const pool = createPool({ uri, connectionLimit: 10, timezone: 'Z' });
+  pool.on('connection', (conn) => void conn.query("SET time_zone = '+00:00'"));
+  return pool;
+}
+
 @Global()
 @Module({
   providers: [
     {
       provide: DB_POOL,
       inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) =>
-        createPool({ uri: config.get('DATABASE_URL', { infer: true }), connectionLimit: 10, timezone: 'Z' }),
+      useFactory: (config: ConfigService<Env, true>) => utcPool(config.get('DATABASE_URL', { infer: true })),
     },
     {
       provide: DB,

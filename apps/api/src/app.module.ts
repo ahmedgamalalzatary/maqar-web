@@ -8,6 +8,7 @@ import { AreasModule } from './modules/areas/areas.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { LeadsModule } from './modules/leads/leads.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PricesModule } from './modules/prices/prices.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
@@ -51,6 +52,7 @@ import { UsersModule } from './modules/users/users.module.js';
     NotificationsModule,
     PricesModule,
     ViewingsModule,
+    LeadsModule,
   ],
 })
 export class AppModule {}

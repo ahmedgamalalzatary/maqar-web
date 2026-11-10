@@ -197,6 +197,7 @@ export class ViewingsService {
   private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled'): Promise<void> {
     const row = (await this.repo.findById(v.id))!;
     const client = await this.users.findActiveById(row.clientId);
+    const leadId = await this.repo.leadIdOf(row.clientId, row.agentId);
     const when = (lang: Lang) => `${fmtDate(v.date, lang, 'long')} ${lang === 'ar' ? 'الساعة' : 'at'} ${fmtTime(v.time, lang)}`;
     const agentName = (a: ListingAgent, lang: Lang) => (lang === 'ar' ? a.nameAr : a.nameEn);
     const home = (lang: Lang) => (lang === 'ar' ? v.property.titleAr : v.property.titleEn);
@@ -226,7 +227,8 @@ export class ViewingsService {
         titleEn: forAgent[1]!,
         bodyAr: `${who} | ${home('ar')} | ${when('ar')}`,
         bodyEn: `${who} | ${home('en')} | ${when('en')}`,
-        href: '/agent',
+        // The lead page: it shows the viewing, the client and "New from app".
+        href: leadId ? `/agent/lead/${leadId}` : '/agent',
       }),
     ]);
   }

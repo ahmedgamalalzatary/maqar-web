@@ -627,6 +627,17 @@ Contract §10.1 and §10.2.
 
 **Done when** a viewing booked by a client shows up on the agent's Today screen and lead list straight away, marked "New from app".
 
+**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+- Decided while building: "New from app" lasts until the agent opens the lead (`leads.seen_at`, cleared by each new booking). A booking marks the lead hot; the agent can switch it. The monthly target counts leads moved to Won this month (`leads.won_at`), against the average of the active agents.
+- Migration `0009`: `lead_notes`, `leads.seen_at` and `won_at`, millisecond `last_activity_at`, and lead sources renamed (`app` became `booking`). The seed adds six sample leads (calls, walk-ins) to each agent that has none, with two notes and one deal won.
+- `GET /agent/today` gives the stats, target, today's viewings (until an hour after they start), the next five, the pipeline counts and the `new` leads. Leads lists mask phones; the lead page has the full number and marks the lead seen.
+- The agent's booking notification now opens the lead page (`/agent/lead/:id`).
+- The agent routes moved into `agent/(tabs)/`, with `agent/lead/[id]` over the tabs, like the client's property page. The URLs did not change.
+- Found and fixed: the API reads times as UTC, but MySQL on this PC runs in Cairo time, so times MySQL filled in itself (`created_at`) came back 2 hours ahead. Every pooled session now sets `time_zone = '+00:00'`. Production's MySQL was already UTC, so nothing changes there.
+- Left for later: chat from the lead page (Phase 16), the "Live video" start button (video is out, #5), and leads the agent adds by hand.
+- Checked by hand against the local API and database: a client booking one of Omar's homes showed on his Today at once, marked "New from app", with the lead hot at Viewing and his notification opening it. No web preview: signing in does not work on the web (Phase 11).
+- Tests: API e2e (`agent.e2e-spec.ts`, 11), shared unit tests for the masked phone and the target maths, and UI tests for the three screens (13).
+
 ---
 
 ## Phase 16: Live chat

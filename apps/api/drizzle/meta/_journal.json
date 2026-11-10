@@ -64,6 +64,13 @@
       "when": 1794243813163,
       "tag": "0008_bright_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1794289938214,
+      "tag": "0009_ancient_zodiak",
+      "breakpoints": true
     }
   ]
 }
