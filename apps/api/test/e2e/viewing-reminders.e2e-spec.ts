@@ -158,7 +158,8 @@ describe('Viewing reminders (e2e)', () => {
     // The booking screen only offers whole hours, so the repository books the odd time directly.
     const home = aHome();
     const agentId = (await http().get(`/v1/properties/${home.id}`).expect(200)).body.agent.id as number;
-    const starts = Date.now() + 35 * MIN;
+    // A whole second: `starts_at` keeps seconds, and MySQL rounds the rest (up from .500).
+    const starts = Math.floor((Date.now() + 35 * MIN) / 1000) * 1000;
     const id = await app.get(ViewingsRepository).book({ propertyId: home.id, clientId: client.user.id, agentId, startsAt: new Date(starts), reminders: ['1d', '2h', '30m'] });
     const rows = await db.select().from(viewingReminders).where(eq(viewingReminders.viewingId, id));
     expect(Object.fromEntries(rows.map((r) => [r.offset, r.sentAt !== null]))).toEqual({ '1d': true, '2h': true, '30m': false });

@@ -310,11 +310,16 @@ describe('Chat (e2e)', () => {
     expect(((await http().get(`/v1/agent/leads/${lead.id}`).set(bearer(omar)).expect(200)).body as LeadDetail).chatId).toBe(t.id);
   });
 
-  it('deleting the account deletes the client’s conversations', async () => {
+  it('deleting the account deletes the client’s conversations and their photos', async () => {
     const t = await start(client.accessToken, aHome().id);
     await send(client.accessToken, t.id, { kind: 'text', text: 'bye' }).expect(201);
+    const sharp = (await import('sharp')).default;
+    const png = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#b38959' } }).png().toBuffer();
+    const photo = ((await http().post(`/v1/chats/${t.id}/images`).set(bearer(client.accessToken)).attach('photos', png, { filename: 'a.png', contentType: 'image/png' }).expect(201)).body as ChatMessage).body as { urls: string[] };
+    await http().get(photo.urls[0]!).expect(200);
     await http().delete('/v1/me').set(bearer(client.accessToken)).send({ password: 'Secret123' }).expect(204);
     expect((await list(omar)).some((x) => x.id === t.id)).toBe(false);
     expect(await db.select().from(chatMessages).where(eq(chatMessages.threadId, t.id))).toEqual([]);
+    await http().get(photo.urls[0]!).expect(404);
   });
 });

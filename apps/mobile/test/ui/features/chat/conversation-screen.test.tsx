@@ -1,9 +1,11 @@
 import type { ChatMessage, ChatThread, SlotsResponse } from '@maqar/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native';
 import { ToastHost } from '@/components/toast';
 import { useSession } from '@/features/auth/store/session.store';
 import { ConversationScreen } from '@/features/chat/screens/conversation-screen';
+import * as socket from '@/features/chat/socket';
 import { heardTyping, useTyping } from '@/features/chat/socket';
 import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
 import { renderWithProviders } from '../../../utils/render';
@@ -93,6 +95,41 @@ describe('Conversation (client)', () => {
     const writes = serve(thread(), [msg('agent', { kind: 'text', text: 'أهلاً' })]);
     await renderWithProviders(<Page />);
     await waitFor(() => expect(writes()).toEqual([['/chats/1/read', null]]));
+  });
+
+  it('tries a failed read once, not over and over', async () => {
+    serve(thread(), [msg('agent', { kind: 'text', text: 'أهلاً' })]);
+    const fetchMock = jest.mocked(global.fetch);
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url, init) => (String(url).endsWith('/chats/1/read') ? jsonResponse(500, { statusCode: 500, message: 'Down' }) : base(url, init)));
+    const reads = () => fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/chats/1/read')).length;
+    await renderWithProviders(<Page />);
+    await waitFor(() => expect(reads()).toBe(1));
+    await act(() => new Promise((r) => setTimeout(r, 300)));
+    expect(reads()).toBe(1);
+  });
+
+  it('in the background, leaves messages unread and lets the server notify; back in the app, reads them', async () => {
+    const changes: ((s: AppStateStatus) => void)[] = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_e, fn) => {
+      changes.push(fn as (s: AppStateStatus) => void);
+      return { remove: () => changes.splice(changes.indexOf(fn as (s: AppStateStatus) => void), 1) } as NativeEventSubscription;
+    });
+    const real = Object.getOwnPropertyDescriptor(AppState, 'currentState')!;
+    const setState = (value: AppStateStatus) => Object.defineProperty(AppState, 'currentState', { value, configurable: true });
+    setState('background');
+    const open = jest.spyOn(socket, 'setOpenThread');
+    const writes = serve(thread(), [msg('agent', { kind: 'text', text: 'أهلاً' })]);
+    await renderWithProviders(<Page />);
+    expect(await screen.findByText('أهلاً')).toBeOnTheScreen();
+    expect(open).toHaveBeenLastCalledWith(null);
+    expect(writes()).toEqual([]);
+    setState('active');
+    await act(() => changes.forEach((fn) => fn('active')));
+    expect(open).toHaveBeenLastCalledWith(1);
+    await waitFor(() => expect(writes()).toEqual([['/chats/1/read', null]]));
+    Object.defineProperty(AppState, 'currentState', real);
+    jest.restoreAllMocks();
   });
 
   it('sends a text and a quick question, and the text shows at once', async () => {

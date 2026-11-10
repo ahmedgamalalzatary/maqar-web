@@ -52,9 +52,10 @@ export class UsersRepository {
   /**
    * Deletes an account (contract §15 privacy): personal data is wiped and the email is
    * released so it can sign up again. The row stays so past records keep their links.
+   * Returns the ids of the conversations deleted, so their photos can go too.
    */
-  async softDelete(id: number): Promise<void> {
-    await this.db.transaction(async (tx) => {
+  async softDelete(id: number): Promise<number[]> {
+    return this.db.transaction(async (tx) => {
       await tx
         .update(users)
         .set({ name: '', email: null, phone: null, passwordHash: null, deletedAt: new Date() })
@@ -66,9 +67,11 @@ export class UsersRepository {
       // Their coming viewings are cancelled, so the agents' hours are free again; past ones stay as they were.
       await tx.update(viewings).set({ status: 'cancelled' }).where(and(eq(viewings.clientId, id), isNotNull(viewings.active), gt(viewings.startsAt, new Date())));
       // Their conversations are personal too (the messages go with them).
+      const threads = await tx.select({ id: chatThreads.id }).from(chatThreads).where(eq(chatThreads.clientId, id));
       await tx.delete(chatThreads).where(eq(chatThreads.clientId, id));
       await tx.delete(notifications).where(eq(notifications.userId, id));
       await tx.delete(pushTokens).where(eq(pushTokens.userId, id));
+      return threads.map((t) => t.id);
     });
   }
 

@@ -500,7 +500,7 @@ After submitting:
 - A viewing booked in the client app shows up straight away as a lead at stage `viewing`, marked "New from app".
 - [Real] "New from app" lasts until the agent opens the lead; another booking brings it back. A booking also marks the lead hot, and the agent can switch hot on or off. The budget comes from the client's preferences.
 - [Real] The monthly target counts leads moved to Won this month (Cairo time); moving one back takes it off. "Compared with the team" is against the average of the active agents. An agent with no target sees the count without a bar.
-- [Real] Lists show phones masked (`+20 101 *** 4412`); the lead page shows the full number for calling and WhatsApp. Chat from the lead page comes with Phase 16.
+- [Real] Lists show phones masked (`+20 101 *** 4412`); the lead page shows the full number for calling and WhatsApp, and opens the chat instead of WhatsApp when there is one.
 
 ### 10.3 Agent chats
 
