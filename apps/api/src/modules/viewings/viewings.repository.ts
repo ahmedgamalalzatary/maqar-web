@@ -4,7 +4,7 @@ import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, sql } f
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agentDaysOff, agentHours } from '../agents/agents.schema.js';
 import { leads } from '../leads/leads.schema.js';
-import { users } from '../users/users.schema.js';
+import { clientPrefs, users } from '../users/users.schema.js';
 import { alreadyDue, LONGEST_REMINDER_MS, type PendingReminder } from './reminders.js';
 import { DEFAULT_HOURS, type WeekHours } from './slots.js';
 import { type ViewingRow, viewingReminders, viewings } from './viewings.schema.js';
@@ -70,14 +70,20 @@ export class ViewingsRepository {
         .values({ propertyId: v.propertyId, clientId: v.clientId, agentId: v.agentId, startsAt: v.startsAt })
         .$returningId();
       await this.setReminders(tx, id!, v.reminders, v.startsAt);
+      // The budget comes from the client's preferences, when they set them. The lead turns hot and
+      // unseen, so the agent sees the booking as "New from app".
+      const [prefs] = await tx.select({ budget: clientPrefs.budgetMax }).from(clientPrefs).where(eq(clientPrefs.userId, v.clientId));
       await tx
         .insert(leads)
-        .values({ clientId: v.clientId, agentId: v.agentId, propertyId: v.propertyId, stage: 'viewing', source: 'app', fromApp: true })
+        .values({ clientId: v.clientId, agentId: v.agentId, propertyId: v.propertyId, stage: 'viewing', source: 'booking', fromApp: true, hot: true, budget: prefs?.budget ?? null })
         .onDuplicateKeyUpdate({
           set: {
             stage: sql`if(${leads.stage} in ('new', 'contacted', 'lost'), 'viewing', ${leads.stage})`,
             propertyId: v.propertyId,
-            lastActivityAt: sql`now()`,
+            hot: true,
+            seenAt: null,
+            budget: sql`coalesce(${leads.budget}, ${prefs?.budget ?? null})`,
+            lastActivityAt: sql`now(3)`,
           },
         });
       return id!;
@@ -92,7 +98,7 @@ export class ViewingsRepository {
       await this.setReminders(tx, id, keep, to);
       await tx
         .update(leads)
-        .set({ lastActivityAt: sql`now()` })
+        .set({ lastActivityAt: sql`now(3)` })
         .where(sql`(${leads.clientId}, ${leads.agentId}) = (select client_id, agent_id from viewings where id = ${id})`);
     });
   }
@@ -136,6 +142,12 @@ export class ViewingsRepository {
       .set({ sentAt: now })
       .where(and(eq(viewingReminders.viewingId, viewingId), inArray(viewingReminders.offset, offsets), isNull(viewingReminders.sentAt)));
     return res.affectedRows > 0;
+  }
+
+  /** The client's lead with this agent (booking creates it). */
+  async leadIdOf(clientId: number, agentId: number): Promise<number | undefined> {
+    const [row] = await this.db.select({ id: leads.id }).from(leads).where(and(eq(leads.clientId, clientId), eq(leads.agentId, agentId)));
+    return row?.id;
   }
 
   async findById(id: number): Promise<ViewingRow | undefined> {

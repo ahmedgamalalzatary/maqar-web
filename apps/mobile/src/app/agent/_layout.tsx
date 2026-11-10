@@ -1,12 +1,11 @@
-import { RoleTabs } from '@/core/navigation/role-tabs';
+import { Stack } from 'expo-router';
 import { RoleGate } from '@/features/auth/components/role-gate';
-import { useUnreadCount } from '@/features/notifications/hooks/use-notifications';
 
-export default function AgentTabs() {
-  const unread = useUnreadCount();
+/** The sales agent app: the tabs, and the lead page over them. */
+export default function AgentLayout() {
   return (
     <RoleGate role="agent">
-      <RoleTabs role="agent" badges={{ alerts: unread }} />
+      <Stack screenOptions={{ headerShown: false }} />
     </RoleGate>
   );
 }

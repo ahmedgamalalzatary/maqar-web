@@ -493,6 +493,9 @@ After submitting:
   - add notes (newest first)
   - call, WhatsApp [Open], chat
 - A viewing booked in the client app shows up straight away as a lead at stage `viewing`, marked "New from app".
+- [Real] "New from app" lasts until the agent opens the lead; another booking brings it back. A booking also marks the lead hot, and the agent can switch hot on or off. The budget comes from the client's preferences.
+- [Real] The monthly target counts leads moved to Won this month (Cairo time); moving one back takes it off. "Compared with the team" is against the average of the active agents. An agent with no target sees the count without a bar.
+- [Real] Lists show phones masked (`+20 101 *** 4412`); the lead page shows the full number for calling and WhatsApp. Chat from the lead page comes with Phase 16.
 
 ### 10.3 Agent chats
 
@@ -557,7 +560,7 @@ Conventions:
 | **price_alerts** | user_id, property_id, created_at |
 | **viewings** | id, property_id, client_id, agent_id, starts_at (UTC; shown as the Cairo day and hour), mode (`visit` / `video`; `visit` only for now), status (`confirmed` / `rescheduled` / `cancelled` / `completed`), rescheduled_from, video_url, created_at, updated_at, active (generated: 1 while confirmed or rescheduled, else NULL). Unique (agent_id, starts_at, active), so an agent has one live viewing per hour. |
 | **viewing_reminders** | viewing_id, offset (`1d` / `2h` / `30m`), sent_at |
-| **leads** | id, client_id or name and phone, property_id, agent_id, budget, source, stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at |
+| **leads** | id, client_id or name and phone, property_id, agent_id, budget, source (`booking` / `tour` / `price_alert` / `smart_pick` / `calculator` / `chat` / `call` / `walk_in`), stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at, seen_at, won_at |
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
 | **chat_threads** | id, client_id, property_id, agent_id, lead_id, created_at. Unique (client_id, property_id). |
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
@@ -590,7 +593,7 @@ Supporting rules:
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
 | owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
 | uploads | `POST /uploads` (photos, panoramas), stored on the server disk and served at `/uploads/...` | owner, agent, client (chat) |
-| agent | `GET /agent/today`, `GET /agent/leads`, `GET/PATCH /agent/leads/:id`, `POST /agent/leads/:id/notes` | agent |
+| agent | `GET /agent/today`, `GET /agent/leads?stage`, `GET/PATCH /agent/leads/:id` (stage, hot; opening it marks it seen), `POST /agent/leads/:id/notes` | agent, own leads only |
 | admin | `GET /admin/listings?status=pending`, `POST /admin/listings/:id/approve`, `POST /admin/listings/:id/request-changes`, agents CRUD, `PATCH /admin/leads/:id/assign`, areas CRUD | admin |
 
 Access is checked by role guards on every route. Owners and agents can only reach their own data.
@@ -677,3 +680,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 13 built (the phone check is still pending): `viewings` (one `starts_at` instead of date and time; the unique key counts live viewings only), `viewing_reminders` (the choices are saved now; Phase 14 sends them), `leads`, `agent_hours` and `agent_days_off`. Slots follow each agent's hours and days off. Video is left out (#5). `GET /properties/:id/slots` is public and takes `reschedule` instead of `from`/`to`. |
 | 2026-11-09 | CodeRabbit fixes on Phases 12–13: `PUT /alerts/:id` refuses stays (400). Deleting an account cancels only viewings that haven't started yet. In the app, Change and Cancel go away once a viewing starts, and a reschedule must pick a new time. |
 | 2026-11-10 | Phase 14 built (the phone check is still pending): a job inside the API sends viewing reminders every minute. Each is sent once, even with two servers. Choices already due at booking are skipped, and missed ones are merged into one message. No new tables or routes. |
+| 2026-11-10 | Phase 15 built (the phone check is still pending): the agent's Today, Leads and lead page. `lead_notes`; `leads.seen_at` ("New from app") and `won_at` (the monthly target); lead sources are now named (`booking` instead of `app`). The seed adds sample leads to each agent. Every database session now runs in UTC, so times MySQL fills in itself read right on a PC whose MySQL is in local time (production was already UTC). |
