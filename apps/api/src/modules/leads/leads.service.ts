@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  type AdminLeadItem,
   type AgentToday,
   type AgentViewing,
   LEAD_STAGES,
@@ -13,6 +14,7 @@ import {
   type UpdateLeadBody,
 } from '@maqar/shared';
 import { ChatRepository } from '../chat/chat.repository.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { cairoClock, cairoInstant } from '../viewings/slots.js';
 import { type LeadWithClient, LeadsRepository, type ViewingWithLead } from './leads.repository.js';
@@ -33,6 +35,7 @@ export class LeadsService {
     private readonly repo: LeadsRepository,
     private readonly properties: PropertiesService,
     private readonly chats: ChatRepository,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async today(agentId: number, now = new Date()): Promise<AgentToday> {
@@ -103,6 +106,44 @@ export class LeadsService {
     await this.own(agentId, id);
     const noteId = await this.repo.addNote(id, agentId, text.trim());
     return noteItem((await this.repo.findNote(noteId))!);
+  }
+
+  /** Every agent's leads (admins), with the full phone and whose each lead is. */
+  async adminList(f: { agentId?: number; stage?: LeadStage }): Promise<AdminLeadItem[]> {
+    const rows = await this.repo.listAll(f);
+    const [props, agents] = await Promise.all([this.cardsOf(rows.map((r) => r.lead.propertyId)), this.repo.agentsOf(rows.map((r) => r.lead.agentId))]);
+    return rows.flatMap((r) => {
+      const agent = agents.get(r.lead.agentId);
+      if (!agent) return [];
+      const { isNew: _isNew, ...card } = this.card(r, props);
+      const { active: _active, ...who } = agent;
+      return [{ ...card, phone: r.clientPhone ?? r.lead.phone, agent: who }];
+    });
+  }
+
+  /**
+   * Gives a lead to another active agent (contract §11), who gets a notification and sees it as
+   * new. The client's chats and viewings stay with the home's advisor.
+   */
+  async assign(id: number, agentId: number): Promise<AdminLeadItem> {
+    const row = await this.repo.findById(id);
+    if (!row) throw new NotFoundException('Lead not found');
+    const to = (await this.repo.agentsOf([agentId])).get(agentId);
+    if (!to?.active) throw new BadRequestException('Pick an active sales advisor');
+    if (row.lead.agentId !== agentId) {
+      if (!(await this.repo.assign(id, agentId))) throw new ConflictException('This client already has a lead with that advisor');
+      const name = row.clientName ?? row.lead.name ?? '';
+      await this.notifications.notify(agentId, {
+        kind: 'lead',
+        titleAr: 'عميل جديد اتنقل ليك',
+        titleEn: 'A lead was moved to you',
+        bodyAr: name ? `${name}: افتح صفحته وكلّمه.` : 'افتح صفحته وكلّمه.',
+        bodyEn: name ? `${name}: open the lead and get in touch.` : 'Open the lead and get in touch.',
+        href: `/agent/lead/${id}`,
+      });
+    }
+    const [item] = (await this.adminList({})).filter((l) => l.id === id);
+    return item!;
   }
 
   private async own(agentId: number, id: number): Promise<LeadWithClient> {

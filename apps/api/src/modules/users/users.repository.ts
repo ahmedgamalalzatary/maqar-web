@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prefs } from '@maqar/shared';
-import { and, eq, gt, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, ne, or, type SQL } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
@@ -16,20 +16,22 @@ import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schem
 export class UsersRepository {
   constructor(@InjectDb() private readonly db: Db) {}
 
-  async findActiveById(id: number): Promise<UserRow | undefined> {
+  /** Not deleted, and not an agent an admin has turned off (phase 18): they lose access at once. */
+  private async findActive(where: SQL): Promise<UserRow | undefined> {
     const [row] = await this.db
-      .select()
+      .select({ user: users })
       .from(users)
-      .where(and(eq(users.id, id), isNull(users.deletedAt)));
-    return row;
+      .leftJoin(agents, eq(agents.userId, users.id))
+      .where(and(where, isNull(users.deletedAt), or(ne(users.role, 'agent'), eq(agents.active, true))));
+    return row?.user;
   }
 
-  async findActiveByEmail(email: string): Promise<UserRow | undefined> {
-    const [row] = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.email, email), isNull(users.deletedAt)));
-    return row;
+  findActiveById(id: number): Promise<UserRow | undefined> {
+    return this.findActive(eq(users.id, id));
+  }
+
+  findActiveByEmail(email: string): Promise<UserRow | undefined> {
+    return this.findActive(eq(users.email, email));
   }
 
   async findAgentProfile(userId: number): Promise<AgentRow | undefined> {

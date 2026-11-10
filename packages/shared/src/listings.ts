@@ -86,6 +86,10 @@ export type ListingBody = {
   /** Paths from `POST /uploads`, cover first. At least one. */
   images: string[];
   location?: { lat: number; lng: number } | null;
+  /** Edit only: picked by the Maqar team, shown first on Home (phase 18). */
+  featured?: boolean;
+  /** Edit only: move a published listing to another active advisor (phase 18). */
+  agentId?: number;
   /** Who the home belongs to. Admins only ever see it. */
   ownerName?: string | null;
   ownerPhone?: string | null;

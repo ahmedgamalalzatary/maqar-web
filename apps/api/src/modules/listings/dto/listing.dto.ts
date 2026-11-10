@@ -19,6 +19,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -142,7 +143,13 @@ export class ListingDto implements ListingBody {
 }
 
 /** `PATCH /admin/listings/:id`: any of the same fields. A new price goes through the price history. */
-export class UpdateListingDto extends PartialType(ListingDto) {}
+export class UpdateListingDto extends PartialType(ListingDto) {
+  @ApiPropertyOptional({ description: 'Shown first on Home (phase 18)' }) @IsOptional() @IsBoolean()
+  featured?: boolean;
+
+  @ApiPropertyOptional({ description: 'Move the listing to another active advisor (phase 18)' }) @IsOptional() @IsInt() @Min(1)
+  agentId?: number;
+}
 
 export class PublishDto implements PublishBody {
   @ApiPropertyOptional({ description: 'Without one, the advisor with the fewest live listings' })

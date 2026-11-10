@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LEAD_NOTE_MAX, LEAD_STAGES, type LeadStage } from '@maqar/shared';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { type AssignLeadBody, LEAD_NOTE_MAX, LEAD_STAGES, type LeadStage } from '@maqar/shared';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class LeadsQueryDto {
   @ApiPropertyOptional({ enum: LEAD_STAGES })
@@ -29,4 +29,15 @@ export class AddLeadNoteDto {
   @IsNotEmpty()
   @MaxLength(LEAD_NOTE_MAX)
   text: string;
+}
+
+/** `GET /admin/leads`: one agent's leads, or one stage. */
+export class AdminLeadsQueryDto extends LeadsQueryDto {
+  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  agentId?: number;
+}
+
+export class AssignLeadDto implements AssignLeadBody {
+  @ApiProperty() @IsInt() @Min(1)
+  agentId: number;
 }

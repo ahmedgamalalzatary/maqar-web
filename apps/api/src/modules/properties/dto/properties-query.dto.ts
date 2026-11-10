@@ -115,6 +115,9 @@ export class ListingFiltersDto {
 
   @ApiPropertyOptional({ description: 'Has a 360° tour' }) @IsOptional() @Transform(toBool) @IsBoolean()
   tour?: boolean;
+
+  @ApiPropertyOptional({ description: 'Picked by the Maqar team' }) @IsOptional() @Transform(toBool) @IsBoolean()
+  featured?: boolean;
 }
 
 /** The query string names one value (`type`, `area`, `feature`); the filters name the lists. */
@@ -137,6 +140,7 @@ export function toListingFilters(d: ListingFiltersDto): ListingFilters {
     ready: d.ready,
     dropped: d.dropped,
     tour: d.tour,
+    featured: d.featured,
   };
 }
 

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { LeadStage } from '@maqar/shared';
-import { and, asc, count, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
 import { users } from '../users/users.schema.js';
+import { isDuplicate } from '../viewings/viewings.repository.js';
 import { viewings } from '../viewings/viewings.schema.js';
 import { type LeadRow, leadNotes, leads } from './leads.schema.js';
 
@@ -39,6 +40,40 @@ export class LeadsRepository {
     return this.selectLeads()
       .where(and(eq(leads.agentId, agentId), stage ? eq(leads.stage, stage) : undefined))
       .orderBy(desc(leads.lastActivityAt), desc(leads.id));
+  }
+
+  /** Every agent's leads for the admin tools (phase 18), the latest activity first. */
+  listAll(f: { agentId?: number; stage?: LeadStage }): Promise<LeadWithClient[]> {
+    return this.selectLeads()
+      .where(and(f.agentId ? eq(leads.agentId, f.agentId) : undefined, f.stage ? eq(leads.stage, f.stage) : undefined))
+      .orderBy(desc(leads.lastActivityAt), desc(leads.id))
+      .limit(500);
+  }
+
+  async findById(id: number): Promise<LeadWithClient | undefined> {
+    const [row] = await this.selectLeads().where(eq(leads.id, id));
+    return row;
+  }
+
+  /** Gives the lead to another agent, who sees it as new. False when the client already has a lead with them. */
+  async assign(id: number, agentId: number): Promise<boolean> {
+    try {
+      await this.db.update(leads).set({ agentId, seenAt: null }).where(eq(leads.id, id));
+      return true;
+    } catch (err) {
+      if (isDuplicate(err)) return false;
+      throw err;
+    }
+  }
+
+  /** Names and colours of these agents, and whether each is active. */
+  async agentsOf(ids: number[]): Promise<Map<number, { id: number; nameAr: string; nameEn: string; colour: string; active: boolean }>> {
+    if (!ids.length) return new Map();
+    const rows = await this.db
+      .select({ id: agents.userId, nameAr: agents.nameAr, nameEn: agents.nameEn, colour: agents.colour, active: agents.active })
+      .from(agents)
+      .where(inArray(agents.userId, [...new Set(ids)]));
+    return new Map(rows.map((r) => [r.id, r]));
   }
 
   /** The lead, only when it is this agent's. */

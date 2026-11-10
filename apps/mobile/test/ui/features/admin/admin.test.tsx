@@ -219,7 +219,7 @@ describe('Listing form', () => {
       titleAr: '',
     });
     expect(writes().some(([, u]) => String(u).endsWith('/publish'))).toBe(false);
-    expect(mockRouter.push).toHaveBeenCalledWith('/admin/listing/9');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/admin/listing/9');
   });
 
   it('edits a saved listing: the steps start filled in, and only Save changes is offered', async () => {
@@ -264,7 +264,7 @@ describe('Listing form', () => {
     await fillAll();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ وانشر' }));
     expect(await screen.findByText('اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته')).toBeOnTheScreen();
-    expect(mockRouter.push).toHaveBeenCalledWith('/admin/listing/9');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/admin/listing/9');
     expect(writes().filter(([m, u]) => m === 'POST' && u === '/admin/listings')).toHaveLength(1);
   });
 

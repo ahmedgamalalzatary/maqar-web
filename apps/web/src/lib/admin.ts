@@ -1,6 +1,23 @@
 "use client";
 
-import type { AdminAgentOption, AdminListing, AdminListingsPage, AreaItem, ListingBody, PropertyStatus, UploadResponse } from "@maqar/shared";
+import type {
+  AdminAgentDetail,
+  AdminAgentItem,
+  AdminAgentOption,
+  AdminArea,
+  AdminLeadItem,
+  AdminListing,
+  AdminListingsPage,
+  AgentBody,
+  AreaBody,
+  AreaItem,
+  DaysOffBody,
+  DaysOffResult,
+  HoursBody,
+  ListingBody,
+  PropertyStatus,
+  UploadResponse,
+} from "@maqar/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, useSession } from "./client";
 
@@ -36,7 +53,7 @@ export const useAreas = () => useQuery({ queryKey: ["areas"], queryFn: ({ signal
 
 export function useAgents(enabled = true) {
   const key = useKey();
-  return useQuery({ queryKey: [...key, "agents"], queryFn: ({ signal }) => api.request<AdminAgentOption[]>("/admin/agents", { signal }), enabled });
+  return useQuery({ queryKey: [...key, "agents"], queryFn: ({ signal }) => api.request<AdminAgentOption[]>("/admin/agents?active=true", { signal }), enabled });
 }
 
 /** After any change: the listing shows its new state, and the lists catch up. */
@@ -73,4 +90,94 @@ export function uploadPhoto(photo: Blob): Promise<UploadResponse> {
   const form = new FormData();
   form.append("photo", photo, "photo.jpg");
   return api.request<UploadResponse>("/uploads", { method: "POST", body: form });
+}
+
+// ---- Admin tools (phase 18) ----
+
+/** After a change to agents, leads or areas, everything the admin sees refetches. */
+function useRefresh() {
+  const key = useKey();
+  const qc = useQueryClient();
+  return () => {
+    void qc.invalidateQueries({ queryKey: key });
+    void qc.invalidateQueries({ queryKey: ["areas"] });
+  };
+}
+
+export function useAllAgents() {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "agents-all"], queryFn: ({ signal }) => api.request<AdminAgentItem[]>("/admin/agents", { signal }) });
+}
+
+export function useAgent(id: number | undefined) {
+  const key = useKey();
+  return useQuery({
+    queryKey: [...key, "agent", id],
+    queryFn: ({ signal }) => api.request<AdminAgentDetail>(`/admin/agents/${id}`, { signal }),
+    enabled: id !== undefined && Number.isInteger(id),
+  });
+}
+
+export function useSaveAgent(id?: number) {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (body: Partial<AgentBody>) =>
+      id ? api.request<AdminAgentDetail>(`/admin/agents/${id}`, { method: "PATCH", body }) : api.request<AdminAgentDetail>("/admin/agents", { method: "POST", body }),
+    onSuccess: refresh,
+  });
+}
+
+export function useSetHours() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (body: HoursBody) => api.request<void>("/admin/agents/hours", { method: "PUT", body }), onSuccess: refresh });
+}
+
+export function useAddDaysOff() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (body: DaysOffBody) => api.request<DaysOffResult>("/admin/agents/days-off", { method: "POST", body }), onSuccess: refresh });
+}
+
+export function useRemoveDayOff(id: number) {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (date: string) => api.request<void>(`/admin/agents/${id}/days-off/${date}`, { method: "DELETE" }), onSuccess: refresh });
+}
+
+export function useLeads(agentId: number | undefined) {
+  const key = useKey();
+  return useQuery({
+    queryKey: [...key, "leads", agentId ?? "all"],
+    queryFn: ({ signal }) => api.request<AdminLeadItem[]>(`/admin/leads${agentId ? `?agentId=${agentId}` : ""}`, { signal }),
+  });
+}
+
+export function useAssignLead() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: ({ id, agentId }: { id: number; agentId: number }) => api.request<AdminLeadItem>(`/admin/leads/${id}/assign`, { method: "PATCH", body: { agentId } }),
+    onSuccess: refresh,
+  });
+}
+
+export function useAdminAreas() {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "areas"], queryFn: ({ signal }) => api.request<AdminArea[]>("/admin/areas", { signal }) });
+}
+
+export function useSaveArea(id?: string) {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (body: AreaBody) => (id ? api.request<AdminArea>(`/admin/areas/${id}`, { method: "PATCH", body }) : api.request<AdminArea>("/admin/areas", { method: "POST", body })),
+    onSuccess: refresh,
+  });
+}
+
+export function useDeleteArea() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (id: string) => api.request<void>(`/admin/areas/${id}`, { method: "DELETE" }), onSuccess: refresh });
+}
+
+/** Featured on Home, or a different advisor, from the listing page. */
+export function usePatchListing(id: number) {
+  const settle = useSettle();
+  return useMutation({ mutationFn: (body: { featured?: boolean; agentId?: number }) => api.request<AdminListing>(`/admin/listings/${id}`, { method: "PATCH", body }), onSuccess: settle });
 }

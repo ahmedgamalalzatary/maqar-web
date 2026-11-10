@@ -8,9 +8,10 @@ import {
   Home,
   type LucideIcon,
   MessagesSquare,
-  PlusSquare,
+  MapPin,
   Search,
   Sun,
+  UserCog,
   UserRound,
   Users,
 } from 'lucide-react-native';
@@ -46,7 +47,9 @@ export const TABS: Record<TabRole, Tab[]> = {
   // Admins list every home for owners (2026-11-09: there are no owner accounts).
   admin: [
     { name: 'index', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
-    { name: 'new', label: { ar: 'أضف عقار', en: 'Add' }, icon: PlusSquare },
+    { name: 'agents', label: { ar: 'المسؤولين', en: 'Agents' }, icon: UserCog },
+    { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
+    { name: 'areas', label: { ar: 'المناطق', en: 'Areas' }, icon: MapPin },
     me,
   ],
 };

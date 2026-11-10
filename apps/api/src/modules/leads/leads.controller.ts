@@ -1,9 +1,9 @@
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AgentToday, LeadCard, LeadDetail, LeadNote } from '@maqar/shared';
+import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
+import type { AdminLeadItem, AgentToday, LeadCard, LeadDetail, LeadNote } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { AddLeadNoteDto, LeadsQueryDto, UpdateLeadDto } from './dto/leads.dto.js';
+import { AddLeadNoteDto, AdminLeadsQueryDto, AssignLeadDto, LeadsQueryDto, UpdateLeadDto } from './dto/leads.dto.js';
 import { LeadsService } from './leads.service.js';
 
 /** Router for `/v1/agent`: the sales agent's day and leads (contract §10.1, §10.2, §14). Only their own. */
@@ -45,5 +45,28 @@ export class AgentController {
   @ApiNotFoundResponse({ description: 'Missing, or another agent’s' })
   addNote(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: AddLeadNoteDto): Promise<LeadNote> {
     return this.leads.addNote(user.id, id, body.text);
+  }
+}
+
+/** Router for `/v1/admin/leads` (phase 18): every agent's leads, and moving one to another agent. */
+@ApiTags('admin')
+@ApiBearerAuth()
+@Roles('admin')
+@Controller('admin/leads')
+export class AdminLeadsController {
+  constructor(private readonly leads: LeadsService) {}
+
+  /** The latest activity first (at most 500); `agentId` and `stage` narrow them. Phones in full. */
+  @Get()
+  list(@Query() q: AdminLeadsQueryDto): Promise<AdminLeadItem[]> {
+    return this.leads.adminList(q);
+  }
+
+  /** The new agent gets a notification. The client's chats and viewings stay with the home's advisor. */
+  @Patch(':id/assign')
+  @ApiNotFoundResponse({ description: 'No such lead' })
+  @ApiConflictResponse({ description: 'The client already has a lead with that agent' })
+  assign(@Param('id', ParseIntPipe) id: number, @Body() body: AssignLeadDto): Promise<AdminLeadItem> {
+    return this.leads.assign(id, body.agentId);
   }
 }

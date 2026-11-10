@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
+import { AgentsModule } from './modules/agents/agents.module.js';
 import { AreasModule } from './modules/areas/areas.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
@@ -59,6 +60,7 @@ import { UsersModule } from './modules/users/users.module.js';
     ChatModule,
     UploadsModule,
     ListingsModule,
+    AgentsModule,
   ],
 })
 export class AppModule {}

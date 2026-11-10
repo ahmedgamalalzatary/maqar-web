@@ -730,6 +730,18 @@ Contract §11.
 
 **Done when** an admin changes an agent's hours or adds a holiday, and the booking slots and the chat follow at once.
 
+**Status (2026-11-10): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left (with Phase 17's). Notes:
+- No migration: the tables were already there (`agents.active`, `agent_hours`, `agent_days_off`, `leads.agent_id`, `properties.featured`). Slots and the away reply read the hours and days off whenever they are needed, so a change applies at once; the e2e tests check both.
+- Agents (`/admin/agents`): an admin creates an agent with a starting password to pass on (no email is sent), edits the profile, sets a new password (which signs them out everywhere), and turns them off or on. A turned-off agent is signed out and cannot sign in, and every request with an old token is refused at once. An agent who is still the advisor of a live listing cannot be turned off: the listing moves first (`PATCH /admin/listings/:id` takes `agentId`). There is no delete, so history keeps its links. `GET /admin/agents?active=true` is the advisor picker.
+- Hours (`PUT /admin/agents/hours`): the same week for one agent or several, replacing what they had; a weekday left out is a day off, and at least one day is worked. A new agent has the default week until one is set.
+- Days off (`POST /admin/agents/days-off`): one day or a stretch of up to 60, for one agent or several, with an optional reason; adding a day that is already off keeps it. Viewings already booked on them are not cancelled: the answer says how many, so the admin can agree other times. `DELETE /admin/agents/:id/days-off/:date` takes one back.
+- Leads (`/admin/leads`): every agent's leads with full phones, by agent or stage; `PATCH /admin/leads/:id/assign` moves one to another active agent, who gets a notification and sees it as new. A client cannot have two leads with one agent (409). The client's chats and viewings stay with the home's advisor.
+- Areas (`/admin/areas`): add (the id is made from the English name), edit, and delete one no listing uses.
+- Featured: `PATCH /admin/listings/:id` takes `featured`; cards carry `featured`, `GET /properties?featured=true` lists them, and Home shows "Featured by Maqar" first when there are some.
+- Found and fixed: on a query of one table Drizzle writes column names bare, so a count subquery that names the outer table's column compared the inner table with itself. The area counts were wrong (and Phase 17's live count per advisor worked only by luck); the outer column is now written with its table.
+- App: the admin's tabs are now Listings, Agents, Leads, Areas and Me (Add a listing is the + on Listings). Agents can be picked several at a time for hours or a day off. Web: the same pages.
+- Tests: API e2e (`admin-tools.e2e-spec.ts`, 16), shared unit tests (area ids, day ranges, a valid week), mobile UI tests for the agents, agent page, new agent, leads and new area screens and Home's featured row.
+
 ---
 
 ## Phase 19: Listing insights (for admins)

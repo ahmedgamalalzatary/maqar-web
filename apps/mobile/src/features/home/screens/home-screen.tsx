@@ -1,7 +1,7 @@
 import { type Category, fmtMoney, fmtPct } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
+import { Award, Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -107,6 +107,8 @@ export function Home() {
       </View>
 
       <NextViewingCard />
+
+      <Featured cardWidth={cardWidth} />
 
       <Picks cardWidth={cardWidth} />
 
@@ -237,6 +239,24 @@ function Picks({ cardWidth }: { cardWidth: number }) {
               ))}
         </ScrollView>
       )}
+    </Section>
+  );
+}
+
+/** "Featured by Maqar" (phase 18): homes the Maqar team picked, first on Home. Hidden when there are none. */
+function Featured({ cardWidth }: { cardWidth: number }) {
+  const t = useT();
+  const { colors } = useTheme();
+  const featured = useProperties({ featured: true, limit: 10 });
+  const items = featured.data?.items ?? [];
+  if (!items.length) return null;
+  return (
+    <Section title={t('مميزة من مقر', 'Featured by Maqar')} icon={<Award size={18} color={colors.accentInk} />}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+        {items.map((c) => (
+          <PropertyCardView key={c.id} card={c} width={cardWidth} />
+        ))}
+      </ScrollView>
     </Section>
   );
 }
