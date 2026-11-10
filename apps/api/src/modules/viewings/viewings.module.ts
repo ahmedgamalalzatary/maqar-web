@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PropertiesModule } from '../properties/properties.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { RemindersJob } from './reminders.job.js';
 import { SlotsController, ViewingsController } from './viewings.controller.js';
 import { ViewingsRepository } from './viewings.repository.js';
 import { ViewingsService } from './viewings.service.js';
@@ -10,7 +11,8 @@ import { ViewingsService } from './viewings.service.js';
 @Module({
   imports: [PropertiesModule, NotificationsModule, UsersModule],
   controllers: [SlotsController, ViewingsController],
-  providers: [ViewingsRepository, ViewingsService],
+  // Tests run the reminders by hand, with their own clock.
+  providers: [ViewingsRepository, ViewingsService, ...(process.env.NODE_ENV === 'test' ? [] : [RemindersJob])],
   exports: [ViewingsService],
 })
 export class ViewingsModule {}

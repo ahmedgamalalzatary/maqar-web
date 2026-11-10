@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
@@ -38,6 +39,8 @@ import { UsersModule } from './modules/users/users.module.js';
         };
       },
     }),
+    // Timed jobs (viewing reminders). Off in tests, which run them by hand.
+    ...(process.env.NODE_ENV === 'test' ? [] : [ScheduleModule.forRoot()]),
     DbModule,
     HealthModule,
     AuthModule,

@@ -15,6 +15,7 @@ import type { AuthUser } from '../../common/decorators/current-user.decorator.js
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { UsersRepository } from '../users/users.repository.js';
+import { dueBatches } from './reminders.js';
 import { buildSlotDays, cairoClock, cairoInstant, defaultDate, slotKey, slotStateOf } from './slots.js';
 import { isDuplicate, ViewingsRepository } from './viewings.repository.js';
 import type { ViewingRow } from './viewings.schema.js';
@@ -111,6 +112,32 @@ export class ViewingsService {
     const item = await this.item(id);
     await this.tell(item, 'rescheduled');
     return item;
+  }
+
+  /**
+   * Sends the reminders that are due (contract §8.7): one message per viewing, to the client, opening
+   * My viewings. Each reminder is claimed before it is sent, so it goes out once even with two servers.
+   * Returns how many messages went out.
+   */
+  async sendDueReminders(now = new Date()): Promise<number> {
+    let sent = 0;
+    for (const { viewingId, offsets } of dueBatches(await this.repo.pendingReminders(now), now)) {
+      if (!(await this.repo.claimReminders(viewingId, offsets, now))) continue;
+      const row = await this.repo.findById(viewingId);
+      const [v] = row ? await this.items([row], false) : [];
+      if (!row || !v) continue;
+      const when = (lang: Lang) => `${fmtDate(v.date, lang, 'long')} ${lang === 'ar' ? 'الساعة' : 'at'} ${fmtTime(v.time, lang)}`;
+      await this.notifications.notify(row.clientId, {
+        kind: 'reminder',
+        titleAr: 'تذكير بمعاينتك',
+        titleEn: 'Viewing reminder',
+        bodyAr: `${v.property.titleAr} | ${when('ar')} مع ${v.agent.nameAr}`,
+        bodyEn: `${v.property.titleEn} | ${when('en')} with ${v.agent.nameEn}`,
+        href: '/viewings',
+      });
+      sent++;
+    }
+    return sent;
   }
 
   /** The `.ics` calendar file: a 45-minute event with an alarm 2 hours before (contract §8.7). */
