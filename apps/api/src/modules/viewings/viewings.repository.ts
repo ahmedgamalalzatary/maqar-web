@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { ReminderOffset } from '@maqar/shared';
-import { and, asc, eq, gte, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agentDaysOff, agentHours } from '../agents/agents.schema.js';
 import { leads } from '../leads/leads.schema.js';
 import { users } from '../users/users.schema.js';
+import { alreadyDue, LONGEST_REMINDER_MS, type PendingReminder } from './reminders.js';
 import { DEFAULT_HOURS, type WeekHours } from './slots.js';
 import { type ViewingRow, viewingReminders, viewings } from './viewings.schema.js';
 
@@ -68,7 +69,7 @@ export class ViewingsRepository {
         .insert(viewings)
         .values({ propertyId: v.propertyId, clientId: v.clientId, agentId: v.agentId, startsAt: v.startsAt })
         .$returningId();
-      await this.setReminders(tx, id!, v.reminders);
+      await this.setReminders(tx, id!, v.reminders, v.startsAt);
       await tx
         .insert(leads)
         .values({ clientId: v.clientId, agentId: v.agentId, propertyId: v.propertyId, stage: 'viewing', source: 'app', fromApp: true })
@@ -83,12 +84,12 @@ export class ViewingsRepository {
     });
   }
 
-  /** Moves a live viewing; its reminders become unsent again for the new time. */
+  /** Moves a live viewing; its reminders (the new choices, or the old ones) count again from the new time. */
   async reschedule(id: number, from: Date, to: Date, reminders?: ReminderOffset[]): Promise<void> {
     await this.db.transaction(async (tx) => {
       await tx.update(viewings).set({ startsAt: to, rescheduledFrom: from, status: 'rescheduled' }).where(eq(viewings.id, id));
-      if (reminders) await this.setReminders(tx, id, reminders);
-      else await tx.update(viewingReminders).set({ sentAt: null }).where(eq(viewingReminders.viewingId, id));
+      const keep = reminders ?? (await tx.select({ offset: viewingReminders.offset }).from(viewingReminders).where(eq(viewingReminders.viewingId, id))).map((r) => r.offset);
+      await this.setReminders(tx, id, keep, to);
       await tx
         .update(leads)
         .set({ lastActivityAt: sql`now()` })
@@ -100,10 +101,41 @@ export class ViewingsRepository {
     await this.db.update(viewings).set({ status: 'cancelled' }).where(eq(viewings.id, id));
   }
 
-  private async setReminders(tx: Tx, id: number, reminders: ReminderOffset[]): Promise<void> {
+  /** Saves the choices. Those already due are stamped as sent, so they are never sent (see `alreadyDue`). */
+  private async setReminders(tx: Tx, id: number, reminders: ReminderOffset[], startsAt: Date): Promise<void> {
     await tx.delete(viewingReminders).where(eq(viewingReminders.viewingId, id));
     const unique = [...new Set(reminders)];
-    if (unique.length) await tx.insert(viewingReminders).values(unique.map((offset) => ({ viewingId: id, offset })));
+    const now = new Date();
+    const past = new Set(alreadyDue(startsAt, unique, now));
+    if (unique.length) await tx.insert(viewingReminders).values(unique.map((offset) => ({ viewingId: id, offset, sentAt: past.has(offset) ? now : null })));
+  }
+
+  /** Unsent reminders of live viewings that have not started and are close enough for one to be due. */
+  pendingReminders(now: Date): Promise<PendingReminder[]> {
+    return this.db
+      .select({ viewingId: viewingReminders.viewingId, offset: viewingReminders.offset, startsAt: viewings.startsAt })
+      .from(viewingReminders)
+      .innerJoin(viewings, eq(viewings.id, viewingReminders.viewingId))
+      .where(
+        and(
+          isNull(viewingReminders.sentAt),
+          isNotNull(viewings.active),
+          gt(viewings.startsAt, now),
+          lte(viewings.startsAt, new Date(now.getTime() + LONGEST_REMINDER_MS)),
+        ),
+      );
+  }
+
+  /**
+   * Stamps these reminders as sent, if they still are not. True when this call stamped any: the
+   * caller then sends them. Two servers running the job at once cannot both win the same row.
+   */
+  async claimReminders(viewingId: number, offsets: ReminderOffset[], now: Date): Promise<boolean> {
+    const [res] = await this.db
+      .update(viewingReminders)
+      .set({ sentAt: now })
+      .where(and(eq(viewingReminders.viewingId, viewingId), inArray(viewingReminders.offset, offsets), isNull(viewingReminders.sentAt)));
+    return res.affectedRows > 0;
   }
 
   async findById(id: number): Promise<ViewingRow | undefined> {

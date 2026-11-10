@@ -118,7 +118,7 @@ Rules:
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
-| Not installed yet (waiting on §16.1) | Job queue (#13), video (#5). Push is sent to Expo's HTTP API directly, with no SDK. |
+| Not installed yet (waiting on §16.1) | Video (#5). Timed jobs use `@nestjs/schedule` inside the API, with no queue (#13). Push is sent to Expo's HTTP API directly, with no SDK. |
 | API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
@@ -317,6 +317,7 @@ The price is compared on the client's terms:
   | Free | Anything else |
 - The assigned **sales advisor is shown by name**: "Omar will be there to meet you".
 - **Reminders** (multi-select; default 1 day and 2 hours before): 1 day, 2 hours, 30 minutes.
+- [Real] A job inside the API checks every minute and sends each chosen reminder once, as a `reminder` notification that opens My viewings. A choice already due when the viewing is booked or moved is never sent (a "1 day before" for a viewing in an hour). Reminders missed while the server was down go out as one message, as long as the viewing has not started. A reschedule moves them; a cancel stops them.
 - **Confirm:** the viewing is created as `confirmed` and the client gets a confirmation notification.
 - **Add to calendar:** an `.ics` file with a 45-minute event and a built-in alarm 2 hours before.
 - **Reschedule:** the same screen with the current slot preselected. Status becomes `rescheduled`, and the old date and time are kept (`rescheduledFrom`).
@@ -675,3 +676,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | Phase 12 built (the phone check is still pending): `price_alerts`, `price_history`, the alerts routes, and `PATCH /admin/listings/:id/price`, which records every change and notifies followers of a drop. Only admins change prices (no owner accounts); stays have no alerts. |
 | 2026-11-09 | Phase 13 built (the phone check is still pending): `viewings` (one `starts_at` instead of date and time; the unique key counts live viewings only), `viewing_reminders` (the choices are saved now; Phase 14 sends them), `leads`, `agent_hours` and `agent_days_off`. Slots follow each agent's hours and days off. Video is left out (#5). `GET /properties/:id/slots` is public and takes `reschedule` instead of `from`/`to`. |
 | 2026-11-09 | CodeRabbit fixes on Phases 12–13: `PUT /alerts/:id` refuses stays (400). Deleting an account cancels only viewings that haven't started yet. In the app, Change and Cancel go away once a viewing starts, and a reschedule must pick a new time. |
+| 2026-11-10 | Phase 14 built (the phone check is still pending): a job inside the API sends viewing reminders every minute. Each is sent once, even with two servers. Choices already due at booking are skipped, and missed ones are merged into one message. No new tables or routes. |

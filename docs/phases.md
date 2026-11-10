@@ -593,6 +593,15 @@ Contract §8.7 (reminders) and §8.8.
 
 **Done when** a viewing booked about 35 minutes ahead gets its 30-minute reminder on the phone.
 
+**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left, and the push part of it needs Firebase (Phase 11 status). Until then the reminder shows in the app's inbox. Not deployed yet. Notes:
+- Decided (#13, earlier): `@nestjs/schedule` inside the API. `RemindersJob` runs every minute and skips a run while the last one is still going. Tests do not load it; they call `sendDueReminders(now)` with their own clock.
+- Each reminder row is claimed (stamped `sent_at` where it is still empty) before it is sent, so two servers or a restart cannot send it twice.
+- A choice already due when the viewing is booked or moved is stamped at once and never sent. Booked 35 minutes ahead, only "30 minutes before" comes.
+- Reminders missed while the API was down become one message, if the viewing has not started yet. The message gives the home, the date and time, and the advisor; it opens My viewings.
+- A reschedule keeps the choices (or takes new ones) and counts them from the new time, so one already sent is sent again for the new time.
+- The app needed no change: the inbox already has the reminder icon, and a push opens its link.
+- Tests: unit tests for the timing (`reminders.spec.ts`) and 8 e2e tests (`viewing-reminders.e2e-spec.ts`): the right time, once only, only the choices made, missed ones merged, nothing after the start, reschedule, cancel, three runs at once, and a booking 35 minutes ahead.
+
 ---
 
 ## Phase 15: Sales agent app
