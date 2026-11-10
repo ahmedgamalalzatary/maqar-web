@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Me, Prefs, UpdateMeBody } from '@maqar/shared';
 import type { Env } from '../../core/config/env.js';
@@ -39,6 +39,8 @@ export function toMe(user: UserRow, agent?: AgentRow, prefs?: Prefs | null): Me 
 
 @Injectable()
 export class UsersService {
+  private readonly log = new Logger(UsersService.name);
+
   constructor(
     private readonly users: UsersRepository,
     private readonly config: ConfigService<Env, true>,
@@ -85,9 +87,11 @@ export class UsersService {
     }
     if (!(await verifyPassword(user.passwordHash, password))) throw new UnauthorizedException('Wrong password');
     const threads = await this.users.softDelete(id);
-    // Their chat photos are served from the uploads folder; they go with the conversations.
+    // Their chat photos are served from the uploads folder; they go with the conversations. The
+    // account is already deleted, so a folder that will not go is logged, not reported as a failure.
     const uploads = path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'chat');
-    await Promise.all(threads.map((t) => rm(path.join(uploads, String(t)), { recursive: true, force: true })));
+    const removed = await Promise.allSettled(threads.map((t) => rm(path.join(uploads, String(t)), { recursive: true, force: true })));
+    for (const r of removed) if (r.status === 'rejected') this.log.error(`Chat photos not removed: ${String(r.reason)}`);
     await onDeleted();
   }
 }
