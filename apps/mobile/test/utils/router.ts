@@ -11,4 +11,6 @@ export const expoRouterMock = {
   Link: ({ children }: { children: unknown }) => children,
   Redirect: () => null,
   Stack: { Screen: () => null },
+  // Screens in tests are always focused.
+  useFocusEffect: (effect: () => void | (() => void)) => require('react').useEffect(effect, [effect]),
 };

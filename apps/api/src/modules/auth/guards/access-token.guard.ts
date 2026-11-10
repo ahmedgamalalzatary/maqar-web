@@ -1,10 +1,9 @@
 import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import type { AuthUser } from '../../../common/decorators/current-user.decorator.js';
 import { IS_PUBLIC } from '../../../common/decorators/public.decorator.js';
-import { UsersRepository } from '../../users/users.repository.js';
+import { TokenUsers } from '../token-users.js';
 
 /**
  * Global guard: every route needs a valid access token unless it is @Public().
@@ -16,11 +15,12 @@ import { UsersRepository } from '../../users/users.repository.js';
 export class AccessTokenGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly jwt: JwtService,
-    private readonly users: UsersRepository,
+    private readonly tokens: TokenUsers,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    // The chat socket signs in once, when it connects (ChatGateway); its events have no HTTP request.
+    if (ctx.getType() !== 'http') return true;
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [ctx.getHandler(), ctx.getClass()]);
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     const user = await this.userOf(req);
@@ -29,12 +29,8 @@ export class AccessTokenGuard implements CanActivate {
     throw new UnauthorizedException();
   }
 
-  private async userOf(req: Request): Promise<AuthUser | undefined> {
+  private userOf(req: Request): Promise<AuthUser | undefined> {
     const [scheme, token] = req.headers.authorization?.split(' ') ?? [];
-    if (scheme !== 'Bearer' || !token) return undefined;
-    const payload = await this.jwt.verifyAsync<{ sub?: unknown }>(token).catch(() => null);
-    const sub = payload?.sub;
-    const user = typeof sub === 'number' && Number.isInteger(sub) ? await this.users.findActiveById(sub) : undefined;
-    return user && { id: user.id, role: user.role };
+    return this.tokens.userOf(scheme === 'Bearer' ? token : undefined);
   }
 }

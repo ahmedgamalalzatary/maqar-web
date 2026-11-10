@@ -1,0 +1,186 @@
+import type { ChatMessage, ChatThread, SlotsResponse } from '@maqar/shared';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ToastHost } from '@/components/toast';
+import { useSession } from '@/features/auth/store/session.store';
+import { ConversationScreen } from '@/features/chat/screens/conversation-screen';
+import { heardTyping, useTyping } from '@/features/chat/socket';
+import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
+import { renderWithProviders } from '../../../utils/render';
+import { mockRouter } from '../../../utils/router';
+import { msg, thread } from './fixtures';
+
+jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
+
+const SLOTS: SlotsResponse = {
+  days: [
+    { date: '2026-11-12', slots: [{ time: '16:00', state: 'taken' }] },
+    { date: '2026-11-13', slots: [{ time: '16:00', state: 'free' }, { time: '17:00', state: 'free' }] },
+  ],
+  defaultDate: '2026-11-13',
+};
+
+/** A stateful fake API for one conversation. Returns the writes. */
+function serve(t: ChatThread, start: ChatMessage[], opts: { bookStatus?: number } = {}) {
+  let items = [...start];
+  let next = 900;
+  const fetchMock = mockFetch().mockImplementation(async (url: string, init: RequestInit) => {
+    const path = url.replace(/^.*\/v1/, '').split('?')[0]!;
+    const method = init.method ?? 'GET';
+    if (path === '/chats/1' && method === 'GET') return jsonResponse(200, t);
+    if (path === '/chats/1/messages' && method === 'GET') return jsonResponse(200, { items, hasMore: false });
+    if (path === '/chats/1/messages' && method === 'POST') {
+      const body = JSON.parse(init.body as string);
+      const real = msg(t.client ? 'agent' : 'client', body.kind === 'text' ? body : body.kind === 'slots' ? { kind: 'slots', date: body.date, times: ['16:00', '17:00'], chosen: null } : body, { id: ++next });
+      items = [...items, real];
+      return jsonResponse(201, real);
+    }
+    if (path === '/chats/1/read') return new Response(null, { status: 204 });
+    if (path.endsWith('/book')) {
+      if (opts.bookStatus) return jsonResponse(opts.bookStatus, { statusCode: opts.bookStatus, message: 'That time was just booked. Please pick another.' });
+      const { time } = JSON.parse(init.body as string);
+      const card = items.find((m) => m.body.kind === 'slots')!;
+      const picked = { ...card, body: { ...card.body, chosen: time } } as ChatMessage;
+      items = items.map((m) => (m.id === card.id ? picked : m));
+      return jsonResponse(201, { viewing: { id: 5 }, card: picked });
+    }
+    if (path.startsWith('/properties/4/slots')) return jsonResponse(200, SLOTS);
+    return jsonResponse(200, { items: [], unread: 0 });
+  });
+  return () =>
+    fetchMock.mock.calls
+      .filter(([, init]: [string, RequestInit]) => init.method && init.method !== 'GET')
+      .map(([url, init]: [string, RequestInit]) => [url.replace(/^.*\/v1/, ''), init.body ? JSON.parse(init.body as string) : null]);
+}
+
+const Page = ({ side = 'client' as const }: { side?: 'client' | 'agent' }) => (
+  <>
+    <ConversationScreen id={1} side={side} />
+    <ToastHost />
+  </>
+);
+
+beforeEach(async () => {
+  jest.clearAllMocks();
+  useTyping.setState({}, true);
+  await useSession.getState().setSession(makeAuth());
+});
+
+describe('Conversation (client)', () => {
+  it('shows the advisor, the home, and every kind of message with read ticks', async () => {
+    serve(thread(), [
+      msg('client', { kind: 'text', text: 'لسه متاحة؟' }, { readAt: new Date().toISOString() }),
+      msg('agent', { kind: 'text', text: 'أيوه متاحة' }),
+      msg('agent', { kind: 'property' }),
+      msg('agent', { kind: 'plan', price: 8_000_000, downPct: 10, years: 8, monthly: 75_000 }),
+      msg('agent', { kind: 'booking', viewingId: 5, date: '2026-11-13', time: '16:00' }),
+      msg('agent', { kind: 'text', text: 'برّه مواعيد الشغل', auto: true }),
+    ]);
+    await renderWithProviders(<Page />);
+    expect(await screen.findByRole('header', { name: 'عمر حسن' })).toBeOnTheScreen();
+    expect(screen.getByText('مستشار مبيعات | بيرد خلال ٤ د')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'الوحدة: فيلا في التجمع' })).toBeOnTheScreen();
+    expect(await screen.findByLabelText('أنت: لسه متاحة؟، اتقرت')).toBeOnTheScreen();
+    expect(screen.getByText('القسط الشهري')).toBeOnTheScreen();
+    expect(screen.getByText('المعاينة اتأكدت')).toBeOnTheScreen();
+    expect(screen.getByText('رد تلقائي')).toBeOnTheScreen();
+    expect(screen.getByText('محادثتك مع مسؤول مبيعات موثّق من مقر. متشاركش بيانات الدفع في الشات.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'معايناتي' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/viewings');
+  });
+
+  it('marks the advisor’s messages read when they are on screen', async () => {
+    const writes = serve(thread(), [msg('agent', { kind: 'text', text: 'أهلاً' })]);
+    await renderWithProviders(<Page />);
+    await waitFor(() => expect(writes()).toEqual([['/chats/1/read', null]]));
+  });
+
+  it('sends a text and a quick question, and the text shows at once', async () => {
+    const writes = serve(thread(), []);
+    await renderWithProviders(<Page />);
+    const send = await screen.findByRole('button', { name: 'ابعت' });
+    expect(send).toBeDisabled();
+    await fireEvent.changeText(screen.getByLabelText('اكتب رسالة'), '  عايز أعرف الدور  ');
+    await fireEvent.press(send);
+    expect(await screen.findByText('عايز أعرف الدور')).toBeOnTheScreen();
+    expect(screen.getByLabelText('اكتب رسالة')).toHaveProp('value', '');
+    await fireEvent.press(screen.getByRole('button', { name: 'فيه خصم كاش؟' }));
+    await waitFor(() =>
+      expect(writes()).toEqual([
+        ['/chats/1/messages', { kind: 'text', text: 'عايز أعرف الدور' }],
+        ['/chats/1/messages', { kind: 'text', text: 'فيه خصم كاش؟' }],
+      ]),
+    );
+    expect(await screen.findByLabelText('أنت: فيه خصم كاش؟، اتبعتت')).toBeOnTheScreen();
+  });
+
+  it('books a time from the advisor’s card in one tap, and the card shows it', async () => {
+    const card = msg('agent', { kind: 'slots', date: '2026-11-13', times: ['16:00', '17:00'], chosen: null });
+    const writes = serve(thread(), [card]);
+    await renderWithProviders(<Page />);
+    expect(await screen.findByText('دوس على ميعاد وهيتحجز على طول')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: '٥:٠٠ م' }));
+    expect(await screen.findByText('المعاينة اتحجزت')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '٥:٠٠ م، اتحجزت' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '٤:٠٠ م' })).toBeDisabled();
+    expect(writes()).toContainEqual([`/chats/1/messages/${card.id}/book`, { time: '17:00' }]);
+  });
+
+  it('says when the time was just taken', async () => {
+    serve(thread(), [msg('agent', { kind: 'slots', date: '2026-11-13', times: ['16:00'], chosen: null })], { bookStatus: 409 });
+    await renderWithProviders(<Page />);
+    await fireEvent.press(await screen.findByRole('button', { name: '٤:٠٠ م' }));
+    expect(await screen.findByText('الميعاد ده لسه اتحجز، اختار ميعاد تاني')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '٤:٠٠ م' })).not.toBeDisabled();
+  });
+
+  it('shows the other side typing', async () => {
+    serve(thread(), []);
+    await renderWithProviders(<Page />);
+    await screen.findByRole('header', { name: 'عمر حسن' });
+    await act(async () => heardTyping(1));
+    expect(screen.getAllByText('بيكتب…').length).toBeGreaterThan(0);
+  });
+
+  it('sends photos picked on the phone', async () => {
+    serve(thread(), []);
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///a.jpg', fileName: 'a.jpg', mimeType: 'image/jpeg', width: 10, height: 10 } as ImagePicker.ImagePickerAsset],
+    });
+    const fetchMock = jest.mocked(global.fetch);
+    await renderWithProviders(<Page />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'ابعت صور' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u).endsWith('/chats/1/images') && init?.body instanceof FormData)).toBe(true));
+  });
+});
+
+describe('Conversation (agent)', () => {
+  beforeEach(async () => {
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
+  });
+
+  it('sends the home, plan and tour cards, and a day’s free times', async () => {
+    const writes = serve(thread({ client: { name: 'كريم محمود', phone: '+201014124412' }, leadId: 3 }), [msg('client', { kind: 'text', text: 'لسه متاحة؟' })]);
+    await renderWithProviders(<Page side="agent" />);
+    expect(await screen.findByRole('header', { name: 'كريم محمود' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'فيه خصم كاش؟' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'خطة السداد' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'جولة ٣٦٠°' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'تفاصيل الوحدة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'مواعيد متاحة' }));
+    const day = await screen.findByRole('button', { name: /^الجمعة ١٣ نوفمبر، ٢ ميعاد/ });
+    expect(screen.queryByRole('button', { name: /الخميس ١٢ نوفمبر/ })).toBeNull();
+    await fireEvent.press(day);
+    await waitFor(() =>
+      expect(writes().filter(([u]) => u === '/chats/1/messages')).toEqual([
+        ['/chats/1/messages', { kind: 'plan' }],
+        ['/chats/1/messages', { kind: 'tour' }],
+        ['/chats/1/messages', { kind: 'property' }],
+        ['/chats/1/messages', { kind: 'slots', date: '2026-11-13' }],
+      ]),
+    );
+    const card = await screen.findByText('الجمعة ١٣ نوفمبر', { exact: true });
+    expect(within(card.parent!.parent!).queryByText('دوس على ميعاد وهيتحجز على طول')).toBeNull();
+  });
+});

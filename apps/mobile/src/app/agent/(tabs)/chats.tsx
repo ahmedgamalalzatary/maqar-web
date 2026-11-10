@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/placeholder';
+import { ChatsScreen } from '@/features/chat/screens/chats-screen';
 
 export default function Route() {
-  return <Placeholder title={{ ar: 'الشات', en: 'Chats' }} phase={16} />;
+  return <ChatsScreen side="agent" />;
 }

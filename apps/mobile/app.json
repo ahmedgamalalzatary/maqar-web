@@ -43,6 +43,14 @@
           "color": "#b38959",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Maqar uses your photos only when you choose some to send in a chat with your sales advisor.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

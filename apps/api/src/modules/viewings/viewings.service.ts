@@ -39,6 +39,11 @@ export class ViewingsService {
     return this.slotsFor(home.agent.id, except);
   }
 
+  /** The agent's weekly hours and days off around `date` (the chat's out-of-hours reply uses them). */
+  agentSchedule(agentId: number, date: string) {
+    return this.repo.schedule(agentId, date, date);
+  }
+
   private async slotsFor(agentId: number, except?: number): Promise<SlotsResponse> {
     const now = cairoClock(new Date());
     const last = cairoClock(new Date(Date.now() + (BOOKING_DAYS + 1) * DAY_MS)).date;

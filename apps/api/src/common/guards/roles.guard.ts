@@ -10,6 +10,8 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
+    // Socket events are checked by the gateway itself (only clients and agents connect).
+    if (ctx.getType() !== 'http') return true;
     const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [ctx.getHandler(), ctx.getClass()]);
     if (!roles?.length) return true;
     const user = ctx.switchToHttp().getRequest<{ user?: AuthUser }>().user;

@@ -63,18 +63,35 @@ export type ApiOptions = {
 async function send(path: string, opts: ApiOptions, token: string | null | undefined): Promise<Response> {
   const headers = new Headers(opts.headers);
   headers.set('Accept', opts.text ? 'text/plain, text/calendar, */*' : 'application/json');
-  if (opts.body !== undefined) headers.set('Content-Type', 'application/json');
+  // FormData (photos) sets its own multipart type and boundary.
+  const form = typeof FormData !== 'undefined' && opts.body instanceof FormData;
+  if (opts.body !== undefined && !form) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   try {
     return await fetch(apiBaseUrl() + path, {
       method: opts.method ?? 'GET',
       headers,
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
       signal: opts.signal,
     });
   } catch {
     throw new ApiError(0, 'Network request failed');
   }
+}
+
+/** The current access token, for the chat socket. */
+export const accessToken = (): string | null => auth?.getAccessToken() ?? null;
+
+/**
+ * Renews the access token (the chat socket's was refused). False when the session is over, after
+ * signing out locally, as a refused HTTP request would.
+ */
+export async function renewAccess(): Promise<boolean> {
+  if (!auth) return false;
+  const handlers = auth;
+  const ok = await refreshOnce(handlers);
+  if (!ok) handlers.onAuthFailure();
+  return ok;
 }
 
 /** JSON request to the Maqar API. `path` starts with "/", e.g. "/health". */
