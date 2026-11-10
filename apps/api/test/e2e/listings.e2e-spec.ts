@@ -29,7 +29,7 @@ describe('Areas and listings (e2e)', () => {
     // Listings the public must never see.
     const [approved] = await db.select().from(properties).limit(1);
     const { id: _id, ...rest } = approved;
-    for (const status of ['draft', 'pending', 'changes', 'sold', 'rented', 'unpublished'] as const) {
+    for (const status of ['draft', 'sold', 'rented', 'unpublished'] as const) {
       await db.insert(properties).values({ ...rest, titleEn: `Hidden ${status}`, status, publishedAt: new Date() });
     }
   });

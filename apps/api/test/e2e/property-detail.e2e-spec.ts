@@ -29,10 +29,10 @@ describe('Property page (e2e)', () => {
     const page = (await get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>;
     for (const p of page.items) ids.set(p.titleEn, p.id);
 
-    // A pending copy of the villa: same category, area and type, so it would rank first if leaked.
+    // A draft copy of the villa: same category, area and type, so it would rank first if leaked.
     const [villa] = await db.select().from(properties).where(eq(properties.id, ids.get('Standalone villa with private pool')!));
     const { id: _id, ...rest } = villa;
-    [{ id: hiddenId }] = await db.insert(properties).values({ ...rest, titleEn: 'Pending villa', status: 'pending' }).$returningId();
+    [{ id: hiddenId }] = await db.insert(properties).values({ ...rest, titleEn: 'Draft villa', status: 'draft' }).$returningId();
   });
   afterAll(async () => {
     await app.close();

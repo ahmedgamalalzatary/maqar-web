@@ -9,10 +9,12 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { ListingsModule } from './modules/listings/listings.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PricesModule } from './modules/prices/prices.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
+import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { ViewingsModule } from './modules/viewings/viewings.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -55,6 +57,8 @@ import { UsersModule } from './modules/users/users.module.js';
     ViewingsModule,
     LeadsModule,
     ChatModule,
+    UploadsModule,
+    ListingsModule,
   ],
 })
 export class AppModule {}

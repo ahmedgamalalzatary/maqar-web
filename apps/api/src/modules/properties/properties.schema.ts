@@ -42,9 +42,11 @@ export const properties = mysqlTable(
     finishing: mysqlEnum('finishing', FINISHINGS).notNull(),
     /** Null means ready to move in; otherwise the handover year. */
     deliveryYear: smallint('delivery_year', { unsigned: true }),
-    agentId: bigint('agent_id', { mode: 'number', unsigned: true })
-      .notNull()
-      .references(() => agents.userId),
+    /** The sales advisor. A draft has none until it is published (phase 17). */
+    agentId: bigint('agent_id', { mode: 'number', unsigned: true }).references(() => agents.userId),
+    /** Who the home belongs to (there are no owner accounts). Only admins see these. */
+    ownerName: varchar('owner_name', { length: 120 }),
+    ownerPhone: varchar('owner_phone', { length: 30 }),
     status: mysqlEnum('status', PROPERTY_STATUSES).notNull().default('draft'),
     reviewNote: text('review_note'),
     featured: boolean('featured').notNull().default(false),
