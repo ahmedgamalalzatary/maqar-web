@@ -5,6 +5,7 @@ import { useSession } from '@/features/auth/store/session.store';
 import { VIEWINGS_KEY } from '@/features/viewings/hooks/use-viewings';
 import { bookSlotRequest, getChats, getMessages, getThread, readRequest, sendImagesRequest, sendRequest, startChatRequest } from '../api/chat.api';
 import { addMessage, chatsKey, type Messages, messagesKey, removeMessage, replaceMessage, threadKey } from '../chat-cache';
+import type { PhotoPart } from '../photos';
 
 /** The signed-in client's or agent's id and side; null for guests and admins. */
 export function useChatUser(): { id: number; side: ChatSender } | null {
@@ -81,7 +82,7 @@ export function useSendImages(threadId: number) {
   const me = useChatUser();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (photos: { uri: string; name: string; type: string }[]) => sendImagesRequest(threadId, photos),
+    mutationFn: (photos: PhotoPart[]) => sendImagesRequest(threadId, photos),
     onSuccess: (m) => addMessage(qc, me?.id ?? null, m),
     onSettled: () => qc.invalidateQueries({ queryKey: chatsKey(me?.id ?? null) }),
   });
