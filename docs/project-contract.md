@@ -27,7 +27,7 @@ This is the single source of truth for what Maqar is, what it does and how it is
 8. [Features: client](#8-features-client)
 9. [Features: listings for owners](#9-features-listings-for-owners)
 10. [Features: sales agent](#10-features-sales-agent)
-11. [Features: Maqar admin (review team)](#11-features-maqar-admin-review-team)
+11. [Features: Maqar admin](#11-features-maqar-admin)
 12. [Shared features](#12-shared-features)
 13. [Data model](#13-data-model)
 14. [API](#14-api)
@@ -81,7 +81,7 @@ MQR is the competing app (Expo / React Native, Arabic and English). We analysed 
 Rules:
 
 - One account has one role (decided 2026-11-08).
-- In the demo the role is switched from the Me tab. [Real] The role comes from the account: clients and owners sign up themselves, while agents and admins are created by an admin.
+- In the demo the role is switched from the Me tab. [Real] The role comes from the account: clients sign up themselves, while agents and admins are created by an admin.
 - Guests are asked to sign in at the moment they need an account (save, alert, chat, book), not before.
 
 ---

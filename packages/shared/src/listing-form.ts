@@ -67,6 +67,15 @@ export function readWholeNumber(text: string): number | undefined {
   return /^\d+$/.test(latin) ? Number(latin) : undefined;
 }
 
+/**
+ * A phone as the server takes it: Latin digits with an optional leading +, 6 to 20 digits.
+ * Arabic digits are read, and spaces, dashes, dots and brackets dropped. Undefined otherwise.
+ */
+export function readPhone(text: string): string | undefined {
+  const latin = text.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[\s\-.()]/g, '');
+  return /^\+?\d{6,20}$/.test(latin) ? latin : undefined;
+}
+
 const between = (text: string, min: number, max: number) => {
   const n = readWholeNumber(text);
   return n !== undefined && n >= min && n <= max;
@@ -79,7 +88,10 @@ export const hasPaymentPlan = (c: Category) => c === 'sale' || c === 'project';
 export function listingStepErrors(step: ListingStep, s: ListingForm): ListingField[] {
   const bad: ListingField[] = [];
   if (step === 'type' && !s.type) bad.push('type');
-  if (step === 'location' && !s.areaId) bad.push('areaId');
+  if (step === 'location') {
+    if (!s.areaId) bad.push('areaId');
+    if (s.ownerPhone.trim() && !readPhone(s.ownerPhone)) bad.push('ownerPhone');
+  }
   if (step === 'details') {
     if (!between(s.beds, 0, 20)) bad.push('beds');
     if (!between(s.baths, 0, 20)) bad.push('baths');
@@ -123,7 +135,7 @@ export function listingBodyOf(s: ListingForm): ListingBody {
     plan,
     images: s.photos.flatMap((p) => (p.url ? [p.url] : [])),
     ownerName: orNull(s.ownerName),
-    ownerPhone: orNull(s.ownerPhone),
+    ownerPhone: s.ownerPhone.trim() ? (readPhone(s.ownerPhone) ?? s.ownerPhone.trim()) : null,
   };
 }
 

@@ -54,6 +54,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   finishing: { ar: "اختار التشطيب", en: "Pick the finishing" },
   downPct: { ar: "من ٠ لـ ١٠٠٪", en: "0 to 100%" },
   planYears: { ar: "من ١ لـ ٣٠ سنة", en: "1 to 30 years" },
+  ownerPhone: { ar: "رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨", en: "A phone number in digits, e.g. 01012345678" },
   photos: { ar: "ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع", en: "Add at least one photo, and wait for the uploads" },
 };
 
@@ -102,16 +103,20 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
   const submit = async (andPublish: boolean) => {
     if (listingFormErrors(s).length) return setShowErrors(true);
     setPublishing(andPublish);
+    let l: AdminListing;
     try {
-      const l = await save.mutateAsync(listingBodyOf(s));
-      if (andPublish) await action.mutateAsync({ kind: "publish", id: l.id });
-      notice({ text: andPublish ? t("العقار اتنشر وبقى ظاهر في التطبيق", "Published: it now shows in the app") : saved ? t("التعديلات اتحفظت", "Changes saved") : t("العقار اتحفظ كمسودة", "Saved as a draft"), tone: "ok" });
-      router.push(`/listing/?id=${l.id}`);
+      l = await save.mutateAsync(listingBodyOf(s));
     } catch (e) {
-      notice({ text: errorText(e), tone: "bad" });
-    } finally {
       setPublishing(false);
+      return notice({ text: errorText(e), tone: "bad" });
     }
+    // The listing is saved now. A failed publish leaves a draft: open it rather than stay on the
+    // new form, which would save the same listing again.
+    const published = andPublish ? await action.mutateAsync({ kind: "publish", id: l.id }).then(() => true, () => false) : false;
+    setPublishing(false);
+    if (andPublish && !published) notice({ text: t("اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته", "Saved as a draft but not published: try publishing from its page"), tone: "bad" });
+    else notice({ text: published ? t("العقار اتنشر وبقى ظاهر في التطبيق", "Published: it now shows in the app") : saved ? t("التعديلات اتحفظت", "Changes saved") : t("العقار اتحفظ كمسودة", "Saved as a draft"), tone: "ok" });
+    router.push(`/listing/?id=${l.id}`);
   };
 
   return (
@@ -229,7 +234,7 @@ function LocationStep({ s, set, err }: StepProps) {
         <legend className="px-1 text-sm font-medium text-ink-2">{t("المالك (محدش بيشوفه غير فريق مقر)", "Owner (only the Maqar team sees this)")}</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("اسم المالك", "Owner’s name")} value={s.ownerName} onChange={(e) => set("ownerName", e.target.value)} maxLength={120} />
-          <Field label={t("موبايل المالك", "Owner’s phone")} type="tel" value={s.ownerPhone} onChange={(e) => set("ownerPhone", e.target.value)} dir="ltr" maxLength={20} />
+          <Field label={t("موبايل المالك", "Owner’s phone")} type="tel" value={s.ownerPhone} onChange={(e) => set("ownerPhone", e.target.value)} dir="ltr" maxLength={24} error={err("ownerPhone")} />
         </div>
       </fieldset>
     </>
