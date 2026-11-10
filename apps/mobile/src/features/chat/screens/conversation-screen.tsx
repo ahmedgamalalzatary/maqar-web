@@ -3,8 +3,8 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, BadgeCheck, Calculator, CalendarClock, Home, ImagePlus, Phone, Rotate3d, SendHorizontal, ShieldCheck, X } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -12,6 +12,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
+import { isActive, useAppActive } from '@/core/app-active';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useSlots } from '@/features/viewings/hooks/use-viewings';
@@ -34,11 +35,16 @@ export function ConversationScreen({ id, side }: { id: number; side: ChatSender 
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const back = () => (router.canGoBack() ? router.back() : router.replace(side === 'client' ? '/chat' : '/agent/chats'));
 
-  // While on screen, its messages need no notification.
+  // While on screen, its messages need no notification. In the background it is not on screen,
+  // so the server notifies again.
   useFocusEffect(
     useCallback(() => {
-      setOpenThread(id);
-      return () => setOpenThread(null);
+      setOpenThread(isActive() ? id : null);
+      const sub = AppState.addEventListener('change', (state) => setOpenThread(isActive(state) ? id : null));
+      return () => {
+        sub.remove();
+        setOpenThread(null);
+      };
     }, [id]),
   );
 
@@ -89,11 +95,20 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   const otherName = side === 'client' ? agentName : thread.client?.name || t('حساب محذوف', 'Deleted account');
   const phone = side === 'client' ? thread.agent.phone : thread.client?.phone;
 
-  // Reading: the other side's messages are marked read as they arrive on screen.
-  const unreadFromOther = list.some((m) => m.sender !== side && !m.readAt && m.id > 0);
+  // Reading: the other side's messages are marked read as they arrive on screen, and only while the
+  // app is in front. Each newest unread message is tried once: a failure waits for the next message,
+  // or for the app to come back.
+  const active = useAppActive();
+  const newestUnread = list.find((m) => m.sender !== side && !m.readAt && m.id > 0)?.id ?? 0;
+  const readNow = markRead.mutate;
+  const triedRead = useRef(0);
   useEffect(() => {
-    if (unreadFromOther && !markRead.isPending) markRead.mutate();
-  }, [unreadFromOther, markRead]);
+    if (!active) triedRead.current = 0;
+    else if (newestUnread && triedRead.current !== newestUnread) {
+      triedRead.current = newestUnread;
+      readNow();
+    }
+  }, [active, newestUnread, readNow]);
 
   const post = (body: SendChatBody) =>
     send.mutate(body, { onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }) });

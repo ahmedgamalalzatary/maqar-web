@@ -12,7 +12,10 @@ let socket: Socket | null = null;
 /** The conversation on screen, told to the server again after a reconnect. */
 let openThread: number | null = null;
 
-type Handlers = { [E in keyof ChatEvents]: (payload: ChatEvents[E]) => void };
+type Handlers = { [E in keyof ChatEvents]: (payload: ChatEvents[E]) => void } & {
+  /** Connected again after a drop: the server does not replay what was sent meanwhile. */
+  reconnected: () => void;
+};
 
 export function connectChat(on: Handlers): () => void {
   disconnectChat();
@@ -26,8 +29,11 @@ export function connectChat(on: Handlers): () => void {
     reconnectionDelayMax: 10_000,
   });
   socket = s;
+  let connectedBefore = false;
   s.on('connect', () => {
     if (openThread !== null) s.emit('open', { threadId: openThread });
+    if (connectedBefore) on.reconnected();
+    connectedBefore = true;
   });
   // The token expired: renew it, then come back.
   s.on('denied', () => {

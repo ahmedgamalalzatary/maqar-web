@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { addMessage, chatsKey, markReadBy, replaceMessage } from '../chat-cache';
+import { addMessage, chatKey, chatsKey, markReadBy, replaceMessage } from '../chat-cache';
 import { useChatUser } from '../hooks/use-chat';
 import { connectChat, heardTyping, stoppedTyping } from '../socket';
 
@@ -29,6 +29,8 @@ export function ChatBridge() {
         if (sender !== side) heardTyping(threadId);
       },
       updated: ({ message }) => replaceMessage(qc, id, message),
+      // Back after a drop (the app in the background, the network gone): load what was missed.
+      reconnected: () => void qc.invalidateQueries({ queryKey: chatKey(id) }),
     });
   }, [id, side, qc]);
 

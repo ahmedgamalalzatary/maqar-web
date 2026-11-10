@@ -1,5 +1,9 @@
+import { rm } from 'node:fs/promises';
+import path from 'node:path';
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Me, Prefs, UpdateMeBody } from '@maqar/shared';
+import type { Env } from '../../core/config/env.js';
 import { verifyPassword } from '../auth/password.js';
 import type { AgentRow } from '../agents/agents.schema.js';
 import { UsersRepository } from './users.repository.js';
@@ -35,7 +39,10 @@ export function toMe(user: UserRow, agent?: AgentRow, prefs?: Prefs | null): Me 
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly users: UsersRepository) {}
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   async getMe(id: number): Promise<Me> {
     const user = await this.users.findActiveById(id);
@@ -77,7 +84,10 @@ export class UsersService {
       throw new ForbiddenException('Staff accounts are removed by an admin');
     }
     if (!(await verifyPassword(user.passwordHash, password))) throw new UnauthorizedException('Wrong password');
-    await this.users.softDelete(id);
+    const threads = await this.users.softDelete(id);
+    // Their chat photos are served from the uploads folder; they go with the conversations.
+    const uploads = path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'chat');
+    await Promise.all(threads.map((t) => rm(path.join(uploads, String(t)), { recursive: true, force: true })));
     await onDeleted();
   }
 }

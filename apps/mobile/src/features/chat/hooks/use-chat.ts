@@ -38,7 +38,7 @@ export function useMessages(id: number) {
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (last) => (last.hasMore ? last.items[0]?.id : undefined),
     enabled: !!me,
-    // Live updates come over the socket; a refetch would only drop the pages already scrolled through.
+    // Live updates come over the socket; after a drop the chat bridge refetches what was missed.
     staleTime: Infinity,
   });
 }
