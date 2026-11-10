@@ -3,20 +3,15 @@ import { BadgeCheck, Clock, Phone, Star } from 'lucide-react-native';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Card } from '@/components/card';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { initialsOf, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
-/** The named sales advisor for the listing (contract §8.5). Chat arrives in phase 16. */
+/** The named sales advisor for the listing (contract §8.5). */
 export function AdvisorCard({ agent }: { agent: ListingAgent }) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
-  const initials = agent.nameEn
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = initialsOf(lang === 'ar' ? agent.nameAr : agent.nameEn, lang, 2);
 
   return (
     <Card style={styles.card}>

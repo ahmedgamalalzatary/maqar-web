@@ -5,7 +5,7 @@ import { CalendarClock } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { initialsOf, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useUpcoming } from '../hooks/use-viewings';
 
@@ -46,7 +46,7 @@ export function NextViewingCard() {
       </View>
       <View style={[styles.avatar, { backgroundColor: next.agent.colour }]}>
         <Txt size={13} weight="semibold" style={styles.white}>
-          {next.agent.nameEn.slice(0, 1)}
+          {initialsOf(lang === 'ar' ? next.agent.nameAr : next.agent.nameEn, lang)}
         </Txt>
       </View>
     </Pressable>

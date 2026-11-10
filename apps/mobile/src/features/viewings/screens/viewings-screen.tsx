@@ -12,7 +12,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { initialsOf, useLang, useT } from '@/core/i18n';
 import { type Colors, radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
@@ -177,7 +177,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
       <View style={[styles.agent, { backgroundColor: colors.surface2 }]}>
         <View style={[styles.avatar, { backgroundColor: v.agent.colour }]}>
           <Txt size={14} weight="semibold" style={styles.white}>
-            {v.agent.nameEn.slice(0, 1)}
+            {initialsOf(lang === 'ar' ? v.agent.nameAr : v.agent.nameEn, lang)}
           </Txt>
         </View>
         <View style={styles.flex}>
