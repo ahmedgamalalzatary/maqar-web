@@ -29,3 +29,14 @@ export function initialsOf(name: string, lang: Lang, max = 1): string {
     .map((w) => w.slice(0, 1).toUpperCase())
     .join('');
 }
+
+const FIRST_STRONG_LATIN = /^[^\p{L}]*\p{Script=Latin}/u;
+
+/**
+ * Text from people or the server (a client's name, a message) in the Arabic app. Android lays out
+ * a line by its first letter, so "Phone Test | شقة …" would run left to right and jumble the Arabic
+ * parts; a right-to-left mark in front keeps the line right to left. Arabic-first lines are unchanged.
+ */
+export function rtlLine(text: string, lang: Lang): string {
+  return lang === 'ar' && FIRST_STRONG_LATIN.test(text) ? `‏${text}` : text;
+}

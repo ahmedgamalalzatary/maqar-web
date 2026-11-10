@@ -5,7 +5,7 @@ import { Bot, Calculator, CalendarCheck, CalendarClock, Check, CheckCheck, Clock
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { rtlLine, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 const clock = (iso: string) => {
@@ -77,7 +77,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
             </View>
           ) : null}
           <Txt size={14.5} style={{ color: fg }}>
-            {b.text}
+            {rtlLine(b.text, lang)}
           </Txt>
           {meta}
         </View>

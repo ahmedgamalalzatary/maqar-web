@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { rtlLine, useDir, useLang, useT } from '@/core/i18n';
 import { type Colors, radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../hooks/use-notifications';
@@ -141,14 +141,14 @@ function Row({ n, onPress }: { n: NotificationItem; onPress: () => void }) {
       <View style={styles.flex}>
         <View style={styles.titleRow}>
           <Txt size={14} weight="semibold" style={styles.flex} numberOfLines={2}>
-            {title}
+            {rtlLine(title, lang)}
           </Txt>
           <Txt size={11} color="ink3">
             {when}
           </Txt>
         </View>
         <Txt size={13} color="ink2">
-          {body}
+          {rtlLine(body, lang)}
         </Txt>
       </View>
       {n.read ? null : <View testID="unread-dot" style={[styles.dot, { backgroundColor: colors.accent }]} />}

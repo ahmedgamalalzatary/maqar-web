@@ -8,7 +8,7 @@ import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { rtlLine, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useChats } from '../hooks/use-chat';
@@ -113,7 +113,7 @@ function Row({ c, side }: { c: ChatThread; side: ChatSender }) {
         <View style={styles.inline}>
           {mineLast && !typing ? <CheckCheck size={14} color={c.last?.readAt ? colors.accent : colors.ink3} /> : null}
           <Txt size={13} numberOfLines={1} weight={c.unread ? 'medium' : 'regular'} color={typing ? 'accentInk' : c.unread ? 'ink' : 'ink2'} style={styles.flex}>
-            {preview}
+            {rtlLine(preview, lang)}
           </Txt>
           {c.unread ? (
             <View style={[styles.count, { backgroundColor: colors.accent }]}>

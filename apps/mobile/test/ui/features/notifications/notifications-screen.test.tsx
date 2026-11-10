@@ -73,6 +73,15 @@ describe('The notifications inbox', () => {
     expect(screen.getAllByTestId('unread-dot')).toHaveLength(1);
   });
 
+  it('keeps an Arabic line that starts with a client’s English name right to left', async () => {
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
+    const body = 'Phone Test | شقة مفروشة | الأربعاء ١١ نوفمبر | الساعة ١١:٠٠ ص';
+    serve({ items: [item({ id: 9, kind: 'lead', titleAr: 'حجز جديد من التطبيق', bodyAr: body })], unread: 1 });
+    await renderWithProviders(<NotificationsScreen back />);
+    expect(await screen.findByText(`‏${body}`)).toBeOnTheScreen();
+    expect(screen.getByText('حجز جديد من التطبيق')).toBeOnTheScreen();
+  });
+
   it('opens the screen a notification points to, and marks it read', async () => {
     await useSession.getState().setSession(makeAuth());
     const calls = serve(INBOX);
