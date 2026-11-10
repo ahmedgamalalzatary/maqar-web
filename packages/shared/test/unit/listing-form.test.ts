@@ -1,4 +1,4 @@
-import { emptyListingForm, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
+import { emptyListingForm, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
 import type { AdminListing } from '../../src/listings.js';
 
 const filled = (over: Partial<ListingForm> = {}): ListingForm => ({
@@ -27,15 +27,31 @@ describe('readWholeNumber', () => {
   });
 });
 
+describe('readPhone (the owner’s phone)', () => {
+  it('reads Arabic digits and drops spaces, dashes and brackets, keeping a leading +', () => {
+    expect(readPhone('٠١٠١٢٣٤٥٦٧٨')).toBe('01012345678');
+    expect(readPhone('010-1234-5678')).toBe('01012345678');
+    expect(readPhone('+20 (100) 123 4567')).toBe('+201001234567');
+  });
+  it('is undefined for letters, a + in the middle, or too few or too many digits', () => {
+    expect(readPhone('010abc5678')).toBeUndefined();
+    expect(readPhone('010+1234567')).toBeUndefined();
+    expect(readPhone('12345')).toBeUndefined();
+    expect(readPhone('1'.repeat(21))).toBeUndefined();
+  });
+});
+
 describe('Listing form steps (contract §9.2)', () => {
   it('Type needs a unit type', () => {
     expect(listingStepErrors('type', emptyListingForm())).toEqual(['type']);
     expect(listingStepErrors('type', filled())).toEqual([]);
   });
 
-  it('Location needs an area; the title may stay empty', () => {
+  it('Location needs an area; the title and the owner may stay empty, but a phone must be one', () => {
     expect(listingStepErrors('location', filled({ areaId: null }))).toEqual(['areaId']);
-    expect(listingStepErrors('location', filled({ titleAr: '', titleEn: '' }))).toEqual([]);
+    expect(listingStepErrors('location', filled({ titleAr: '', titleEn: '', ownerPhone: '' }))).toEqual([]);
+    expect(listingStepErrors('location', filled({ ownerPhone: '010abc' }))).toEqual(['ownerPhone']);
+    expect(listingStepErrors('location', filled({ ownerPhone: '٠١٠-١٢٣٤-٥٦٧٨' }))).toEqual([]);
   });
 
   it('Details needs the numbers and the finishing', () => {
@@ -94,6 +110,10 @@ describe('listingBodyOf', () => {
       ownerName: 'Hany',
       ownerPhone: null,
     });
+  });
+
+  it('sends the owner’s phone in the form the server takes', () => {
+    expect(listingBodyOf(filled({ ownerPhone: ' ٠١٠-١٢٣٤-٥٦٧٨ ' })).ownerPhone).toBe('01012345678');
   });
 
   it('a rent or a stay has no plan', () => {

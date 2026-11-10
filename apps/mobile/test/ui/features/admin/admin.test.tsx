@@ -45,7 +45,7 @@ const AGENTS: AdminAgentOption[] = [
 const counts = (c: Partial<Record<PropertyStatus, number>>): Record<PropertyStatus, number> => ({ draft: 0, approved: 0, unpublished: 0, sold: 0, rented: 0, ...c });
 
 /** A stateful fake API for the admin screens. Returns the writes. */
-function serve(start: AdminListing = detail()) {
+function serve(start: AdminListing = detail(), opts: { publishFails?: boolean } = {}) {
   let current = start;
   const fetchMock = mockFetch().mockImplementation(async (url: string, init: RequestInit = {}) => {
     const [path, qs] = url.replace(/^.*\/v1/, '').split('?');
@@ -69,6 +69,7 @@ function serve(start: AdminListing = detail()) {
       current = { ...current, ...body };
       return jsonResponse(200, current);
     }
+    if (path === `/admin/listings/${current.id}/publish` && opts.publishFails) return jsonResponse(400, { statusCode: 400, message: 'There is no active sales advisor to assign' });
     if (path === `/admin/listings/${current.id}/publish`) {
       current = { ...current, status: 'approved', agent: AGENTS.find((a) => a.id === body?.agentId) ?? AGENTS[0]!, publishedAt: '2026-11-10T12:00:00.000Z' };
       return jsonResponse(200, current);
@@ -236,5 +237,58 @@ describe('Listing form', () => {
     expect([method, url]).toEqual(['PATCH', '/admin/listings/7']);
     expect(body).toMatchObject({ price: 6_900_000, images: ['/uploads/listings/a.jpg', '/uploads/listings/b.jpg'] });
     expect(mockRouter.back).toHaveBeenCalled();
+  });
+
+  /** Fills the five steps with the least the form needs. */
+  async function fillAll() {
+    await fireEvent.press(screen.getByRole('radio', { name: 'شقة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الشيخ زايد' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.changeText(screen.getByLabelText('الغرف'), '2');
+    await fireEvent.changeText(screen.getByLabelText('الحمامات'), '1');
+    await fireEvent.changeText(screen.getByLabelText('المساحة (م²)'), '120');
+    await fireEvent.changeText(screen.getByLabelText('السعر (جنيه)'), '5000000');
+    await fireEvent.press(screen.getByRole('radio', { name: 'تشطيب كامل' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    pickTwo();
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف صور' }));
+    await waitFor(() => expect(screen.getAllByTestId('form-photo')).toHaveLength(2));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'حاول ترفعها تاني' })).toBeNull());
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+  }
+
+  it('when publishing fails after the save, says so and opens the saved draft instead of saving it twice', async () => {
+    const writes = serve(detail(), { publishFails: true });
+    await renderWithProviders(withToasts(<ListingFormScreen />));
+    await fillAll();
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ وانشر' }));
+    expect(await screen.findByText('اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته')).toBeOnTheScreen();
+    expect(mockRouter.push).toHaveBeenCalledWith('/admin/listing/9');
+    expect(writes().filter(([m, u]) => m === 'POST' && u === '/admin/listings')).toHaveLength(1);
+  });
+
+  it('refuses an owner phone that is not one, before saving', async () => {
+    serve();
+    await renderWithProviders(<ListingFormScreen />);
+    await fireEvent.press(screen.getByRole('radio', { name: 'شقة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الشيخ زايد' }));
+    await fireEvent.changeText(screen.getByLabelText('موبايل المالك'), 'call me');
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    expect(screen.getByText('رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٢ من ٥: المكان')).toBeOnTheScreen();
+  });
+
+  it('says which step it is in English too', async () => {
+    serve();
+    await renderWithProviders(<ListingFormScreen />, { lang: 'en' });
+    expect(screen.getByText('Step 1 of 5: Type')).toBeOnTheScreen();
+  });
+
+  it('says so when the listing to edit cannot be found, instead of loading for ever', async () => {
+    serve();
+    await renderWithProviders(<ListingFormScreen id={404} />);
+    expect(await screen.findByText('العقار ده مش موجود.')).toBeOnTheScreen();
   });
 });

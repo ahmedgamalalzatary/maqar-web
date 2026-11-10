@@ -65,6 +65,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   finishing: { ar: 'اختار التشطيب', en: 'Pick the finishing' },
   downPct: { ar: 'من ٠ لـ ١٠٠٪', en: '0 to 100%' },
   planYears: { ar: 'من ١ لـ ٣٠ سنة', en: '1 to 30 years' },
+  ownerPhone: { ar: 'رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨', en: 'A phone number in digits, e.g. 01012345678' },
   photos: { ar: 'ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع', en: 'Add at least one photo, and wait for the uploads' },
 };
 
@@ -75,8 +76,18 @@ let photoKey = 0;
 
 /** `/admin/new` and `/admin/listing/:id/edit`: the listing form in five steps (contract §9.2). */
 export function ListingFormScreen({ id }: { id?: number }) {
+  const t = useT();
   const listing = useAdminListing(id);
   const { colors } = useTheme();
+  if (id !== undefined && listing.isError) {
+    const gone = listing.error instanceof ApiError && listing.error.status === 404;
+    return (
+      <View style={[styles.fill, styles.center, styles.failed, { backgroundColor: colors.bg }]}>
+        <Txt align="center">{gone ? t('العقار ده مش موجود.', 'This listing does not exist.') : t('مقدرناش نجيب العقار', 'We couldn’t load the listing')}</Txt>
+        {gone ? null : <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={() => void listing.refetch()} />}
+      </View>
+    );
+  }
   if (id !== undefined && !listing.data) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: colors.bg }]}>
@@ -126,20 +137,25 @@ function Form({ saved }: { saved?: AdminListing }) {
   const submit = async (andPublish: boolean) => {
     if (listingFormErrors(s).length) return setShowErrors(true);
     setPublishing(andPublish);
+    let l: AdminListing;
     try {
-      const l = await save.mutateAsync(listingBodyOf(s));
-      if (andPublish) await publish.mutateAsync(l.id);
-      toast.show({ title: andPublish ? t('العقار اتنشر', 'Published') : saved ? t('التعديلات اتحفظت', 'Changes saved') : t('العقار اتحفظ كمسودة', 'Saved as a draft'), tone: 'sage' });
-      if (saved) leave();
-      else {
-        setS(emptyListingForm());
-        go(0);
-        router.push(`/admin/listing/${l.id}`);
-      }
+      l = await save.mutateAsync(listingBodyOf(s));
     } catch (e) {
-      failed(e);
-    } finally {
       setPublishing(false);
+      return failed(e);
+    }
+    // The listing is saved now. A failed publish leaves a draft: open it rather than stay on a
+    // new form, which would save the same listing again.
+    let published = andPublish;
+    if (andPublish) published = await publish.mutateAsync(l.id).then(() => true, () => false);
+    setPublishing(false);
+    if (andPublish && !published) toast.show({ title: t('اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته', 'Saved as a draft but not published: try publishing from its page'), tone: 'danger' });
+    else toast.show({ title: andPublish ? t('العقار اتنشر', 'Published') : saved ? t('التعديلات اتحفظت', 'Changes saved') : t('العقار اتحفظ كمسودة', 'Saved as a draft'), tone: 'sage' });
+    if (saved) leave();
+    else {
+      setS(emptyListingForm());
+      go(0);
+      router.push(`/admin/listing/${l.id}`);
     }
   };
 
@@ -152,7 +168,7 @@ function Form({ saved }: { saved?: AdminListing }) {
             {saved ? t('عدّل العقار', 'Edit listing') : t('أضف عقار', 'Add a listing')}
           </Txt>
           <Txt size={12} color="ink2">
-            {t(`الخطوة ${fmtNum(step + 1, 'ar')} من ${fmtNum(LISTING_STEPS.length, 'ar')}: ${STEP_LABEL[current].ar}`, `ListingStep ${step + 1} of ${LISTING_STEPS.length}: ${STEP_LABEL[current].en}`)}
+            {t(`الخطوة ${fmtNum(step + 1, 'ar')} من ${fmtNum(LISTING_STEPS.length, 'ar')}: ${STEP_LABEL[current].ar}`, `Step ${step + 1} of ${LISTING_STEPS.length}: ${STEP_LABEL[current].en}`)}
           </Txt>
         </View>
       </View>
@@ -245,7 +261,7 @@ function LocationStep({ s, set, err }: StepProps) {
           {t('المالك (محدش بيشوفه غير فريق مقر)', 'Owner (only the Maqar team sees this)')}
         </Txt>
         <TextField label={t('اسم المالك', 'Owner’s name')} value={s.ownerName} onChangeText={(v) => set('ownerName', v)} maxLength={120} />
-        <TextField label={t('موبايل المالك', 'Owner’s phone')} value={s.ownerPhone} onChangeText={(v) => set('ownerPhone', v)} keyboardType="phone-pad" maxLength={20} />
+        <TextField label={t('موبايل المالك', 'Owner’s phone')} value={s.ownerPhone} onChangeText={(v) => set('ownerPhone', v)} keyboardType="phone-pad" maxLength={24} error={err('ownerPhone')} />
       </View>
     </>
   );
@@ -453,6 +469,7 @@ function ReviewStep({ s, errors, onEdit }: { s: ListingForm; errors: ListingFiel
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
+  failed: { padding: 24, gap: 12 },
   flex: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: 1 },
   track: { height: 3 },
