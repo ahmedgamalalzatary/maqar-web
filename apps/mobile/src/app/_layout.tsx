@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { AppProviders } from '@/core/providers/app-providers';
 import { AuthPromptHost } from '@/features/auth/components/auth-prompt';
 import { useSession } from '@/features/auth/store/session.store';
+import { ChatBridge } from '@/features/chat/components/chat-bridge';
 import { PushBridge } from '@/features/notifications/components/push-bridge';
 
 // Resume the saved session before the splash screen hides.
@@ -16,6 +17,7 @@ export default function RootLayout() {
       </Stack>
       <AuthPromptHost />
       <PushBridge />
+      <ChatBridge />
     </AppProviders>
   );
 }

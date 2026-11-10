@@ -396,6 +396,11 @@ The price is compared on the client's terms:
 - Unread counts appear on the chat button, in the chat list and on the agent's Chats tab. A new message from the advisor creates a notification unless that conversation is open.
 - In the demo, advisor replies are rule-based (Egyptian Arabic and English keywords, such as price, installments, viewing and location), sent after a read moment and a typing moment.
 - [Real] Replies come from real agents over a WebSocket gateway, with push when the app is in the background. Messages are stored. Photos are uploaded to storage. [Open] Auto-replies or AI help when the agent is away.
+- [Real] Messages are sent over HTTP; the socket brings them to the other side at once, with typing and read receipts. A message notifies the other side (inbox and push, kind `chat`) unless they have that conversation on screen.
+- [Real] Starting a conversation puts the client in the advisor's leads (source `chat`). The lead page opens the latest conversation with that client.
+- [Real] Out of the agent's working hours (their weekly hours and days off, Cairo time), a client's message gets one automatic reply, marked as such, until the agent answers in person (§16.1 #12).
+- [Real] Photos are resized on the phone (1600 px on the longest side) and again on the server, stored as JPEG under `/uploads/chat/<conversation>/`, with names nobody can guess. Booking from a times card follows the booking screen's rules, and a confirmation card follows.
+- [Real] Deleting an account deletes the client's conversations.
 
 ### 8.13 Notifications
 
@@ -562,7 +567,7 @@ Conventions:
 | **viewing_reminders** | viewing_id, offset (`1d` / `2h` / `30m`), sent_at |
 | **leads** | id, client_id or name and phone, property_id, agent_id, budget, source (`booking` / `tour` / `price_alert` / `smart_pick` / `calculator` / `chat` / `call` / `walk_in`), stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at, seen_at, won_at |
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
-| **chat_threads** | id, client_id, property_id, agent_id, lead_id, created_at. Unique (client_id, property_id). |
+| **chat_threads** | id, client_id, property_id, agent_id, lead_id, last_message_at, created_at. Unique (client_id, property_id). |
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
 | **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `match` / `lead` / `chat` / `system`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
 | **push_tokens** | id, user_id, token (unique), platform (`ios` / `android`), created_at, updated_at |
@@ -589,7 +594,7 @@ Supporting rules:
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
 | admin: prices | `PATCH /admin/listings/:id/price` (the rest of the admin listing routes come in Phase 17) | admin |
 | viewings | `GET /properties/:id/slots?reschedule` (public; the next 14 days), `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
-| chat | `GET /chats`, `POST /chats` (property), `GET /chats/:id/messages`, `POST /chats/:id/messages`, `POST /chats/:id/read`, WebSocket: message, typing, read | client, agent |
+| chat | `GET /chats`, `POST /chats` (property; clients), `GET /chats/:id`, `GET /chats/:id/messages?before`, `POST /chats/:id/messages` (text; agents also cards), `POST /chats/:id/images` (1 to 4 photos), `POST /chats/:id/read`, `POST /chats/:id/messages/:messageId/book` (a time from a times card; clients). Socket.IO at `/v1/socket.io` (signed in with the access token): `message`, `updated`, `typing`, `read` from the server; `open` and `typing` from the app | client, agent, own conversations only |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
 | owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
 | uploads | `POST /uploads` (photos, panoramas), stored on the server disk and served at `/uploads/...` | owner, agent, client (chat) |
@@ -681,3 +686,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-09 | CodeRabbit fixes on Phases 12–13: `PUT /alerts/:id` refuses stays (400). Deleting an account cancels only viewings that haven't started yet. In the app, Change and Cancel go away once a viewing starts, and a reschedule must pick a new time. |
 | 2026-11-10 | Phase 14 built (the phone check is still pending): a job inside the API sends viewing reminders every minute. Each is sent once, even with two servers. Choices already due at booking are skipped, and missed ones are merged into one message. No new tables or routes. |
 | 2026-11-10 | Phase 15 built (the phone check is still pending): the agent's Today, Leads and lead page. `lead_notes`; `leads.seen_at` ("New from app") and `won_at` (the monthly target); lead sources are now named (`booking` instead of `app`). The seed adds sample leads to each agent. Every database session now runs in UTC, so times MySQL fills in itself read right on a PC whose MySQL is in local time (production was already UTC). |
+| 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-maqar.conf` at deploy. |

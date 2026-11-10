@@ -92,7 +92,8 @@ describe('Booking a viewing', () => {
     serve();
     await renderWithProviders(<Page />);
     expect(await screen.findByRole('header', { name: 'احجز معاينة' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'الجمعة ١٣ نوفمبر', selected: true })).toBeOnTheScreen();
+    // The hours load after the home: wait for them.
+    expect(await screen.findByRole('button', { name: 'الجمعة ١٣ نوفمبر', selected: true })).toBeOnTheScreen();
     expect(screen.getByText('الصبح')).toBeOnTheScreen();
     expect(screen.getByText('بعد الضهر')).toBeOnTheScreen();
     expect(screen.getByText('بالليل')).toBeOnTheScreen();
@@ -161,7 +162,7 @@ describe('Booking a viewing', () => {
     const writes = serve(undefined, [viewing()]);
     await renderWithProviders(<Page reschedule={50} />);
     expect(await screen.findByRole('header', { name: 'غيّر الموعد' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: '٥:٠٠ م', selected: true })).toBeOnTheScreen();
+    expect(await screen.findByRole('button', { name: '٥:٠٠ م', selected: true })).toBeOnTheScreen();
     // The same time is not a change.
     expect(screen.getByRole('button', { name: 'أكّد الموعد الجديد' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('button', { name: '٦:٠٠ م' }));

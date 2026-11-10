@@ -6,7 +6,9 @@ import { bookRequest, getSlots, getViewings, updateViewingRequest } from '../api
 
 /** The signed-in client's id. Keys the cache, so no account ever sees another's list. */
 const useClientId = () => useSession((s) => (s.status === 'signedIn' && s.user?.role === 'client' ? s.user.id : null));
-const viewingsKey = (clientId: number | null) => ['viewings', clientId];
+/** Every account's viewings: what a booking elsewhere (the chat) makes stale. */
+export const VIEWINGS_KEY = ['viewings'];
+const viewingsKey = (clientId: number | null) => [...VIEWINGS_KEY, clientId];
 
 export function useSlots(propertyId: number, reschedule?: number) {
   return useQuery({

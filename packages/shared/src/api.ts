@@ -1,5 +1,6 @@
 import type {
   Category,
+  ChatSender,
   Feature,
   Finishing,
   Lang,
@@ -317,6 +318,8 @@ export type LeadDetail = Omit<LeadCard, 'property'> & {
   /** The client's next live viewing with this agent, or else the last one. */
   viewing: AgentViewing | null;
   notes: LeadNote[];
+  /** The latest conversation with this client, for the Chat button. */
+  chatId: number | null;
   createdAt: string;
 };
 
@@ -327,3 +330,65 @@ export type UpdateLeadBody = { stage?: LeadStage; hot?: boolean };
 export type AddLeadNoteBody = { text: string };
 
 export const LEAD_NOTE_MAX = 1000;
+
+// Live chat (contract §8.12, §10.3). One conversation per client and home, with that home's advisor.
+
+/**
+ * What a message carries. Cards about the home (`property`, `tour`) show the conversation's home;
+ * `plan` keeps the plan as it was sent. `auto` marks the out-of-hours reply (contract §16.1 #12).
+ */
+export type ChatBody =
+  | { kind: 'text'; text: string; auto?: boolean }
+  | { kind: 'images'; urls: string[] }
+  | { kind: 'property' }
+  | { kind: 'plan'; price: number; downPct: number; years: number; monthly: number }
+  | { kind: 'tour' }
+  | { kind: 'slots'; date: string; times: string[]; chosen: string | null }
+  | { kind: 'booking'; viewingId: number; date: string; time: string };
+
+export type ChatMessage = {
+  id: number;
+  threadId: number;
+  sender: ChatSender;
+  body: ChatBody;
+  /** When the other side read it. */
+  readAt: string | null;
+  createdAt: string;
+};
+
+/** A conversation as the lists and the screen's header show it. `unread` counts the other side's unread messages. */
+export type ChatThread = {
+  id: number;
+  property: PropertyCard;
+  agent: ListingAgent;
+  /** For the agent: who they are talking to (empty name for a deleted account). */
+  client: { name: string; phone: string | null } | null;
+  leadId: number | null;
+  last: ChatMessage | null;
+  unread: number;
+};
+
+/** `GET /v1/chats/:id/messages?before=`: oldest first; `hasMore` when older ones are left. */
+export type ChatPage = { items: ChatMessage[]; hasMore: boolean };
+
+/** `POST /v1/chats/:id/messages`: clients send text; agents also send cards. Photos go to `/images`. */
+export type SendChatBody =
+  | { kind: 'text'; text: string }
+  | { kind: 'property' }
+  | { kind: 'plan' }
+  | { kind: 'tour' }
+  | { kind: 'slots'; date: string };
+
+export const CHAT_TEXT_MAX = 2000;
+export const CHAT_PAGE = 30;
+/** Photos in one message. */
+export const CHAT_IMAGES_MAX = 4;
+
+/** Socket.IO events from the server (the client sends `open` and `typing`). */
+export type ChatEvents = {
+  message: { message: ChatMessage };
+  read: { threadId: number; reader: ChatSender; at: string };
+  typing: { threadId: number; sender: ChatSender };
+  /** A slots card changed (the client picked a time). */
+  updated: { message: ChatMessage };
+};

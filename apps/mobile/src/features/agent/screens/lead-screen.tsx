@@ -13,7 +13,7 @@ import {
   relTime,
 } from '@maqar/shared';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, ArrowRight, CalendarClock, Flame, MessageCircle, Phone, Send, StickyNote, Video, Wallet } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, CalendarClock, Flame, MessageCircle, MessagesSquare, Phone, Send, StickyNote, Video, Wallet } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -63,6 +63,7 @@ export function LeadScreen({ id }: { id: number }) {
 function Lead({ l }: { l: LeadDetail }) {
   const t = useT();
   const lang = useLang();
+  const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const name = useLeadName()(l.name);
@@ -133,10 +134,14 @@ function Lead({ l }: { l: LeadDetail }) {
         </Pressable>
       </View>
 
-      {digits ? (
+      {digits || l.chatId ? (
         <View style={styles.actions}>
-          <Contact icon={Phone} label={t('اتصال', 'Call')} onPress={() => void Linking.openURL(`tel:${l.phone}`)} />
-          <Contact icon={MessageCircle} label={t('واتساب', 'WhatsApp')} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
+          {digits ? <Contact icon={Phone} label={t('اتصال', 'Call')} onPress={() => void Linking.openURL(`tel:${l.phone}`)} /> : null}
+          {l.chatId ? (
+            <Contact icon={MessagesSquare} label={t('الشات', 'Chat')} onPress={() => router.push(`/agent/chat/${l.chatId}`)} />
+          ) : digits ? (
+            <Contact icon={MessageCircle} label={t('واتساب', 'WhatsApp')} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
+          ) : null}
         </View>
       ) : null}
 

@@ -71,6 +71,13 @@
       "when": 1794289938214,
       "tag": "0009_ancient_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1794292571824,
+      "tag": "0010_melted_yellowjacket",
+      "breakpoints": true
     }
   ]
 }

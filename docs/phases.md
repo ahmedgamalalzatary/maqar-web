@@ -669,6 +669,19 @@ Contract §8.12 and §10.3.
 
 **Done when** a client and an agent on two phones chat in real time, and the client books from a times card the agent sent.
 
+**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+- Decided (#12, earlier): outside working hours, one automatic reply says to contact Maqar during working hours, until the agent answers in person. Working hours are the agent's viewing hours to the end of the last hour (10 to 20 means 10:00 to 20:59), and days off count.
+- Migration `0010`: `chat_threads` (one per client and home, with `last_message_at`) and `chat_messages` (`body` is JSON).
+- Messages go over HTTP; the Socket.IO gateway at `/v1/socket.io` (behind the same `/v1/` proxy) signs in with the access token and brings `message`, `updated`, `typing` and `read` to the other side. The app tells it which conversation is `open`, so those messages send no notification. A refused token is renewed and the socket reconnects.
+- Found and fixed: the global HTTP guards also ran on socket events and failed on them; they now handle HTTP only, and the gateway checks sockets when they connect (clients and agents only).
+- Cards: home details and 360° tour show the conversation's home; the payment plan keeps the plan as sent; a times card lists that day's free hours. Booking from it uses the booking screen's rules (one live viewing per home, the hour must be free), marks the card, and adds a confirmation card already read by the client.
+- Starting a conversation adds the client to the advisor's leads (source `chat`); the lead page's Chat button opens it. Deleting an account deletes the client's conversations.
+- Photos: picked with `expo-image-picker` (added to `app.json` with its photo-library text; no camera), resized on the phone with `expo-image-manipulator`, then resized again and stored as JPEG by the API. **A new build is needed** for the picker, as it is a native module.
+- App: the Messages list (`/chat`), the conversation screen (shared by both sides), the floating chat button above the client's tabs (above the compare tray when it shows), the Chats tab badge, and a Chat button in the property page's bottom bar.
+- **For the deploy:** copy `deploy/nginx-maqar.conf` to the server's `/etc/nginx/sites-available/maqar` (it adds the WebSocket upgrade for `/v1/socket.io/` and 12 MB uploads for chat photos), run `nginx -t`, then reload. Without it the socket falls back to HTTP polling and photos over 1 MB are refused.
+- Checked by hand against the local API and database with two sockets (a client and Omar): the message, typing and read receipt arrived live, the times card arrived live, the client booked 11:00 from it, Omar saw the card marked, and the confirmation card followed (the test viewing was cancelled after). No web preview: signing in does not work on the web (Phase 11).
+- Tests: API e2e (`chat.e2e-spec.ts`, 18, including the socket), unit tests for the away rules and `chatPreview`, and UI tests for the conversation, the list, the chat button, the property page's Chat button and the lead page's.
+
 ---
 
 ## Phase 17: Admin listings

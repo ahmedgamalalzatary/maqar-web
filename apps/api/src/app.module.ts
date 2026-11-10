@@ -6,6 +6,7 @@ import { type Env, validateEnv } from './core/config/env.js';
 import { DbModule } from './core/db/db.module.js';
 import { AreasModule } from './modules/areas/areas.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { ChatModule } from './modules/chat/chat.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
@@ -53,6 +54,7 @@ import { UsersModule } from './modules/users/users.module.js';
     PricesModule,
     ViewingsModule,
     LeadsModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

@@ -46,6 +46,7 @@ export const detailOf = (over: Partial<LeadDetail> = {}): LeadDetail => ({
   phone: '+201014124412',
   property: makeCard({ id: 4, titleAr: 'فيلا في التجمع' }),
   viewing: agentViewing({ newFromApp: true }),
+  chatId: null,
   notes: [{ id: 1, text: 'عايز دور أرضي', createdAt: new Date(Date.now() - 3_600_000).toISOString() }],
   createdAt: new Date(Date.now() - 86_400_000).toISOString(),
   ...over,

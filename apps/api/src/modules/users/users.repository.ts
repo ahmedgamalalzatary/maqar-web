@@ -4,6 +4,7 @@ import { and, eq, gt, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
+import { chatThreads } from '../chat/chat.schema.js';
 import { favorites } from '../favorites/favorites.schema.js';
 import { notifications, pushTokens } from '../notifications/notifications.schema.js';
 import { priceAlerts } from '../prices/prices.schema.js';
@@ -64,6 +65,8 @@ export class UsersRepository {
       await tx.delete(priceAlerts).where(eq(priceAlerts.userId, id));
       // Their coming viewings are cancelled, so the agents' hours are free again; past ones stay as they were.
       await tx.update(viewings).set({ status: 'cancelled' }).where(and(eq(viewings.clientId, id), isNotNull(viewings.active), gt(viewings.startsAt, new Date())));
+      // Their conversations are personal too (the messages go with them).
+      await tx.delete(chatThreads).where(eq(chatThreads.clientId, id));
       await tx.delete(notifications).where(eq(notifications.userId, id));
       await tx.delete(pushTokens).where(eq(pushTokens.userId, id));
     });

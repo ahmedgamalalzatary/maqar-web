@@ -6,6 +6,7 @@ import { useSession } from '@/features/auth/store/session.store';
 import { LeadScreen } from '@/features/agent/screens/lead-screen';
 import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
 import { renderWithProviders } from '../../../utils/render';
+import { mockRouter } from '../../../utils/router';
 import { detailOf } from './fixtures';
 
 jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
@@ -109,6 +110,14 @@ describe('Lead page', () => {
     expect(await screen.findByText('اتصلت، هيرد الأحد')).toBeOnTheScreen();
     expect(writes()).toEqual([['POST', '/agent/leads/1/notes', { text: 'اتصلت، هيرد الأحد' }]]);
     expect(screen.getByLabelText('ملاحظة جديدة')).toHaveProp('value', '');
+  });
+
+  it('opens the conversation with the client instead of WhatsApp when there is one', async () => {
+    serve(detailOf({ chatId: 12 }));
+    await renderWithProviders(<Page />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'الشات' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/agent/chat/12');
+    expect(screen.queryByRole('button', { name: 'واتساب' })).toBeNull();
   });
 
   it('has no call buttons without a number, and names a deleted account', async () => {

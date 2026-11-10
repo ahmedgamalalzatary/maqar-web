@@ -12,6 +12,7 @@ import {
   type PropertyCard,
   type UpdateLeadBody,
 } from '@maqar/shared';
+import { ChatRepository } from '../chat/chat.repository.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { cairoClock, cairoInstant } from '../viewings/slots.js';
 import { type LeadWithClient, LeadsRepository, type ViewingWithLead } from './leads.repository.js';
@@ -31,6 +32,7 @@ export class LeadsService {
   constructor(
     private readonly repo: LeadsRepository,
     private readonly properties: PropertiesService,
+    private readonly chats: ChatRepository,
   ) {}
 
   async today(agentId: number, now = new Date()): Promise<AgentToday> {
@@ -70,7 +72,12 @@ export class LeadsService {
   /** The lead page. Opening it marks the lead as seen, which clears "New from app". */
   async detail(agentId: number, id: number, now = new Date()): Promise<LeadDetail> {
     const row = await this.own(agentId, id);
-    const [viewing, notes, cards] = await Promise.all([this.repo.viewingOf(row.lead, now), this.repo.notesOf(id), this.cardsOf([row.lead.propertyId])]);
+    const [viewing, notes, cards, chatId] = await Promise.all([
+      this.repo.viewingOf(row.lead, now),
+      this.repo.notesOf(id),
+      this.cardsOf([row.lead.propertyId]),
+      row.lead.clientId ? this.chats.latestBetween(row.lead.clientId, agentId) : undefined,
+    ]);
     const [item] = viewing ? await this.viewingItems([viewing]) : [];
     await this.repo.markSeen(id);
     const { property: _summary, ...card } = this.card(row, cards);
@@ -80,6 +87,7 @@ export class LeadsService {
       property: (row.lead.propertyId && cards.get(row.lead.propertyId)) || null,
       viewing: item ?? null,
       notes: notes.map(noteItem),
+      chatId: chatId ?? null,
       createdAt: row.lead.createdAt.toISOString(),
     };
   }
