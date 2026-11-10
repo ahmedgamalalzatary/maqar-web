@@ -98,6 +98,17 @@ describe('My viewings', () => {
     expect(screen.getAllByRole('button', { name: 'احجز ميعاد جديد' })).toHaveLength(2);
   });
 
+  it('shows the advisor’s initial from the name in the app’s language', async () => {
+    await useSession.getState().setSession(makeAuth());
+    serve();
+    const { unmount } = await renderWithProviders(<ViewingsScreen />);
+    expect((await screen.findAllByText('ع', { includeHiddenElements: true })).length).toBeGreaterThan(0);
+    expect(screen.queryByText('O', { includeHiddenElements: true })).toBeNull();
+    await unmount();
+    await renderWithProviders(<ViewingsScreen />, { lang: 'en' });
+    expect((await screen.findAllByText('O', { includeHiddenElements: true })).length).toBeGreaterThan(0);
+  });
+
   it('cancels after asking', async () => {
     await useSession.getState().setSession(makeAuth());
     const patches = serve([LIST[0]!]);

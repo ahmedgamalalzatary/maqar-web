@@ -24,7 +24,7 @@ import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { initialsOf, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useRequireAuth } from '@/features/auth/hooks/use-require-auth';
 import { useProperty } from '@/features/property/hooks/use-property';
@@ -281,7 +281,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
           <View style={[styles.agent, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <View style={[styles.avatar, { backgroundColor: p.agent.colour }]}>
               <Txt size={16} weight="semibold" style={styles.white}>
-                {p.agent.nameEn.slice(0, 1)}
+                {initialsOf(lang === 'ar' ? p.agent.nameAr : p.agent.nameEn, lang)}
               </Txt>
             </View>
             <View style={styles.flex}>

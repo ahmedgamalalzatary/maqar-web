@@ -107,6 +107,17 @@ describe('PropertyScreen', () => {
     expect(screen.queryByRole('button', { name: 'جولة ٣٦٠°' })).toBeNull();
   });
 
+  it('puts a solid strip behind the top buttons once the photos scroll away, so they never sit on text', async () => {
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    const page = await screen.findByTestId('property-scroll');
+    expect(screen.queryByTestId('property-top-fill')).toBeNull();
+    await fireEvent.scroll(page, { nativeEvent: { contentOffset: { x: 0, y: 2000 }, contentSize: { width: 390, height: 4000 }, layoutMeasurement: { width: 390, height: 800 } } });
+    expect(screen.getByTestId('property-top-fill')).toBeOnTheScreen();
+    await fireEvent.scroll(page, { nativeEvent: { contentOffset: { x: 0, y: 0 }, contentSize: { width: 390, height: 4000 }, layoutMeasurement: { width: 390, height: 800 } } });
+    expect(screen.queryByTestId('property-top-fill')).toBeNull();
+  });
+
   it('calls the advisor', async () => {
     api();
     await renderWithProviders(<PropertyScreen id={1} />);

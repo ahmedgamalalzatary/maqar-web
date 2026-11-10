@@ -120,6 +120,10 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const similar = useSimilar(p.id, true);
   // Read the clock once when the page opens (render must stay pure).
   const [now] = useState(Date.now);
+  // Once the photos scroll away, the top buttons get a solid strip behind them instead of sitting on text.
+  const [solidTop, setSolidTop] = useState(false);
+  const topBarHeight = insets.top + 8 + 44 + 8;
+  const galleryHeight = Math.round(width * 0.9);
 
   const title = lang === 'ar' ? p.titleAr : p.titleEn;
   const place = lang === 'ar' ? `${p.compoundAr} | ${p.area.nameAr}` : `${p.compoundEn} | ${p.area.nameEn}`;
@@ -140,7 +144,15 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}>
+      <ScrollView
+        testID="property-scroll"
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          const solid = e.nativeEvent.contentOffset.y > galleryHeight - topBarHeight;
+          if (solid !== solidTop) setSolidTop(solid);
+        }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}
+      >
         <View>
           <Gallery images={p.images} label={title} />
           {p.tourRooms.length ? (
@@ -332,6 +344,13 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         </View>
       </ScrollView>
 
+      {solidTop ? (
+        <View
+          testID="property-top-fill"
+          pointerEvents="none"
+          style={[styles.topFill, { height: topBarHeight, backgroundColor: colors.bg, borderBottomColor: colors.line2 }]}
+        />
+      ) : null}
       <View style={[styles.topBar, { top: insets.top + 8 }]}>
         <Glass label={t('رجوع', 'Back')} onPress={onBack}>
           <BackIcon size={20} color="#fff" />
@@ -464,6 +483,7 @@ const styles = StyleSheet.create({
   },
   tourIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   topBar: { position: 'absolute', start: 16, end: 16, flexDirection: 'row', justifyContent: 'space-between' },
+  topFill: { position: 'absolute', top: 0, start: 0, end: 0, borderBottomWidth: StyleSheet.hairlineWidth },
   topActions: { flexDirection: 'row', gap: 8 },
   glass: {
     width: 44,
