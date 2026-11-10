@@ -593,7 +593,7 @@ Contract §8.7 (reminders) and §8.8.
 
 **Done when** a viewing booked about 35 minutes ahead gets its 30-minute reminder on the phone.
 
-**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left, and the push part of it needs Firebase (Phase 11 status). Until then the reminder shows in the app's inbox. Not deployed yet. Notes:
+**Status (2026-11-10): done, except the push.** Deployed 2026-11-10 (`89afb44`, with Phases 15 and 16). Checked on the phone: the reminders arrive in the app's inbox. The push part still needs Firebase (Phase 11 status). Notes:
 - Decided (#13, earlier): `@nestjs/schedule` inside the API. `RemindersJob` runs every minute and skips a run while the last one is still going. Tests do not load it; they call `sendDueReminders(now)` with their own clock.
 - Each reminder row is claimed (stamped `sent_at` where it is still empty) before it is sent, so two servers or a restart cannot send it twice.
 - A choice already due when the viewing is booked or moved is stamped at once and never sent. Booked 35 minutes ahead, only "30 minutes before" comes.
@@ -627,7 +627,7 @@ Contract §10.1 and §10.2.
 
 **Done when** a viewing booked by a client shows up on the agent's Today screen and lead list straight away, marked "New from app".
 
-**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+**Status (2026-11-10): done.** Deployed 2026-11-10 (`89afb44`). Checked on the phone: the agent's Today, Leads and lead page against the live server. Notes:
 - Decided while building: "New from app" lasts until the agent opens the lead (`leads.seen_at`, cleared by each new booking). A booking marks the lead hot; the agent can switch it. The monthly target counts leads moved to Won this month (`leads.won_at`), against the average of the active agents.
 - Migration `0009`: `lead_notes`, `leads.seen_at` and `won_at`, millisecond `last_activity_at`, and lead sources renamed (`app` became `booking`). The seed adds six sample leads (calls, walk-ins) to each agent that has none, with two notes and one deal won.
 - `GET /agent/today` gives the stats, target, today's viewings (until an hour after they start), the next five, the pipeline counts and the `new` leads. Leads lists mask phones; the lead page has the full number and marks the lead seen.
@@ -669,7 +669,7 @@ Contract §8.12 and §10.3.
 
 **Done when** a client and an agent on two phones chat in real time, and the client books from a times card the agent sent.
 
-**Status (2026-11-10): in progress.** Code and tests are green; the phone check (rule 6) is left. Not deployed yet. Notes:
+**Status (2026-11-10): done, except the push.** Deployed 2026-11-10 (`89afb44`), with the nginx socket and photo blocks. Checked on two sides (the phone as the client, a script as the agent): live messages, typing, read ticks, every card, booking from a times card, photos, the away rules and the lead. Fixed on the phone after: photo sending (Expo's fetch needs parts that carry their bytes), the agent's own bubbles in dark mode, Arabic lines that start with an English name, and sheets taller than the screen. Pushes need Firebase (Phase 11). Notes:
 - Decided (#12, earlier): outside working hours, one automatic reply says to contact Maqar during working hours, until the agent answers in person. Working hours are the agent's viewing hours to the end of the last hour (10 to 20 means 10:00 to 20:59), and days off count.
 - Migration `0010`: `chat_threads` (one per client and home, with `last_message_at`) and `chat_messages` (`body` is JSON).
 - Messages go over HTTP; the Socket.IO gateway at `/v1/socket.io` (behind the same `/v1/` proxy) signs in with the access token and brings `message`, `updated`, `typing` and `read` to the other side. The app tells it which conversation is `open`, so those messages send no notification. A refused token is renewed and the socket reconnects.
@@ -700,6 +700,16 @@ Contract §9.2 and §11 (to be updated to match).
 **Tests:** admin-only access, form validation (at least one photo), the status changes, upload limits, and that a published listing appears in public search and an unpublished one does not.
 
 **Done when** an admin creates a listing with real photos on the web dashboard or in the app, publishes it, and it appears in Explore.
+
+**Status (2026-11-10): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left. Notes:
+- Decided: the web dashboard is `apps/web` (`@maqar/web`): Next.js 16 and Tailwind like the demo, a static export served by nginx at `/admin/` on the API's host, so it calls `/v1` on the same origin with no CORS. `deploy.sh` builds it from the same clean commit and swaps it in at `/srv/maqar/web/admin`. Admins sign in with their account; any other role is signed out at once.
+- Migration `0011`: `owner_name` and `owner_phone` on the listing (admins only ever see them), `agent_id` empty until the listing is published, and the review statuses (`pending`, `changes`) are gone: any listing in them becomes a draft. Statuses are now draft, approved (live), unpublished, sold and rented.
+- `POST /uploads` (admins, one photo in `photo`): turned upright, at most 2000 px, JPEG, under `uploads/listings`. Photos are made smaller on the phone or in the browser first. nginx takes 12 MB on that route; the API refuses over 10 MB.
+- `/admin/listings`: the list (every status, a count per status, words in the title, compound, owner or phone), create (a draft; an empty title becomes "<type>, <beds> beds | <area>"), get, edit (a new price goes through the price history, so a drop alerts followers), publish (the advisor picked, the one it had, or the active one with the fewest live listings), unpublish, and close (sold for sale and projects, rented for rent and stays). `GET /admin/agents` lists the advisors to pick from. A listing's photos are only ones uploaded to this server.
+- The listing form's rules (steps, checks, the request body) live in `packages/shared`, so the app and the web check alike.
+- App: the admin's Listings tab (status chips with counts, search), the listing page (owner with a call button, advisor, publish with an advisor sheet, unpublish, sold or rented, see it as a client) and the 5-step form for new and edited listings. Web: the same list, page and form, with drag-and-drop photos.
+- Not in this phase: map pins and 360° tour rooms (the contract's panoramas) are set outside the form for now; the form keeps what a listing already has.
+- Tests: API e2e (`admin-listings.e2e-spec.ts`, 16), shared unit tests for the status moves, the default title and the form rules, mobile UI tests for the three admin screens, and the web API client (sign-in for admins only, one shared token renewal).
 
 ---
 

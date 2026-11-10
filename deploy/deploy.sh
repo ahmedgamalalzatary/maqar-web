@@ -1,5 +1,5 @@
 #!/bin/sh
-# Deploys the API from this PC: `sh deploy/deploy.sh` (add `--setup` the first time).
+# Deploys the API and the admin dashboard from this PC: `sh deploy/deploy.sh` (add `--setup` the first time).
 # The server keeps a Git clone of this repo and builds exactly the commit that is on origin/main,
 # so what runs can always be traced to a commit. The repo is public, so no key is left there.
 set -eu
@@ -33,3 +33,17 @@ if [ "${1:-}" = "--setup" ]; then
   $SSH "sh $DIR/deploy/setup-server.sh"
 fi
 $SSH "sh $DIR/deploy/server-deploy.sh $(git rev-parse --short HEAD)"
+
+# The admin dashboard (apps/web): built here from the same clean commit, then swapped in at once.
+# nginx serves /srv/maqar/web/admin at /admin/ (deploy/nginx-maqar.conf).
+pnpm --filter @maqar/shared build >/dev/null
+NEXT_PUBLIC_API_URL=/v1 pnpm --filter @maqar/web build >/dev/null
+tar -C apps/web/out -cf - . | $SSH "set -eu
+  mkdir -p /srv/maqar/web
+  rm -rf /srv/maqar/web/admin.new /srv/maqar/web/admin.old
+  mkdir /srv/maqar/web/admin.new
+  tar -xf - -C /srv/maqar/web/admin.new
+  if [ -d /srv/maqar/web/admin ]; then mv /srv/maqar/web/admin /srv/maqar/web/admin.old; fi
+  mv /srv/maqar/web/admin.new /srv/maqar/web/admin
+  rm -rf /srv/maqar/web/admin.old"
+echo "Deployed the admin dashboard at /admin/"
