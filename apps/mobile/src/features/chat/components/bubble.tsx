@@ -25,6 +25,12 @@ type Props = {
   onImage: (url: string) => void;
 };
 
+/** `#rrggbb` at an opacity. */
+function tint(hex: string, alpha: number): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
 /** One message (contract §8.12): text, photos, or a card about the conversation's home. */
 export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Props) {
   const t = useT();
@@ -35,8 +41,11 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
   const p = thread.property;
   const title = lang === 'ar' ? p.titleAr : p.titleEn;
   const place = `${lang === 'ar' ? p.compoundAr : p.compoundEn} | ${lang === 'ar' ? p.area.nameAr : p.area.nameEn}`;
+  // My bubble is filled with the ink colour (navy in light mode, cream in dark), so what sits on it
+  // is drawn in the page colour, faded where it should be quieter. Never white: it vanishes on cream.
   const fg = mine ? colors.bg : colors.ink;
-  const soft = mine ? 'rgba(255,255,255,0.6)' : colors.ink3;
+  const soft = mine ? tint(colors.bg, 0.65) : colors.ink3;
+  const chip = mine ? tint(colors.bg, 0.1) : colors.surface2;
   const shell = [
     styles.shell,
     { backgroundColor: mine ? colors.ink : colors.surface, borderColor: mine ? colors.ink : colors.line, alignSelf: mine ? ('flex-end' as const) : ('flex-start' as const) },
@@ -213,7 +222,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
                   onPress={() => onBook(m.id, tm)}
                   style={[
                     styles.time,
-                    { backgroundColor: on ? colors.accent : mine ? 'rgba(255,255,255,0.1)' : colors.surface2, opacity: !canPick && !on ? 0.5 : 1 },
+                    { backgroundColor: on ? colors.accent : chip, opacity: !canPick && !on ? 0.6 : 1 },
                   ]}
                 >
                   {on ? <Check size={13} color={colors.navy} strokeWidth={3} /> : null}
@@ -255,13 +264,13 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
             </View>
           </View>
           {side === 'client' ? (
-            <Pressable accessibilityRole="button" onPress={() => router.push('/viewings')} style={[styles.cardAction, styles.flat, { backgroundColor: mine ? 'rgba(255,255,255,0.1)' : colors.surface2 }]}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/viewings')} style={[styles.cardAction, styles.flat, { backgroundColor: chip }]}>
               <Txt size={12.5} weight="medium" style={{ color: fg }}>
                 {t('معايناتي', 'My viewings')}
               </Txt>
             </Pressable>
           ) : thread.leadId ? (
-            <Pressable accessibilityRole="button" onPress={() => router.push(`/agent/lead/${thread.leadId}`)} style={[styles.cardAction, styles.flat, { backgroundColor: colors.surface2 }]}>
+            <Pressable accessibilityRole="button" onPress={() => router.push(`/agent/lead/${thread.leadId}`)} style={[styles.cardAction, styles.flat, { backgroundColor: chip }]}>
               <Txt size={12.5} weight="medium" style={{ color: fg }}>
                 {t('صفحة العميل', 'Lead page')}
               </Txt>

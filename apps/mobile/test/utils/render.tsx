@@ -14,8 +14,8 @@ const metrics = {
  * Renders with the app's providers. Queries do not retry, so error states show at once.
  * The providers are a wrapper, so `rerender` keeps the same query cache.
  */
-export function renderWithProviders(ui: ReactElement, opts: { lang?: Lang } = {}) {
-  useSettings.setState({ lang: opts.lang ?? 'ar', theme: 'light' });
+export function renderWithProviders(ui: ReactElement, opts: { lang?: Lang; theme?: 'light' | 'dark' } = {}) {
+  useSettings.setState({ lang: opts.lang ?? 'ar', theme: opts.theme ?? 'light' });
   // gcTime Infinity starts no cleanup timer; the 5-minute default kept Jest alive after the run.
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
