@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+/* Maqar design tokens (the same as the demo and the app). */
+:root {
+  --navy: #041525;
+  --gold: #b38959;
+  --cream: #fbf6e9;
+  --sage: #61766d;
+
+  --bg: #f6f2e9;
+  --surface: #ffffff;
+  --surface-2: #efe9dc;
+  --surface-3: #e6dfcf;
+  --ink: #041525;
+  --ink-2: #56616c;
+  --ink-3: #8a929a;
+  --line: rgba(4, 21, 37, 0.08);
+  --line-2: rgba(4, 21, 37, 0.14);
+  --accent: #b38959;
+  --accent-ink: #87633a;
+  --accent-soft: rgba(179, 137, 89, 0.14);
+  --sage-ink: #4d6158;
+  --sage-soft: rgba(97, 118, 109, 0.14);
+  --danger: #c2453a;
+  --danger-soft: rgba(194, 69, 58, 0.12);
+  --success: #3f7d5c;
+  --success-soft: rgba(63, 125, 92, 0.13);
+  --logo-cream: #041525;
+  --shadow: 0 1px 2px rgba(4, 21, 37, 0.04), 0 8px 24px -12px rgba(4, 21, 37, 0.18);
+  --shadow-lg: 0 24px 60px -20px rgba(4, 21, 37, 0.35);
+  --frame: #0b1b2b;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #030f1b;
+  --surface: #0a1d2f;
+  --surface-2: #10273c;
+  --surface-3: #173149;
+  --ink: #f4eedf;
+  --ink-2: #a4adb6;
+  --ink-3: #6f7b87;
+  --line: rgba(244, 238, 223, 0.07);
+  --line-2: rgba(244, 238, 223, 0.14);
+  --accent: #c9a06e;
+  --accent-ink: #d8b483;
+  --accent-soft: rgba(201, 160, 110, 0.14);
+  --sage-ink: #9bb3a7;
+  --sage-soft: rgba(143, 167, 155, 0.14);
+  --danger: #e2766b;
+  --danger-soft: rgba(226, 118, 107, 0.14);
+  --success: #6dbb8f;
+  --success-soft: rgba(109, 187, 143, 0.14);
+  --logo-cream: #fbf6e9;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  --frame: #000913;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-sage: var(--sage);
+  --color-sage-ink: var(--sage-ink);
+  --color-sage-soft: var(--sage-soft);
+  --color-navy: var(--navy);
+  --color-cream: var(--cream);
+  --color-gold: var(--gold);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --font-sans: var(--font-readex), ui-sans-serif, system-ui, sans-serif;
+  --shadow-card: var(--shadow);
+  --shadow-float: var(--shadow-lg);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

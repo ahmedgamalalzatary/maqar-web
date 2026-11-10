@@ -25,7 +25,7 @@ This is the single source of truth for what Maqar is, what it does and how it is
 6. [Brand and design](#6-brand-and-design)
 7. [Language, numbers and formats](#7-language-numbers-and-formats)
 8. [Features: client](#8-features-client)
-9. [Features: owner](#9-features-owner)
+9. [Features: listings for owners](#9-features-listings-for-owners)
 10. [Features: sales agent](#10-features-sales-agent)
 11. [Features: Maqar admin (review team)](#11-features-maqar-admin-review-team)
 12. [Shared features](#12-shared-features)
@@ -75,13 +75,12 @@ MQR is the competing app (Expo / React Native, Arabic and English). We analysed 
 |---|---|---|---|
 | **Guest** | Not signed in | Home | Browse, search, view listings, 360° tour, calculator, compare |
 | **Client** (`buyer`) | Signed-in home seeker | Home | Everything a guest can, plus: save homes, price alerts, chat, book and manage viewings, notifications, preferences |
-| **Owner** | Signed-in property owner | `/owner` | List properties (they go live only after Maqar approves them), see views, saves and interested clients per listing |
 | **Sales agent** | Maqar employee | `/agent` | See assigned leads and viewings, move leads through stages, add notes, chat with clients |
-| **Admin** [Real] | Maqar review team | Admin tools [Open] | Approve listings or ask for changes, manage agents, assign leads, manage areas |
+| **Admin** [Real] | Maqar team | `/admin` in the app, and the web dashboard | Create, edit, publish and close listings for owners (there are no owner accounts), manage agents, assign leads, manage areas |
 
 Rules:
 
-- One account has one role. Someone who is both a client and an owner uses two accounts (decided 2026-11-08).
+- One account has one role (decided 2026-11-08).
 - In the demo the role is switched from the Me tab. [Real] The role comes from the account: clients and owners sign up themselves, while agents and admins are created by an admin.
 - Guests are asked to sign in at the moment they need an account (save, alert, chat, book), not before.
 
@@ -89,7 +88,7 @@ Rules:
 
 ## 3. Platforms and repository
 
-- **Mobile only.** Phone layout, portrait. No tablet or desktop layouts.
+- **Mobile only** for clients and agents: phone layout, portrait, no tablet or desktop layouts. The admin web dashboard (`apps/web`) is the one desktop page.
 - One pnpm + Turborepo monorepo: `github.com/ahmedgamalalzatary/maqar-web`.
 
 | Path | Package | Purpose |
@@ -97,6 +96,7 @@ Rules:
 | `apps/demo` | `@maqar/demo` | Next.js front-end demo. All data is sample data kept in localStorage. Port 3210. This is the UX reference. |
 | `apps/mobile` | `@maqar/mobile` | The real app: Expo SDK 58 with Expo Router, for iOS and Android. |
 | `apps/api` | `@maqar/api` | The real backend: NestJS 12, MySQL through Drizzle ORM. |
+| `apps/web` | `@maqar/web` | The admin web dashboard (Phase 17): Next.js 16 and Tailwind, a static export served by nginx at `/admin/` on the API's host. Port 3220 in development. |
 | `packages/tsconfig` | `@maqar/tsconfig` | Shared TypeScript configs. |
 | `packages/shared` | `@maqar/shared` | Enums, bilingual labels, API request/response types and the formatters (§7), used by both the API and the app. Built to `dist/` before the apps typecheck, test or build. |
 | `docs/` | | This contract and other docs. |
@@ -192,7 +192,7 @@ Soft variants are the same colour at 12–14% opacity. Lead stages have their ow
 ## 7. Language, numbers and formats
 
 - Arabic (Egyptian, friendly tone) is the default; English is optional. The setting is per user and saved.
-- In the demo, every string is written with `t("عربي", "English")`, and data uses `Bi = { ar, en }`. [Real] Stored content that users see (titles, descriptions, area names) is kept in both languages. Content that users type (owner titles, chat) is kept as typed.
+- In the demo, every string is written with `t("عربي", "English")`, and data uses `Bi = { ar, en }`. [Real] Stored content that users see (titles, descriptions, area names) is kept in both languages. Content that users type (chat) is kept as typed; admins write listing texts in both languages.
 - Arabic UI shows Arabic-Indic digits (٠١٢٣); English UI shows Latin digits. Prices, counts, dates and times all follow this.
 - Percent signs: `٪` in Arabic, `%` in English (`fmtPct`).
 - Never put "·" or "•" next to Arabic digits, because they read as zero. Use "|" as the separator.
@@ -432,36 +432,29 @@ The price is compared on the client's terms:
 
 ---
 
-## 9. Features: owner
+## 9. Features: listings for owners
 
-### 9.1 Owner portal (`/owner`)
+There are no owner accounts (decided 2026-11-09). An owner talks to Maqar, and an admin creates and manages the listing for them, in the app's admin screens or on the web dashboard.
 
-- Overview with a views chart, plus totals for views, interested people and saves.
-- My listings, each with a status badge: `pending` (in review), `approved` (live) or `changes` (changes requested).
-- Each listing shows its views, interested people and saves, and its interested clients.
+### 9.1 Listing insights
 
-### 9.2 List a property (`/owner/new`)
+Per listing, for the admin to pass to the owner: a views chart and the totals for views, saves and interested clients. This is Phase 19.
 
-A wizard in five steps:
+### 9.2 Add a listing (`/admin/new`, web `/admin/new/`)
 
-1. **Type:** sell or rent out, then the unit type.
-2. **Location:** area, plus a title (optional; if left empty it becomes "<type> <beds> beds | <area>").
+A form in five steps:
+
+1. **Type:** sale, rent, stay or project, then the unit type.
+2. **Location:** area and compound, a title in each language (optional; left empty it becomes "<type>, <beds> beds | <area>"), and the owner's name and phone, which only admins ever see.
 3. **Details:**
    - bedrooms, bathrooms, size (m²)
-   - asking price, or monthly rent when renting out
-   - finishing
-   - amenities
-4. **Photos:** upload from the phone. The first photo is the cover. At least one photo is required. Photos are resized on the device before upload.
-5. **Review:** a summary, a note that the Maqar team reviews every listing before it goes live (usually in under 24 hours), and **Submit for review**.
+   - price: asking price, monthly rent, or price per night
+   - finishing, handover (ready or a year), amenities
+   - a payment plan for sale and projects (optional), and a description in each language
+4. **Photos:** at least one, at most 20. The first is the cover. Photos are made smaller on the phone or in the browser, then uploaded as soon as they are picked.
+5. **Review:** a summary, then **Save draft** or **Save and publish**.
 
-After submitting:
-- The status is `pending` and the owner gets a "Listing submitted" notification.
-- **Company approval is required.** A listing is never public before an admin approves it.
-- When approved: the status becomes `approved`, the owner gets a notification, the listing appears in Explore as a "Verified owner listing", and it gets an assigned sales advisor.
-- If changes are requested: the status becomes `changes`, the owner gets a notification with the reason, and the owner edits and resubmits.
-- In the demo, approval is simulated about 12 seconds after submitting.
-
-[Real] Owners can edit a listing; edits to price or key facts go back to review [Open: which edits need review]. Owners can mark a listing sold or rented, or unpublish it. [Open] Owner identity checks and listing limits.
+Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There is no review step: a listing goes live when an admin publishes it, which assigns a sales advisor (the one picked, the one it had, or the active advisor with the fewest live listings). Live listings can be unpublished, and live or unpublished ones closed as sold (sale, project) or rented (rent, stay). A closed listing can be published again. A new price goes through the price history, so a drop alerts followers (§8.9).
 
 ---
 
@@ -509,16 +502,15 @@ After submitting:
 
 ---
 
-## 11. Features: Maqar admin (review team)
+## 11. Features: Maqar admin
 
-[Real] This is not in the demo. The demo simulates its results: approvals and assigned advisors.
+[Real] This is not in the demo. The admin tools are both screens inside the app and a web dashboard (§16.1 #6).
 
-- **Listing review queue:** see pending listings, approve, or request changes with a reason.
+- **Listings** (Phase 17): every listing in every status, with search and a count per status; create, edit, publish, unpublish, close (§9.2).
 - Manage agents: create and deactivate accounts, set areas and categories, set monthly targets.
 - Assign each listing to an advisor. Reassign leads.
 - Manage areas: names in both languages, city, image.
 - Featured listings.
-- [Open] Admin UI: a web dashboard, admin screens inside the mobile app, or API only at first.
 
 ---
 
@@ -556,7 +548,7 @@ Conventions:
 | **agent_hours** | agent_id, weekday (0 = Sunday), from_hour, to_hour: the first and last hour a viewing can start. No row for a weekday = not working that day; no rows at all = the default (10–20, Friday 14–20). |
 | **agent_days_off** | agent_id, date (Cairo), reason: holidays and single days off |
 | **areas** | id (slug), name_ar / name_en, city_ar / city_en, image |
-| **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id, status (`draft` / `pending` / `approved` / `changes` / `sold` / `rented` / `unpublished`), review_note, featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
+| **properties** | id, category (`sale` / `rent` / `stay` / `project`), type, title_ar / title_en, area_id, compound_ar / compound_en, developer_ar / developer_en, price, old_price, beds, baths, size_m2, floor, finishing (`full` / `semi` / `core` / `furnished`), delivery (`ready` or year), agent_id (empty until published), owner_name, owner_phone (admins only), status (`draft` / `approved` / `unpublished` / `sold` / `rented`), review_note (unused), featured, maintenance_fee, plan_down_pct, plan_years, desc_ar / desc_en, lat, lng, views, published_at, created_at |
 | **property_features** | property_id, feature (`pool`, `garden`, `sea`, `parking`, `elevator`, `security`, `gym`, `clubhouse`, `smart`, `roof`) |
 | **property_images** | id, property_id, url, sort (0 = cover) |
 | **tour_rooms** | id, property_id, name_ar / name_en, pano (the equirectangular photo's path), sort. The dots between rooms are placed by the app, so there is no hotspots column. |
@@ -571,7 +563,7 @@ Conventions:
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
 | **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `match` / `lead` / `chat` / `system`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
 | **push_tokens** | id, user_id, token (unique), platform (`ios` / `android`), created_at, updated_at |
-| **listing_stats** (or events) | property_id, date, views, saves, interested, used for the owner chart |
+| **listing_stats** (or events) | property_id, date, views, saves, interested, used for the listing insights (Phase 19) |
 
 Supporting rules:
 
@@ -592,16 +584,15 @@ Supporting rules:
 | properties | `GET /properties` (search, filters, sort incl. match, paging), `GET /properties/facets` (match count, price and size histograms, delivery years), `GET /properties/:id`, `GET /properties/:id/similar`, `GET /properties/compare?ids=` (one or two homes for the compare screen; counts no view), `GET /properties/recommended`, `GET /properties/match-count` (homes that fit given preferences 70% or more, for onboarding) | public; `sort=match` and `recommended` need a signed-in client |
 | favorites | `GET /favorites`, `PUT/DELETE /favorites/:propertyId` | client |
 | price alerts | `GET /alerts`, `PUT/DELETE /alerts/:propertyId` | client |
-| admin: prices | `PATCH /admin/listings/:id/price` (the rest of the admin listing routes come in Phase 17) | admin |
+| admin: listings | `GET /admin/listings?status&q&page&limit` (every status, with counts per status), `POST /admin/listings` (a draft), `GET/PATCH /admin/listings/:id`, `POST /admin/listings/:id/publish` (`agentId` optional), `/unpublish`, `/close`, `PATCH /admin/listings/:id/price`, `GET /admin/agents` (active advisors with their live listings) | admin |
 | viewings | `GET /properties/:id/slots?reschedule` (public; the next 14 days), `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
 | chat | `GET /chats`, `POST /chats` (property; clients), `GET /chats/:id`, `GET /chats/:id/messages?before`, `POST /chats/:id/messages` (text; agents also cards), `POST /chats/:id/images` (1 to 4 photos), `POST /chats/:id/read`, `POST /chats/:id/messages/:messageId/book` (a time from a times card; clients). Socket.IO at `/v1/socket.io` (signed in with the access token): `message`, `updated`, `typing`, `read` from the server; `open` and `typing` from the app | client, agent, own conversations only |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
-| owner | `GET /owner/listings`, `POST /owner/listings`, `PATCH /owner/listings/:id`, `POST /owner/listings/:id/submit`, `GET /owner/listings/:id/stats`, `GET /owner/listings/:id/interested` | owner |
-| uploads | `POST /uploads` (photos, panoramas), stored on the server disk and served at `/uploads/...` | owner, agent, client (chat) |
+| uploads | `POST /uploads` (one listing photo in `photo`; panoramas later), stored on the server disk and served at `/uploads/listings/...`. Chat photos go through `POST /chats/:id/images`. | admin |
 | agent | `GET /agent/today`, `GET /agent/leads?stage`, `GET/PATCH /agent/leads/:id` (stage, hot; opening it marks it seen), `POST /agent/leads/:id/notes` | agent, own leads only |
-| admin | `GET /admin/listings?status=pending`, `POST /admin/listings/:id/approve`, `POST /admin/listings/:id/request-changes`, agents CRUD, `PATCH /admin/leads/:id/assign`, areas CRUD | admin |
+| admin (Phase 18) | agents CRUD, hours and days off, `PATCH /admin/leads/:id/assign`, areas CRUD, featured listings | admin |
 
-Access is checked by role guards on every route. Owners and agents can only reach their own data.
+Access is checked by role guards on every route. Agents and clients can only reach their own data.
 
 ---
 
@@ -687,3 +678,4 @@ Access is checked by role guards on every route. Owners and agents can only reac
 | 2026-11-10 | Phase 14 built (the phone check is still pending): a job inside the API sends viewing reminders every minute. Each is sent once, even with two servers. Choices already due at booking are skipped, and missed ones are merged into one message. No new tables or routes. |
 | 2026-11-10 | Phase 15 built (the phone check is still pending): the agent's Today, Leads and lead page. `lead_notes`; `leads.seen_at` ("New from app") and `won_at` (the monthly target); lead sources are now named (`booking` instead of `app`). The seed adds sample leads to each agent. Every database session now runs in UTC, so times MySQL fills in itself read right on a PC whose MySQL is in local time (production was already UTC). |
 | 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-maqar.conf` at deploy. |
+| 2026-11-10 | Phases 14–16 deployed (`89afb44`) and checked on the phone (pushes still need Firebase). Phase 17 built (the deploy and the phone check are left): admin listings in the API (`POST /uploads`, `/admin/listings`, `/admin/agents`), the app's admin screens, and the web dashboard `apps/web` at `/admin/`. Migration `0011`: owner name and phone on listings, no advisor until published, and the `pending` and `changes` statuses removed (no review step). §2, §3, §9, §11, §13 and §14 rewritten to match. |
