@@ -328,7 +328,7 @@ function DayPicker({ propertyId, open, onClose, onPick }: { propertyId: number; 
   const slots = useSlots(propertyId);
   const days = (slots.data?.days ?? []).map((d) => ({ date: d.date, free: d.slots.filter((s) => s.state === 'free').length })).filter((d) => d.free > 0);
   return (
-    <Sheet open={open} onClose={onClose} title={t('ابعت مواعيد يوم', 'Send a day’s free times')}>
+    <Sheet open={open} onClose={onClose} title={t('ابعت مواعيد يوم', 'Send a day’s free times')} scroll>
       {slots.isPending ? (
         <ActivityIndicator color={colors.accent} />
       ) : days.length ? (
