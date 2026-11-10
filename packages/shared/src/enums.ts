@@ -50,15 +50,8 @@ export const FEATURES = [
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 
-export const PROPERTY_STATUSES = [
-  'draft',
-  'pending',
-  'approved',
-  'changes',
-  'sold',
-  'rented',
-  'unpublished',
-] as const;
+/** `approved` is live. There is no review step (decided 2026-11-09): admins publish. */
+export const PROPERTY_STATUSES = ['draft', 'approved', 'unpublished', 'sold', 'rented'] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 
 export const LEAD_STAGES = ['new', 'contacted', 'viewing', 'negotiation', 'won', 'lost'] as const;

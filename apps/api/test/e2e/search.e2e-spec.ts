@@ -30,7 +30,7 @@ describe('Search, filters and sort (e2e)', () => {
     // A hidden copy of each listing must never be found, counted or charted.
     const rows = await db.select().from(properties);
     for (const { id: _id, ...rest } of rows) {
-      await db.insert(properties).values({ ...rest, titleEn: `Hidden ${rest.titleEn}`, status: 'pending' });
+      await db.insert(properties).values({ ...rest, titleEn: `Hidden ${rest.titleEn}`, status: 'draft' });
     }
   });
   afterAll(async () => {
