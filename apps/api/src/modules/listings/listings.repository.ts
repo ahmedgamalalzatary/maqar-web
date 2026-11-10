@@ -112,7 +112,8 @@ export class ListingsRepository {
 
   /** Active advisors with their live listings, fewest first (the default pick when publishing). */
   async agentOptions(): Promise<AdminAgentOption[]> {
-    const live = sql<number>`(select count(*) from ${properties} where ${properties.agentId} = ${agents.userId} and ${properties.status} = 'approved')`;
+    // The outer column with its table: on one table Drizzle leaves names bare.
+    const live = sql<number>`(select count(*) from ${properties} where ${properties.agentId} = ${sql.raw('`agents`.`user_id`')} and ${properties.status} = 'approved')`;
     const rows = await this.db
       .select({ ...agentColumns, live })
       .from(agents)

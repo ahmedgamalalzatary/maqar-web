@@ -86,6 +86,9 @@ const WEEKDAYS: Record<Lang, string[]> = {
   en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
 };
 
+/** The name of a weekday, 0 = Sunday. */
+export const weekdayName = (weekday: number, lang: Lang): string => WEEKDAYS[lang][weekday] ?? '';
+
 export type DateStyle = 'dayMonth' | 'full' | 'long' | 'weekday' | 'monthYear';
 
 /** "2026-11-12" is a local calendar day, not UTC midnight. */

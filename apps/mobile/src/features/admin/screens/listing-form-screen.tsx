@@ -152,17 +152,13 @@ function Form({ saved }: { saved?: AdminListing }) {
     if (andPublish && !published) toast.show({ title: t('اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته', 'Saved as a draft but not published: try publishing from its page'), tone: 'danger' });
     else toast.show({ title: andPublish ? t('العقار اتنشر', 'Published') : saved ? t('التعديلات اتحفظت', 'Changes saved') : t('العقار اتحفظ كمسودة', 'Saved as a draft'), tone: 'sage' });
     if (saved) leave();
-    else {
-      setS(emptyListingForm());
-      go(0);
-      router.push(`/admin/listing/${l.id}`);
-    }
+    else router.replace(`/admin/listing/${l.id}`);
   };
 
   return (
     <KeyboardAvoidingView style={[styles.fill, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.top, { paddingTop: insets.top + 8, borderBottomColor: colors.line }]}>
-        {saved ? <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={leave} /> : null}
+        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={leave} />
         <View style={styles.flex}>
           <Txt accessibilityRole="header" size={18} weight="semibold">
             {saved ? t('عدّل العقار', 'Edit listing') : t('أضف عقار', 'Add a listing')}

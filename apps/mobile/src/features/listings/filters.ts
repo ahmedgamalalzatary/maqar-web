@@ -28,6 +28,8 @@ export function listingParams(q: PropertiesQuery): URLSearchParams {
     if (values?.length) p.set(name, values.join(','));
   }
   for (const k of QUICK) if (q[k]) p.set(k, 'true');
+  // Home's "Featured by Maqar" row; not one of Explore's quick filters.
+  if (q.featured) p.set('featured', 'true');
   if (q.sort && q.sort !== 'newest') p.set('sort', q.sort);
   if (q.page !== undefined) p.set('page', String(q.page));
   if (q.limit !== undefined) p.set('limit', String(q.limit));

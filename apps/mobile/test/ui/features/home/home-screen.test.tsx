@@ -19,11 +19,13 @@ const pick = makeCard({
 
 const dropped = makeCard({ id: 5, titleAr: 'شاليه صف أول في أزور باي', price: 11_400_000, oldPrice: 12_000_000 });
 
-/** Price drops (`dropped=true`) and launches answer separately; `drops` sets the first. */
-function api(drops = [dropped]) {
+const featured = makeCard({ id: 6, titleAr: 'بنتهاوس مميز على النيل', featured: true });
+
+/** Price drops (`dropped=true`), featured homes and launches answer separately; `drops` and `top` set the first two. */
+function api(drops = [dropped], top: typeof featured[] = []) {
   return routeFetch({
     '/areas': () => AREAS,
-    '/properties': (q) => page(q.get('dropped') === 'true' ? drops : [launch]),
+    '/properties': (q) => page(q.get('dropped') === 'true' ? drops : q.get('featured') === 'true' ? top : [launch]),
     '/properties/recommended': () => [pick],
   });
 }
@@ -62,6 +64,19 @@ describe('Home', () => {
     await renderWithProviders(<Home />);
     await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات');
     expect(screen.queryByRole('header', { name: 'السعر نزل' })).toBeNull();
+  });
+
+  it('shows the homes the Maqar team featured, and no such row when there are none', async () => {
+    api([], [featured]);
+    const view = await renderWithProviders(<Home />);
+    expect(await screen.findByRole('header', { name: 'مميزة من مقر' })).toBeOnTheScreen();
+    expect(screen.getByText('بنتهاوس مميز على النيل')).toBeOnTheScreen();
+    await view.unmount();
+
+    api([], []);
+    await renderWithProviders(<Home />);
+    await screen.findByText(launch.titleAr);
+    expect(screen.queryByRole('header', { name: 'مميزة من مقر' })).toBeNull();
   });
 
   it('leads to the calculator', async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, LogOut, Moon, PlusSquare, Sun } from "lucide-react";
+import { Building2, LogOut, MapPin, Moon, PlusSquare, Sun, UserCog, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -65,6 +65,9 @@ function Header({ name }: { name: string }) {
   const nav = [
     { href: "/", label: t("العقارات", "Listings"), icon: Building2, on: path === "/" || path.startsWith("/listing") },
     { href: "/new/", label: t("أضف عقار", "Add a listing"), icon: PlusSquare, on: path.startsWith("/new") },
+    { href: "/agents/", label: t("المسؤولين", "Agents"), icon: UserCog, on: path.startsWith("/agent") },
+    { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
+    { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
   ];
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">

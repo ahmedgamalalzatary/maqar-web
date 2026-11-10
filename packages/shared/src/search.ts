@@ -72,6 +72,8 @@ export type ListingFilters = {
   dropped?: boolean;
   /** Has a 360° tour. */
   tour?: boolean;
+  /** Picked by the Maqar team (phase 18). */
+  featured?: boolean;
 };
 
 /**

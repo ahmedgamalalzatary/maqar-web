@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
-import { type Action, useAction, useAgents, useListing } from "@/lib/admin";
+import { type Action, useAction, useAgents, useListing, usePatchListing } from "@/lib/admin";
 import { mediaUrl } from "@/lib/client";
 import { useLang, useT } from "@/lib/i18n";
 import { priceSuffix } from "./listings-page";
@@ -45,7 +45,9 @@ function Body({ l }: { l: AdminListing }) {
   const notice = useNotice();
   const errorText = useErrorText();
   const action = useAction();
+  const patch = usePatchListing(l.id);
   const [picking, setPicking] = useState(false);
+  const [moving, setMoving] = useState(false);
   const closed = closedStatusFor(l.category);
   const title = lang === "ar" ? l.titleAr : l.titleEn;
 
@@ -104,12 +106,59 @@ function Body({ l }: { l: AdminListing }) {
           ) : null}
           <hr className="border-line" />
           <h2 className="text-xs font-medium text-ink-3">{t("مسؤول المبيعات", "Sales advisor")}</h2>
-          <p className="font-medium">{l.agent ? (lang === "ar" ? l.agent.nameAr : l.agent.nameEn) : t("هيتحدد لما تنشر العقار", "Picked when you publish")}</p>
+          <div className="flex items-center gap-2">
+            <p className="flex-1 font-medium">{l.agent ? (lang === "ar" ? l.agent.nameAr : l.agent.nameEn) : t("هيتحدد لما تنشر العقار", "Picked when you publish")}</p>
+            {l.agent ? (
+              <Button variant="ghost" onClick={() => setMoving(!moving)} aria-expanded={moving}>
+                {t("غيّر", "Change")}
+              </Button>
+            ) : null}
+          </div>
+          {moving ? (
+            <AdvisorPicker
+              auto={false}
+              current={l.agent?.id}
+              onPick={(agentId) => {
+                setMoving(false);
+                if (agentId && agentId !== l.agent?.id)
+                  patch.mutate(
+                    { agentId },
+                    {
+                      onSuccess: () => notice({ text: t("المسؤول اتغيّر. الشاتات القديمة بتفضل مع المسؤول القديم.", "Advisor changed. Earlier chats stay with the earlier advisor."), tone: "ok" }),
+                      onError: (e) => notice({ text: errorText(e), tone: "bad" }),
+                    },
+                  );
+              }}
+            />
+          ) : null}
           <p className="text-xs text-ink-3">
             {l.publishedAt
               ? t(`اتنشر ${fmtDate(l.publishedAt, "ar")} | ${fmtNum(l.views, "ar")} مشاهدة`, `Published ${fmtDate(l.publishedAt, "en")} | ${l.views} views`)
               : t(`اتضاف ${fmtDate(l.createdAt, "ar")}`, `Added ${fmtDate(l.createdAt, "en")}`)}
           </p>
+        </Card>
+
+        <Card className="flex flex-col gap-2">
+          <label className="flex items-center justify-between gap-3 text-sm font-medium">
+            <span>{t("مميز في الرئيسية", "Featured on Home")}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={l.featured}
+              disabled={patch.isPending}
+              onChange={(e) =>
+                patch.mutate(
+                  { featured: e.target.checked },
+                  {
+                    onSuccess: (x) => notice({ text: x.featured ? t("العقار بقى مميز في الرئيسية", "Featured on Home") : t("العقار اتشال من المميزة", "No longer featured"), tone: "ok" }),
+                    onError: (err) => notice({ text: errorText(err), tone: "bad" }),
+                  },
+                )
+              }
+              className="size-5 accent-[var(--accent)]"
+            />
+          </label>
+          <p className="text-xs text-ink-3">{t("العقارات المميزة بتظهر أول حاجة في الرئيسية لما تكون منشورة.", "Featured listings show first on Home while they are live.")}</p>
         </Card>
 
         <Card className="flex flex-col gap-2.5">
@@ -120,6 +169,7 @@ function Body({ l }: { l: AdminListing }) {
           ) : null}
           {picking ? (
             <AdvisorPicker
+              auto
               current={l.agent?.id}
               onPick={(agentId) => {
                 setPicking(false);
@@ -155,7 +205,7 @@ function Body({ l }: { l: AdminListing }) {
 }
 
 /** Who the published listing goes to: the least busy advisor (or the one it had), or one the admin picks. */
-function AdvisorPicker({ current, onPick }: { current?: number; onPick: (agentId?: number) => void }) {
+function AdvisorPicker({ auto, current, onPick }: { auto: boolean; current?: number; onPick: (agentId?: number) => void }) {
   const t = useT();
   const lang = useLang();
   const agents = useAgents();
@@ -171,7 +221,7 @@ function AdvisorPicker({ current, onPick }: { current?: number; onPick: (agentId
   return (
     <div role="group" aria-label={t("مين مسؤول المبيعات؟", "Who is the sales advisor?")} className="flex flex-col gap-2">
       <p className="text-sm font-medium">{t("مين مسؤول المبيعات؟", "Who is the sales advisor?")}</p>
-      {row("auto", t("اختار تلقائي", "Pick for me"), current ? t("نفس المسؤول، أو اللي عنده أقل عقارات", "The same advisor, or the least busy") : t("اللي عنده أقل عدد عقارات منشورة", "The one with the fewest live listings"), () => onPick(undefined))}
+      {auto ? row("auto", t("اختار تلقائي", "Pick for me"), current ? t("نفس المسؤول، أو اللي عنده أقل عقارات", "The same advisor, or the least busy") : t("اللي عنده أقل عدد عقارات منشورة", "The one with the fewest live listings"), () => onPick(undefined)) : null}
       {agents.isPending ? <p className="text-xs text-ink-3">{t("بنجيب المسؤولين…", "Loading advisors…")}</p> : null}
       {(agents.data ?? []).map((a) =>
         row(String(a.id), lang === "ar" ? a.nameAr : a.nameEn, t(`${fmtNum(a.live, "ar")} عقار منشور`, `${a.live} live listings`), () => onPick(a.id), a.id === current),

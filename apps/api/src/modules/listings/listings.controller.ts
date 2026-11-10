@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AdminAgentOption, AdminListing, AdminListingsPage } from '@maqar/shared';
+import type { AdminListing, AdminListingsPage } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AdminListingsQueryDto, ListingDto, PublishDto, UpdateListingDto } from './dto/listing.dto.js';
@@ -59,20 +59,5 @@ export class AdminListingsController {
   @ApiConflictResponse({ description: 'A draft, or already closed' })
   close(@Param('id', ParseIntPipe) id: number): Promise<AdminListing> {
     return this.listings.close(id);
-  }
-}
-
-/** Router for `/v1/admin/agents`: the advisors a listing can go to. Agents CRUD comes in Phase 18. */
-@ApiTags('admin')
-@ApiBearerAuth()
-@Roles('admin')
-@Controller('admin/agents')
-export class AdminAgentsController {
-  constructor(private readonly listings: ListingsService) {}
-
-  /** Active advisors, the one with the fewest live listings first. */
-  @Get()
-  list(): Promise<AdminAgentOption[]> {
-    return this.listings.agentOptions();
   }
 }

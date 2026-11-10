@@ -61,6 +61,7 @@ function toCard(p: PropertyRow, area: AreaName, cover: string | null, tour: bool
     plan: p.planDownPct != null && p.planYears != null ? { downPct: p.planDownPct, years: p.planYears } : null,
     cover,
     tour,
+    featured: p.featured,
     // Approved listings always have a publish time; created_at only guards bad rows.
     publishedAt: (p.publishedAt ?? p.createdAt).toISOString(),
   };

@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
-  type AdminAgentOption,
   type AdminListing,
   type AdminListingItem,
   type AdminListingsPage,
@@ -37,6 +36,7 @@ function toItem({ p, area, agent }: ListingRow, images: string[], tour: boolean)
     plan: p.planDownPct != null && p.planYears != null ? { downPct: p.planDownPct, years: p.planYears } : null,
     cover: images[0] ?? null,
     tour,
+    featured: p.featured,
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
@@ -145,7 +145,7 @@ export class ListingsService {
   }
 
   /** Changes what is sent. A new price goes through the price history, so a drop alerts followers. */
-  async update(id: number, body: Partial<ListingBody>, by: number): Promise<AdminListing> {
+  async update(id: number, body: Partial<ListingBody> & { featured?: boolean; agentId?: number }, by: number): Promise<AdminListing> {
     const cur = await this.get(id);
     const area = body.areaId && body.areaId !== cur.area.id ? await this.areaOf(body.areaId) : cur.area;
     const set = columnsOf(body);
@@ -153,6 +153,11 @@ export class ListingsService {
       const title = defaultTitle({ type: body.type ?? cur.type, beds: body.beds ?? cur.beds }, area);
       if (body.titleAr !== undefined) set.titleAr = body.titleAr || title.ar;
       if (body.titleEn !== undefined) set.titleEn = body.titleEn || title.en;
+    }
+    if (body.featured !== undefined) set.featured = body.featured;
+    if (body.agentId !== undefined && body.agentId !== cur.agent?.id) {
+      if (!(await this.repo.isActiveAgent(body.agentId))) throw new BadRequestException('Pick an active sales advisor');
+      set.agentId = body.agentId;
     }
     await this.repo.update(id, set, body.images, body.features);
     if (body.price !== undefined && body.price !== cur.price) await this.prices.changePrice(id, body.price, by);
@@ -189,10 +194,6 @@ export class ListingsService {
     await this.movable(id, to, cur);
     await this.repo.update(id, { status: to });
     return this.get(id);
-  }
-
-  agentOptions(): Promise<AdminAgentOption[]> {
-    return this.repo.agentOptions();
   }
 
   private async movable(id: number, to: PropertyStatus, cur?: AdminListing): Promise<AdminListing> {

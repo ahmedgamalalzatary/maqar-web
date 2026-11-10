@@ -162,6 +162,7 @@ function filterWhere(f: ListingFilters, omit?: 'price' | 'size'): SQL | undefine
     f.ready === true ? isNull(properties.deliveryYear) : f.ready === false ? isNotNull(properties.deliveryYear) : undefined,
     f.dropped === true ? gt(properties.oldPrice, properties.price) : undefined,
     f.tour === true ? hasTour : f.tour === false ? not(hasTour) : undefined,
+    f.featured === true ? eq(properties.featured, true) : undefined,
   );
 }
 

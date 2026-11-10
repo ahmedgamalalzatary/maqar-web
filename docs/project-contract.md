@@ -227,6 +227,7 @@ Soft variants are the same colour at 12–14% opacity. Lead stages have their ow
 - Category shortcuts that open Explore on that category.
 - **Your next viewing** card, shown when one is booked; it links to My viewings.
 - Sections:
+  - **Featured by Maqar:** homes the Maqar team picked (Phase 18); shown only when there are some.
   - **Picked for you:** the homes with the highest match %, each with its reasons.
   - **Price drops:** shown only when there are some.
   - **Tour it before you go:** homes with a 360° tour.
@@ -507,10 +508,10 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 [Real] This is not in the demo. The admin tools are both screens inside the app and a web dashboard (§16.1 #6).
 
 - **Listings** (Phase 17): every listing in every status, with search and a count per status; create, edit, publish, unpublish, close (§9.2).
-- Manage agents: create and deactivate accounts, set areas and categories, set monthly targets.
-- Assign each listing to an advisor. Reassign leads.
-- Manage areas: names in both languages, city, image.
-- Featured listings.
+- **Agents** (Phase 18): create accounts with a starting password, edit profiles and monthly targets, turn off (signed out at once; not while they advise a live listing) or on; weekly hours and days off for one agent or several at once (§16.1 #8). Viewing slots and the chat's away reply follow at once.
+- Assign each listing to an advisor (at publish, or later). Reassign leads (the client's chats and viewings stay with the home's advisor).
+- Manage areas: names in both languages, city, image; an area in use cannot be deleted.
+- Featured listings: shown first on Home ("Featured by Maqar").
 
 ---
 
@@ -590,7 +591,7 @@ Supporting rules:
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
 | uploads | `POST /uploads` (one listing photo in `photo`; panoramas later), stored on the server disk and served at `/uploads/listings/...`. Chat photos go through `POST /chats/:id/images`. | admin |
 | agent | `GET /agent/today`, `GET /agent/leads?stage`, `GET/PATCH /agent/leads/:id` (stage, hot; opening it marks it seen), `POST /agent/leads/:id/notes` | agent, own leads only |
-| admin (Phase 18) | agents CRUD, hours and days off, `PATCH /admin/leads/:id/assign`, areas CRUD, featured listings | admin |
+| admin: tools | `GET/POST /admin/agents` (`?active=true` for pickers), `GET/PATCH /admin/agents/:id` (profile, password, `active`), `PUT /admin/agents/hours` (several agents), `POST /admin/agents/days-off` (several agents, a day or a range), `DELETE /admin/agents/:id/days-off/:date`, `GET /admin/leads?agentId&stage`, `PATCH /admin/leads/:id/assign`, `GET/POST /admin/areas`, `PATCH/DELETE /admin/areas/:id`; featured and the advisor through `PATCH /admin/listings/:id` | admin |
 
 Access is checked by role guards on every route. Agents and clients can only reach their own data.
 
@@ -679,3 +680,4 @@ Access is checked by role guards on every route. Agents and clients can only rea
 | 2026-11-10 | Phase 15 built (the phone check is still pending): the agent's Today, Leads and lead page. `lead_notes`; `leads.seen_at` ("New from app") and `won_at` (the monthly target); lead sources are now named (`booking` instead of `app`). The seed adds sample leads to each agent. Every database session now runs in UTC, so times MySQL fills in itself read right on a PC whose MySQL is in local time (production was already UTC). |
 | 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-maqar.conf` at deploy. |
 | 2026-11-10 | Phases 14–16 deployed (`89afb44`) and checked on the phone (pushes still need Firebase). Phase 17 built (the deploy and the phone check are left): admin listings in the API (`POST /uploads`, `/admin/listings`, `/admin/agents`), the app's admin screens, and the web dashboard `apps/web` at `/admin/`. Migration `0011`: owner name and phone on listings, no advisor until published, and the `pending` and `changes` statuses removed (no review step). §2, §3, §9, §11, §13 and §14 rewritten to match. |
+| 2026-11-10 | Phase 18 built (the deploy and the phone check are left): agents (create, edit, turn off), weekly hours and days off for several agents at once, reassigning leads, areas, and featured listings (`featured` on cards, `?featured=true`, Home's "Featured by Maqar"). No migration. The admin's tabs are Listings, Agents, Leads, Areas and Me, on the web too. |
