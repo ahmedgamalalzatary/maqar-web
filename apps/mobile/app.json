@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.maqar.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +20,14 @@
         "foregroundImage": "./assets/brand/icon-512.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.maqar.app"
+      "package": "com.maqar.app",
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "output": "single",
@@ -33,7 +43,12 @@
           "imageWidth": 180
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       "expo-localization",
       "expo-sharing",
       "expo-asset",
@@ -51,6 +66,12 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Maqar uses your phone’s motion only in a 360° tour, so you can look around a room by turning your phone."
+        }
       ]
     ],
     "experiments": {
@@ -62,6 +83,10 @@
         "projectId": "dee8faab-c392-40ce-a1ab-2b3d5380c35a"
       }
     },
-    "owner": "alzatary"
+    "owner": "alzatary",
+    "locales": {
+      "ar": "./locales/ar.json",
+      "en": "./locales/en.json"
+    }
   }
 }

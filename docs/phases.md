@@ -62,7 +62,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 17 | Admin listings | 🟨 | decided |
 | 18 | Admin tools | 🟨 | ~~6~~ decided |
 | 19 | Listing insights (for admins) | ✅ | decided |
-| 20 | Release | ⬜ | ~~14~~ out of scope |
+| 20 | Release | 🟨 | ~~14~~ out of scope |
 
 ---
 
@@ -770,6 +770,13 @@ Contract §11 (moved there from §9.1).
 ---
 
 ## Phase 20: Release
+
+**Status (2026-11-11): in progress.** Done so far:
+- Security: every route's access (public, signed-in or roles) is pinned by `route-access.e2e-spec.ts`, so a new or changed guard fails until reviewed. The write rate limit now counts per account, as §15 says (it counted per address, so clients behind one carrier NAT or office Wi-Fi shared 60 writes a minute). Reminder claims take the lease only when nobody holds it, so two servers running together send a reminder once.
+- Store readiness (`store-readiness.md` §5 items 1–3): the unused calendar package and the camera, microphone, storage and overlay permissions are gone; the motion and photo permission texts say what they are for, in Arabic and English; iOS export compliance is answered in the build.
+- Tests: e2e files reset every table from the schema (the interest history table was left over between files); the insights test sends a chat message, since opening an empty conversation is not interest (INS-04).
+
+Still to do: the privacy policy, terms, support and account-deletion pages and their links in the Me screen (`store-readiness.md` §5 items 4–7, needs the owner's contact details); the store consoles; the deferred items (contract §17.2); the full regression on phones.
 
 **Decided already:** analytics and crash reporting are out of scope for now (#14, 2026-11-09); nothing to build there.
 

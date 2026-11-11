@@ -162,15 +162,22 @@ export class ViewingsRepository {
   }
 
   /**
-   * Stamps these reminders as sent, if they still are not. True when this call stamped any: the
-   * caller then sends them. Two servers running the job at once cannot both win the same row.
+   * Takes the lease on unsent reminders that nobody holds (or whose lease ran out, so a crashed
+   * run's are retried). True when this call took any: the caller then sends them. The row lock
+   * makes the check and the stamp one step, so two servers running at once cannot both win.
    */
-  /** Takes the lease on unsent reminders; the lease expires, so a crashed run's are retried. */
   async claimReminders(viewingId: number, offsets: ReminderOffset[], now: Date): Promise<boolean> {
     const [res] = await this.db
       .update(viewingReminders)
       .set({ claimedAt: now })
-      .where(and(eq(viewingReminders.viewingId, viewingId), inArray(viewingReminders.offset, offsets), isNull(viewingReminders.sentAt)));
+      .where(
+        and(
+          eq(viewingReminders.viewingId, viewingId),
+          inArray(viewingReminders.offset, offsets),
+          isNull(viewingReminders.sentAt),
+          or(isNull(viewingReminders.claimedAt), lt(viewingReminders.claimedAt, new Date(now.getTime() - LEASE_MS))),
+        ),
+      );
     return res.affectedRows > 0;
   }
 
