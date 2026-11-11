@@ -6,7 +6,7 @@ This is the single source of truth for what Maqar is, what it does and how it is
 
 1. Anything new (a feature, screen, endpoint, table, rule or tool) is added here **before** it is built, or in the same commit.
 2. If the code and this file disagree, this file wins. Either fix the code, or change this file on purpose in the same commit.
-3. Removing or changing an agreed item means editing it here and adding a line to the [change log](#17-change-log).
+3. Removing or changing an agreed item means editing it here and adding a line to the [change log](#18-change-log).
 4. The behaviour of the demo (`apps/demo`) is the reference for the user experience. The real apps must match it or improve on it, never do less.
 5. Status tags used below:
    - **[Demo]**: built in `apps/demo`, simulated on the device
@@ -33,7 +33,8 @@ This is the single source of truth for what Maqar is, what it does and how it is
 14. [API](#14-api)
 15. [Non-functional requirements](#15-non-functional-requirements)
 16. [Open decisions and out of scope](#16-open-decisions-and-out-of-scope)
-17. [Change log](#17-change-log)
+17. [Release checks](#17-release-checks-qa-03-and-qa-04)
+18. [Change log](#18-change-log)
 
 ---
 
