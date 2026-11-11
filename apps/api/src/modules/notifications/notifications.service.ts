@@ -43,21 +43,28 @@ export class NotificationsService {
   ) {}
 
   /**
-   * Null for a deleted account: nothing is saved or sent. A push that fails is logged, never
-   * thrown: the inbox entry is already saved.
+   * Null for a deleted account: nothing is saved or sent. Delivery is secondary to the caller's
+   * committed action (a booking, a message, a price change): any failure here — the account
+   * lookup, the inbox write, or the push — is logged, never thrown, so the caller's request
+   * reports what actually happened to its own write.
    */
   async notify(userId: number, n: NewNotification): Promise<NotificationItem | null> {
-    const user = await this.users.findActiveById(userId);
-    if (!user) return null;
-    const row = await this.repo.create({ userId, ...n, href: n.href ?? null });
-    if (user.pushEnabled) {
-      try {
-        await this.pushToPhones(user, row);
-      } catch (err) {
-        this.log.warn(`Push for notification ${row.id} failed: ${(err as Error).message}`);
+    try {
+      const user = await this.users.findActiveById(userId);
+      if (!user) return null;
+      const row = await this.repo.create({ userId, ...n, href: n.href ?? null });
+      if (user.pushEnabled) {
+        try {
+          await this.pushToPhones(user, row);
+        } catch (err) {
+          this.log.warn(`Push for notification ${row.id} failed: ${(err as Error).message}`);
+        }
       }
+      return toItem(row);
+    } catch (err) {
+      this.log.error(`Notification to user ${userId} was not delivered: ${(err as Error).message}`);
+      return null;
     }
-    return toItem(row);
   }
 
   private async pushToPhones(user: UserRow, row: NotificationRow): Promise<void> {

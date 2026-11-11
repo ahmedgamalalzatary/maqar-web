@@ -66,6 +66,11 @@ export class AgentsRepository {
     await this.db.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
   }
 
+  /** Invalidates every access token issued so far, so a password change signs the agent out at once. */
+  async touchCredentials(userId: number): Promise<void> {
+    await this.db.update(users).set({ credentialsChangedAt: sql`now(3)` }).where(eq(users.id, userId));
+  }
+
   /** How many of these ids are agents. */
   async countExisting(ids: number[]): Promise<number> {
     const [{ n }] = await this.db.select({ n: count() }).from(agents).where(inArray(agents.userId, ids));

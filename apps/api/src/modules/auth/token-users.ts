@@ -16,9 +16,12 @@ export class TokenUsers {
 
   async userOf(token: string | undefined): Promise<AuthUser | undefined> {
     if (!token) return undefined;
-    const payload = await this.jwt.verifyAsync<{ sub?: unknown }>(token).catch(() => null);
+    const payload = await this.jwt.verifyAsync<{ sub?: unknown; iat?: number }>(token).catch(() => null);
     const sub = payload?.sub;
     const user = typeof sub === 'number' && Number.isInteger(sub) ? await this.users.findActiveById(sub) : undefined;
-    return user && { id: user.id, role: user.role };
+    if (!user) return undefined;
+    // A password or email change invalidates every access token issued before it (SEC-02).
+    if (user.credentialsChangedAt && (!payload?.iat || payload.iat * 1000 < user.credentialsChangedAt.getTime())) return undefined;
+    return { id: user.id, role: user.role };
   }
 }

@@ -3,12 +3,14 @@ import { ApiBearerAuth, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } fro
 import type { PropertyCard } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { FavoritesService } from './favorites.service.js';
 
 /** Router for `/v1/favorites`: a client's saved homes (contract §8.9, §14). */
 @ApiTags('favorites')
 @ApiBearerAuth()
 @Roles('client')
+@RateLimited()
 @Controller('favorites')
 export class FavoritesController {
   constructor(private readonly favorites: FavoritesService) {}

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   BOOKING_DAYS,
   type BookViewingBody,
@@ -23,6 +23,17 @@ import type { ViewingRow } from './viewings.schema.js';
 
 const DAY_MS = 86_400_000;
 const TAKEN = 'That time was just booked. Please pick another.';
+const ALREADY_BOOKING = 'You already have a viewing for this home. Reschedule it instead.';
+
+/**
+ * The right conflict for a refused booking: the one-active-viewing-per-home key says the client
+ * already has this home, the agent-hour key says the hour went to someone else.
+ */
+export function conflictOf(err: unknown): ConflictException | undefined {
+  if (!isDuplicate(err)) return undefined;
+  const key = String((err as { message?: string }).message ?? '');
+  return new ConflictException(key.includes('viewings_client_property_active_unique') ? ALREADY_BOOKING : TAKEN);
+}
 
 /** Viewing booking and My viewings (contract §8.7, §8.8). Clients book; agents see theirs. */
 @Injectable()
@@ -35,10 +46,23 @@ export class ViewingsService {
     private readonly counter: ListingCounter,
   ) {}
 
-  /** The next 14 days with the agent's hours. `except` is the viewing being moved: its hour shows free. */
-  async slots(propertyId: number, except?: number): Promise<SlotsResponse> {
+  /**
+   * The next 14 days with the agent's hours. `except` is the viewing being moved: its hour shows
+   * free. Rescheduling a viewing uses that viewing's own agent, so the hours shown and the hours
+   * validated belong to the same advisor even after the listing moved to someone else.
+   */
+  async slots(propertyId: number, except?: number, forReschedule = false): Promise<SlotsResponse> {
+    if (forReschedule && except) {
+      const v = await this.repo.findById(except);
+      if (v) return this.slotsFor(v.agentId, except);
+    }
     const home = await this.properties.bookingTarget(propertyId);
     return this.slotsFor(home.agent.id, except);
+  }
+
+  /** The next 14 days with one specific agent's hours (a thread's own advisor, not the listing's). */
+  async slotsOfAgent(agentId: number): Promise<SlotsResponse> {
+    return this.slotsFor(agentId);
   }
 
   /** The agent's weekly hours and days off around `date` (the chat's out-of-hours reply uses them). */
@@ -66,24 +90,30 @@ export class ViewingsService {
     if (state !== 'free') throw new ConflictException(state === 'taken' ? TAKEN : `That time is ${state}`);
   }
 
-  async book(user: AuthUser, body: BookViewingBody): Promise<ViewingItem> {
+  /**
+   * Books with the listing's advisor, or — from a conversation that kept its own advisor after the
+   * listing moved — with the agent the client is actually talking to (`agentId`).
+   */
+  async book(user: AuthUser, body: BookViewingBody, agentId?: number): Promise<ViewingItem> {
     const home = await this.properties.bookingTarget(body.propertyId);
     if (home.category === 'stay') throw new BadRequestException('Stays are not booked as viewings');
     if (await this.repo.activeFor(user.id, home.id)) {
-      throw new ConflictException('You already have a viewing for this home. Reschedule it instead.');
+      throw new ConflictException(ALREADY_BOOKING);
     }
-    await this.assertFree(home.agent.id, body.date, body.time);
+    const withAgent = agentId ?? home.agent.id;
+    await this.assertFree(withAgent, body.date, body.time);
     let id: number;
     try {
       id = await this.repo.book({
         propertyId: home.id,
         clientId: user.id,
-        agentId: home.agent.id,
+        agentId: withAgent,
         startsAt: cairoInstant(body.date, body.time),
         reminders: body.reminders,
       });
     } catch (err) {
-      if (isDuplicate(err)) throw new ConflictException(TAKEN);
+      const conflict = conflictOf(err);
+      if (conflict) throw conflict;
       throw err;
     }
     const item = await this.item(id);
@@ -103,7 +133,8 @@ export class ViewingsService {
     if (v.status !== 'confirmed' && v.status !== 'rescheduled') throw new ConflictException('This viewing is not active any more');
     if (v.startsAt.getTime() <= Date.now()) throw new ConflictException('This viewing has already started');
     if (body.action === 'cancel') {
-      await this.repo.cancel(id);
+      // The write itself carries the expected state, so a cancel racing a reschedule has one winner.
+      if (!(await this.repo.cancel(id))) throw new ConflictException('This viewing is not active any more');
       const item = await this.item(id);
       await this.tell(item, 'cancelled');
       return item;
@@ -112,13 +143,26 @@ export class ViewingsService {
     if (at.getTime() === v.startsAt.getTime()) throw new BadRequestException('That is the time it already has');
     await this.assertFree(v.agentId, body.date, body.time, id);
     try {
-      await this.repo.reschedule(id, v.startsAt, at, body.reminders);
+      if (!(await this.repo.reschedule(id, v.startsAt, at, body.reminders))) throw new ConflictException('This viewing is not active any more');
     } catch (err) {
+      if (err instanceof ConflictException) throw err;
       if (isDuplicate(err)) throw new ConflictException(TAKEN);
       throw err;
     }
     const item = await this.item(id);
     await this.tell(item, 'rescheduled');
+    return item;
+  }
+
+  /** Past confirmed/rescheduled viewings become completed, so the client can book the home again. */
+  async completePastViewings(): Promise<number> {
+    return this.repo.completePastViewings();
+  }
+
+  /** The client's live viewing of this home, for idempotent retries of a booking. */
+  async activeOf(clientId: number, propertyId: number): Promise<ViewingItem | undefined> {
+    const row = await this.repo.activeFor(clientId, propertyId);
+    const [item] = row ? await this.items([row], false) : [];
     return item;
   }
 
@@ -135,14 +179,20 @@ export class ViewingsService {
       const [v] = row ? await this.items([row], false) : [];
       if (!row || !v) continue;
       const when = (lang: Lang) => `${fmtDate(v.date, lang, 'long')} ${lang === 'ar' ? 'الساعة' : 'at'} ${fmtTime(v.time, lang)}`;
-      await this.notifications.notify(row.clientId, {
-        kind: 'reminder',
-        titleAr: 'تذكير بمعاينتك',
-        titleEn: 'Viewing reminder',
-        bodyAr: `${v.property.titleAr} | ${when('ar')} مع ${v.agent.nameAr}`,
-        bodyEn: `${v.property.titleEn} | ${when('en')} with ${v.agent.nameEn}`,
-        href: '/viewings',
-      });
+      try {
+        await this.notifications.notify(row.clientId, {
+          kind: 'reminder',
+          titleAr: 'تذكير بمعاينتك',
+          titleEn: 'Viewing reminder',
+          bodyAr: `${v.property.titleAr} | ${when('ar')} مع ${v.agent.nameAr}`,
+          bodyEn: `${v.property.titleEn} | ${when('en')} with ${v.agent.nameEn}`,
+          href: '/viewings',
+        });
+        // Only delivery stops the reminder; a failure (or a crash before this line) is retried.
+        await this.repo.markRemindersSent(viewingId, offsets);
+      } catch (err) {
+        new Logger('Reminders').warn(`Reminder to viewing ${viewingId} failed: ${(err as Error).message}`);
+      }
       sent++;
     }
     return sent;

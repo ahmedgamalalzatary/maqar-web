@@ -1,8 +1,9 @@
 import path from 'node:path';
-import { type INestApplication, ValidationPipe } from '@nestjs/common';
+import { type INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ApiValidationPipe } from './common/pipes/api-validation.pipe.js';
 import helmet from 'helmet';
 import type { Env } from './core/config/env.js';
 
@@ -33,7 +34,7 @@ export function configureApp(app: INestApplication): void {
   }
 
   // Unknown fields are refused, and input is converted to the DTO types.
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(new ApiValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
 
   app.enableShutdownHooks();
 
