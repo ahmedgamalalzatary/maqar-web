@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { Linking } from 'react-native';
 import { MeScreen } from '@/features/account/screens/me-screen';
@@ -109,5 +109,13 @@ describe('MeScreen', () => {
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/terms`);
     await fireEvent.press(screen.getByRole('button', { name: 'كلّم الدعم' }));
     expect(mail).toHaveBeenCalledWith('mailto:maqarcompany@gmail.com');
+  });
+
+  it('opens the support page when the phone has no email app', async () => {
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('No app handles mailto'));
+    const origin = new URL(process.env.EXPO_PUBLIC_API_URL!).origin;
+    await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'كلّم الدعم' }));
+    await waitFor(() => expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/support`));
   });
 });

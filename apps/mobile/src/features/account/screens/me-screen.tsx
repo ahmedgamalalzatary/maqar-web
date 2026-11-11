@@ -138,7 +138,7 @@ export function MeScreen() {
         <LinkRow
           icon={<Mail size={20} color={colors.accentInk} />}
           label={t('كلّم الدعم', 'Contact support')}
-          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => {})}
+          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openPage(SITE_PAGES.support))}
         />
       </Card>
 
@@ -163,7 +163,7 @@ export function MeScreen() {
   );
 }
 
-/** A public page on the API's host, in the in-app browser. */
+/** A public page on the API's host, in the in-app browser. With no email app, support falls back to its page. */
 function openPage(path: string) {
   const url = mediaUrl(path);
   if (url) void WebBrowser.openBrowserAsync(url).catch(() => {});
