@@ -150,19 +150,35 @@ function AgentBody({ a }: { a: AdminAgentDetail }) {
   const errorText = useErrorText();
   const save = useSaveAgent(a.id);
   const removeDay = useRemoveDayOff(a.id);
+  const others = useAllAgents().data?.filter((x) => x.active && x.id !== a.id) ?? [];
   const [editingHours, setEditingHours] = useState(false);
+  // Set when the server asks for a handover (the advisor still has work): the admin picks who takes it.
+  const [needsHandover, setNeedsHandover] = useState(false);
+  const [handover, setHandover] = useState<number | undefined>(undefined);
   const name = lang === "ar" ? a.nameAr : a.nameEn;
   const byDay = new Map(a.hours.map((h) => [h.weekday, h]));
   const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
-  const setActive = (active: boolean) => {
-    if (!active && !window.confirm(t("توقف المسؤول؟ هيتعمله خروج ومش هيقدر يدخل.", "Turn the agent off? They are signed out and cannot sign in."))) return;
+  const setActive = (active: boolean, reassignTo?: number) => {
+    if (active) setNeedsHandover(false);
+    if (!active && !reassignTo && !window.confirm(t("توقف المسؤول؟ هيتعمله خروج ومش هيقدر يدخل.", "Turn the agent off? They are signed out and cannot sign in.")))
+      return;
     save.mutate(
-      { active },
+      { active, ...(reassignTo === undefined ? {} : { reassignTo }) },
       {
-        onSuccess: () => notice({ text: active ? t("المسؤول رجع يشتغل", "The agent is on again") : t("المسؤول اتوقف واتعمله خروج", "The agent is turned off and signed out"), tone: "ok" }),
-        onError: (e) =>
-          notice({ text: e instanceof ApiError && e.status === 409 ? t("انقل عقاراته المنشورة لمسؤول تاني الأول", "Move their live listings to someone else first") : errorText(e), tone: "bad" }),
+        onSuccess: () => {
+          setNeedsHandover(false);
+          notice({ text: active ? t("المسؤول رجع يشتغل", "The agent is on again") : t("المسؤول اتوقف واتعمله خروج", "The agent is turned off and signed out"), tone: "ok" });
+        },
+        onError: (e) => {
+          // The API asks for a handover while the advisor still has upcoming viewings, chats or leads.
+          if (!active && e instanceof ApiError && e.status === 409 && /reassignTo/.test(e.message)) {
+            setNeedsHandover(true);
+            notice({ text: errorText(e), tone: "bad" });
+            return;
+          }
+          notice({ text: e instanceof ApiError && e.status === 409 ? t("انقل عقاراته المنشورة لمسؤول تاني الأول", "Move their live listings to someone else first") : errorText(e), tone: "bad" });
+        },
       },
     );
   };
@@ -196,6 +212,31 @@ function AgentBody({ a }: { a: AdminAgentDetail }) {
           <span>{t("شغال (يقدر يدخل ويتحطله عقارات)", "On (can sign in and get listings)")}</span>
           <input type="checkbox" role="switch" checked={a.active} disabled={save.isPending} onChange={(e) => setActive(e.target.checked)} className="size-5 accent-[var(--accent)]" />
         </label>
+        {needsHandover ? (
+          <div className="flex flex-col gap-2 rounded-xl border border-line p-3 text-sm">
+            <label className="font-medium" htmlFor="handover">
+              {t("مين ياخد شغله؟", "Who takes their work?")}
+            </label>
+            <select
+              id="handover"
+              value={handover ?? ""}
+              onChange={(e) => setHandover(e.target.value ? Number(e.target.value) : undefined)}
+              className="rounded-xl border border-line-2 bg-surface p-2.5"
+            >
+              <option value="" disabled>
+                {t("اختار مسؤول", "Pick an advisor")}
+              </option>
+              {others.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {lang === "ar" ? x.nameAr : x.nameEn}
+                </option>
+              ))}
+            </select>
+            <Button variant="primary" disabled={handover === undefined || save.isPending} onClick={() => handover !== undefined && setActive(false, handover)}>
+              {t("وقّف وحوّل الشغل", "Turn off and hand over")}
+            </Button>
+          </div>
+        ) : null}
         <Link href={`/agent/edit/?id=${a.id}`} className={`${linkButton} justify-center border border-line-2 bg-surface hover:bg-surface-2`}>
           <Pencil className="size-4" aria-hidden />
           {t("عدّل البيانات", "Edit details")}

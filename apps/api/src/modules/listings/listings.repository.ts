@@ -183,7 +183,7 @@ export class ListingsRepository {
         and(
           eq(properties.id, id),
           inArray(properties.status, from),
-          agentActive !== undefined ? sql`${agentActive} = (select a.active from agents a where a.user_id = ${agentActive})` : undefined,
+          agentActive !== undefined ? sql`exists (select 1 from agents a where a.user_id = ${agentActive} and a.active = true)` : undefined,
         ),
       );
     return res.affectedRows === 1;

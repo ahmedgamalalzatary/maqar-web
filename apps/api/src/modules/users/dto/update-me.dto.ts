@@ -1,9 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { LANGS, type Lang, THEMES, type ThemePref, type UpdateMeBody } from '@maqar/shared';
-import { IsBoolean, IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
+
+/** A PATCH key left out means "not provided": validation runs only when it is. An explicit null fails. */
+const notProvided = (_target: unknown, value: unknown) => value !== undefined;
 
 export class UpdateMeDto implements UpdateMeBody {
-  @ApiPropertyOptional() @IsOptional() @IsString() @Length(2, 100)
+  @ValidateIf(notProvided) @IsString() @Length(2, 100)
   name?: string;
 
   @ApiPropertyOptional({ example: '+201001234567', nullable: true })
@@ -11,12 +14,12 @@ export class UpdateMeDto implements UpdateMeBody {
   @Matches(/^\+?\d{8,15}$/, { message: 'phone must be 8–15 digits, optionally starting with +' })
   phone?: string | null;
 
-  @ApiPropertyOptional({ enum: LANGS }) @IsOptional() @IsIn(LANGS)
+  @ValidateIf(notProvided) @IsIn(LANGS)
   lang?: Lang;
 
-  @ApiPropertyOptional({ enum: THEMES }) @IsOptional() @IsIn(THEMES)
+  @ValidateIf(notProvided) @IsIn(THEMES)
   theme?: ThemePref;
 
-  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  @ValidateIf(notProvided) @IsBoolean()
   pushEnabled?: boolean;
 }

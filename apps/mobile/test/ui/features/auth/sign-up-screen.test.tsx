@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { SignUpScreen } from '@/features/auth/screens/sign-up-screen';
+import { setPendingAction, takePendingAction } from '@/features/auth/pending-action';
 import { useSession } from '@/features/auth/store/session.store';
 import { jsonResponse, makeAuth, mockFetch, requestOf } from '../../../utils/api';
 import { renderWithProviders } from '../../../utils/render';
@@ -9,6 +10,7 @@ jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  setPendingAction(null);
   await useSession.getState().clear();
 });
 
@@ -39,5 +41,20 @@ describe('SignUpScreen', () => {
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
     await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('a guest mid-task keeps their pending action for onboarding to resume (UI-02)', async () => {
+    mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client', prefs: null })));
+    const resume = jest.fn();
+    setPendingAction(resume);
+    await renderWithProviders(<SignUpScreen />);
+    await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
+    await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/onboarding');
+    // The action is still aside: onboarding's finish takes and runs it, not the sign-up.
+    expect(resume).not.toHaveBeenCalled();
+    expect(takePendingAction()).toBe(resume);
   });
 });

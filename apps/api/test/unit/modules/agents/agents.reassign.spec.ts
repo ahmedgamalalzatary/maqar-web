@@ -61,3 +61,27 @@ describe('deactivating an agent with open work', () => {
     await expect(service.update(3, { active: false, reassignTo: 5 } as never)).rejects.toBeInstanceOf(ConflictException);
   });
 });
+
+describe('editing an agent whose email did not change', () => {
+  it('keeps their sessions when the email field is sent unchanged', async () => {
+    const { service, repo } = make();
+    await service.update(3, { email: 'a@x.co', colour: '#61766d' } as never);
+    expect(repo.endSessions).not.toHaveBeenCalled();
+    expect(repo.touchCredentials).not.toHaveBeenCalled();
+  });
+
+  it('ends their sessions when the address actually changes', async () => {
+    const { service, repo } = make();
+    await service.update(3, { email: 'b@x.co', colour: '#61766d' } as never);
+    expect(repo.endSessions).toHaveBeenCalledTimes(1);
+    expect(repo.touchCredentials).toHaveBeenCalledTimes(1);
+  });
+
+  it('ends their sessions on a password change or deactivation, as before', async () => {
+    const { service, repo } = make({ upcomingWork: vi.fn(async () => ({ viewings: 0, threads: 0, leads: 0 })) });
+    await service.update(3, { password: 'New-Password-1' } as never);
+    expect(repo.endSessions).toHaveBeenCalledTimes(1);
+    await service.update(3, { active: false } as never);
+    expect(repo.endSessions).toHaveBeenCalledTimes(2);
+  });
+});

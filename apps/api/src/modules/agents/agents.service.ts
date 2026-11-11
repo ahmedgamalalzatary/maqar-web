@@ -74,7 +74,8 @@ export class AgentsService {
     const cur = await this.repo.find(id);
     if (!cur) throw new NotFoundException('Agent not found');
     const { password, email, active, reassignTo, ...profile } = body;
-    if (email && email !== cur.email && (await this.repo.emailTaken(email))) throw new ConflictException('That email already has an account');
+    const emailChanged = email !== undefined && email !== cur.email;
+    if (emailChanged && (await this.repo.emailTaken(email))) throw new ConflictException('That email already has an account');
     if (active === false && cur.active && cur.live > 0) {
       throw new ConflictException('Move this advisor’s live listings to someone else first');
     }
@@ -101,8 +102,8 @@ export class AgentsService {
       },
       { ...profile, ...(active === undefined ? {} : { active }) },
     );
-    if (password || email !== undefined || active === false) await this.repo.endSessions(id);
-    if (password || email !== undefined) await this.repo.touchCredentials(id);
+    if (password || emailChanged || active === false) await this.repo.endSessions(id);
+    if (password || emailChanged) await this.repo.touchCredentials(id);
     return this.get(id);
   }
 
