@@ -21,6 +21,8 @@ export class RemindersJob {
     try {
       const sent = await this.viewings.sendDueReminders();
       if (sent) this.log.log(`Sent ${sent} viewing reminder(s)`);
+      const completed = await this.viewings.completePastViewings();
+      if (completed) this.log.log(`Completed ${completed} past viewing(s)`);
     } catch (err) {
       this.log.error('Viewing reminders failed', err as Error);
     } finally {

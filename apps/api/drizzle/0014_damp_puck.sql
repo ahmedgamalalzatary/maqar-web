@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `credentials_changed_at` timestamp;

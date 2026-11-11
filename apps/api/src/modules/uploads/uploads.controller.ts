@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiPayloadTooLargeResponse, ApiTags } from '@nestjs/swagger';
 import type { UploadResponse } from '@maqar/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { UploadsService } from './uploads.service.js';
 
 /** Photos up to 10 MB before resizing (nginx takes 12 MB). */
@@ -12,6 +13,7 @@ export const UPLOAD_BYTES = 10 * 1024 * 1024;
 @ApiTags('admin')
 @ApiBearerAuth()
 @Roles('admin')
+@RateLimited()
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}

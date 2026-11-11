@@ -2,12 +2,14 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Que
 import { ApiBearerAuth, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
 import type { NotificationItem, NotificationsResponse } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { DeletePushTokenDto, NotificationsQueryDto, PushTokenDto } from './dto/notifications.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 /** Router for `/v1/notifications`: the signed-in user's inbox (contract §8.13), for every role. */
 @ApiTags('notifications')
 @ApiBearerAuth()
+@RateLimited()
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
@@ -42,6 +44,7 @@ export class NotificationsController {
 /** Router for `/v1/me/push-tokens`: the phones that get this account's pushes. */
 @ApiTags('me')
 @ApiBearerAuth()
+@RateLimited()
 @Controller('me/push-tokens')
 export class PushTokensController {
   constructor(private readonly notifications: NotificationsService) {}

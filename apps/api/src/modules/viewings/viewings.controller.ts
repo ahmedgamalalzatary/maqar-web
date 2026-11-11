@@ -4,6 +4,7 @@ import type { SlotsResponse, UpdateViewingBody, ViewingItem } from '@maqar/share
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { BookViewingDto, SlotsQueryDto, UpdateViewingDto } from './dto/viewings.dto.js';
 import { ViewingsService } from './viewings.service.js';
 
@@ -17,13 +18,14 @@ export class SlotsController {
   @Get(':id/slots')
   @ApiNotFoundResponse({ description: 'Missing or not approved' })
   slots(@Param('id', ParseIntPipe) id: number, @Query() q: SlotsQueryDto): Promise<SlotsResponse> {
-    return this.viewings.slots(id, q.reschedule);
+    return this.viewings.slots(id, q.reschedule, q.reschedule !== undefined);
   }
 }
 
 /** Router for `/v1/viewings` (contract §8.7, §8.8). Clients book and change theirs; agents see the ones they meet. */
 @ApiTags('viewings')
 @ApiBearerAuth()
+@RateLimited()
 @Controller('viewings')
 export class ViewingsController {
   constructor(private readonly viewings: ViewingsService) {}

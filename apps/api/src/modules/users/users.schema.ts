@@ -21,6 +21,8 @@ export const users = mysqlTable('users', {
     .default(sql`CURRENT_TIMESTAMP`)
     .onUpdateNow(),
   deletedAt: timestamp('deleted_at'),
+  /** Set when the password or email changes: access tokens issued before it stop working at once. */
+  credentialsChangedAt: timestamp('credentials_changed_at'),
 });
 
 export type UserRow = typeof users.$inferSelect;

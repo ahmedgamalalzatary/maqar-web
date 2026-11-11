@@ -128,7 +128,9 @@ export class ChatService {
 
   /**
    * Books a time from an agent's slots card in one step (contract §8.12), with the same rules as
-   * the booking screen. The card shows the time picked, and a confirmation card follows.
+   * the booking screen. The card shows the time picked, and a confirmation card follows. A retry
+   * (a crash after the booking committed, or a second tap) finds the client's live viewing and
+   * marks the card with its time instead of booking again.
    */
   async book(user: AuthUser, id: number, messageId: number, time: string): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
     const thread = await this.own(user, id);
@@ -138,13 +140,15 @@ export class ChatService {
     const card = msg.body;
     if (card.chosen) throw new ConflictException('A time was already picked on this card');
     if (!card.times.includes(time)) throw new BadRequestException('That time is not on the card');
-    const viewing = await this.viewings.book(user, { propertyId: thread.propertyId, date: card.date, time, reminders: ['1d', '2h'] });
-    // Two taps at once: the booking rules let one through, and the card takes one time.
-    await this.repo.choose(msg.id, time);
+    const existing = await this.viewings.activeOf(user.id, thread.propertyId);
+    const viewing = existing ?? (await this.viewings.book(user, { propertyId: thread.propertyId, date: card.date, time, reminders: ['1d', '2h'] }, thread.agentId));
+    // Two taps at once: the booking rules let one through, and the card takes one time. A lost
+    // pick is harmless when the booking came first (its confirmation follows anyway).
+    await this.repo.choose(msg.id, existing?.time ?? time);
     const picked = toMessage((await this.repo.findMessage(msg.id))!);
     this.realtime.emit([thread.clientId, thread.agentId], 'updated', { message: picked });
     // The confirmation comes from the advisor's side, already seen by the client who just booked.
-    await this.post(thread, 'agent', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time }, new Date());
+    if (!existing) await this.post(thread, 'agent', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time }, new Date());
     return { viewing, card: picked };
   }
 
@@ -171,7 +175,9 @@ export class ChatService {
       const { downPct, years } = card.plan;
       return { kind: 'plan', price: card.price, downPct, years, monthly: Math.round(installment(card.price, downPct, years).payment) };
     }
-    const { days } = await this.viewings.slots(thread.propertyId);
+    // The conversation keeps its own advisor even after the listing moved to someone else, so its
+    // cards and bookings are with the advisor the client is actually talking to.
+    const { days } = await this.viewings.slotsOfAgent(thread.agentId);
     const day = days.find((d) => d.date === body.date);
     const times = day?.slots.filter((s) => s.state === 'free').map((s) => s.time) ?? [];
     if (!times.length) throw new BadRequestException('No free times that day');

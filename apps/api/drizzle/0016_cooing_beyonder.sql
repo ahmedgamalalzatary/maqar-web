@@ -1,0 +1,1 @@
+ALTER TABLE `viewing_reminders` ADD `claimed_at` timestamp;

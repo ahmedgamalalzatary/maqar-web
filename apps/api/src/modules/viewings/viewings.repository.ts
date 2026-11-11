@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { ReminderOffset } from '@maqar/shared';
-import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agentDaysOff, agentHours } from '../agents/agents.schema.js';
 import { leads } from '../leads/leads.schema.js';
 import { clientPrefs, users } from '../users/users.schema.js';
 import { alreadyDue, LONGEST_REMINDER_MS, type PendingReminder } from './reminders.js';
+
+/** How long a reminder claim holds: after this, an unsent claimed reminder is retried. */
+const LEASE_MS = 5 * 60_000;
 import { DEFAULT_HOURS, type WeekHours } from './slots.js';
 import { type ViewingRow, viewingReminders, viewings } from './viewings.schema.js';
 
@@ -49,13 +52,24 @@ export class ViewingsRepository {
     return rows.map((r) => r.startsAt);
   }
 
-  /** The client's live viewing of this home, if any. */
+  /** The client's live viewing of this home, if any. A viewing whose time passed is not live. */
   async activeFor(clientId: number, propertyId: number): Promise<ViewingRow | undefined> {
     const [row] = await this.db
       .select()
       .from(viewings)
-      .where(and(eq(viewings.clientId, clientId), eq(viewings.propertyId, propertyId), isNotNull(viewings.active)));
+      .where(
+        and(eq(viewings.clientId, clientId), eq(viewings.propertyId, propertyId), isNotNull(viewings.active), gt(viewings.startsAt, sql`now()`)),
+      );
     return row;
+  }
+
+  /** Marks past confirmed/rescheduled viewings completed (contract §8.7), so they free the home and read truthfully. */
+  async completePastViewings(): Promise<number> {
+    const [res] = await this.db
+      .update(viewings)
+      .set({ status: 'completed' })
+      .where(and(inArray(viewings.status, ['confirmed', 'rescheduled']), lt(viewings.startsAt, sql`now()`)));
+    return res.affectedRows ?? 0;
   }
 
   /**
@@ -91,20 +105,31 @@ export class ViewingsRepository {
   }
 
   /** Moves a live viewing; its reminders (the new choices, or the old ones) count again from the new time. */
-  async reschedule(id: number, from: Date, to: Date, reminders?: ReminderOffset[]): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      await tx.update(viewings).set({ startsAt: to, rescheduledFrom: from, status: 'rescheduled' }).where(eq(viewings.id, id));
+  /** Moves the hour only while the viewing is still active; false when another change got there first. */
+  async reschedule(id: number, from: Date, to: Date, reminders?: ReminderOffset[]): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [res] = await tx
+        .update(viewings)
+        .set({ startsAt: to, rescheduledFrom: from, status: 'rescheduled' })
+        .where(and(eq(viewings.id, id), inArray(viewings.status, ['confirmed', 'rescheduled'])));
+      if (res.affectedRows !== 1) return false;
       const keep = reminders ?? (await tx.select({ offset: viewingReminders.offset }).from(viewingReminders).where(eq(viewingReminders.viewingId, id))).map((r) => r.offset);
       await this.setReminders(tx, id, keep, to);
       await tx
         .update(leads)
         .set({ lastActivityAt: sql`now(3)` })
         .where(sql`(${leads.clientId}, ${leads.agentId}) = (select client_id, agent_id from viewings where id = ${id})`);
+      return true;
     });
   }
 
-  async cancel(id: number): Promise<void> {
-    await this.db.update(viewings).set({ status: 'cancelled' }).where(eq(viewings.id, id));
+  /** Cancels only while the viewing is still active; false when another change got there first. */
+  async cancel(id: number): Promise<boolean> {
+    const [res] = await this.db
+      .update(viewings)
+      .set({ status: 'cancelled' })
+      .where(and(eq(viewings.id, id), inArray(viewings.status, ['confirmed', 'rescheduled'])));
+    return res.affectedRows === 1;
   }
 
   /** Saves the choices. Those already due are stamped as sent, so they are never sent (see `alreadyDue`). */
@@ -113,10 +138,13 @@ export class ViewingsRepository {
     const unique = [...new Set(reminders)];
     const now = new Date();
     const past = new Set(alreadyDue(startsAt, unique, now));
-    if (unique.length) await tx.insert(viewingReminders).values(unique.map((offset) => ({ viewingId: id, offset, sentAt: past.has(offset) ? now : null })));
+    if (unique.length) await tx.insert(viewingReminders).values(unique.map((offset) => ({ viewingId: id, offset, sentAt: past.has(offset) ? now : null, claimedAt: past.has(offset) ? now : null })));
   }
 
-  /** Unsent reminders of live viewings that have not started and are close enough for one to be due. */
+  /**
+   * Unsent reminders of live viewings that have not started and are close enough for one to be due.
+   * A reminder claimed more than a lease ago is still unsent: its run died, so it is retried.
+   */
   pendingReminders(now: Date): Promise<PendingReminder[]> {
     return this.db
       .select({ viewingId: viewingReminders.viewingId, offset: viewingReminders.offset, startsAt: viewings.startsAt })
@@ -128,6 +156,7 @@ export class ViewingsRepository {
           isNotNull(viewings.active),
           gt(viewings.startsAt, now),
           lte(viewings.startsAt, new Date(now.getTime() + LONGEST_REMINDER_MS)),
+          or(isNull(viewingReminders.claimedAt), lt(viewingReminders.claimedAt, new Date(now.getTime() - LEASE_MS))),
         ),
       );
   }
@@ -136,12 +165,21 @@ export class ViewingsRepository {
    * Stamps these reminders as sent, if they still are not. True when this call stamped any: the
    * caller then sends them. Two servers running the job at once cannot both win the same row.
    */
+  /** Takes the lease on unsent reminders; the lease expires, so a crashed run's are retried. */
   async claimReminders(viewingId: number, offsets: ReminderOffset[], now: Date): Promise<boolean> {
     const [res] = await this.db
       .update(viewingReminders)
-      .set({ sentAt: now })
+      .set({ claimedAt: now })
       .where(and(eq(viewingReminders.viewingId, viewingId), inArray(viewingReminders.offset, offsets), isNull(viewingReminders.sentAt)));
     return res.affectedRows > 0;
+  }
+
+  /** Stamps delivery, which is the only thing that stops a reminder from being retried. */
+  async markRemindersSent(viewingId: number, offsets: ReminderOffset[]): Promise<void> {
+    await this.db
+      .update(viewingReminders)
+      .set({ sentAt: sql`now(3)` })
+      .where(and(eq(viewingReminders.viewingId, viewingId), inArray(viewingReminders.offset, offsets), isNull(viewingReminders.sentAt)));
   }
 
   /** The client's lead with this agent (booking creates it). */

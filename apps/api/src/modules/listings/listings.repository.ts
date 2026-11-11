@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type { AdminAgentOption, Feature, PropertyStatus } from '@maqar/shared';
+import { type AdminAgentOption, applyPriceChange, type Feature, type PropertyStatus } from '@maqar/shared';
 import { and, asc, count, desc, eq, inArray, like, or, type SQL, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
+import { type ChangedListing } from '../prices/prices.repository.js';
+import { priceHistory } from '../prices/prices.schema.js';
 import { type NewPropertyRow, type PropertyRow, properties, propertyFeatures, propertyImages, tourRooms } from '../properties/properties.schema.js';
 
 const areaColumns = { id: areas.id, nameAr: areas.nameAr, nameEn: areas.nameEn };
@@ -42,9 +44,18 @@ export class ListingsRepository {
     });
   }
 
-  /** Changes the columns given, and replaces the photos or amenities when they are given. */
-  async update(id: number, set: Partial<NewPropertyRow>, images?: string[], features?: Feature[]): Promise<void> {
-    await this.db.transaction(async (tx) => {
+  /**
+   * The edit and its price change are all or nothing: a price step that failed used to leave the
+   * fields saved with the old price. Returns the price change when one was made.
+   */
+  async update(
+    id: number,
+    set: Partial<NewPropertyRow>,
+    images?: string[],
+    features?: Feature[],
+    price?: { next: number; by: number; reset?: boolean },
+  ): Promise<ChangedListing | undefined> {
+    return this.db.transaction(async (tx) => {
       if (Object.keys(set).length) await tx.update(properties).set(set).where(eq(properties.id, id));
       if (images) {
         await tx.delete(propertyImages).where(eq(propertyImages.propertyId, id));
@@ -54,6 +65,26 @@ export class ListingsRepository {
         await tx.delete(propertyFeatures).where(eq(propertyFeatures.propertyId, id));
         if (features.length) await tx.insert(propertyFeatures).values(features.map((feature) => ({ propertyId: id, feature })));
       }
+      if (!price) return undefined;
+      const [cur] = await tx
+        .select({ price: properties.price, oldPrice: properties.oldPrice, status: properties.status, titleAr: properties.titleAr, titleEn: properties.titleEn })
+        .from(properties)
+        .where(eq(properties.id, id))
+        .for('update');
+      if (!cur || cur.price === price.next) return undefined;
+      if (price.reset) {
+        // A new category's price has no common unit with the old one: clear the old price and plan,
+        // and write the new price plainly — no drop alert, no misleading history.
+        const cleared = { ...set };
+        delete cleared.price;
+        delete cleared.oldPrice;
+        await tx.update(properties).set({ ...cleared, price: price.next, oldPrice: null }).where(eq(properties.id, id));
+        return undefined;
+      }
+      const change = applyPriceChange(cur, price.next);
+      await tx.update(properties).set({ price: change.price, oldPrice: change.oldPrice }).where(eq(properties.id, id));
+      await tx.insert(priceHistory).values({ propertyId: id, oldPrice: cur.price, newPrice: price.next, changedBy: price.by });
+      return { was: cur.price, status: cur.status, titleAr: cur.titleAr, titleEn: cur.titleEn, ...change, changed: true };
     });
   }
 
@@ -125,5 +156,26 @@ export class ListingsRepository {
   async isActiveAgent(id: number): Promise<boolean> {
     const [row] = await this.db.select({ id: agents.userId }).from(agents).where(and(eq(agents.userId, id), eq(agents.active, true)));
     return row !== undefined;
+  }
+
+  /**
+   * Applies a status change only from the states it is allowed to come from, so a concurrent
+   * publish/unpublish/close cannot be overwritten. With `agentActive`, the write also fails when
+   * that advisor was deactivated in the meantime: a live listing never gets an inactive advisor.
+   */
+  async move(id: number, from: PropertyStatus[], set: Partial<NewPropertyRow>, agentActive?: number): Promise<boolean> {
+    const clean = Object.fromEntries(Object.entries(set).filter(([, v]) => v !== undefined));
+    if (!Object.keys(clean).length) return true;
+    const [res] = await this.db
+      .update(properties)
+      .set(clean)
+      .where(
+        and(
+          eq(properties.id, id),
+          inArray(properties.status, from),
+          agentActive !== undefined ? sql`${agentActive} = (select a.active from agents a where a.user_id = ${agentActive})` : undefined,
+        ),
+      );
+    return res.affectedRows === 1;
   }
 }

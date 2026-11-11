@@ -1,0 +1,1 @@
+ALTER TABLE `viewings` ADD CONSTRAINT `viewings_client_property_active_unique` UNIQUE(`client_id`,`property_id`,`active`);

@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiConsumes, ApiNoContentResponse, ApiNotFoundResponse, 
 import { CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { ChatService } from './chat.service.js';
 import { BookSlotDto, PageQueryDto, SendMessageDto, StartChatDto } from './dto/chat.dto.js';
 
@@ -14,6 +15,7 @@ const PHOTO_BYTES = 8 * 1024 * 1024;
 @ApiTags('chat')
 @ApiBearerAuth()
 @Roles('client', 'agent')
+@RateLimited()
 @Controller('chats')
 export class ChatController {
   constructor(private readonly chat: ChatService) {}

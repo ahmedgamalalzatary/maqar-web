@@ -149,6 +149,11 @@ export class ListingsService {
     const cur = await this.get(id);
     const area = body.areaId && body.areaId !== cur.area.id ? await this.areaOf(body.areaId) : cur.area;
     const set = columnsOf(body);
+    // The server enforces what the form shows: installment plans exist only for sale and project listings.
+    const category = body.category ?? cur.category;
+    if (body.plan && category !== 'sale' && category !== 'project') {
+      throw new BadRequestException('Installment plans are for sale and project listings only');
+    }
     if (body.titleAr !== undefined || body.titleEn !== undefined) {
       const title = defaultTitle({ type: body.type ?? cur.type, beds: body.beds ?? cur.beds }, area);
       if (body.titleAr !== undefined) set.titleAr = body.titleAr || title.ar;
@@ -159,8 +164,19 @@ export class ListingsService {
       if (!(await this.repo.isActiveAgent(body.agentId))) throw new BadRequestException('Pick an active sales advisor');
       set.agentId = body.agentId;
     }
-    await this.repo.update(id, set, body.images, body.features);
-    if (body.price !== undefined && body.price !== cur.price) await this.prices.changePrice(id, body.price, by);
+    // The edit and its price change commit together; followers hear about a drop only afterwards.
+    // A category change resets the price instead: comparing an old sale price with a new monthly
+    // rent would invent a fake drop.
+    const categoryChanged = body.category !== undefined && body.category !== cur.category;
+    if (categoryChanged && category !== 'sale' && category !== 'project') {
+      // A rent or stay listing has no installment plan; any old one would be misleading.
+      set.planDownPct = null;
+      set.planYears = null;
+    }
+    const priceChange =
+      body.price !== undefined && body.price !== cur.price ? { next: body.price, by, reset: categoryChanged } : undefined;
+    const change = await this.repo.update(id, set, body.images, body.features, priceChange);
+    if (change) await this.prices.announce(id, change);
     return this.get(id);
   }
 
@@ -177,13 +193,15 @@ export class ListingsService {
       if (!least) throw new BadRequestException('There is no active sales advisor to assign');
       advisor = least.id;
     }
-    await this.repo.update(id, { status: 'approved', agentId: advisor, publishedAt: cur.publishedAt ? undefined : new Date() });
+    // The write itself requires the old status and a still-active advisor, so a publish racing a
+    // status change or a deactivation loses instead of overwriting.
+    await this.moveOrFail(id, 'approved', { status: 'approved', agentId: advisor, publishedAt: cur.publishedAt ? undefined : new Date() }, advisor);
     return this.get(id);
   }
 
   async unpublish(id: number): Promise<AdminListing> {
     await this.movable(id, 'unpublished');
-    await this.repo.update(id, { status: 'unpublished' });
+    await this.moveOrFail(id, 'unpublished', { status: 'unpublished' });
     return this.get(id);
   }
 
@@ -192,8 +210,15 @@ export class ListingsService {
     const cur = await this.get(id);
     const to = closedStatusFor(cur.category);
     await this.movable(id, to, cur);
-    await this.repo.update(id, { status: to });
+    await this.moveOrFail(id, to, { status: to });
     return this.get(id);
+  }
+
+  private async moveOrFail(id: number, to: PropertyStatus, set: Partial<NewPropertyRow>, agentActive?: number): Promise<void> {
+    const from = PROPERTY_STATUSES.filter((s) => canMoveTo(s, to));
+    if (!(await this.repo.move(id, from, set, agentActive))) {
+      throw new ConflictException('The listing changed just now; open it again and retry');
+    }
   }
 
   private async movable(id: number, to: PropertyStatus, cur?: AdminListing): Promise<AdminListing> {

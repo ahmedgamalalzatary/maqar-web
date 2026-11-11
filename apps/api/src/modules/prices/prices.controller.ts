@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } fro
 import type { PriceChangeResponse, PropertyCard } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RateLimited } from '../../common/rate-limit.js';
 import { PriceChangeDto } from './dto/price-change.dto.js';
 import { PricesService } from './prices.service.js';
 
@@ -10,6 +11,7 @@ import { PricesService } from './prices.service.js';
 @ApiTags('alerts')
 @ApiBearerAuth()
 @Roles('client')
+@RateLimited()
 @Controller('alerts')
 export class AlertsController {
   constructor(private readonly prices: PricesService) {}

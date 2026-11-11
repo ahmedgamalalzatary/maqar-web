@@ -86,7 +86,8 @@ export class AgentsService {
       },
       { ...profile, ...(active === undefined ? {} : { active }) },
     );
-    if (password || active === false) await this.repo.endSessions(id);
+    if (password || email !== undefined || active === false) await this.repo.endSessions(id);
+    if (password || email !== undefined) await this.repo.touchCredentials(id);
     return this.get(id);
   }
 
