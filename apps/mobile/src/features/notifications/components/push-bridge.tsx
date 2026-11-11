@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { readOneRequest } from '../api/notifications.api';
-import { NOTIFICATIONS_KEY, useUnreadCount } from '../hooks/use-notifications';
+import { notificationsKey, useUnreadCount } from '../hooks/use-notifications';
 import { pushSupported, registerThisPhone, safeHref } from '../push';
 
 // While the app is open a push still shows as a banner; the inbox refreshes as well.
@@ -42,10 +42,10 @@ function NativePushBridge() {
 
   useEffect(() => {
     const sub = Notifications.addNotificationReceivedListener(() => {
-      void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: notificationsKey(userId ?? null) });
     });
     return () => sub.remove();
-  }, [queryClient]);
+  }, [queryClient, userId]);
 
   // Wait until the session is known, so a signed-in screen does not open as a guest.
   useEffect(() => {
@@ -58,7 +58,7 @@ function NativePushBridge() {
     if (status === 'signedIn' && typeof data?.id === 'number') {
       readOneRequest(data.id)
         .catch(() => {})
-        .finally(() => void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }));
+        .finally(() => void queryClient.invalidateQueries({ queryKey: notificationsKey(userId ?? null) }));
     }
     const href = safeHref(data?.href);
     if (href) router.push(href as Href);

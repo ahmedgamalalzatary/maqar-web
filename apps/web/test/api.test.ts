@@ -69,6 +69,74 @@ describe("the dashboard's API client", () => {
     expect(onSignedOut).toHaveBeenCalled();
   });
 
+  it("keeps the session when the refresh request cannot reach the server", async () => {
+    const fetch = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).endsWith("/auth/refresh")) throw new TypeError("Failed to fetch");
+      return json(401, { statusCode: 401, message: "Unauthorized" });
+    });
+    const store = memoryStore(auth(1));
+    const onSignedOut = vi.fn();
+    const api = createApi({ base: "/v1", fetch, store, onSignedOut });
+    await expect(api.request("/a")).rejects.toMatchObject({ status: 0 });
+    expect(store.saved?.refreshToken).toBe("refresh-1");
+    expect(onSignedOut).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session when the refresh request fails with a server error", async () => {
+    const fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).endsWith("/auth/refresh") ? json(503, { statusCode: 503, message: "Unavailable" }) : json(401, { statusCode: 401, message: "Unauthorized" }),
+    );
+    const store = memoryStore(auth(1));
+    const onSignedOut = vi.fn();
+    const api = createApi({ base: "/v1", fetch, store, onSignedOut });
+    await expect(api.request("/a")).rejects.toMatchObject({ status: 503 });
+    expect(store.saved?.refreshToken).toBe("refresh-1");
+    expect(onSignedOut).not.toHaveBeenCalled();
+  });
+
+  it("renews across two tabs without replaying the same refresh token", async () => {
+    // One "browser": the tabs share localStorage; a tab's save becomes the other tab's load.
+    const shared: { session: string | null } = { session: null };
+    const saved: AuthResponse[] = [];
+    const makeStore = (): TokenStore => ({
+      load: () => (shared.session ? (JSON.parse(shared.session) as AuthResponse) : null),
+      save: (a) => {
+        shared.session = a ? JSON.stringify(a) : null;
+        if (a) saved.push(a);
+      },
+    });
+    // Each refresh token works exactly once; a replay is refused.
+    const rotations = new Map<string, AuthResponse>([["refresh-1", auth(2)]]);
+    const refreshCalls: string[] = [];
+    const fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith("/auth/sign-in")) return json(200, auth(1));
+      if (String(url).endsWith("/auth/refresh")) {
+        const token = (JSON.parse(String(init?.body)) as { refreshToken: string }).refreshToken;
+        refreshCalls.push(token);
+        const next = rotations.get(token);
+        return next ? json(200, next) : json(401, { statusCode: 401, message: "Replay" });
+      }
+      const token = new Headers(init?.headers).get("authorization");
+      // The access token both tabs start with is expired; only the renewed one works.
+      return token === "Bearer access-2" ? json(200, { ok: true }) : json(401, { statusCode: 401, message: "Unauthorized" });
+    });
+    // A tab-level mutex standing in for navigator.locks.
+    let chain: Promise<unknown> = Promise.resolve();
+    const refreshLock = <T>(fn: () => Promise<T>): Promise<T> => {
+      const run = chain.then(fn, fn);
+      chain = run.catch(() => undefined);
+      return run;
+    };
+    const tabA = createApi({ base: "/v1", fetch, store: makeStore(), refreshLock });
+    const tabB = createApi({ base: "/v1", fetch, store: makeStore(), refreshLock });
+    await tabA.signIn("admin@maqar.app", "secret");
+    // Tab B sees the session tab A saved (as through a storage event).
+    await expect(Promise.all([tabA.request("/a"), tabB.request("/b")])).resolves.toEqual([{ ok: true }, { ok: true }]);
+    // Only tab A renewed; tab B found tab A's fresh token in the shared store and never
+    // submitted the same rotating token twice.
+    expect(refreshCalls).toEqual(["refresh-1"]);
+  });
+
   it("sends JSON bodies as JSON and forms as they are, and reads the server's message", async () => {
     const fetch = vi.fn(async () => json(400, { statusCode: 400, message: ["price must not be less than 1"] }));
     const api = createApi({ base: "/v1", fetch, store: memoryStore(auth(1)) });
