@@ -48,7 +48,11 @@ export const useSession = create<Session>((set, get) => ({
     const token = get().refreshToken;
     if (!token) return false;
     try {
-      await get().setSession(await refreshRequest(token));
+      const auth = await refreshRequest(token);
+      // The session may have ended or changed while the request was away: a stale response
+      // must never sign anyone back in or overwrite the newer session.
+      if (get().refreshToken !== token) return false;
+      await get().setSession(auth);
       return true;
     } catch (err) {
       // Only a rejected token ends the session. Offline or a server error keeps it for a retry.

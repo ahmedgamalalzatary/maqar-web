@@ -18,6 +18,15 @@ const KEY = "maqar-admin-session";
 const listeners = new Set<() => void>();
 let cached: AuthResponse | null | undefined;
 
+/** Another tab saved (or cleared) the session: drop the copy and let React know. */
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY && e.key !== null) return;
+    cached = undefined;
+    for (const l of listeners) l();
+  });
+}
+
 /** The session lives in localStorage, so a reload keeps the admin signed in. */
 const store: TokenStore = {
   load: () => {
@@ -42,7 +51,11 @@ const store: TokenStore = {
   },
 };
 
-export const api = createApi({ base: API_URL, fetch: (...a) => fetch(...a), store });
+/** One renewal at a time across all tabs, so the rotating refresh token is never replayed. */
+const refreshLock = <T>(fn: () => Promise<T>): Promise<T> =>
+  typeof navigator !== "undefined" && navigator.locks ? (navigator.locks.request("maqar-refresh", fn) as Promise<T>) : fn();
+
+export const api = createApi({ base: API_URL, fetch: (...a) => fetch(...a), store, refreshLock });
 
 const subscribe = (l: () => void) => {
   listeners.add(l);

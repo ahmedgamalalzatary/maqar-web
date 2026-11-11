@@ -24,9 +24,11 @@ export function useSavePrefs() {
   });
 }
 
-/** "Picked for you" on Home. */
-export const useRecommended = (enabled: boolean) =>
-  useQuery({ queryKey: ['properties', 'recommended'], queryFn: ({ signal }) => getRecommended(signal), enabled });
+/** "Picked for you" on Home, cached per account so no user sees another's picks. */
+export const useRecommended = (enabled: boolean) => {
+  const userId = useSession((s) => s.user?.id ?? null);
+  return useQuery({ queryKey: ['properties', 'recommended', userId], queryFn: ({ signal }) => getRecommended(signal), enabled });
+};
 
 /** Onboarding's live count. The last number stays while the next one loads. */
 export const useMatchCount = (prefs: Prefs) =>

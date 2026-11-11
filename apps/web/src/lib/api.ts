@@ -23,11 +23,18 @@ type Config = {
   store: TokenStore;
   /** The session ended (a refresh was refused). */
   onSignedOut?: () => void;
+  /** Serializes token renewal across tabs (navigator.locks in the app). */
+  refreshLock?: <T>(fn: () => Promise<T>) => Promise<T>;
 };
 
+/** Renewing one at a time; without lock support (tests) this is just the function itself. */
+const withLock = (lock: Config["refreshLock"] | undefined): NonNullable<Config["refreshLock"]> =>
+  lock ?? ((fn) => fn());
+
 /** The dashboard's API client: admin sign-in, access tokens renewed once when they expire. */
-export function createApi({ base, fetch, store, onSignedOut }: Config) {
+export function createApi({ base, fetch, store, onSignedOut, refreshLock }: Config) {
   let refreshing: Promise<boolean> | undefined;
+  const lock = withLock(refreshLock);
 
   async function send(path: string, opts: RequestOptions, token: string | undefined): Promise<Response> {
     const headers = new Headers({ accept: "application/json" });
@@ -67,16 +74,27 @@ export function createApi({ base, fetch, store, onSignedOut }: Config) {
     onSignedOut?.();
   }
 
-  /** Requests that fail together share one renewal. */
+  /**
+   * Requests that fail together share one renewal, and tabs renew one at a time: inside the lock
+   * the store is read again, so a tab whose token another tab already rotated uses the fresh one
+   * instead of replaying a used refresh token (which would revoke every session of the account).
+   * False only when the server refused the token; network failures and server errors propagate.
+   */
   function refreshOnce(): Promise<boolean> {
-    refreshing ??= (async () => {
+    const captured = store.load();
+    refreshing ??= lock(async () => {
       const cur = store.load();
       if (!cur) return false;
-      const res = await send("/auth/refresh", { method: "POST", body: { refreshToken: cur.refreshToken } }, undefined).catch(() => null);
-      if (!res?.ok) return false;
+      // Another tab renewed while we waited for the lock: its fresh tokens are ours to use.
+      if (captured && cur.refreshToken !== captured.refreshToken) return true;
+      const res = await send("/auth/refresh", { method: "POST", body: { refreshToken: cur.refreshToken } }, undefined);
+      if (res.status === 401 || res.status === 403) {
+        // Another tab may have renewed with this token already; then its result is ours to use.
+        return store.load()?.refreshToken !== cur.refreshToken;
+      }
       store.save(await read<AuthResponse>(res));
       return true;
-    })().finally(() => {
+    }).finally(() => {
       refreshing = undefined;
     });
     return refreshing;

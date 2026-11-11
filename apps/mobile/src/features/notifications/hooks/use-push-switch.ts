@@ -7,7 +7,7 @@ import { updateMeRequest } from '@/features/account/api/me.api';
 import { useSession } from '@/features/auth/store/session.store';
 import { sendTestRequest } from '../api/notifications.api';
 import { askPushPermission, type PushPermission, pushPermission, registerThisPhone } from '../push';
-import { NOTIFICATIONS_KEY } from './use-notifications';
+import { notificationsKey } from './use-notifications';
 
 /**
  * The "Phone notifications" switch in Me (contract §8.13). It is on when the account wants pushes
@@ -81,7 +81,7 @@ export function usePushSwitch() {
     const registered = await registerThisPhone().catch(() => false);
     if (!registered || !(await setPushEnabled(true))) return failed();
     await sendTestRequest().catch(() => {});
-    void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+    void queryClient.invalidateQueries({ queryKey: notificationsKey(useSession.getState().user?.id ?? null) });
     toast.show({
       title: t('الإشعارات شغالة', 'Notifications are on'),
       body: t('هيوصلك تذكير المعاينات ونزول الأسعار.', 'You’ll get viewing reminders and price drops.'),

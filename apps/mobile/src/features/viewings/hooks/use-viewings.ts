@@ -1,7 +1,7 @@
 import { type BookViewingBody, isUpcoming, type UpdateViewingBody, type ViewingItem } from '@maqar/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';
-import { NOTIFICATIONS_KEY } from '@/features/notifications/hooks/use-notifications';
+import { notificationsKey } from '@/features/notifications/hooks/use-notifications';
 import { bookRequest, getSlots, getViewings, updateViewingRequest } from '../api/viewings.api';
 
 /** The signed-in client's id. Keys the cache, so no account ever sees another's list. */
@@ -38,7 +38,7 @@ function useAfterChange() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: key }),
       queryClient.invalidateQueries({ queryKey: ['slots'] }),
-      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }),
+      queryClient.invalidateQueries({ queryKey: notificationsKey(useSession.getState().user?.id ?? null) }),
     ]);
 }
 
