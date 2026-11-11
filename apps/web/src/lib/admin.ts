@@ -21,7 +21,7 @@ import type {
   PropertyStatus,
   UploadResponse,
 } from "@maqar/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, useSession } from "./client";
 
 export type ListingsQuery = { status?: PropertyStatus; q?: string; page?: number };
@@ -68,9 +68,16 @@ export function useListingStats(id: number, days: InsightRange) {
   });
 }
 
+/** The interested clients, one page at a time, so a popular listing does not load every client. */
 export function useInterested(id: number) {
   const key = useKey();
-  return useQuery({ queryKey: [...key, "listing", id, "interested"], queryFn: ({ signal }) => api.request<InterestedClient[]>(`/admin/listings/${id}/interested`, { signal }) });
+  return useInfiniteQuery({
+    queryKey: [...key, "listing", id, "interested"],
+    queryFn: ({ signal, pageParam }) =>
+      api.request<InterestedClient[]>(`/admin/listings/${id}/interested?page=${pageParam}`, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => (last.length < 20 ? undefined : all.length + 1),
+  });
 }
 
 export const useAreas = () => useQuery({ queryKey: ["areas"], queryFn: ({ signal }) => api.request<AreaItem[]>("/areas", { signal }), staleTime: 3_600_000 });

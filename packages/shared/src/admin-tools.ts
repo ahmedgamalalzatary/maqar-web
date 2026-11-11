@@ -96,6 +96,8 @@ export type AgentBody = {
   monthlyTarget: number;
   years?: number;
   active?: boolean;
+  /** On deactivation: the advisor who takes the viewings, conversations and open leads. */
+  reassignTo?: number;
 };
 
 /** `PUT /admin/agents/hours`: the same week for one agent or several. */

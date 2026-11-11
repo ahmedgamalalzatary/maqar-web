@@ -93,32 +93,39 @@ export function ListingInsights({ l }: { l: AdminListing }) {
           <div className="h-20 animate-pulse rounded-xl bg-surface-2" />
         ) : people.isError ? (
           <p className="text-sm text-danger">{t("مقدرناش نجيب العملاء", "We couldn’t load the clients")}</p>
-        ) : !people.data.length ? (
+        ) : !people.data.pages.flat().length ? (
           <p className="text-sm text-ink-2">{t("لسه محدش اهتم بالعقار ده.", "Nobody has shown interest yet.")}</p>
         ) : (
-          <ul className="divide-y divide-line">
-            {people.data.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                <div className="min-w-40 flex-1">
-                  <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-ink-3">{t(`آخر نشاط ${relTime(new Date(c.lastAt), lang)}`, `Last active ${relTime(new Date(c.lastAt), lang)}`)}</p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {c.kinds.map((k) => (
-                    <span key={k} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-ink-2">
-                      {t(INTEREST_LABEL[k])}
-                    </span>
-                  ))}
-                </div>
-                {c.phone ? (
-                  <a href={`tel:${c.phone}`} dir="ltr" className="inline-flex items-center gap-1.5 text-sm text-accent-ink hover:underline">
-                    <Phone className="size-3.5" aria-hidden />
-                    {c.phone}
-                  </a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="divide-y divide-line">
+              {people.data.pages.flat().map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                  <div className="min-w-40 flex-1">
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-xs text-ink-3">{t(`آخر نشاط ${relTime(new Date(c.lastAt), lang)}`, `Last active ${relTime(new Date(c.lastAt), lang)}`)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.kinds.map((k) => (
+                      <span key={k} className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-ink-2">
+                        {t(INTEREST_LABEL[k])}
+                      </span>
+                    ))}
+                  </div>
+                  {c.phone ? (
+                    <a href={`tel:${c.phone}`} dir="ltr" className="inline-flex items-center gap-1.5 text-sm text-accent-ink hover:underline">
+                      <Phone className="size-3.5" aria-hidden />
+                      {c.phone}
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {people.hasNextPage ? (
+              <Button variant="secondary" onClick={() => void people.fetchNextPage()} disabled={people.isFetchingNextPage}>
+                {people.isFetchingNextPage ? t("بيجيب…", "Loading…") : t("أظهر المزيد", "Show more")}
+              </Button>
+            ) : null}
+          </>
         )}
       </div>
     </Card>

@@ -1,13 +1,14 @@
 import { INSIGHT_RANGES, type ListingStats, insightsSummary, lastDays, rangeTotals } from '../../src/insights.js';
 
-const stats = (over: Partial<ListingStats> = {}): ListingStats => ({
-  days: [
-    { day: '2026-11-10', views: 4, saves: 1, interested: 0 },
-    { day: '2026-11-11', views: 6, saves: 2, interested: 3 },
-  ],
-  totals: { views: 120, saves: 9, followers: 4, interested: 11, chats: 5, viewings: 2 },
-  ...over,
-});
+const stats = (over: Partial<ListingStats> = {}): ListingStats =>
+  ({
+    days: [
+      { day: '2026-11-10', views: 4, saves: 1, interested: 0 },
+      { day: '2026-11-11', views: 6, saves: 2, interested: 3 },
+    ],
+    totals: { views: 120, saves: 9, followers: 4, interested: 11, chats: 5, viewings: 2 },
+    ...over,
+  }) as ListingStats;
 
 describe('lastDays', () => {
   it('lists the last n Cairo days ending today, oldest first, across months and years', () => {

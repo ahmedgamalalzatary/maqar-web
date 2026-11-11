@@ -2,7 +2,7 @@ import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiNotFoundResponse, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { INSIGHT_RANGES, type InterestedClient, type ListingStats } from '@maqar/shared';
 import { Type } from 'class-transformer';
-import { IsIn, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { InsightsService } from './insights.service.js';
 
@@ -10,12 +10,14 @@ export class InterestedQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)
+  @IsInt()
   @Min(1)
   page = 1;
 
   @ApiPropertyOptional({ default: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
+  @IsInt()
   @Min(1)
   @Max(100)
   limit = 20;

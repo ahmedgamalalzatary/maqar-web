@@ -10,18 +10,24 @@ import { homeFor, useSession } from '../store/session.store';
 /**
  * After sign-in or sign-up: keep the session and apply the account's settings. A new client goes
  * through the preference questions first (contract §8.1). A guest who was interrupted mid-task
- * (book, save, follow, chat) resumes exactly that instead of being dropped on the role's home;
- * the resume runs where they already are, so no navigation.
+ * (book, save, follow, chat) resumes exactly that instead of being dropped on the role's home.
  */
 function useOnSignedIn(isNew = false) {
   const router = useRouter();
   return async (auth: AuthResponse) => {
     await useSession.getState().setSession(auth);
     useSettings.setState({ lang: auth.user.lang, theme: auth.user.theme });
+    if (isNew && auth.user.role === 'client') {
+      // Onboarding's finish takes and runs the pending action; taking it here would lose it.
+      router.replace('/onboarding');
+      return;
+    }
     const resume = takePendingAction();
-    if (isNew && auth.user.role === 'client') router.replace('/onboarding');
-    else if (resume) resume();
-    else router.replace(homeFor(auth.user.role));
+    if (resume) {
+      // The resume runs where the guest left off, so the sign-in screen gets out of the way first.
+      if (router.canGoBack()) router.back();
+      resume();
+    } else router.replace(homeFor(auth.user.role));
   };
 }
 

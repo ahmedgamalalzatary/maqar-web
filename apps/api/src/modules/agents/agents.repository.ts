@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { DayHours } from '@maqar/shared';
-import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, notInArray, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { refreshTokens } from '../auth/auth.schema.js';
 import { chatThreads } from '../chat/chat.schema.js';
@@ -149,6 +149,12 @@ export class AgentsRepository {
         .set({ agentId: toId })
         .where(and(eq(viewings.agentId, fromId), isNotNull(viewings.active), gt(viewings.startsAt, sql`now()`)));
       const [t] = await tx.update(chatThreads).set({ agentId: toId }).where(eq(chatThreads.agentId, fromId));
+      // MySQL refuses a subquery that reads the updated table itself (error 1093), so the clients
+      // who already have a lead with the new advisor are selected first.
+      const colliding = await tx
+        .select({ clientId: leads.clientId })
+        .from(leads)
+        .where(eq(leads.agentId, toId));
       const [l] = await tx
         .update(leads)
         .set({ agentId: toId })
@@ -156,7 +162,7 @@ export class AgentsRepository {
           and(
             eq(leads.agentId, fromId),
             inArray(leads.stage, ['new', 'contacted', 'viewing', 'negotiation']),
-            sql`not exists (select 1 from ${leads} other where other.client_id = ${leads.clientId} and other.agent_id = ${toId})`,
+            colliding.length ? notInArray(leads.clientId, colliding.map((c) => c.clientId!)) : undefined,
           ),
         );
       return { viewings: v.affectedRows ?? 0, threads: t.affectedRows ?? 0, leads: l.affectedRows ?? 0 };

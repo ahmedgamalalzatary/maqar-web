@@ -29,10 +29,13 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+/** A PATCH key left out means "not provided": validation runs only when it is. An explicit null fails. */
+const notProvided = (_target: unknown, value: unknown) => value !== undefined;
 /** Only photos uploaded to this server (or the seed's): never another site, never a path that climbs out. */
 const UPLOADED = /^\/uploads\/(listings|seed)\/[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/;
 /** Admin lists are longer than the public ones. */
@@ -142,10 +145,69 @@ export class ListingDto implements ListingBody {
   ownerPhone?: string | null;
 }
 
-/** `PATCH /admin/listings/:id`: any of the same fields. A new price goes through the price history. */
+/**
+ * `PATCH /admin/listings/:id`: any of the same fields. A new price goes through the price history.
+ * The fields the database never leaves empty use `notProvided` instead of `@IsOptional`, so an
+ * explicit JSON null is refused rather than reaching a NOT NULL column; the nullable fields (such
+ * as plan and location) keep null as an intentional clear.
+ */
 export class UpdateListingDto extends PartialType(ListingDto) {
-  @ApiPropertyOptional({ description: 'Shown first on Home (phase 18)' }) @IsOptional() @IsBoolean()
-  featured?: boolean;
+  @ValidateIf(notProvided) @IsIn(CATEGORIES)
+  declare category?: Category;
+
+  @ValidateIf(notProvided) @IsIn(PROPERTY_TYPES)
+  declare type?: PropertyType;
+
+  @ValidateIf(notProvided) @Matches(AREA_ID)
+  declare areaId?: string;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(200)
+  declare titleAr?: string;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(200)
+  declare titleEn?: string;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(150)
+  declare compoundAr?: string;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(150)
+  declare compoundEn?: string;
+
+  @ValidateIf(notProvided) @IsInt() @Min(1) @Max(10_000_000_000)
+  declare price?: number;
+
+  @ValidateIf(notProvided) @IsInt() @Min(0) @Max(20)
+  declare beds?: number;
+
+  @ValidateIf(notProvided) @IsInt() @Min(0) @Max(20)
+  declare baths?: number;
+
+  @ValidateIf(notProvided) @IsInt() @Min(10) @Max(65_000)
+  declare sizeM2?: number;
+
+  @ValidateIf(notProvided) @IsIn(FINISHINGS)
+  declare finishing?: Finishing;
+
+  @ValidateIf(notProvided) @IsIn(DELIVERY)
+  declare delivery?: 'ready' | number;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(5000)
+  declare descAr?: string;
+
+  @ValidateIf(notProvided) @Transform(trim) @IsString() @MaxLength(5000)
+  declare descEn?: string;
+
+  @ValidateIf(notProvided) @IsIn(FEATURES, { each: true }) @ArrayUnique() @ArrayMaxSize(FEATURES.length)
+  declare features?: Feature[];
+
+  @ValidateIf(notProvided) @ArrayMinSize(1, { message: 'Add at least one photo' })
+  @ArrayMaxSize(LISTING_IMAGES_MAX)
+  @ArrayUnique()
+  @Matches(UPLOADED, { each: true, message: 'Photos must be uploaded with POST /uploads' })
+  declare images?: string[];
+
+  @ApiPropertyOptional({ description: 'Shown first on Home (phase 18)' }) @ValidateIf(notProvided) @IsBoolean()
+  declare featured?: boolean;
 
   @ApiPropertyOptional({ description: 'Move the listing to another active advisor (phase 18)' }) @IsOptional() @IsInt() @Min(1)
   agentId?: number;
