@@ -109,7 +109,7 @@ export class LeadsService {
   }
 
   /** Every agent's leads (admins), with the full phone and whose each lead is. */
-  adminList(f: { agentId?: number; stage?: LeadStage }): Promise<AdminLeadItem[]> {
+  adminList(f: { agentId?: number; stage?: LeadStage; page?: number }): Promise<AdminLeadItem[]> {
     return this.repo.listAll(f).then((rows) => this.adminItems(rows));
   }
 

@@ -29,7 +29,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw, Star, Trash2 } from 'lucide-react-native';
-import { type ComponentRef, useRef, useState } from 'react';
+import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
@@ -41,6 +41,7 @@ import { ApiError, mediaUrl } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { type PhotoPart, preparePhotos } from '@/features/chat/photos';
+import * as SecureStore from 'expo-secure-store';
 import { ToggleChip } from '@/features/listings/components/chips';
 import { useAreas } from '@/features/listings/hooks/use-listings';
 import { uploadPhotoRequest } from '../api/admin.api';
@@ -105,6 +106,9 @@ function Form({ saved }: { saved?: AdminListing }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [s, setS] = useState<ListingForm>(() => (saved ? listingFormOf(saved) : emptyListingForm()));
+  // The photos' bytes for upload and retry, kept here rather than in the Photos step: moving
+  // between steps unmounts the step, and a failed upload's retry must survive that.
+  const [parts, setParts] = useState<Record<string, PhotoPart>>({});
   const [step, setStep] = useState(0);
   const [showErrors, setShowErrors] = useState(false);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -112,6 +116,28 @@ function Form({ saved }: { saved?: AdminListing }) {
   const publish = usePublishListing();
   const [publishing, setPublishing] = useState(false);
   const set = <K extends ListingField>(k: K, v: ListingForm[K]) => setS((cur) => ({ ...cur, [k]: v }));
+
+  // A recoverable draft in the phone's secure storage: saved as the admin types, restored when
+  // the form opens again (an app kill or a session expiry mid-listing no longer loses the work),
+  // dropped once the listing is saved for real. New listings only; an existing one is on the server.
+  const draftKey = saved ? null : 'listing:new';
+  useEffect(() => {
+    if (!draftKey) return;
+    SecureStore.getItemAsync(`maqar-draft-${draftKey}`)
+      .then((raw) => {
+        const draft = raw ? (JSON.parse(raw) as ListingForm) : null;
+        if (draft && Object.keys(draft).length) setS((cur) => ({ ...cur, ...draft }));
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
+  }, []);
+  useEffect(() => {
+    if (!draftKey) return;
+    const id = setTimeout(() => {
+      void SecureStore.setItemAsync(`maqar-draft-${draftKey}`, JSON.stringify(s)).catch(() => undefined);
+    }, 600);
+    return () => clearTimeout(id);
+  }, [s, draftKey]);
 
   const current = LISTING_STEPS[step]!;
   const errors = showErrors ? (current === 'review' ? listingFormErrors(s) : listingStepErrors(current, s)) : [];
@@ -146,6 +172,7 @@ function Form({ saved }: { saved?: AdminListing }) {
     }
     // The listing is saved now. A failed publish leaves a draft: open it rather than stay on a
     // new form, which would save the same listing again.
+    if (draftKey) void SecureStore.deleteItemAsync(`maqar-draft-${draftKey}`).catch(() => undefined);
     let published = andPublish;
     if (andPublish) published = await publish.mutateAsync(l.id).then(() => true, () => false);
     setPublishing(false);
@@ -176,7 +203,7 @@ function Form({ saved }: { saved?: AdminListing }) {
         {current === 'type' ? <TypeStep s={s} set={set} err={err} /> : null}
         {current === 'location' ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === 'details' ? <DetailsStep s={s} set={set} err={err} /> : null}
-        {current === 'photos' ? <PhotosStep s={s} setS={setS} err={err} /> : null}
+        {current === 'photos' ? <PhotosStep s={s} setS={setS} parts={parts} setParts={setParts} err={err} /> : null}
         {current === 'review' ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </ScrollView>
 
@@ -247,6 +274,10 @@ function LocationStep({ s, set, err }: StepProps) {
       </Group>
       <TextField label={t('الكمبوند (عربي)', 'Compound (Arabic)')} value={s.compoundAr} onChangeText={(v) => set('compoundAr', v)} />
       <TextField label={t('الكمبوند (إنجليزي)', 'Compound (English)')} value={s.compoundEn} onChangeText={(v) => set('compoundEn', v)} />
+      <TextField label={t('المطور (عربي)', 'Developer (Arabic)')} value={s.developerAr} onChangeText={(v) => set('developerAr', v)} />
+      <TextField label={t('المطور (إنجليزي)', 'Developer (English)')} value={s.developerEn} onChangeText={(v) => set('developerEn', v)} />
+      <TextField label={t('الدور', 'Floor')} value={s.floor} onChangeText={(v) => set('floor', v)} keyboardType="number-pad" />
+      <TextField label={t('مصروف الصيانة (بالسنة)', 'Maintenance fee (a year)')} value={s.maintenanceFee} onChangeText={(v) => set('maintenanceFee', v)} keyboardType="number-pad" />
       <Txt size={12} color="ink3">
         {t('العنوان اختياري: لو سبته فاضي هيبقى "النوع، الغرف | المنطقة".', 'The title is optional: left empty it becomes "type, beds | area".')}
       </Txt>
@@ -317,7 +348,19 @@ function DetailsStep({ s, set, err }: StepProps) {
 }
 
 /** Photos are resized on the phone and uploaded one by one as soon as they are picked. */
-function PhotosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<React.SetStateAction<ListingForm>>; err: StepProps['err'] }) {
+function PhotosStep({
+  s,
+  setS,
+  parts,
+  setParts,
+  err,
+}: {
+  s: ListingForm;
+  setS: React.Dispatch<React.SetStateAction<ListingForm>>;
+  parts: Record<string, PhotoPart>;
+  setParts: React.Dispatch<React.SetStateAction<Record<string, PhotoPart>>>;
+  err: StepProps['err'];
+}) {
   const t = useT();
   const { colors } = useTheme();
   const room = LISTING_IMAGES_MAX - s.photos.length;
@@ -332,8 +375,6 @@ function PhotosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
       patch(key, { failed: true });
     }
   };
-  const [parts, setParts] = useState<Record<string, PhotoPart>>({});
-
   const pick = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: room, quality: 1 });
     if (res.canceled || !res.assets.length) return;
@@ -347,7 +388,15 @@ function PhotosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
       await upload(photo.key, prepared[i]!);
     }
   };
-  const remove = (key: string) => setS((cur) => ({ ...cur, photos: cur.photos.filter((p) => p.key !== key) }));
+  const remove = (key: string) => {
+    setS((cur) => ({ ...cur, photos: cur.photos.filter((p) => p.key !== key) }));
+    setParts((cur) => {
+      if (!(key in cur)) return cur;
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+  };
   const makeCover = (key: string) => setS((cur) => ({ ...cur, photos: [...cur.photos.filter((p) => p.key === key), ...cur.photos.filter((p) => p.key !== key)] }));
 
   return (

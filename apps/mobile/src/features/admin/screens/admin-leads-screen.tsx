@@ -22,7 +22,7 @@ export function AdminLeadsScreen() {
   const leads = useAdminLeads(agentId);
   const agents = useAdminAgents();
   const [moving, setMoving] = useState<AdminLeadItem | null>(null);
-  const list = leads.data ?? [];
+  const list = leads.data?.pages.flat() ?? [];
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
@@ -32,6 +32,11 @@ export function AdminLeadsScreen() {
         keyExtractor={(l) => String(l.id)}
         ItemSeparatorComponent={() => <View style={styles.gap} />}
         renderItem={({ item }) => <LeadRow lead={item} onPress={() => setMoving(item)} />}
+        ListFooterComponent={leads.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.gap} /> : undefined}
+        onEndReached={() => {
+          if (leads.hasNextPage && !leads.isFetchingNextPage) leads.fetchNextPage();
+        }}
+        onEndReachedThreshold={0.5}
         ListHeaderComponent={
           <View style={styles.header}>
             <Txt accessibilityRole="header" size={24} weight="semibold">

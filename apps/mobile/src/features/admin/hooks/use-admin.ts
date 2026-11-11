@@ -34,9 +34,11 @@ const adminKey = (adminId: number | null) => ['admin', adminId];
 
 export function useAdminListings(q: ListingsQuery) {
   const adminId = useAdminId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [...adminKey(adminId), 'listings', q.status ?? 'all', q.q?.trim() ?? ''],
-    queryFn: ({ signal }) => getAdminListings(q, signal),
+    queryFn: ({ pageParam, signal }) => getAdminListings({ ...q, page: pageParam }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, lastPage) => (lastPage * last.limit < last.total ? lastPage + 1 : undefined),
     enabled: adminId !== null,
     placeholderData: (prev) => prev,
   });
@@ -159,7 +161,14 @@ export function useRemoveDayOff(id: number) {
 
 export function useAdminLeads(agentId: number | undefined) {
   const adminId = useAdminId();
-  return useQuery({ queryKey: [...adminKey(adminId), 'leads', agentId ?? 'all'], queryFn: ({ signal }) => getAdminLeads(agentId, signal), enabled: adminId !== null });
+  return useInfiniteQuery({
+    queryKey: [...adminKey(adminId), 'leads', agentId ?? 'all'],
+    queryFn: ({ pageParam, signal }) => getAdminLeads(agentId, pageParam, signal),
+    initialPageParam: 1,
+    // A full page of 500 may have more behind it; a short one is the end.
+    getNextPageParam: (last, _all, lastPage) => (last.length === 500 ? lastPage + 1 : undefined),
+    enabled: adminId !== null,
+  });
 }
 
 export function useAssignLead() {

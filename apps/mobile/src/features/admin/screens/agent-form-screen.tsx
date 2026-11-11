@@ -37,13 +37,17 @@ const draftOf = (a?: AdminAgentDetail): Draft => ({
 /** What is wrong with the form, field by field. A new agent needs a starting password. */
 export function agentProblems(d: Draft, isNew: boolean): Key[] {
   const bad: Key[] = [];
-  for (const k of ['nameAr', 'nameEn', 'roleTitleAr', 'roleTitleEn', 'languagesAr', 'languagesEn'] as const) if (d[k].trim().length < 2) bad.push(k);
+  // The same bounds the API's DTO enforces, so local validation never passes what the server refuses.
+  for (const k of ['nameAr', 'nameEn', 'roleTitleAr', 'roleTitleEn', 'languagesAr', 'languagesEn'] as const) {
+    if (d[k].trim().length < 2 || d[k].trim().length > 100) bad.push(k);
+  }
   if (!/^\S+@\S+\.\S+$/.test(d.email.trim())) bad.push('email');
   if (isNew || d.password) {
     if (d.password.length < 8 || !/[A-Za-z]/.test(d.password) || !/\d/.test(d.password)) bad.push('password');
   }
   if (!readPhone(d.phone)) bad.push('phone');
-  if (readWholeNumber(d.monthlyTarget) === undefined) bad.push('monthlyTarget');
+  const target = readWholeNumber(d.monthlyTarget);
+  if (target === undefined || target > 1000) bad.push('monthlyTarget');
   return bad;
 }
 

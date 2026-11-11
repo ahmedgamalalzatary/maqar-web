@@ -16,7 +16,7 @@ export class NotificationsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() query: NotificationsQueryDto): Promise<NotificationsResponse> {
-    return this.notifications.list(user.id, query.limit);
+    return this.notifications.list(user.id, query.limit, query.before);
   }
 
   @Post('read-all')

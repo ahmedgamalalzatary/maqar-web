@@ -3,6 +3,8 @@ import type { Prefs } from '@maqar/shared';
 import { and, eq, gt, inArray, isNotNull, isNull, ne, or, type SQL } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';
+
+type NewAgentRow = typeof agents.$inferInsert;
 import { areas } from '../areas/areas.schema.js';
 import { chatThreads } from '../chat/chat.schema.js';
 import { favorites } from '../favorites/favorites.schema.js';
@@ -37,6 +39,19 @@ export class UsersRepository {
   async findAgentProfile(userId: number): Promise<AgentRow | undefined> {
     const [row] = await this.db.select().from(agents).where(eq(agents.userId, userId));
     return row;
+  }
+
+  /**
+   * A staff member's self-edit reaches their public advisor profile too: the phone always, and a
+   * name the advisor copies still mirror (a custom name an admin set is left alone).
+   */
+  async syncAgentProfile(userId: number, changes: { name?: string; phone?: string | null }, prevName: string): Promise<void> {
+    const profile = await this.findAgentProfile(userId);
+    if (!profile) return;
+    const set: Partial<NewAgentRow> = {};
+    if (changes.phone !== undefined) set.phone = changes.phone === null ? undefined : changes.phone;
+    if (changes.name && profile.nameAr === prevName && profile.nameEn === prevName) set.nameAr = set.nameEn = changes.name;
+    if (Object.keys(set).length) await this.db.update(agents).set(set).where(eq(agents.userId, userId));
   }
 
   async create(data: NewUserRow): Promise<number> {

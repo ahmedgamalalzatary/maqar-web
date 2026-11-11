@@ -433,10 +433,16 @@ function PickSheet({ slot, other, onClose }: { slot: Slot | null; other?: Proper
   const search = useDebounced(q.trim(), 300);
   const open = slot !== null;
   const list = useProperties({ q: search || undefined, limit: 50 });
-  const saved = useSaved((cards) => cards.map((c) => c.id));
-  const savedIds = saved.data ?? [];
+  const savedCards = useSaved((cards) => cards);
+  const savedIds = savedCards.data?.map((c) => c.id) ?? [];
   const rank = (c: PropertyCard) => (savedIds.includes(c.id) ? 0 : 2) + (other && c.category === other.category ? 0 : 1);
-  const homes = (list.data?.items ?? []).filter((c) => c.id !== other?.id).sort((x, y) => rank(x) - rank(y));
+  // The searched window is only the newest 50: the saved homes join it whatever it holds, so an
+  // older saved home is always pickable.
+  const needle = search.toLowerCase();
+  const matches = (c: PropertyCard) => !needle || c.titleAr.toLowerCase().includes(needle) || c.titleEn.toLowerCase().includes(needle);
+  const homes = [...(savedCards.data ?? []), ...(list.data?.items ?? [])]
+    .filter((c, i, all) => c.id !== other?.id && matches(c) && all.findIndex((x) => x.id === c.id) === i)
+    .sort((x, y) => rank(x) - rank(y));
 
   const close = () => {
     setQ('');

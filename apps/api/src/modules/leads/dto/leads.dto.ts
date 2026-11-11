@@ -31,10 +31,13 @@ export class AddLeadNoteDto {
   text: string;
 }
 
-/** `GET /admin/leads`: one agent's leads, or one stage. */
+/** `GET /admin/leads`: one agent's leads, or one stage; a page of 500 at a time. */
 export class AdminLeadsQueryDto extends LeadsQueryDto {
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   agentId?: number;
+
+  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  page?: number;
 }
 
 export class AssignLeadDto implements AssignLeadBody {

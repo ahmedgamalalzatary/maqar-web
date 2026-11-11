@@ -48,8 +48,8 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
   const inbox = useNotifications();
   const markAll = useMarkAllRead();
   const markRead = useMarkRead();
-  const items = inbox.data?.items ?? [];
-  const unread = inbox.data?.unread ?? 0;
+  const items = inbox.data?.pages.flatMap((p) => p.items) ?? [];
+  const unread = inbox.data?.pages[0]?.unread ?? 0;
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   const open = (n: NotificationItem) => {
@@ -84,6 +84,11 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
       keyExtractor={(n) => String(n.id)}
       renderItem={({ item }) => <Row n={item} onPress={() => open(item)} />}
       ItemSeparatorComponent={() => <View style={styles.gap} />}
+      ListFooterComponent={inbox.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.gap} /> : undefined}
+      onEndReached={() => {
+        if (inbox.hasNextPage && !inbox.isFetchingNextPage) inbox.fetchNextPage();
+      }}
+      onEndReachedThreshold={0.5}
       ListHeaderComponent={
         <View style={styles.header}>
           {back ? (

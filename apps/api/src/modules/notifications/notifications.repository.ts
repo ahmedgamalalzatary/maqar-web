@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type NewNotificationRow, type NotificationRow, notifications, pushTokens } from './notifications.schema.js';
 
@@ -14,11 +14,11 @@ export class NotificationsRepository {
   }
 
   /** The newest first: ids grow with time, and the (user_id, id) index serves this. */
-  list(userId: number, limit: number): Promise<NotificationRow[]> {
+  list(userId: number, limit: number, before?: number): Promise<NotificationRow[]> {
     return this.db
       .select()
       .from(notifications)
-      .where(eq(notifications.userId, userId))
+      .where(and(eq(notifications.userId, userId), before ? lt(notifications.id, before) : undefined))
       .orderBy(desc(notifications.id))
       .limit(limit);
   }

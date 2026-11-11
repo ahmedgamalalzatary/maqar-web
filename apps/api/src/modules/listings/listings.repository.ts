@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { type AdminAgentOption, applyPriceChange, type Feature, type PropertyStatus } from '@maqar/shared';
-import { and, asc, count, desc, eq, inArray, like, or, type SQL, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, like, ne, or, type SQL, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
@@ -128,6 +128,16 @@ export class ListingsRepository {
       .orderBy(asc(propertyImages.sort), asc(propertyImages.id));
     for (const r of rows) map.get(r.propertyId)?.push(r.url);
     return map;
+  }
+
+  /** Which of these photo urls any other listing still shows, so a removed photo is not deleted. */
+  async imagesUsedElsewhere(urls: string[], exceptId: number): Promise<Set<string>> {
+    if (!urls.length) return new Set();
+    const rows = await this.db
+      .select({ url: propertyImages.url })
+      .from(propertyImages)
+      .where(and(inArray(propertyImages.url, urls), ne(propertyImages.propertyId, exceptId)));
+    return new Set(rows.map((r) => r.url));
   }
 
   async features(id: number): Promise<Feature[]> {

@@ -13,6 +13,7 @@ import {
 } from '@maqar/shared';
 import { PricesService } from '../prices/prices.service.js';
 import type { NewPropertyRow } from '../properties/properties.schema.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import type { AdminListingsQueryDto } from './dto/listing.dto.js';
 import { type AreaName, type ListingRow, ListingsRepository } from './listings.repository.js';
 
@@ -85,6 +86,7 @@ export class ListingsService {
   constructor(
     private readonly repo: ListingsRepository,
     private readonly prices: PricesService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async page(q: AdminListingsQueryDto): Promise<AdminListingsPage> {
@@ -117,6 +119,7 @@ export class ListingsService {
 
   /** A new listing, as a draft with no advisor yet. An empty title becomes the default one. */
   async create(body: ListingBody): Promise<AdminListing> {
+    await this.uploads.assertListingFiles(body.images);
     const area = await this.areaOf(body.areaId);
     const title = defaultTitle(body, area);
     const id = await this.repo.insert(
@@ -175,7 +178,16 @@ export class ListingsService {
     }
     const priceChange =
       body.price !== undefined && body.price !== cur.price ? { next: body.price, by, reset: categoryChanged } : undefined;
+    if (body.images !== undefined) await this.uploads.assertListingFiles(body.images);
     const change = await this.repo.update(id, set, body.images, body.features, priceChange);
+    // The edit committed: photos it dropped are collected, unless another listing still shows them.
+    if (body.images !== undefined) {
+      const removed = cur.images.filter((url) => !body.images!.includes(url));
+      if (removed.length) {
+        const usedElsewhere = await this.repo.imagesUsedElsewhere(removed, id);
+        await this.uploads.removeListingFiles(removed.filter((url) => !usedElsewhere.has(url)));
+      }
+    }
     if (change) await this.prices.announce(id, change);
     return this.get(id);
   }

@@ -28,8 +28,9 @@ import {
 } from "@maqar/shared";
 import { ImagePlus, Loader2, MoveLeft, MoveRight, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type Dispatch, type SetStateAction, useRef, useState } from "react";
+import { type Dispatch, useEffect, type SetStateAction, useRef, useState } from "react";
 import { uploadPhoto, useAction, useAreas, useListing, useSave } from "@/lib/admin";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { mediaUrl } from "@/lib/client";
 import { type T, useLang, useT } from "@/lib/i18n";
 import { shrinkPhoto } from "@/lib/photos";
@@ -81,13 +82,41 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
   const router = useRouter();
   const notice = useNotice();
   const errorText = useErrorText();
-  const [s, setS] = useState<FormState>(() => (saved ? listingFormOf(saved) : emptyListingForm()));
+  const [s, setS] = useState<FormState>(() => {
+    if (saved) return listingFormOf(saved);
+    const draft = loadDraft<FormState>("listing:new");
+    return draft && Object.keys(draft).length ? { ...emptyListingForm(), ...draft } : emptyListingForm();
+  });
+  // The photos' bytes for upload and retry, kept here rather than in the Photos step: moving
+  // between steps unmounts the step, and a failed upload's retry must survive that.
+  const [blobs, setBlobs] = useState<Record<string, Blob>>({});
   const [step, setStep] = useState(0);
   const [showErrors, setShowErrors] = useState(false);
   const save = useSave(saved?.id);
   const action = useAction();
   const [publishing, setPublishing] = useState(false);
   const set = <K extends ListingField>(k: K, v: FormState[K]) => setS((cur) => ({ ...cur, [k]: v }));
+
+  // A recoverable draft: auto-saved as the admin types, restored on return, dropped on save.
+  const draftKey = `listing:${saved?.id ?? "new"}`;
+  const dirty = useRef(false);
+  useEffect(() => {
+    if (!dirty.current && loadDraft<FormState>(draftKey)) notice({ text: t("رجّعنا المسودة اللي كنت بتكتبها", "Restored the draft you were writing"), tone: "ok" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
+  }, []);
+  useEffect(() => {
+    dirty.current = true;
+    const id = setTimeout(() => saveDraft(draftKey, s), 600);
+    return () => clearTimeout(id);
+  }, [s, draftKey]);
+  useEffect(() => {
+    const guard = (e: BeforeUnloadEvent) => {
+      if (!dirty.current) return;
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, []);
 
   const current = LISTING_STEPS[step]!;
   const errors = showErrors ? (current === "review" ? listingFormErrors(s) : listingStepErrors(current, s)) : [];
@@ -112,6 +141,8 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
     }
     // The listing is saved now. A failed publish leaves a draft: open it rather than stay on the
     // new form, which would save the same listing again.
+    dirty.current = false;
+    clearDraft(draftKey);
     const published = andPublish ? await action.mutateAsync({ kind: "publish", id: l.id }).then(() => true, () => false) : false;
     setPublishing(false);
     if (andPublish && !published) notice({ text: t("اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته", "Saved as a draft but not published: try publishing from its page"), tone: "bad" });
@@ -148,7 +179,7 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
         {current === "type" ? <TypeStep s={s} set={set} err={err} /> : null}
         {current === "location" ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === "details" ? <DetailsStep s={s} set={set} err={err} /> : null}
-        {current === "photos" ? <PhotosStep s={s} setS={setS} err={err} /> : null}
+        {current === "photos" ? <PhotosStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
         {current === "review" ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </Card>
 
@@ -220,6 +251,10 @@ function LocationStep({ s, set, err }: StepProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("الكمبوند (عربي)", "Compound (Arabic)")} value={s.compoundAr} onChange={(e) => set("compoundAr", e.target.value)} dir="rtl" maxLength={150} />
         <Field label={t("الكمبوند (إنجليزي)", "Compound (English)")} value={s.compoundEn} onChange={(e) => set("compoundEn", e.target.value)} dir="ltr" maxLength={150} />
+        <Field label={t("المطور (عربي)", "Developer (Arabic)")} value={s.developerAr} onChange={(e) => set("developerAr", e.target.value)} dir="rtl" maxLength={150} />
+        <Field label={t("المطور (إنجليزي)", "Developer (English)")} value={s.developerEn} onChange={(e) => set("developerEn", e.target.value)} dir="ltr" maxLength={150} />
+        <Field label={t("الدور", "Floor")} value={s.floor} onChange={(e) => set("floor", e.target.value)} inputMode="numeric" />
+        <Field label={t("مصروف الصيانة (بالسنة)", "Maintenance fee (a year)")} value={s.maintenanceFee} onChange={(e) => set("maintenanceFee", e.target.value)} inputMode="numeric" />
         <Field
           label={t("العنوان (عربي)", "Title (Arabic)")}
           hint={t("اختياري: لو فاضي هيبقى «النوع والغرف | المنطقة»", "Optional: empty becomes “type, beds | area”")}
@@ -296,11 +331,22 @@ function DetailsStep({ s, set, err }: StepProps) {
 }
 
 /** Photos are made smaller in the browser and uploaded one by one as soon as they are picked. */
-function PhotosStep({ s, setS, err }: { s: FormState; setS: Dispatch<SetStateAction<FormState>>; err: StepProps["err"] }) {
+function PhotosStep({
+  s,
+  setS,
+  blobs,
+  setBlobs,
+  err,
+}: {
+  s: FormState;
+  setS: Dispatch<SetStateAction<FormState>>;
+  blobs: Record<string, Blob>;
+  setBlobs: Dispatch<SetStateAction<Record<string, Blob>>>;
+  err: StepProps["err"];
+}) {
   const t = useT();
   const lang = useLang();
   const input = useRef<HTMLInputElement>(null);
-  const [blobs, setBlobs] = useState<Record<string, Blob>>({});
   const room = LISTING_IMAGES_MAX - s.photos.length;
   const patch = (key: string, p: Partial<ListingFormPhoto>) => setS((cur) => ({ ...cur, photos: cur.photos.map((x) => (x.key === key ? { ...x, ...p } : x)) }));
 
@@ -319,7 +365,14 @@ function PhotosStep({ s, setS, err }: { s: FormState; setS: Dispatch<SetStateAct
     const added = picked.map((f) => ({ key: `w${++photoKey}`, local: URL.createObjectURL(f) }));
     setS((cur) => ({ ...cur, photos: [...cur.photos, ...added] }));
     for (const [i, photo] of added.entries()) {
-      const blob = await shrinkPhoto(picked[i]!);
+      let blob: Blob;
+      try {
+        blob = await shrinkPhoto(picked[i]!);
+      } catch {
+        // The browser could not prepare the image: say so instead of spinning for ever.
+        patch(photo.key, { failed: true });
+        continue;
+      }
       setBlobs((cur) => ({ ...cur, [photo.key]: blob }));
       await upload(photo.key, blob);
     }
@@ -331,7 +384,15 @@ function PhotosStep({ s, setS, err }: { s: FormState; setS: Dispatch<SetStateAct
       photos.splice(to, 0, p!);
       return { ...cur, photos };
     });
-  const remove = (key: string) => setS((cur) => ({ ...cur, photos: cur.photos.filter((p) => p.key !== key) }));
+  const remove = (key: string) => {
+    setS((cur) => ({ ...cur, photos: cur.photos.filter((p) => p.key !== key) }));
+    setBlobs((cur) => {
+      if (!(key in cur)) return cur;
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+  };
   const Earlier = lang === "ar" ? MoveRight : MoveLeft;
   const Later = lang === "ar" ? MoveLeft : MoveRight;
 

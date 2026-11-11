@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -30,5 +30,41 @@ export class UploadsService {
     const name = `${randomUUID()}.jpg`;
     await writeFile(path.join(dir, name), jpeg);
     return { url: `/uploads/listings/${name}` };
+  }
+
+  private listingsDir(): string {
+    return path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'listings');
+  }
+
+  /**
+   * Every submitted listing photo must be a file this server actually has (seed photos excepted):
+   * a correct-looking path that was never uploaded would publish a broken image.
+   */
+  async assertListingFiles(urls: string[]): Promise<void> {
+    for (const url of urls) {
+      if (!url.startsWith('/uploads/listings/')) continue;
+      const name = url.slice('/uploads/listings/'.length);
+      // A bare file name only: anything with a separator could climb out of the folder.
+      if (!/^[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/.test(name)) throw new BadRequestException('A photo path is not one of ours');
+      try {
+        await access(path.join(this.listingsDir(), name));
+      } catch {
+        throw new BadRequestException(`A photo is missing from the server's disk: ${name}`);
+      }
+    }
+  }
+
+  /** Deletes listing photo files nothing references any more; never anything outside the folder. */
+  async removeListingFiles(urls: string[]): Promise<void> {
+    const dir = this.listingsDir();
+    await Promise.all(
+      urls
+        .filter((url) => url.startsWith('/uploads/listings/'))
+        .map((url) => {
+          const name = url.slice('/uploads/listings/'.length);
+          if (!/^[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/.test(name)) return Promise.resolve();
+          return unlink(path.join(dir, name)).catch(() => undefined);
+        }),
+    );
   }
 }

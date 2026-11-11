@@ -11,6 +11,13 @@ export class NotificationsQueryDto {
   @Min(1)
   @Max(NOTIFICATIONS_LIMIT)
   limit?: number;
+
+  @ApiPropertyOptional({ description: 'Older than this id: the older-page cursor' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  before?: number;
 }
 
 /** An Expo push token, as `getExpoPushTokenAsync` gives it. */
