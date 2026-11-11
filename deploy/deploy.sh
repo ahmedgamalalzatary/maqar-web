@@ -37,7 +37,12 @@ $SSH "sh $DIR/deploy/server-deploy.sh $(git rev-parse --short HEAD)"
 # The admin dashboard (apps/web): built here from the same clean commit, then swapped in at once.
 # nginx serves /srv/maqar/web/admin at /admin/ (deploy/nginx-maqar.conf).
 pnpm --filter @maqar/shared build >/dev/null
-NEXT_PUBLIC_API_URL=/v1 pnpm --filter @maqar/web build >/dev/null
+# MSYS_NO_PATHCONV: Git Bash on Windows would otherwise turn "/v1" into "C:/Program Files/Git/v1".
+MSYS_NO_PATHCONV=1 NEXT_PUBLIC_API_URL=/v1 pnpm --filter @maqar/web build >/dev/null
+if ! grep -rqF '"/v1"' apps/web/out/_next/static || grep -rqF 'Program Files' apps/web/out; then
+  echo "The dashboard was built with the wrong API address; nothing was copied." >&2
+  exit 1
+fi
 tar -C apps/web/out -cf - . | $SSH "set -eu
   mkdir -p /srv/maqar/web
   rm -rf /srv/maqar/web/admin.new /srv/maqar/web/admin.old
