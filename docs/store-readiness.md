@@ -168,7 +168,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 ## 5. Fix list, in order
 
 **Code: small, and can be done now (no deferred items needed):**
-1. ✅ Done (Phase 20): Remove `expo-calendar`. Add `android.blockedPermissions` (`CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) and the `expo-secure-store` option `faceIDPermission: false`. Then rerun `expo config --type introspect` and check the result.
+1. ✅ Done (Phase 20): Remove `expo-calendar`. Add `android.blockedPermissions` (`CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) and the `expo-secure-store` option `faceIDPermission: false`. Then rerun `expo config --type introspect` and check the result. Checked on the release APK (`c800a8f`): it requests only internet, network state, notifications, badge, vibrate, wake lock, boot and foreground service; `SYSTEM_ALERT_WINDOW`, `ACTIVITY_RECOGNITION`, `USE_BIOMETRIC` and `USE_FINGERPRINT` are blocked too.
 2. ✅ Done (Phase 20): Write a clear motion permission text in Arabic and English (the `expo-sensors` plugin), and add the Arabic photo text.
 3. ✅ Done (Phase 20): Set `ios.config.usesNonExemptEncryption: false`.
 4. ✅ Done (Phase 20): Add privacy policy, terms and support / contact rows to the Me screen. They open the public pages in `expo-web-browser`, which is already installed.
