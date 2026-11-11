@@ -1,5 +1,5 @@
 import type { AdminListing, AgentBody, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';
 import {
   addDaysOffRequest,
@@ -62,9 +62,16 @@ export function useListingStats(id: number, days: InsightRange) {
   });
 }
 
+/** The interested clients, one page at a time, so a popular listing does not load every client. */
 export function useInterested(id: number) {
   const adminId = useAdminId();
-  return useQuery({ queryKey: [...adminKey(adminId), 'listing', id, 'interested'], queryFn: ({ signal }) => getInterested(id, signal), enabled: adminId !== null });
+  return useInfiniteQuery({
+    queryKey: [...adminKey(adminId), 'listing', id, 'interested'],
+    queryFn: ({ signal, pageParam }) => getInterested(id, pageParam, signal),
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => (last.length < 20 ? undefined : all.length + 1),
+    enabled: adminId !== null,
+  });
 }
 
 export function useAdminAgents(enabled = true) {

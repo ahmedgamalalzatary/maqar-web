@@ -92,6 +92,13 @@
       "when": 1794377614960,
       "tag": "0012_complex_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1794379941828,
+      "tag": "0013_sudden_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

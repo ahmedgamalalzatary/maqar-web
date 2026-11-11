@@ -17,7 +17,6 @@ import {
 } from '@maqar/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import type { AgentRow } from '../agents/agents.schema.js';
-import { ListingCounter } from '../insights/insights.service.js';
 import { UsersService } from '../users/users.service.js';
 import { type ListingFiltersDto, type PropertiesQueryDto, toListingFilters } from './dto/properties-query.dto.js';
 import { PropertiesRepository } from './properties.repository.js';
@@ -91,7 +90,6 @@ export class PropertiesService {
   constructor(
     private readonly repo: PropertiesRepository,
     private readonly users: UsersService,
-    private readonly counter: ListingCounter,
   ) {}
 
   /** The list. Best match needs a signed-in client, and then every card carries its match. */
@@ -150,7 +148,7 @@ export class PropertiesService {
     const row = await this.repo.findApprovedById(id);
     if (!row) throw new NotFoundException('Listing not found');
     const detail = await this.toDetail(row);
-    await Promise.all([this.repo.addView(id), this.counter.view(id)]);
+    await this.repo.addView(id);
     return { ...detail, views: detail.views + 1 };
   }
 

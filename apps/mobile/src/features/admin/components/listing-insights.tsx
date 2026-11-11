@@ -12,7 +12,7 @@ import {
 } from '@maqar/shared';
 import { Phone } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Pressable, Share, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Segmented } from '@/components/segmented';
@@ -35,8 +35,10 @@ export function ListingInsights({ l }: { l: AdminListing }) {
   const r = stats.data ? rangeTotals(stats.data.days) : undefined;
   const total = stats.data?.totals;
   const share = () => {
-    if (stats.data) void Share.share({ message: insightsSummary(stats.data, lang === 'ar' ? l.titleAr : l.titleEn, lang) });
+    if (stats.data && !stats.isPlaceholderData)
+      void Share.share({ message: insightsSummary(stats.data, lang === 'ar' ? l.titleAr : l.titleEn, lang) });
   };
+  const updating = stats.isPlaceholderData || stats.isFetching;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
@@ -44,7 +46,7 @@ export function ListingInsights({ l }: { l: AdminListing }) {
         <Txt accessibilityRole="header" size={17} weight="semibold" style={styles.flex}>
           {t('أرقام العقار', 'Listing insights')}
         </Txt>
-        <Button label={t('ابعتها للمالك', 'Send to the owner')} variant="ghost" disabled={!stats.data} onPress={share} />
+        <Button label={t('ابعتها للمالك', 'Send to the owner')} variant="ghost" disabled={!stats.data || updating} onPress={share} />
       </View>
       <Segmented
         options={RANGE_KEYS.map((d) => ({ value: d, label: t(`${n(Number(d))} يوم`, `${d} days`) }))}
@@ -68,7 +70,20 @@ export function ListingInsights({ l }: { l: AdminListing }) {
             <Tile label={t('حفظوه', 'Saves')} value={n(r.saves)} all={t(`${n(total.saves)} حافظينه`, `${n(total.saves)} saved now`)} />
             <Tile label={t('مهتمين جداد', 'New interested')} value={n(r.interested)} all={t(`${n(total.interested)} من الأول`, `${n(total.interested)} all time`)} />
           </View>
+          {updating ? (
+            <Txt size={11} color="ink3">
+              {t('الأرقام بتتحدّث للمدة المختارة…', 'Updating to the selected range…')}
+            </Txt>
+          ) : null}
           <ViewsChart days={stats.data.days} />
+          {stats.data.since ? (
+            <Txt size={11} color="ink3">
+              {t(
+                `الأرقام اليومية بتتسجل من ${fmtDate(stats.data.since, lang)}`,
+                `Daily numbers are recorded from ${fmtDate(stats.data.since, lang)}`,
+              )}
+            </Txt>
+          ) : null}
           <Txt size={12} color="ink3">
             {t(
               `${n(total.followers)} متابعين السعر | ${n(total.chats)} محادثة | ${n(total.viewings)} معاينة متحجزة`,
@@ -92,25 +107,33 @@ export function ListingInsights({ l }: { l: AdminListing }) {
           </Txt>
           <Button label={t('حاول تاني', 'Try again')} variant="ghost" onPress={() => void people.refetch()} />
         </View>
-      ) : !people.data.length ? (
-        <Txt size={13} color="ink2">
-          {t('لسه محدش اهتم بالعقار ده.', 'Nobody has shown interest yet.')}
-        </Txt>
       ) : (
-        people.data.map((c) => (
-          <View key={c.id} style={[styles.person, { borderTopColor: colors.line }]}>
-            <View style={styles.flex}>
-              <Txt weight="medium">{c.name}</Txt>
-              <Txt size={12} color="ink2">
-                {c.kinds.map((k) => t(INTEREST_LABEL[k])).join(' | ')}
-              </Txt>
-              <Txt size={11} color="ink3">
-                {t(`آخر نشاط ${relTime(new Date(c.lastAt), lang)}`, `Last active ${relTime(new Date(c.lastAt), lang)}`)}
-              </Txt>
+        <FlatList
+          data={people.data.pages.flat()}
+          keyExtractor={(c) => String(c.id)}
+          renderItem={({ item: c }) => (
+            <View style={[styles.person, { borderTopColor: colors.line }]}>
+              <View style={styles.flex}>
+                <Txt weight="medium">{c.name}</Txt>
+                <Txt size={12} color="ink2">
+                  {c.kinds.map((k) => t(INTEREST_LABEL[k])).join(' | ')}
+                </Txt>
+                <Txt size={11} color="ink3">
+                  {t(`آخر نشاط ${relTime(new Date(c.lastAt), lang)}`, `Last active ${relTime(new Date(c.lastAt), lang)}`)}
+                </Txt>
+              </View>
+              {c.phone ? <IconButton label={t(`اتصل بـ ${c.name}`, `Call ${c.name}`)} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${c.phone}`)} /> : null}
             </View>
-            {c.phone ? <IconButton label={t(`اتصل بـ ${c.name}`, `Call ${c.name}`)} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${c.phone}`)} /> : null}
-          </View>
-        ))
+          )}
+          ListEmptyComponent={
+            <Txt size={13} color="ink2">
+              {t('لسه محدش اهتم بالعقار ده.', 'Nobody has shown interest yet.')}
+            </Txt>
+          }
+          ListFooterComponent={people.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.loading} /> : undefined}
+          onEndReached={() => people.hasNextPage && !people.isFetchingNextPage && void people.fetchNextPage()}
+          onEndReachedThreshold={0.5}
+        />
       )}
     </View>
   );
@@ -138,14 +161,14 @@ function ViewsChart({ days }: { days: ListingDay[] }) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
-  const [picked, setPicked] = useState<number | null>(null);
+  const [pickedDay, setPickedDay] = useState<string | null>(null);
   const top = Math.max(1, ...days.map((d) => d.views));
-  const date = (day: string) => fmtDate(`${day}T12:00:00Z`, lang);
-  const shown = days[picked ?? days.length - 1]!;
+  const date = (day: string) => fmtDate(day, lang);
+  const shown = days.find((d) => d.day === pickedDay) ?? days[days.length - 1]!;
   return (
     <View style={styles.chart}>
       <Txt size={12} color="ink2">
-        {picked === null ? t('المشاهدات في اليوم، دوس على يوم', 'Views per day: tap a day') : date(shown.day)}
+        {shown.day === pickedDay ? date(shown.day) : t('المشاهدات في اليوم، دوس على يوم', 'Views per day: tap a day')}
       </Txt>
       <Txt size={12} weight="medium">
         {t(
@@ -158,13 +181,13 @@ function ViewsChart({ days }: { days: ListingDay[] }) {
           <Pressable
             key={d.day}
             accessibilityLabel={t(`${date(d.day)}: ${fmtNum(d.views, 'ar')} مشاهدة`, `${date(d.day)}: ${d.views} views`)}
-            onPress={() => setPicked(i === picked ? null : i)}
+            onPress={() => setPickedDay(d.day === pickedDay ? null : d.day)}
             style={styles.barSlot}
           >
             <View
               style={[
                 styles.bar,
-                { height: d.views ? `${Math.max(2, (d.views / top) * 100)}%` : 0, backgroundColor: i === picked ? colors.accentInk : colors.accent },
+                { height: d.views ? `${Math.max(2, (d.views / top) * 100)}%` : 0, backgroundColor: d.day === pickedDay ? colors.accentInk : colors.accent },
               ]}
             />
           </Pressable>

@@ -1,21 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { INTEREST_KINDS, type InterestedClient, lastDays, type ListingStats } from '@maqar/shared';
+import { INTEREST_KINDS, type InterestKind, type InterestedClient, lastDays, type ListingStats } from '@maqar/shared';
 import { cairoClock } from '../viewings/slots.js';
 import { type InterestRow, InsightsRepository } from './insights.repository.js';
 
 const today = () => cairoClock(new Date()).date;
 
-/** Records what clients do on a listing, for its insights. Used by the property page and saves. */
+/**
+ * Records the first interest of a client in a listing (saved / followed / chatted / booked) for the
+ * insights history. Views and saves are bumped inside their own repository transactions.
+ */
 @Injectable()
 export class ListingCounter {
   constructor(private readonly repo: InsightsRepository) {}
 
-  view(propertyId: number): Promise<void> {
-    return this.repo.bump(propertyId, today(), 'views');
-  }
-
-  save(propertyId: number): Promise<void> {
-    return this.repo.bump(propertyId, today(), 'saves');
+  interest(propertyId: number, clientId: number, kind: InterestKind): Promise<void> {
+    return this.repo.recordInterest(propertyId, clientId, kind, today());
   }
 }
 
@@ -27,22 +26,28 @@ export class InsightsService {
   async stats(propertyId: number, range: number): Promise<ListingStats> {
     await this.assertListing(propertyId);
     const days = lastDays(today(), range);
-    const [rows, totals, interested] = await Promise.all([this.repo.days(propertyId, days[0]!, days[days.length - 1]!), this.repo.totals(propertyId), this.clients(propertyId)]);
+    // Daily interested history comes from durable first-interest events, so it does not change
+    // when a client unsaves, unfollows, cancels a booking or deletes their account.
+    const [rows, totals, interestDays, since] = await Promise.all([
+      this.repo.days(propertyId, days[0]!, days[days.length - 1]!),
+      this.repo.totals(propertyId),
+      this.repo.firstInterestDays(propertyId),
+      this.repo.firstTrackedDay(propertyId),
+    ]);
     const byDay = new Map(rows.map((r) => [r.day, r]));
-    const firstDays = new Map<string, number>();
-    for (const c of interested) {
-      const d = cairoClock(new Date(c.firstAt)).date;
-      firstDays.set(d, (firstDays.get(d) ?? 0) + 1);
-    }
+    const firstDays = new Map(interestDays.map((r) => [r.day, r.clients]));
     return {
       days: days.map((day) => ({ day, views: byDay.get(day)?.views ?? 0, saves: byDay.get(day)?.saves ?? 0, interested: firstDays.get(day) ?? 0 })),
-      totals: { ...totals, interested: interested.length },
+      totals: { ...totals, interested: interestDays.reduce((n, r) => n + r.clients, 0) },
+      since,
     };
   }
 
-  async interested(propertyId: number): Promise<InterestedClient[]> {
+  /** One page of clients with an account, the most recently active first. */
+  async interested(propertyId: number, page = 1, limit = 20): Promise<InterestedClient[]> {
     await this.assertListing(propertyId);
-    return this.clients(propertyId);
+    const people = await this.clients(propertyId);
+    return people.slice((page - 1) * limit, page * limit);
   }
 
   /** One entry per client with an account, the most recently active first. */

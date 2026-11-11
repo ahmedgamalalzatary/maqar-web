@@ -19,6 +19,7 @@ import sharp from 'sharp';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import type { Env } from '../../core/config/env.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { ListingCounter } from '../insights/insights.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { cairoClock } from '../viewings/slots.js';
@@ -57,12 +58,14 @@ export class ChatService {
     private readonly notifications: NotificationsService,
     private readonly realtime: ChatRealtime,
     private readonly config: ConfigService<Env, true>,
+    private readonly counter: ListingCounter,
   ) {}
 
   /** Opens the client's conversation about this home, starting it the first time. */
   async start(user: AuthUser, propertyId: number): Promise<ChatThread> {
     const home = await this.properties.bookingTarget(propertyId);
     const thread = await this.repo.openThread(user.id, home.id, home.agent.id);
+    await this.counter.interest(home.id, user.id, 'chatted');
     return (await this.threads([thread], 'client'))[0]!;
   }
 

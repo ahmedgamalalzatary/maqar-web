@@ -19,7 +19,7 @@ export function ListingInsights({ l }: { l: AdminListing }) {
   const n = (v: number) => fmtNum(v, lang);
 
   const copy = async () => {
-    if (!stats.data) return;
+    if (!stats.data || stats.isPlaceholderData) return;
     try {
       await navigator.clipboard.writeText(insightsSummary(stats.data, lang === "ar" ? l.titleAr : l.titleEn, lang));
       notice({ text: t("الأرقام اتنسخت، ابعتها للمالك", "Copied: send it to the owner"), tone: "ok" });
@@ -48,7 +48,7 @@ export function ListingInsights({ l }: { l: AdminListing }) {
             </button>
           ))}
         </div>
-        <Button variant="secondary" onClick={() => void copy()} disabled={!stats.data}>
+        <Button variant="secondary" onClick={() => void copy()} disabled={!stats.data || stats.isPlaceholderData || stats.isFetching}>
           <Copy className="size-4" aria-hidden />
           {t("انسخ للمالك", "Copy for the owner")}
         </Button>
@@ -65,7 +65,18 @@ export function ListingInsights({ l }: { l: AdminListing }) {
             <Tile label={t("حفظوه", "Saves")} value={n(r.saves)} all={t(`${n(total.saves)} حافظينه دلوقتي`, `${n(total.saves)} saved now`)} />
             <Tile label={t("مهتمين جداد", "New interested")} value={n(r.interested)} all={t(`${n(total.interested)} مهتم من الأول`, `${n(total.interested)} all time`)} />
           </dl>
+          {(stats.isPlaceholderData || stats.isFetching) && (
+            <p className="text-xs text-ink-3">{t('الأرقام بتتحدّث للمدة المختارة…', 'Updating to the selected range…')}</p>
+          )}
           <ViewsChart days={stats.data.days} />
+          {stats.data.since ? (
+            <p className="text-xs text-ink-3">
+              {t(
+                `الأرقام اليومية بتتسجل من ${fmtDate(stats.data.since, lang)}`,
+                `Daily numbers are recorded from ${fmtDate(stats.data.since, lang)}`,
+              )}
+            </p>
+          ) : null}
           <p className="text-xs text-ink-3">
             {t(
               `${n(total.followers)} متابعين السعر | ${n(total.chats)} محادثة | ${n(total.viewings)} معاينة متحجزة`,
@@ -130,7 +141,7 @@ function ViewsChart({ days }: { days: ListingDay[] }) {
   const lang = useLang();
   const [hover, setHover] = useState<number | null>(null);
   const top = Math.max(1, ...days.map((d) => d.views));
-  const date = (day: string) => fmtDate(`${day}T12:00:00Z`, lang);
+  const date = (day: string) => fmtDate(day, lang);
   const h = hover === null ? undefined : days[hover];
   const ticks = [0, Math.floor((days.length - 1) / 2), days.length - 1];
 

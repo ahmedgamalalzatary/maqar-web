@@ -41,6 +41,8 @@ import type { MySqlColumn } from 'drizzle-orm/mysql-core';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
+import { cairoClock } from '../viewings/slots.js';
+import { listingStats } from '../insights/insights.schema.js';
 import { type PropertyRow, properties, propertyFeatures, propertyImages, tourRooms } from './properties.schema.js';
 
 export type BrowseFilter = ListingFilters & { sort: Sort; offset: number; limit: number; prefs?: Prefs };
@@ -316,11 +318,18 @@ export class PropertiesRepository {
     return rows.map((r) => r.feature);
   }
 
+  /** One view commits the all-time total and the day's count together, so they never disagree. */
   async addView(id: number): Promise<void> {
-    await this.db
-      .update(properties)
-      .set({ views: sql`${properties.views} + 1` })
-      .where(eq(properties.id, id));
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(properties)
+        .set({ views: sql`${properties.views} + 1` })
+        .where(eq(properties.id, id));
+      await tx
+        .insert(listingStats)
+        .values({ propertyId: id, day: cairoClock(new Date()).date, views: 1 })
+        .onDuplicateKeyUpdate({ set: { views: sql`${listingStats.views} + 1` } });
+    });
   }
 
   /**

@@ -13,6 +13,7 @@ import {
 } from '@maqar/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { ListingCounter } from '../insights/insights.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { dueBatches } from './reminders.js';
@@ -31,6 +32,7 @@ export class ViewingsService {
     private readonly properties: PropertiesService,
     private readonly users: UsersRepository,
     private readonly notifications: NotificationsService,
+    private readonly counter: ListingCounter,
   ) {}
 
   /** The next 14 days with the agent's hours. `except` is the viewing being moved: its hour shows free. */
@@ -85,6 +87,7 @@ export class ViewingsService {
       throw err;
     }
     const item = await this.item(id);
+    await this.counter.interest(home.id, user.id, 'booked');
     await this.tell(item, 'booked');
     return item;
   }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
+import { InsightsModule } from '../insights/insights.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PropertiesModule } from '../properties/properties.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -12,7 +13,7 @@ import { ChatService } from './chat.service.js';
 
 /** Live chat (contract §8.12, §10.3): HTTP for sending and history, a socket for live events. */
 @Module({
-  imports: [AuthModule, PropertiesModule, ViewingsModule, NotificationsModule, UsersModule],
+  imports: [AuthModule, PropertiesModule, ViewingsModule, NotificationsModule, UsersModule, InsightsModule],
   controllers: [ChatController],
   providers: [ChatRepository, ChatService, ChatRealtime, ChatGateway],
   exports: [ChatRepository],
