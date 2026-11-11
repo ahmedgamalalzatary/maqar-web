@@ -1,4 +1,4 @@
-import { fmtCompact, fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime, localDigits, relTime } from '../../src/format.js';
+import { fmtCompact, fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime, localDigits, ltrPhone, relTime } from '../../src/format.js';
 
 describe('localDigits', () => {
   it('uses Arabic-Indic digits in Arabic only', () => {
@@ -137,5 +137,12 @@ describe('fmtDate long', () => {
   it('has the weekday and the day, without the year', () => {
     expect(fmtDate('2026-11-12', 'ar', 'long')).toBe('الخميس ١٢ نوفمبر');
     expect(fmtDate('2026-11-12', 'en', 'long')).toBe('Thursday, 12 November');
+  });
+});
+
+describe('ltrPhone', () => {
+  // In an Arabic (right-to-left) line, "+201001234567" showed as "201001234567+" on a phone.
+  it('keeps a phone number left to right, so the + stays in front inside Arabic text', () => {
+    expect(ltrPhone('+201001234567')).toBe('‎+201001234567‎');
   });
 });

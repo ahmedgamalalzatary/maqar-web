@@ -4,7 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, BadgeCheck, Calculator, CalendarClock, Home, ImagePlus, Phone, Rotate3d, SendHorizontal, ShieldCheck, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -183,7 +184,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.fill, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoiding style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderColor: colors.line }]}>
         <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={onBack} />
         <View style={[styles.avatar, { backgroundColor: side === 'client' ? thread.agent.colour : colors.sage }]}>
@@ -335,7 +336,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           {viewer ? <Image source={{ uri: mediaUrl(viewer) ?? undefined }} style={styles.full} contentFit="contain" /> : null}
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </KeyboardAvoiding>
   );
 }
 

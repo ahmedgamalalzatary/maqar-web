@@ -11,11 +11,13 @@ import {
   type LeadDetail,
   type LeadStage,
   relTime,
+  ltrPhone,
 } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, CalendarClock, Flame, MessageCircle, MessagesSquare, Phone, Send, StickyNote, Video, Wallet } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -91,175 +93,177 @@ function Lead({ l }: { l: LeadDetail }) {
   const at = STEPS.indexOf(l.stage as (typeof STEPS)[number]);
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
-      <View>
-        <Txt accessibilityRole="header" size={22} weight="semibold">
-          {name}
-        </Txt>
-        <Txt size={13} color="ink2">
-          {t(LEAD_SOURCE_LABEL[l.source])}
-        </Txt>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-        <Initials name={name} colour={LEAD_STAGE_COLOUR[l.stage]} size={54} />
-        <View style={styles.flex}>
-          <View style={styles.inline}>
-            <Txt size={16} weight="semibold" numberOfLines={1} style={styles.shrink}>
-              {name}
-            </Txt>
-            {l.isNew ? <NewBadge /> : null}
-          </View>
-          <Txt size={12.5} color="ink2" style={styles.ltr}>
-            {l.phone ?? t('من غير رقم', 'No phone number')}
+    <KeyboardAvoiding>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
+        <View>
+          <Txt accessibilityRole="header" size={22} weight="semibold">
+            {name}
           </Txt>
-          {l.budget ? (
+          <Txt size={13} color="ink2">
+            {t(LEAD_SOURCE_LABEL[l.source])}
+          </Txt>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+          <Initials name={name} colour={LEAD_STAGE_COLOUR[l.stage]} size={54} />
+          <View style={styles.flex}>
             <View style={styles.inline}>
-              <Wallet size={14} color={colors.ink2} />
-              <Txt size={12} color="ink2">
-                {fmtMoney(l.budget, lang)}
+              <Txt size={16} weight="semibold" numberOfLines={1} style={styles.shrink}>
+                {name}
               </Txt>
+              {l.isNew ? <NewBadge /> : null}
             </View>
-          ) : null}
-        </View>
-        <Pressable
-          accessibilityRole="switch"
-          accessibilityLabel={t('عميل مهم', 'Hot lead')}
-          accessibilityState={{ checked: l.hot }}
-          onPress={() => change({ hot: !l.hot }, l.hot ? t('شلنا علامة مهم', 'No longer marked hot') : t('اتعلّم مهم', 'Marked hot'))}
-          hitSlop={6}
-          style={[styles.hot, { backgroundColor: l.hot ? 'rgba(224, 87, 75, 0.12)' : colors.surface2 }]}
-        >
-          <Flame size={20} color={l.hot ? HOT : colors.ink3} fill={l.hot ? HOT : 'none'} />
-        </Pressable>
-      </View>
-
-      {digits || l.chatId ? (
-        <View style={styles.actions}>
-          {digits ? <Contact icon={Phone} label={t('اتصال', 'Call')} onPress={() => void Linking.openURL(`tel:${l.phone}`)} /> : null}
-          {l.chatId ? (
-            <Contact icon={MessagesSquare} label={t('الشات', 'Chat')} onPress={() => router.push(`/agent/chat/${l.chatId}`)} />
-          ) : digits ? (
-            <Contact icon={MessageCircle} label={t('واتساب', 'WhatsApp')} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
-          ) : null}
-        </View>
-      ) : null}
-
-      <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-        {t('حالة العميل', 'Lead status')}
-      </Txt>
-      <View style={styles.steps}>
-        <View style={[styles.rail, { backgroundColor: colors.surface3 }]} />
-        {STEPS.map((s, i) => {
-          const reached = l.stage !== 'lost' && i <= at;
-          return (
-            <Pressable
-              key={s}
-              accessibilityRole="radio"
-              accessibilityLabel={t(LEAD_STAGE_LABEL[s])}
-              accessibilityState={{ checked: l.stage === s }}
-              onPress={() => setStage(s)}
-              style={styles.step}
-            >
-              <View style={[styles.num, reached ? { backgroundColor: colors.accent } : { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1 }]}>
-                <Txt size={12} weight="semibold" style={{ color: reached ? colors.navy : colors.ink3 }}>
-                  {fmtNum(i + 1, lang)}
+            <Txt size={12.5} color="ink2" style={styles.ltr}>
+              {l.phone ? ltrPhone(l.phone) : t('من غير رقم', 'No phone number')}
+            </Txt>
+            {l.budget ? (
+              <View style={styles.inline}>
+                <Wallet size={14} color={colors.ink2} />
+                <Txt size={12} color="ink2">
+                  {fmtMoney(l.budget, lang)}
                 </Txt>
               </View>
-              <Txt size={10.5} align="center" weight={l.stage === s ? 'semibold' : 'regular'} color={l.stage === s ? 'ink' : 'ink3'}>
-                {t(LEAD_STAGE_LABEL[s])}
-              </Txt>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => setStage(l.stage === 'lost' ? 'new' : 'lost')}
-        hitSlop={8}
-        style={styles.lost}
-      >
-        <Txt size={12} weight="medium" color={l.stage === 'lost' ? 'danger' : 'ink3'}>
-          {l.stage === 'lost' ? t('العميل مغلق، رجّعه جديد', 'Marked as lost: reopen as new') : t('علّم كمغلق', 'Mark as lost')}
-        </Txt>
-      </Pressable>
-
-      {l.property ? (
-        <>
-          <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-            {t('الوحدة المهتم بيها', 'Interested in')}
-          </Txt>
-          <PropertyRow card={l.property} />
-        </>
-      ) : null}
-
-      {l.viewing ? (
-        <>
-          <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-            {t('المعاينة', 'Viewing')}
-          </Txt>
-          <View style={[styles.viewing, { backgroundColor: colors.ink }]}>
-            <View style={[styles.viewingIcon, { backgroundColor: 'rgba(179, 137, 89, 0.2)' }]}>
-              {l.viewing.mode === 'video' ? <Video size={20} color={colors.accent} /> : <CalendarClock size={20} color={colors.accent} />}
-            </View>
-            <View style={styles.flex}>
-              <Txt size={14} weight="semibold" style={{ color: colors.bg }}>
-                {fmtDate(l.viewing.date, lang, 'long')}
-              </Txt>
-              <Txt size={12.5} style={{ color: colors.bg, opacity: 0.7 }}>
-                {fmtTime(l.viewing.time, lang)} | {l.viewing.mode === 'video' ? t('فيديو لايف', 'Live video') : t('في الموقع', 'On site')}
-              </Txt>
-            </View>
+            ) : null}
           </View>
-        </>
-      ) : null}
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel={t('عميل مهم', 'Hot lead')}
+            accessibilityState={{ checked: l.hot }}
+            onPress={() => change({ hot: !l.hot }, l.hot ? t('شلنا علامة مهم', 'No longer marked hot') : t('اتعلّم مهم', 'Marked hot'))}
+            hitSlop={6}
+            style={[styles.hot, { backgroundColor: l.hot ? 'rgba(224, 87, 75, 0.12)' : colors.surface2 }]}
+          >
+            <Flame size={20} color={l.hot ? HOT : colors.ink3} fill={l.hot ? HOT : 'none'} />
+          </Pressable>
+        </View>
 
-      <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-        {t('ملاحظات', 'Notes')}
-      </Txt>
-      <View style={styles.noteRow}>
-        <TextInput
-          accessibilityLabel={t('ملاحظة جديدة', 'New note')}
-          value={note}
-          onChangeText={setNote}
-          placeholder={t('اكتب ملاحظة عن المكالمة…', 'Add a note about the call…')}
-          placeholderTextColor={colors.ink3}
-          maxLength={LEAD_NOTE_MAX}
-          multiline
-          style={[styles.noteInput, { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.line }]}
-        />
+        {digits || l.chatId ? (
+          <View style={styles.actions}>
+            {digits ? <Contact icon={Phone} label={t('اتصال', 'Call')} onPress={() => void Linking.openURL(`tel:${l.phone}`)} /> : null}
+            {l.chatId ? (
+              <Contact icon={MessagesSquare} label={t('الشات', 'Chat')} onPress={() => router.push(`/agent/chat/${l.chatId}`)} />
+            ) : digits ? (
+              <Contact icon={MessageCircle} label={t('واتساب', 'WhatsApp')} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
+            ) : null}
+          </View>
+        ) : null}
+
+        <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
+          {t('حالة العميل', 'Lead status')}
+        </Txt>
+        <View style={styles.steps}>
+          <View style={[styles.rail, { backgroundColor: colors.surface3 }]} />
+          {STEPS.map((s, i) => {
+            const reached = l.stage !== 'lost' && i <= at;
+            return (
+              <Pressable
+                key={s}
+                accessibilityRole="radio"
+                accessibilityLabel={t(LEAD_STAGE_LABEL[s])}
+                accessibilityState={{ checked: l.stage === s }}
+                onPress={() => setStage(s)}
+                style={styles.step}
+              >
+                <View style={[styles.num, reached ? { backgroundColor: colors.accent } : { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1 }]}>
+                  <Txt size={12} weight="semibold" style={{ color: reached ? colors.navy : colors.ink3 }}>
+                    {fmtNum(i + 1, lang)}
+                  </Txt>
+                </View>
+                <Txt size={10.5} align="center" weight={l.stage === s ? 'semibold' : 'regular'} color={l.stage === s ? 'ink' : 'ink3'}>
+                  {t(LEAD_STAGE_LABEL[s])}
+                </Txt>
+              </Pressable>
+            );
+          })}
+        </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('احفظ الملاحظة', 'Save note')}
-          accessibilityState={{ disabled: !note.trim() || addNote.isPending }}
-          disabled={!note.trim() || addNote.isPending}
-          onPress={send}
-          style={[styles.send, { backgroundColor: colors.ink, opacity: !note.trim() ? 0.4 : 1 }]}
+          onPress={() => setStage(l.stage === 'lost' ? 'new' : 'lost')}
+          hitSlop={8}
+          style={styles.lost}
         >
-          {addNote.isPending ? <ActivityIndicator color={colors.bg} /> : <Send size={18} color={colors.bg} style={lang === 'ar' ? styles.flip : undefined} />}
+          <Txt size={12} weight="medium" color={l.stage === 'lost' ? 'danger' : 'ink3'}>
+            {l.stage === 'lost' ? t('العميل مغلق، رجّعه جديد', 'Marked as lost: reopen as new') : t('علّم كمغلق', 'Mark as lost')}
+          </Txt>
         </Pressable>
-      </View>
-      {l.notes.map((n) => (
-        <View key={n.id} style={[styles.note, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-          <StickyNote size={16} color={colors.accent} />
-          <View style={styles.flex}>
-            <Txt size={13}>{n.text}</Txt>
-            <Txt size={11} color="ink3">
-              {relTime(new Date(n.createdAt), lang)}
+
+        {l.property ? (
+          <>
+            <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
+              {t('الوحدة المهتم بيها', 'Interested in')}
             </Txt>
-          </View>
-        </View>
-      ))}
-      <View style={[styles.note, { backgroundColor: colors.surface2 }]}>
-        <CalendarClock size={16} color={colors.ink2} />
-        <Txt size={12.5} color="ink2" style={styles.flex}>
-          {t(
-            `أول تواصل ${relTime(new Date(l.createdAt), 'ar')} من خلال: ${LEAD_SOURCE_LABEL[l.source].ar}`,
-            `First touch ${relTime(new Date(l.createdAt), 'en')} via ${LEAD_SOURCE_LABEL[l.source].en}`,
-          )}
+            <PropertyRow card={l.property} />
+          </>
+        ) : null}
+
+        {l.viewing ? (
+          <>
+            <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
+              {t('المعاينة', 'Viewing')}
+            </Txt>
+            <View style={[styles.viewing, { backgroundColor: colors.ink }]}>
+              <View style={[styles.viewingIcon, { backgroundColor: 'rgba(179, 137, 89, 0.2)' }]}>
+                {l.viewing.mode === 'video' ? <Video size={20} color={colors.accent} /> : <CalendarClock size={20} color={colors.accent} />}
+              </View>
+              <View style={styles.flex}>
+                <Txt size={14} weight="semibold" style={{ color: colors.bg }}>
+                  {fmtDate(l.viewing.date, lang, 'long')}
+                </Txt>
+                <Txt size={12.5} style={{ color: colors.bg, opacity: 0.7 }}>
+                  {fmtTime(l.viewing.time, lang)} | {l.viewing.mode === 'video' ? t('فيديو لايف', 'Live video') : t('في الموقع', 'On site')}
+                </Txt>
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
+          {t('ملاحظات', 'Notes')}
         </Txt>
-      </View>
-    </ScrollView>
+        <View style={styles.noteRow}>
+          <TextInput
+            accessibilityLabel={t('ملاحظة جديدة', 'New note')}
+            value={note}
+            onChangeText={setNote}
+            placeholder={t('اكتب ملاحظة عن المكالمة…', 'Add a note about the call…')}
+            placeholderTextColor={colors.ink3}
+            maxLength={LEAD_NOTE_MAX}
+            multiline
+            style={[styles.noteInput, { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.line }]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('احفظ الملاحظة', 'Save note')}
+            accessibilityState={{ disabled: !note.trim() || addNote.isPending }}
+            disabled={!note.trim() || addNote.isPending}
+            onPress={send}
+            style={[styles.send, { backgroundColor: colors.ink, opacity: !note.trim() ? 0.4 : 1 }]}
+          >
+            {addNote.isPending ? <ActivityIndicator color={colors.bg} /> : <Send size={18} color={colors.bg} style={lang === 'ar' ? styles.flip : undefined} />}
+          </Pressable>
+        </View>
+        {l.notes.map((n) => (
+          <View key={n.id} style={[styles.note, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <StickyNote size={16} color={colors.accent} />
+            <View style={styles.flex}>
+              <Txt size={13}>{n.text}</Txt>
+              <Txt size={11} color="ink3">
+                {relTime(new Date(n.createdAt), lang)}
+              </Txt>
+            </View>
+          </View>
+        ))}
+        <View style={[styles.note, { backgroundColor: colors.surface2 }]}>
+          <CalendarClock size={16} color={colors.ink2} />
+          <Txt size={12.5} color="ink2" style={styles.flex}>
+            {t(
+              `أول تواصل ${relTime(new Date(l.createdAt), 'ar')} من خلال: ${LEAD_SOURCE_LABEL[l.source].ar}`,
+              `First touch ${relTime(new Date(l.createdAt), 'en')} via ${LEAD_SOURCE_LABEL[l.source].en}`,
+            )}
+          </Txt>
+        </View>
+      </ScrollView>
+    </KeyboardAvoiding>
   );
 }
 

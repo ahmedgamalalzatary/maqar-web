@@ -20,6 +20,7 @@ import { takePendingAction } from '@/features/auth/pending-action';
 import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react-native';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -109,7 +110,7 @@ export function OnboardingScreen() {
   const Back = rtl ? ArrowRight : ArrowLeft;
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg, paddingTop: insets.top + 12 }]}>
+    <KeyboardAvoiding style={{ backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
       <View style={styles.top}>
         {step > 0 ? (
           <IconButton label={t('رجوع', 'Back')} onPress={() => setStep((s) => s - 1)} icon={<Back size={20} color={colors.ink} />} />
@@ -303,7 +304,7 @@ export function OnboardingScreen() {
           onPress={last ? finish : () => setStep((s) => s + 1)}
         />
       </View>
-    </View>
+    </KeyboardAvoiding>
   );
 }
 
@@ -391,7 +392,6 @@ function AreasStep({ picked, onToggle }: { picked: string[]; onToggle: (id: stri
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   topSpace: { width: 44, height: 44 },
   progress: { flex: 1, flexDirection: 'row', gap: 6 },
