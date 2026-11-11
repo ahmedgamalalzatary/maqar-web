@@ -45,15 +45,22 @@ const AGENTS: AdminAgentOption[] = [
 const counts = (c: Partial<Record<PropertyStatus, number>>): Record<PropertyStatus, number> => ({ draft: 0, approved: 0, unpublished: 0, sold: 0, rented: 0, ...c });
 
 /** A stateful fake API for the admin screens. Returns the writes. */
-function serve(start: AdminListing = detail(), opts: { publishFails?: boolean } = {}) {
+function serve(start: AdminListing = detail(), opts: { publishFails?: boolean; uploadsFailFirst?: number } = {}) {
   let current = start;
+  let uploadsLeftToFail = opts.uploadsFailFirst ?? 0;
   const fetchMock = mockFetch().mockImplementation(async (url: string, init: RequestInit = {}) => {
     const [path, qs] = url.replace(/^.*\/v1/, '').split('?');
     const method = init.method ?? 'GET';
     const body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
     if (path === '/areas') return jsonResponse(200, AREAS);
     if (path === '/admin/agents') return jsonResponse(200, AGENTS);
-    if (path === '/uploads') return jsonResponse(201, { url: '/uploads/listings/new.jpg' });
+    if (path === '/uploads') {
+      if (uploadsLeftToFail > 0) {
+        uploadsLeftToFail -= 1;
+        return jsonResponse(500, { statusCode: 500, message: 'Upload failed' });
+      }
+      return jsonResponse(201, { url: '/uploads/listings/new.jpg' });
+    }
     if (path === '/admin/listings' && method === 'GET') {
       const status = new URLSearchParams(qs).get('status');
       const all = [item({ id: 7 }), item({ id: 8, titleAr: 'فيلا منشورة', status: 'approved', agent: AGENTS[1]! })];
@@ -116,6 +123,30 @@ describe('Admin listings tab', () => {
     await waitFor(() => expect(screen.queryByText('شقة على الحديقة')).toBeNull());
     await fireEvent.press(screen.getByRole('button', { name: 'فيلا منشورة، منشور' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/admin/listing/8');
+  });
+
+  it('loads the next page when the list is longer than the first page (UI-14)', async () => {
+    const page = (n: number, total: number): AdminListingsPage => ({
+      items: Array.from({ length: n }, (_, i) => item({ id: i + 1, titleAr: `عقار ${i + 1}` })),
+      page: 1,
+      limit: 100,
+      total,
+      counts: counts({ draft: total }),
+    });
+    const fetchMock = mockFetch().mockImplementation((url: string) => {
+      const qs = new URLSearchParams(url.replace(/^.*\/v1\/admin\/listings\??/, ''));
+      const p = Number(qs.get('page') ?? 1);
+      return Promise.resolve(jsonResponse(200, p === 1 ? page(100, 101) : { ...page(1, 101), page: 2 }));
+    });
+    await renderWithProviders(<AdminListingsScreen />);
+    expect(await screen.findByText('عقار 1')).toBeOnTheScreen();
+    expect(screen.queryByText('عقار 101')).toBeNull();
+
+    // Reaching the end of the first page asks for the second one (the list virtualizes, so the
+    // new rows may not render in the test tree; the fetch is the behavior).
+    const list = screen.getByTestId('admin-listings');
+    await list.props.onEndReached();
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u]) => String(u).includes('page=2'))).toBe(true));
   });
 });
 
@@ -220,6 +251,46 @@ describe('Listing form', () => {
     });
     expect(writes().some(([, u]) => String(u).endsWith('/publish'))).toBe(false);
     expect(mockRouter.replace).toHaveBeenCalledWith('/admin/listing/9');
+  });
+
+  it('keeps a failed photo across step navigation, and its retry succeeds (UI-08)', async () => {
+    const writes = serve(detail(), { uploadsFailFirst: 1 });
+    pickTwo();
+    await renderWithProviders(withToasts(<ListingFormScreen />));
+    await fireEvent.press(screen.getByRole('radio', { name: 'شقة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الشيخ زايد' }));
+    await fireEvent.changeText(screen.getByLabelText('اسم المالك'), 'هاني عادل');
+    await fireEvent.changeText(screen.getByLabelText('موبايل المالك'), '+201001234567');
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.changeText(await screen.findByLabelText('الغرف'), '2');
+    await fireEvent.changeText(screen.getByLabelText('الحمامات'), '1');
+    await fireEvent.changeText(screen.getByLabelText('المساحة (م²)'), '120');
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.changeText(screen.getByLabelText('السعر (جنيه)'), '5000000');
+    await fireEvent.press(screen.getByRole('radio', { name: 'تشطيب كامل' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+
+    // Two photos picked: the first upload fails (its tile shows a retry), the second lands.
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف صور' }));
+    expect(await screen.findByRole('button', { name: 'حاول ترفعها تاني' })).toBeOnTheScreen();
+    await waitFor(() => expect(screen.getAllByTestId('form-photo')).toHaveLength(2));
+
+    // Back a step and forward again (Next is blocked while an upload failed):
+    // the failed photo and its retry are still there.
+    await fireEvent.press(screen.getByRole('button', { name: 'السابق' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    expect(screen.getByRole('button', { name: 'حاول ترفعها تاني' })).toBeOnTheScreen();
+
+    // The retry uploads now, and the saved draft carries both photos.
+    await fireEvent.press(screen.getByRole('button', { name: 'حاول ترفعها تاني' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'حاول ترفعها تاني' })).toBeNull());
+    expect(screen.getAllByTestId('form-photo')).toHaveLength(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
+    expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
+    const save = writes().find(([m, u]) => m === 'POST' && u === '/admin/listings');
+    expect(save?.[2]).toMatchObject({ images: ['/uploads/listings/new.jpg', '/uploads/listings/new.jpg'] });
   });
 
   it('edits a saved listing: the steps start filled in, and only Save changes is offered', async () => {

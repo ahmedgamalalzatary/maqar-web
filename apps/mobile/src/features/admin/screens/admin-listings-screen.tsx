@@ -33,6 +33,7 @@ export function AdminListingsScreen() {
 
   return (
     <FlatList
+      testID="admin-listings"
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       data={items}
