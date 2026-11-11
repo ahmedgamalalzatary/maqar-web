@@ -16,6 +16,7 @@ import {
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { takePendingAction } from '@/features/auth/pending-action';
 import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react-native';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -91,7 +92,16 @@ export function OnboardingScreen() {
     const clean = name.trim();
     save.mutate(
       { prefs, name: clean.length >= 2 && clean !== user?.name ? clean : undefined },
-      { onSuccess: () => (saved ? router.back() : router.replace('/')) },
+      {
+        onSuccess: () => {
+          // A sign-up that interrupted a guest's task resumes it; onboarding opened on its own
+          // just goes back (or to the client home the first time).
+          const resume = takePendingAction();
+          if (resume) resume();
+          else if (saved) router.back();
+          else router.replace('/');
+        },
+      },
     );
   };
 

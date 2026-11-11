@@ -4,18 +4,24 @@ import { useRouter } from 'expo-router';
 import { useSettings } from '@/core/settings/store';
 import { forgetThisPhone } from '@/features/notifications/push';
 import { signInRequest, signOutRequest, signUpRequest } from '../api/auth.api';
+import { takePendingAction } from '../pending-action';
 import { homeFor, useSession } from '../store/session.store';
 
 /**
- * After sign-in or sign-up: keep the session, apply the account's settings, open the role's home.
- * A new client goes through the preference questions first (contract §8.1).
+ * After sign-in or sign-up: keep the session and apply the account's settings. A new client goes
+ * through the preference questions first (contract §8.1). A guest who was interrupted mid-task
+ * (book, save, follow, chat) resumes exactly that instead of being dropped on the role's home;
+ * the resume runs where they already are, so no navigation.
  */
 function useOnSignedIn(isNew = false) {
   const router = useRouter();
   return async (auth: AuthResponse) => {
     await useSession.getState().setSession(auth);
     useSettings.setState({ lang: auth.user.lang, theme: auth.user.theme });
-    router.replace(isNew && auth.user.role === 'client' ? '/onboarding' : homeFor(auth.user.role));
+    const resume = takePendingAction();
+    if (isNew && auth.user.role === 'client') router.replace('/onboarding');
+    else if (resume) resume();
+    else router.replace(homeFor(auth.user.role));
   };
 }
 

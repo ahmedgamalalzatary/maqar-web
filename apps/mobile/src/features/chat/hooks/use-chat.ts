@@ -58,7 +58,8 @@ let tempId = 0;
 
 /**
  * Sends a text or a card. A text shows at once, as sending; it becomes the real message when the
- * server answers, or goes away with an error.
+ * server answers, or goes away with an error. A failed send refetches the messages, so one the
+ * server did commit but whose answer was lost comes back instead of vanishing.
  */
 export function useSend(threadId: number) {
   const me = useChatUser();
@@ -73,7 +74,10 @@ export function useSend(threadId: number) {
       return { temp };
     },
     onSuccess: (m, _body, ctx) => (ctx?.temp ? replaceMessage(qc, userId, m, ctx.temp.id) : addMessage(qc, userId, m)),
-    onError: (_err, _body, ctx) => ctx?.temp && removeMessage(qc, userId, threadId, ctx.temp.id),
+    onError: (_err, _body, ctx) => {
+      if (ctx?.temp) removeMessage(qc, userId, threadId, ctx.temp.id);
+      void qc.invalidateQueries({ queryKey: messagesKey(userId, threadId) });
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: chatsKey(userId) }),
   });
 }

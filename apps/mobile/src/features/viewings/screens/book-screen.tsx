@@ -1,6 +1,6 @@
 import { fmtDate, fmtNum, fmtTime, type PropertyDetail, type ReminderOffset, type Slot, type ViewingItem } from '@maqar/shared';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   ArrowRight,
@@ -55,18 +55,33 @@ export function BookScreen({ id, reschedule }: { id: number; reschedule?: number
       </View>
     );
   }
-  if (!property.data || (reschedule && !existing.data)) return <Failed />;
+  // A transient failure offers a retry; a home or viewing that really is not there does not.
+  if (property.isError || (reschedule && existing.isError)) {
+    return (
+      <Failed
+        retry={() => {
+          void property.refetch();
+          if (reschedule) void existing.refetch();
+        }}
+        home={`/property/${id}`}
+      />
+    );
+  }
+  if (!property.data || (reschedule && !existing.data)) return <Failed home={`/property/${id}`} />;
   return <Book p={property.data} existing={existing.data} />;
 }
 
-function Failed() {
+/** Booking could not open: say so, offer a retry when it might be temporary, and a useful Back. */
+function Failed({ retry, home }: { retry?: () => void; home?: Href }) {
   const t = useT();
   const router = useRouter();
   const { colors } = useTheme();
+  const back = () => (home && router.canGoBack() ? router.back() : home ? router.replace(home) : router.replace('/'));
   return (
     <View style={[styles.fill, styles.center, { backgroundColor: colors.bg, padding: 24, gap: 12 }]}>
       <Txt align="center">{t('مش قادرين نفتح الحجز دلوقتي.', 'We couldn’t open booking right now.')}</Txt>
-      <Button label={t('رجوع', 'Back')} variant="secondary" onPress={() => router.back()} />
+      {retry ? <Button label={t('حاول تاني', 'Try again')} onPress={retry} /> : null}
+      <Button label={t('رجوع', 'Back')} variant="secondary" onPress={back} />
     </View>
   );
 }
@@ -98,7 +113,9 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
   const date = picked ?? slots.data?.defaultDate ?? null;
   const day = days.find((d) => d.date === date);
   // The times refresh whenever the screen comes back: a picked time counts only while it is still free.
-  const time = pickedTime && day?.slots.some((s) => s.time === pickedTime && s.state === 'free') ? pickedTime : null;
+  // A failed availability refresh leaves the old slots on screen, but they are no longer trusted:
+  // nothing counts as selected until the times load again (the server stays the final word).
+  const time = !slots.isError && pickedTime && day?.slots.some((s) => s.time === pickedTime && s.state === 'free') ? pickedTime : null;
   const groups: { icon: LucideIcon; label: string; slots: Slot[] }[] = [
     { icon: Sunrise, label: t('الصبح', 'Morning'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) < 13) },
     { icon: Sun, label: t('بعد الضهر', 'Afternoon'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 13 && hourOf(s.time) < 17) },
@@ -110,13 +127,16 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
 
   const failed = (err: unknown) => {
     const already = err instanceof ApiError && /already have a viewing/i.test(err.message);
-    const taken = err instanceof ApiError && err.status === 409;
+    const taken = err instanceof ApiError && err.status === 409 && /just booked|no longer free/i.test(err.message);
+    // Other 409s say exactly why on the server ("That time is closed", "already started"): pass
+    // them through instead of blaming the picked time.
+    const reason = err instanceof ApiError && err.status === 409 ? err.message : '';
     toast.show({
       title: already
         ? t('عندك معاينة للوحدة دي بالفعل', 'You already have a viewing for this home')
         : taken
           ? t('الميعاد ده لسه اتحجز، اختار ميعاد تاني', 'That time was just taken. Pick another.')
-          : t('مقدرناش نأكد الحجز، حاول تاني', 'We couldn’t confirm that, try again'),
+          : reason || t('مقدرناش نأكد الحجز، حاول تاني', 'We couldn’t confirm that, try again'),
       body: already ? t('غيّر ميعادها من معايناتي.', 'Change its time from My viewings.') : undefined,
       tone: 'danger',
     });

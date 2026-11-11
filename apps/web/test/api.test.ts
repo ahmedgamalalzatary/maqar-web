@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthResponse } from "@maqar/shared";
-import { ApiError, createApi, type TokenStore } from "@/lib/api";
+import { ApiError, createApi, REQUEST_TIMEOUT_MS, type TokenStore } from "@/lib/api";
 
 const auth = (n: number, role: "admin" | "client" = "admin"): AuthResponse => ({
   user: { id: 1, role, name: "Admin", email: "admin@maqar.app", phone: null, lang: "ar", theme: "system", pushEnabled: false, prefs: null } as unknown as AuthResponse["user"],
@@ -160,5 +160,56 @@ describe("the dashboard's API client", () => {
     });
     const api = createApi({ base: "/v1", fetch, store: memoryStore(auth(1)) });
     await expect(api.request("/a")).rejects.toMatchObject({ status: 0 });
+  });
+
+  describe("request deadline", () => {
+    const fetch = vi.fn();
+    beforeEach(() => fetch.mockReset());
+
+    /**
+     * A fetch that answers nothing until its signal is aborted, like a stalled connection. It
+     * gives up on its own after 500ms and keeps its rejection handled. Calls without a signal
+     * (vitest's runner probes the mock once more) settle at once.
+     */
+    const stalled = () =>
+      fetch.mockImplementation((_url: RequestInfo | URL, init?: RequestInit) => {
+        if (!init?.signal) return Promise.resolve(new Response(null, { status: 200 }));
+        const p = new Promise<Response>((_resolve, reject) => {
+          let done = false;
+          const give = () => {
+            if (done) return;
+            done = true;
+            reject(new DOMException("Aborted", "AbortError"));
+          };
+          init.signal!.addEventListener("abort", give);
+          setTimeout(give, 500);
+        });
+        p.catch(() => undefined);
+        return p;
+      });
+
+    it("rejects a request that never resolves, instead of hanging forever", async () => {
+      stalled();
+      const api = createApi({ base: "/v1", fetch, store: memoryStore(auth(1)) });
+      await expect(api.request("/a", { timeoutMs: 20 })).rejects.toMatchObject({ name: "ApiError", status: 0, message: "Request timed out" });
+    });
+
+    it("bounds every request by default, and lets one that answers in time through", async () => {
+      expect(REQUEST_TIMEOUT_MS).toBeGreaterThan(0);
+      fetch.mockResolvedValue(json(200, { ok: true }));
+      const api = createApi({ base: "/v1", fetch, store: memoryStore(auth(1)) });
+      await expect(api.request("/a")).resolves.toEqual({ ok: true });
+      const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it("still rethrows a caller abort as an AbortError", async () => {
+      stalled();
+      const caller = new AbortController();
+      const api = createApi({ base: "/v1", fetch, store: memoryStore(auth(1)) });
+      const pending = api.request("/a", { signal: caller.signal });
+      caller.abort();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    });
   });
 });

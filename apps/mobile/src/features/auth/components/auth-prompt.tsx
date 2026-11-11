@@ -5,6 +5,7 @@ import { Button } from '@/components/button';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { useT } from '@/core/i18n';
+import { setPendingAction } from '../pending-action';
 
 export const useAuthPrompt = create<{ open: boolean }>(() => ({ open: false }));
 
@@ -13,9 +14,13 @@ export function AuthPromptHost() {
   const t = useT();
   const router = useRouter();
   const open = useAuthPrompt((s) => s.open);
-  const close = () => useAuthPrompt.setState({ open: false });
+  // Backing out drops the saved action: a later sign-in from elsewhere must not replay it.
+  const close = () => {
+    setPendingAction(null);
+    useAuthPrompt.setState({ open: false });
+  };
   const go = (href: '/sign-in' | '/sign-up') => {
-    close();
+    useAuthPrompt.setState({ open: false });
     router.push(href);
   };
   return (

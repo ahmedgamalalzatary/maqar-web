@@ -114,11 +114,21 @@ export function Card({ className = "", children }: { className?: string; childre
   return <section className={`rounded-2xl border border-line bg-surface p-5 shadow-card ${className}`}>{children}</section>;
 }
 
-/** "The server could not be reached" or "something went wrong", in the admin's language. */
+/**
+ * What a failed request means, in the admin's language: the server's own reason when it has one,
+ * else a fair guess from the status — never a blame on valid input for a server failure.
+ */
 export function useErrorText() {
   const t = useT();
-  return (e: unknown) =>
-    e && typeof e === "object" && "status" in e && e.status === 0
-      ? t("مفيش اتصال بالسيرفر، حاول تاني", "Can’t reach the server, try again")
-      : t("حصلت مشكلة، حاول تاني", "Something went wrong, try again");
+  return (e: unknown) => {
+    const status = e && typeof e === "object" && "status" in e ? Number((e as { status: unknown }).status) : NaN;
+    const message = e && typeof e === "object" && "message" in e && typeof (e as { message: unknown }).message === "string" ? (e as { message: string }).message : "";
+    if (status === 0) return t("مفيش اتصال بالسيرفر، حاول تاني", "Can’t reach the server, try again");
+    if (message && status !== 401 && status !== 403) return message;
+    if (status === 401 || status === 403) return t("الجلسة خلصت أو ماعندكش صلاحية", "Your session ended or you don’t have permission");
+    if (status === 404) return t("مش موجود أو اتحذف", "It’s gone or was deleted");
+    if (status === 409) return t("في تعارض مع تغيير حصل للتو، حدّث الصفحة", "It conflicts with a change made just now — refresh the page");
+    if (status === 429) return t("محاولات كتير، استنى شوية وجرب تاني", "Too many attempts, wait a moment and try again");
+    return t("حصلت مشكلة، حاول تاني", "Something went wrong, try again");
+  };
 }

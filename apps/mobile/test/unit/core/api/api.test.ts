@@ -1,4 +1,4 @@
-import { ApiError, apiFetch } from '@/core/api/api';
+import { ApiError, REQUEST_TIMEOUT_MS, apiFetch } from '@/core/api/api';
 
 const fetchMock = jest.fn();
 beforeEach(() => {
@@ -31,5 +31,43 @@ describe('apiFetch', () => {
   it('turns a network failure into an ApiError with status 0', async () => {
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
     await expect(apiFetch('/x')).rejects.toMatchObject({ status: 0 });
+  });
+
+  describe('request deadline', () => {
+    /** A fetch that answers nothing until its signal is aborted, like a stalled connection. */
+    const stalled = () =>
+      fetchMock.mockImplementation(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')))),
+      );
+
+    it('rejects a request that never resolves, instead of hanging forever', async () => {
+      jest.useFakeTimers();
+      try {
+        stalled();
+        const pending = apiFetch('/health', { timeoutMs: 1000 });
+        const settled = expect(pending).rejects.toMatchObject({ name: 'ApiError', status: 0, message: 'Request timed out' });
+        await jest.advanceTimersByTimeAsync(1001);
+        await settled;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('bounds every request by default, and lets one that answers in time through', async () => {
+      expect(REQUEST_TIMEOUT_MS).toBeGreaterThan(0);
+      fetchMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } }));
+      await expect(apiFetch('/health')).resolves.toEqual({ ok: true });
+      const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('still honours a caller abort signal', async () => {
+      stalled();
+      const caller = new AbortController();
+      const pending = apiFetch('/health', { timeoutMs: REQUEST_TIMEOUT_MS * 2, signal: caller.signal });
+      caller.abort();
+      await expect(pending).rejects.toMatchObject({ name: 'ApiError', status: 0 });
+    });
   });
 });
