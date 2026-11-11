@@ -2,7 +2,9 @@
 **/dist
 **/.turbo
 **/.expo
-**/uploads
+# Uploaded photos from local runs, not the API's uploads module (src/modules/uploads).
+/uploads
+apps/*/uploads
 **/*.tsbuildinfo
 .git
 .github
@@ -18,3 +20,5 @@ apps/mobile/*
 !apps/mobile/package.json
 apps/demo/*
 !apps/demo/package.json
+apps/web/*
+!apps/web/package.json
