@@ -202,7 +202,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
             {otherTyping
               ? t('بيكتب…', 'typing…')
               : side === 'client'
-                ? t(`مستشار مبيعات | بيرد خلال ${fmtNum(thread.agent.avgReplyMins, 'ar')} د`, `Sales advisor | replies in ${thread.agent.avgReplyMins} min`)
+                ? t(`مستشار مبيعات | هدفنا الرد خلال ${fmtNum(thread.agent.avgReplyMins, 'ar')} د`, `Sales advisor | aims to reply in ${thread.agent.avgReplyMins} min`)
                 : t('عميل', 'Client')}
           </Txt>
         </View>

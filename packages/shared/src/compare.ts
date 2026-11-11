@@ -30,11 +30,12 @@ export type CompareHome = {
 /** A plan for homes without one, as the demo shows. */
 const FALLBACK_PLAN = { downPct: 20, years: 5 };
 
-/** The monthly installment of a home to buy, on its plan (or 20% over 5 years); null for rent and stays. */
+/** The monthly installment of a home to buy, on its plan — or, without one, on the assumed 20%
+ *  over 5 years, flagged `estimated` so nobody takes invented terms for the seller's. */
 export function compareMonthly(h: Pick<CompareHome, 'category' | 'price' | 'plan'>) {
   if (h.category !== 'sale' && h.category !== 'project') return null;
   const plan = h.plan ?? FALLBACK_PLAN;
-  return { payment: installment(h.price, plan.downPct, plan.years).payment, ...plan };
+  return { payment: installment(h.price, plan.downPct, plan.years).payment, ...plan, estimated: h.plan === null };
 }
 
 /** Price per m² only counts as a difference above this share. */
@@ -69,9 +70,12 @@ export function compareVerdict(a: CompareHome, b: CompareHome, scores?: readonly
   const mb = compareMonthly(b);
   if (ma && mb && Math.round(ma.payment) !== Math.round(mb.payment)) {
     const diff = Math.round(Math.abs(ma.payment - mb.payment));
+    const assumed = ma.estimated || mb.estimated;
     out.push({
       who: ma.payment < mb.payment ? 0 : 1,
-      text: { ar: `قسط شهري أقل بـ ${fmtMoney(diff, 'ar')}`, en: `${fmtMoney(diff, 'en')} less per month` },
+      text: assumed
+        ? { ar: `قسط شهري أقل بـ ${fmtMoney(diff, 'ar')} (بتقدير ٢٠٪ مقدم على ٥ سنين)`, en: `${fmtMoney(diff, 'en')} less per month (on an assumed 20% over 5 years)` }
+        : { ar: `قسط شهري أقل بـ ${fmtMoney(diff, 'ar')}`, en: `${fmtMoney(diff, 'en')} less per month` },
     });
   }
 

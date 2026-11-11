@@ -81,6 +81,7 @@ function Header({ name }: { name: string }) {
             <Link
               key={href}
               href={href}
+              aria-label={label}
               aria-current={on ? "page" : undefined}
               className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
             >

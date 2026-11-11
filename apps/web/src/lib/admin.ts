@@ -29,6 +29,12 @@ export type ListingsQuery = { status?: PropertyStatus; q?: string; page?: number
 /** Keys the cache by the signed-in admin, so another account never sees it. */
 const useKey = () => ["admin", useSession()?.user.id ?? null] as const;
 
+/** The id from the address, or undefined when it is not a positive whole number. */
+export function readId(raw: string | null): number | undefined {
+  const n = Number(raw);
+  return raw !== null && String(n) === raw && Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 export function useListings({ status, q, page = 1 }: ListingsQuery) {
   const key = useKey();
   return useQuery({

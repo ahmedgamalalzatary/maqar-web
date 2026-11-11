@@ -1,5 +1,5 @@
 import { fmtNum, type ListingAgent } from '@maqar/shared';
-import { BadgeCheck, Clock, Phone, Star } from 'lucide-react-native';
+import { BadgeCheck, Clock, Phone } from 'lucide-react-native';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Card } from '@/components/card';
 import { Txt } from '@/components/text';
@@ -35,19 +35,17 @@ export function AdvisorCard({ agent }: { agent: ListingAgent }) {
             {lang === 'ar' ? agent.roleTitleAr : agent.roleTitleEn}
           </Txt>
           <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Star size={13} color={colors.accent} fill={colors.accent} />
+            {/* No rating is shown: there is no collection workflow, so a number would be a claim
+                with nothing behind it. Deals show only once the advisor has any. */}
+            {agent.dealsCount > 0 ? (
               <Txt size={11} color="ink2">
-                {fmtNum(agent.rating, lang)}
+                {t(`${fmtNum(agent.dealsCount, 'ar')} صفقة`, `${agent.dealsCount} deals`)}
               </Txt>
-            </View>
-            <Txt size={11} color="ink2">
-              {t(`${fmtNum(agent.dealsCount, 'ar')} صفقة`, `${agent.dealsCount} deals`)}
-            </Txt>
+            ) : null}
             <View style={styles.stat}>
               <Clock size={12} color={colors.ink2} />
               <Txt size={11} color="ink2">
-                {t(`يرد خلال ${fmtNum(agent.avgReplyMins, 'ar')} د`, `replies in ${agent.avgReplyMins}m`)}
+                {t(`هدفنا الرد خلال ${fmtNum(agent.avgReplyMins, 'ar')} د`, `aims to reply in ${agent.avgReplyMins}m`)}
               </Txt>
             </View>
           </View>

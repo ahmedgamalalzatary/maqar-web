@@ -81,7 +81,9 @@ export function useAdminAgents(enabled = true) {
   return useQuery({ queryKey: [...adminKey(adminId), 'agents'], queryFn: ({ signal }) => getAdminAgents(signal), enabled: enabled && adminId !== null });
 }
 
-/** After any change: the listing shows its new state at once, and the lists and Explore catch up. */
+/** After any change: the listing shows its new state at once, and the lists and Explore catch up.
+ *  The public detail and similar queries (`property`, not `properties`) are invalidated too, so a
+ *  preview after an edit never serves the stale five-minute cache. */
 function useSettle() {
   const adminId = useAdminId();
   const qc = useQueryClient();
@@ -89,6 +91,7 @@ function useSettle() {
     qc.setQueryData([...adminKey(adminId), 'listing', l.id], l);
     void qc.invalidateQueries({ queryKey: adminKey(adminId), predicate: (q) => q.queryKey[2] !== 'listing' });
     void qc.invalidateQueries({ queryKey: ['properties'] });
+    void qc.invalidateQueries({ queryKey: ['property', l.id] });
   };
 }
 

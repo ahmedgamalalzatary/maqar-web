@@ -12,7 +12,6 @@ import {
   type LucideIcon,
   MapPin,
   Moon,
-  Star,
   Sun,
   Sunrise,
 } from 'lucide-react-native';
@@ -320,9 +319,8 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
                 {lang === 'ar' ? p.agent.roleTitleAr : p.agent.roleTitleEn}
               </Txt>
               <View style={styles.inline}>
-                <Star size={12} color={colors.accent} fill={colors.accent} />
                 <Txt size={11.5} color="ink2">
-                  {fmtNum(p.agent.rating, lang, 1)} | {lang === 'ar' ? p.agent.languagesAr : p.agent.languagesEn}
+                  {lang === 'ar' ? p.agent.languagesAr : p.agent.languagesEn}
                 </Txt>
               </View>
             </View>

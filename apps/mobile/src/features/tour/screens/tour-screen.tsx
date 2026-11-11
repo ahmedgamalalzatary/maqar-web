@@ -54,6 +54,9 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const rooms = p.tourRooms;
   const [roomId, setRoomId] = useState(rooms[0]!.id);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  // Bumped to re-mount the viewer for a retry.
+  const [tryNo, setTryNo] = useState(0);
   const [hint, setHint] = useState(true);
   const [heading, setHeading] = useState(0);
   const [gyro, setGyro] = useState(false);
@@ -83,6 +86,7 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
 
   const go = (id: number) => {
     setRoomId(id);
+    setFailed(false);
     setHint(false);
   };
 
@@ -98,14 +102,33 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   return (
     <View style={[styles.fill, { backgroundColor: colors.navy }]}>
       <PanoView
+        key={`${room.id}-${tryNo}`}
         uri={mediaUrl(room.pano) ?? ''}
         hotspots={hotspots}
         onHotspot={(key) => go(Number(key))}
         gyro={gyro}
         onLoading={setLoading}
+        onError={() => {
+          setFailed(true);
+          setLoading(false);
+        }}
         onHeading={setHeading}
         onTouch={() => setHint(false)}
       />
+
+      {failed ? (
+        <View style={styles.failed} pointerEvents="box-none">
+          <View style={[styles.failedCard, { backgroundColor: 'rgba(0,0,0,0.75)' }]}>
+            <Txt align="center" style={styles.white}>
+              {t('مقدرناش نفتح صورة الغرفة دي.', 'We couldn’t load this room’s picture.')}
+            </Txt>
+            <View style={styles.failedRow}>
+              <Button label={t('حاول تاني', 'Try again')} onPress={() => { setFailed(false); setLoading(true); setTryNo((n) => n + 1); }} />
+              <Button label={t('الغرفة اللي فاتت', 'Previous room')} variant="secondary" onPress={() => go(roomId === rooms[0]!.id ? rooms[rooms.length - 1]!.id : rooms[rooms.findIndex((r) => r.id === room.id) - 1]!.id)} />
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       <LinearGradient
         colors={['rgba(0,0,0,0.6)', 'transparent']}
@@ -162,7 +185,10 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rooms}>
           {rooms.map((r) => {
             const on = r.id === room.id;
-            const uri = mediaUrl(r.pano);
+            // The full panoramas are heavy: a room's thumb loads only when the tour is on it or
+            // next to it, instead of every room's file at once.
+            const near = Math.abs(rooms.findIndex((x) => x.id === r.id) - rooms.findIndex((x) => x.id === room.id)) <= 1;
+            const uri = near ? mediaUrl(r.pano) : null;
             return (
               <Pressable
                 key={r.id}
@@ -227,6 +253,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   hint: { alignItems: 'center', gap: 10, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 24, paddingVertical: 20, maxWidth: 300 },
+  failed: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  failedCard: { borderRadius: 24, padding: 20, gap: 14, alignItems: 'center' },
+  failedRow: { flexDirection: 'row', gap: 10 },
   bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 48 },
   rooms: { gap: 8, paddingHorizontal: 16 },
   room: { width: 96, height: 64, borderRadius: 16, overflow: 'hidden' },

@@ -4,10 +4,11 @@ import { type AdminAgentDetail, type AgentBody, readPhone, readWholeNumber } fro
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { ApiError } from "@/lib/api";
-import { useAgent, useSaveAgent } from "@/lib/admin";
+import { useAgent, useSaveAgent, readId } from "@/lib/admin";
 import { useT } from "@/lib/i18n";
 import { useNotice } from "./shell";
 import { Button, Card, Field } from "./ui";
+import Link from "next/link";
 
 const COLOURS = ["#b38959", "#61766d", "#3d5a80", "#8c5e58", "#6b5b95", "#2f6f6a"];
 type Key = "nameAr" | "nameEn" | "email" | "password" | "phone" | "roleTitleAr" | "roleTitleEn" | "languagesAr" | "languagesEn" | "monthlyTarget";
@@ -15,8 +16,17 @@ type Key = "nameAr" | "nameEn" | "email" | "password" | "phone" | "roleTitleAr" 
 /** `/agent/edit/?id=3`. */
 export function EditAgent() {
   const t = useT();
-  const id = Number(useSearchParams().get("id"));
+  const id = readId(useSearchParams().get("id"));
   const agent = useAgent(id);
+  if (id === undefined)
+    return (
+      <Card>
+        {t("الرابط مش صحيح: مفيش رقم مسؤول.", "That link is not right: no agent number.")}{" "}
+        <Link href="/agents/" className="text-accent-ink hover:underline">
+          {t("كل المسؤولين", "All agents")}
+        </Link>
+      </Card>
+    );
   if (agent.isError) return <Card>{t("مقدرناش نجيب المسؤول", "We couldn’t load the agent")}</Card>;
   if (!agent.data) return <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />;
   return <AgentForm key={id} saved={agent.data} />;

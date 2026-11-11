@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
-import { useAgent, useAllAgents, useRemoveDayOff, useSaveAgent } from "@/lib/admin";
+import { useAgent, useAllAgents, useRemoveDayOff, useSaveAgent, readId } from "@/lib/admin";
 import { useLang, useT } from "@/lib/i18n";
 import { useNotice } from "./shell";
 import { Button, Card, useErrorText } from "./ui";
@@ -121,7 +121,7 @@ export function AgentsPage() {
 export function AgentPage() {
   const t = useT();
   const lang = useLang();
-  const id = Number(useSearchParams().get("id"));
+  const id = readId(useSearchParams().get("id"));
   const agent = useAgent(id);
   const Back = lang === "ar" ? ArrowRight : ArrowLeft;
   return (
@@ -130,7 +130,9 @@ export function AgentPage() {
         <Back className="size-4" aria-hidden />
         {t("كل المسؤولين", "All agents")}
       </Link>
-      {agent.isPending ? (
+      {id === undefined ? (
+        <Card>{t("الرابط مش صحيح: مفيش رقم مسؤول.", "That link is not right: no agent number.")}</Card>
+      ) : agent.isPending ? (
         <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />
       ) : agent.isError ? (
         <Card>{agent.error instanceof ApiError && agent.error.status === 404 ? t("المسؤول ده مش موجود.", "This agent does not exist.") : t("مقدرناش نجيب المسؤول", "We couldn’t load the agent")}</Card>

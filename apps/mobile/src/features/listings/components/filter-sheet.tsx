@@ -18,6 +18,7 @@ import { X } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
@@ -68,9 +69,10 @@ export function FilterSheet({
   const years = facets.data?.deliveryYears ?? [];
   const deliveries: Delivery[] = ['ready', ...years];
   const total = facets.data?.total;
+  const reduceMotion = useReduceMotion();
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
       <View style={styles.fill}>
         <Pressable accessibilityLabel={t('إغلاق', 'Close')} style={styles.backdrop} onPress={onClose} />
         <View style={[styles.sheet, { direction: dir, backgroundColor: colors.surface }]}>

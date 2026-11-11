@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDir } from '@/core/i18n';
+import { useDir, useT } from '@/core/i18n';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { radius, useTheme } from '@/core/theme';
 import { Txt } from './text';
 
@@ -26,10 +27,12 @@ export function Sheet({
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const dir = useDir();
+  const t = useT();
+  const reduceMotion = useReduceMotion();
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.fill}>
-        <Pressable accessibilityLabel="close" style={styles.backdrop} onPress={onClose} />
+        <Pressable accessibilityLabel={t('اقفل', 'Close')} style={styles.backdrop} onPress={onClose} />
         <View
           testID="sheet"
           style={[

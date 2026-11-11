@@ -17,6 +17,8 @@ type Props = {
   /** Look around by moving the phone. */
   gyro: boolean;
   onLoading?: (loading: boolean) => void;
+  /** The room failed to load, or the viewer itself failed to start. */
+  onError?: () => void;
   /** The heading in whole degrees, for the compass. */
   onHeading?: (deg: number) => void;
   /** The first touch: the screen hides its hint. */
@@ -106,7 +108,7 @@ type Live = {
  * The 360° panorama (contract §8.6): drag with inertia, pinch zoom, the gyroscope, dots that lead to
  * other rooms, and a cross-fade between rooms. Drawn with expo-gl, so it runs on the phone's GPU.
  */
-export function PanoView({ uri, hotspots, onHotspot, gyro, onLoading, onHeading, onTouch }: Props) {
+export function PanoView({ uri, hotspots, onHotspot, gyro, onLoading, onError, onHeading, onTouch }: Props) {
   const liveRef = useRef<Live>({
     view: START_VIEW,
     vLon: 0,
@@ -119,9 +121,9 @@ export function PanoView({ uri, hotspots, onHotspot, gyro, onLoading, onHeading,
   });
   const loadRoom = useRef<((uri: string) => void) | null>(null);
   // The latest props, for the render loop and the touch handlers (refs are read outside render only).
-  const callbacks = useRef({ onLoading, onHeading, onTouch, hotspots });
+  const callbacks = useRef({ onLoading, onHeading, onTouch, onError, hotspots });
   useEffect(() => {
-    callbacks.current = { onLoading, onHeading, onTouch, hotspots };
+    callbacks.current = { onLoading, onHeading, onTouch, onError, hotspots };
   });
   // New rooms bring new dots, which must be placed even while the view is still.
   const hotspotsChanged = useRef(true);
@@ -218,6 +220,15 @@ export function PanoView({ uri, hotspots, onHotspot, gyro, onLoading, onHeading,
   };
 
   const onContextCreate = async (gl: Gl) => {
+    try {
+      await startViewer(gl);
+    } catch {
+      callbacks.current.onLoading?.(false);
+      callbacks.current.onError?.();
+    }
+  };
+
+  const startViewer = async (gl: Gl) => {
     const live = liveRef.current;
     const program = gl.createProgram()!;
     gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
@@ -253,7 +264,11 @@ export function PanoView({ uri, hotspots, onHotspot, gyro, onLoading, onHeading,
           live.view = { ...live.view, lat: 0 };
           callbacks.current.onLoading?.(false);
         })
-        .catch(() => callbacks.current.onLoading?.(false));
+        .catch(() => {
+          callbacks.current.onLoading?.(false);
+          // The old room's picture must not pass for the one that failed.
+          if (!stopped && next === wanted) callbacks.current.onError?.();
+        });
     };
     loadRoom.current(uri);
 
