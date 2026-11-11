@@ -439,7 +439,7 @@ There are no owner accounts (decided 2026-11-09). An owner talks to Maqar, and a
 
 ### 9.1 Listing insights
 
-Per listing, for the admin to pass to the owner: a views chart and the totals for views, saves and interested clients. This is Phase 19.
+Moved to the admin tools (§11, Phase 19): owners get their numbers from the admin.
 
 ### 9.2 Add a listing (`/admin/new`, web `/admin/new/`)
 
@@ -512,6 +512,12 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 - Assign each listing to an advisor (at publish, or later). Reassign leads (the client's chats and viewings stay with the home's advisor).
 - Manage areas: names in both languages, city, image; an area in use cannot be deleted.
 - Featured listings: shown first on Home ("Featured by Maqar").
+- **Listing insights** (Phase 19), on every listing that has been published, for the admin to pass to the owner:
+  - a chart of views per Cairo day over the last 7, 30 or 90 days, with each day's views, saves and new interested clients;
+  - totals for the range, and all time: views, interested clients, and who has it saved or follows its price now, chats and viewings booked;
+  - the interested clients (saved, follows the price, chatted or booked), with what each did, their phone and when they were last active. Deleted accounts leave the list;
+  - a short summary in the admin's language to copy (web) or share (app) with the owner.
+  A save is counted on the day it is made, even if it is undone later. Every property page open counts as a view, as before.
 
 ---
 
@@ -564,7 +570,7 @@ Conventions:
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
 | **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `match` / `lead` / `chat` / `system`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
 | **push_tokens** | id, user_id, token (unique), platform (`ios` / `android`), created_at, updated_at |
-| **listing_stats** (or events) | property_id, date, views, saves, interested, used for the listing insights (Phase 19) |
+| **listing_stats** | property_id and Cairo day (the key), views, saves: counted as they happen, for the listing insights (Phase 19). Interested clients come from favorites, price_alerts, chat_threads and viewings |
 
 Supporting rules:
 
@@ -681,3 +687,4 @@ Access is checked by role guards on every route. Agents and clients can only rea
 | 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-maqar.conf` at deploy. |
 | 2026-11-10 | Phases 14–16 deployed (`89afb44`) and checked on the phone (pushes still need Firebase). Phase 17 built (the deploy and the phone check are left): admin listings in the API (`POST /uploads`, `/admin/listings`, `/admin/agents`), the app's admin screens, and the web dashboard `apps/web` at `/admin/`. Migration `0011`: owner name and phone on listings, no advisor until published, and the `pending` and `changes` statuses removed (no review step). §2, §3, §9, §11, §13 and §14 rewritten to match. |
 | 2026-11-10 | Phase 18 built (the deploy and the phone check are left): agents (create, edit, turn off), weekly hours and days off for several agents at once, reassigning leads, areas, and featured listings (`featured` on cards, `?featured=true`, Home's "Featured by Maqar"). No migration. The admin's tabs are Listings, Agents, Leads, Areas and Me, on the web too. |
+| 2026-11-11 | Phase 19 built (the deploy and the phone check are left): `listing_stats` (migration `0012`), `GET /admin/listings/:id/stats` (7, 30 or 90 days) and `/interested`, and the insights section on the listing page in the app and on the web. §9.1 moved under §11. Also fixed: the chat shows a retry when its messages or older ones fail to load, and the booking screen drops a picked time once the refreshed times show it is no longer free. |

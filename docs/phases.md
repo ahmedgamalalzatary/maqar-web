@@ -61,7 +61,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 16 | Live chat | 🟨 | ~~12~~ decided |
 | 17 | Admin listings | 🟨 | decided |
 | 18 | Admin tools | 🟨 | ~~6~~ decided |
-| 19 | Listing insights (for admins) | ⬜ | decided |
+| 19 | Listing insights (for admins) | 🟨 | decided |
 | 20 | Release | ⬜ | ~~14~~ out of scope |
 
 ---
@@ -746,7 +746,13 @@ Contract §11.
 
 ## Phase 19: Listing insights (for admins)
 
-Contract §9.1 (to be moved under the admin tools).
+Contract §11 (moved there from §9.1).
+
+**Status (2026-11-11): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left. Notes:
+- `listing_stats` (migration `0012`): views and saves per listing per Cairo day, counted as they happen. A save counts on the day it is made, even if undone later; saving again counts nothing.
+- Interested clients are not stored again: they come from saves, price alerts, chats and viewings, one entry per client, leaving out deleted accounts. A day's "new interested" counts clients whose first action was that day.
+- The all-time views are the listing's existing counter, so they include views from before this phase; the daily chart starts at the deploy.
+- The section shows on every listing except drafts (clients never saw those). The web copies a summary for the owner, the app shares it.
 
 **Database:** `listing_stats` (or events).
 

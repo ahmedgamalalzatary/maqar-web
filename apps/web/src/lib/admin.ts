@@ -14,7 +14,10 @@ import type {
   DaysOffBody,
   DaysOffResult,
   HoursBody,
+  InsightRange,
+  InterestedClient,
   ListingBody,
+  ListingStats,
   PropertyStatus,
   UploadResponse,
 } from "@maqar/shared";
@@ -47,6 +50,21 @@ export function useListing(id: number | undefined) {
     queryFn: ({ signal }) => api.request<AdminListing>(`/admin/listings/${id}`, { signal }),
     enabled: id !== undefined && Number.isInteger(id),
   });
+}
+
+/** Phase 19: a listing's daily numbers for the last `days`, and its interested clients. */
+export function useListingStats(id: number, days: InsightRange) {
+  const key = useKey();
+  return useQuery({
+    queryKey: [...key, "listing", id, "stats", days],
+    queryFn: ({ signal }) => api.request<ListingStats>(`/admin/listings/${id}/stats?days=${days}`, { signal }),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useInterested(id: number) {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "listing", id, "interested"], queryFn: ({ signal }) => api.request<InterestedClient[]>(`/admin/listings/${id}/interested`, { signal }) });
 }
 
 export const useAreas = () => useQuery({ queryKey: ["areas"], queryFn: ({ signal }) => api.request<AreaItem[]>("/areas", { signal }), staleTime: 3_600_000 });

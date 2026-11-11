@@ -1,5 +1,6 @@
 import type { PropertyDetail, SlotDay, SlotsResponse, ViewingItem } from '@maqar/shared';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { focusManager } from '@tanstack/react-query';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';
 import { useAuthPrompt } from '@/features/auth/components/auth-prompt';
 import { useSession } from '@/features/auth/store/session.store';
@@ -57,12 +58,12 @@ const viewing = (over: Partial<ViewingItem> = {}): ViewingItem => ({
 });
 
 /** Answers the page's requests; `book` decides what booking answers. Returns the writes. */
-function serve(book: () => Response = () => jsonResponse(201, viewing()), list: ViewingItem[] = []) {
+function serve(book: () => Response = () => jsonResponse(201, viewing()), list: ViewingItem[] = [], slots: () => SlotsResponse = () => SLOTS) {
   const fetchMock = mockFetch().mockImplementation(async (url: string, init: RequestInit) => {
     const path = url.replace(/^.*\/v1/, '').split('?')[0]!;
     const method = init.method ?? 'GET';
     if (path === '/properties/4') return jsonResponse(200, home);
-    if (path === '/properties/4/slots') return jsonResponse(200, SLOTS);
+    if (path === '/properties/4/slots') return jsonResponse(200, slots());
     if (path === '/viewings' && method === 'GET') return jsonResponse(200, list);
     if (path === '/viewings' && method === 'POST') return book();
     if (path.startsWith('/viewings/') && method === 'PATCH') return jsonResponse(200, viewing({ status: 'rescheduled', time: '18:00' }));
@@ -139,6 +140,23 @@ describe('Booking a viewing', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'أكّد المعاينة' }));
     expect(useAuthPrompt.getState().open).toBe(true);
     expect(writes()).toEqual([]);
+  });
+
+  it('drops the picked hour when the hours come back and it is no longer free', async () => {
+    await useSession.getState().setSession(makeAuth());
+    let now = SLOTS;
+    serve(undefined, [], () => now);
+    await renderWithProviders(<Page />);
+    await fireEvent.press(await screen.findByRole('button', { name: '٥:٠٠ م' }));
+    expect(screen.getByRole('button', { name: 'أكّد المعاينة' })).not.toBeDisabled();
+
+    now = { ...SLOTS, days: SLOTS.days.map((d) => (d.date === '2026-11-13' ? day(d.date, { '10:00': 'closed', '16:00': 'taken', '17:00': 'taken' }) : d)) };
+    await act(async () => {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+    expect(await screen.findByText('اختار ساعة عشان تكمل')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'أكّد المعاينة' })).toBeDisabled();
   });
 
   it('says so when the hour was just taken, and asks for another', async () => {

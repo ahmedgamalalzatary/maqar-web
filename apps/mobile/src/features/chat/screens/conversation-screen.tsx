@@ -233,7 +233,8 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         data={list}
         keyExtractor={(m) => String(m.id)}
         renderItem={renderItem}
-        onEndReached={() => messages.hasNextPage && !messages.isFetchingNextPage && void messages.fetchNextPage()}
+        testID="messages"
+        onEndReached={() => messages.hasNextPage && !messages.isFetchingNextPage && !messages.isFetchNextPageError && void messages.fetchNextPage()}
         onEndReachedThreshold={0.3}
         keyboardShouldPersistTaps="handled"
         // Inverted: the header sits at the bottom (typing), the footer at the top (older, the safety note).
@@ -241,6 +242,17 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         ListFooterComponent={
           messages.isPending || messages.isFetchingNextPage ? (
             <ActivityIndicator color={colors.accent} style={styles.older} />
+          ) : messages.isError ? (
+            <View style={styles.retryRow}>
+              <Txt size={12.5} color="ink2" align="center">
+                {messages.isFetchNextPageError ? t('مقدرناش نجيب الرسايل القديمة', 'We couldn’t load older messages') : t('مقدرناش نجيب الرسايل', 'We couldn’t load the messages')}
+              </Txt>
+              <Button
+                label={t('حاول تاني', 'Try again')}
+                variant="secondary"
+                onPress={() => void (messages.isFetchNextPageError ? messages.fetchNextPage() : messages.refetch())}
+              />
+            </View>
           ) : side === 'client' && !messages.hasNextPage ? (
             <View style={[styles.safety, { backgroundColor: colors.sageSoft }]}>
               <ShieldCheck size={16} color={colors.sageInk} />
@@ -421,6 +433,7 @@ const styles = StyleSheet.create({
   messages: { paddingHorizontal: 12, paddingVertical: 12 },
   run: { marginTop: 4 },
   runEnd: { marginTop: 10 },
+  retryRow: { alignItems: 'center', gap: 8, paddingVertical: 16 },
   older: { marginVertical: 16 },
   safety: { flexDirection: 'row', gap: 8, alignSelf: 'center', maxWidth: 320, borderRadius: radius.lg, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   dayPill: { alignSelf: 'center', borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 10 },

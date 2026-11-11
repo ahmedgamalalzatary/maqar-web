@@ -17,9 +17,10 @@ export class FavoritesRepository {
     return rows.map((r) => r.propertyId);
   }
 
-  /** Saving again changes nothing: the home keeps its place in the list. */
-  async add(userId: number, propertyId: number): Promise<void> {
-    await this.db.insert(favorites).values({ userId, propertyId }).onDuplicateKeyUpdate({ set: { userId } });
+  /** Saving again changes nothing: the home keeps its place in the list. True when it is a new save. */
+  async add(userId: number, propertyId: number): Promise<boolean> {
+    const [res] = await this.db.insert(favorites).ignore().values({ userId, propertyId });
+    return res.affectedRows === 1;
   }
 
   async remove(userId: number, propertyId: number): Promise<void> {
