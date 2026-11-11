@@ -656,7 +656,35 @@ Access is checked by role guards on every route. Agents and clients can only rea
 
 ---
 
-## 17. Change log
+## 17. Release checks (QA-03 and QA-04)
+
+Evidence trails for the release candidate; each line is checked on the exact build/commit being released.
+
+### 17.1 On real devices (QA-03)
+
+Run Arabic and English, light and dark, on one small and one large phone, and record screenshots plus the build number:
+
+- [ ] Every tab and screen at 100% and at the largest accessibility text size: no clipped text or overlap.
+- [ ] Booking, onboarding, the listing form and chat with the keyboard open: the focused field stays visible.
+- [ ] VoiceOver (iOS) and TalkBack (Android) walk the tab bars, cards, forms and sheets with spoken labels.
+- [ ] Reduced motion on: sheets appear without sliding, the gallery and tour do not auto-animate.
+- [ ] RTL (Arabic) layout on forms, sliders, the compare tray and the 360° tour hotspots.
+- [ ] Airplane mode on and off mid-request: the retries and error messages from the UI fixes.
+- [ ] The 360° tour frame rate and the gyroscope on a mid-range Android phone.
+
+### 17.2 Release operations (QA-04)
+
+- [ ] Migrations `0014`–`0016` ran on the production database; before `0015`, no client and home have two active viewings (the migration fails if they do).
+- [ ] The API image builds from a clean checkout (it still copies `apps/demo`; removing the demo later must update `Dockerfile.api` first, OPS-07).
+- [ ] A pre-deploy backup (database and images) is taken, and a restore is tried once on the server.
+- [ ] Push notifications arrive in foreground, background and killed-app states for booking, chat, price drops and matches.
+- [ ] The web dashboard at `/admin/` loads and signs in against the production API, and an already-open dashboard keeps working across a deploy (OPS-06).
+- [ ] The version and commit of what is running are recorded.
+- [ ] Deferred by the owner (2026-11-11), not release blockers: Firebase for push (OPS-01), iOS signing and the store build (OPS-02), build numbers (OPS-03), automatic deploy on push and daily backups (OPS-04/05).
+
+---
+
+## 18. Change log
 
 | Date | Change |
 |---|---|
@@ -691,3 +719,4 @@ Access is checked by role guards on every route. Agents and clients can only rea
 | 2026-11-11 | Phase 19 built (the deploy and the phone check are left): `listing_stats` (migration `0012`), `GET /admin/listings/:id/stats` (7, 30 or 90 days) and `/interested`, and the insights section on the listing page in the app and on the web. §9.1 moved under §11. Also fixed: the chat shows a retry when its messages or older ones fail to load, and the booking screen drops a picked time once the refreshed times show it is no longer free. |
 | 2026-11-11 | Pre-release review fixes (SEC and DATA sections). Security: password/email changes invalidate issued access tokens (migration `0014`); chat sockets re-validate on every event plus a minute sweep; rate limits on chat, bookings, uploads, notifications, saves and price follows, and an nginx `limit_req`; cross-tab refresh coordination on web and mobile; `null` fields stripped at validation; the mobile inbox cache is per account. Data: one active viewing per client and home is a database rule (migration `0015`); past viewings become completed; cancel/reschedule races settle in the write; booking from a chat times card retries safely; a thread keeps its own advisor after a listing moves; notification delivery is secondary; reminders are stamped sent only after delivery, with an expiring claim (migration `0016`); a listing edit and its price change commit together; a category change resets the price instead of inventing a drop, and installment plans are refused on rent and stay listings; publish/unpublish/close write with the expected source status and a still-active advisor. Decided: files under `/uploads/…` stay public by URL (§14, §15). Deactivating an advisor is refused while they have upcoming viewings, conversations or open leads, unless `reassignTo` (or `POST /admin/agents/:id/reassign`) hands the work to another advisor (§14). |
 | 2026-11-11 | Pre-release review fixes (UI sections, UI-01–UI-27; UI-18 contrast tokens skipped by the owner). Guests resume what they were doing after signing in or signing up; every request has a deadline; a failed chat send keeps its text and a lost-after-commit message is refetched; Explore and the admin lists recover from a failed page; booking treats stale availability as uncertain and offers retry with a Back fallback; error toasts carry the server's reason; photo-upload retries survive step navigation and long forms keep a local draft; listing photos are validated on the server and removed photos collected; staff self-edits reach their advisor profile; developer, floor and maintenance fee joined the listing forms; admin listings and leads page through everything; notifications page into the past and the compare picker always offers saved homes; sharing includes the deep link; an assumed installment plan is labeled as an estimate; the insights chart is touch- and keyboard-reachable; app motion yields to reduce motion; invalid admin ids show a finite not-found state (§8.14 amended: email change, recovery, policies and support are not shipped); admin edits refresh the public preview; panorama failures show retry; tour thumbs load lazily; advisor cards show no rating and call the reply time a target. |
+| 2026-11-11 | Pre-release review fixes (OPS and QA sections). OPS-06: the dashboard is built and validated before the API is touched, the asset swap keeps one previous generation, and the schema-compatibility and interrupted-deploy rules are written into the deploy scripts. OPS-08: publishing a listing announces it to clients whose saved preferences score a good match, at most 200 per listing and once per listing (§8.13). OPS-09: the stale/contradictory texts in the contract, phase plan and README are reconciled. QA-01: the mobile suite is green again (321 tests). QA-02: UI-08 and UI-14 gained the regression tests they lacked. QA-03 and QA-04: the device and release-operations checklists live in §17. |
