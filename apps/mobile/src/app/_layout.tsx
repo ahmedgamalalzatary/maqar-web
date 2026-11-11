@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { StatusBarScrim } from '@/components/status-bar-scrim';
 import { AppProviders } from '@/core/providers/app-providers';
 import { AuthPromptHost } from '@/features/auth/components/auth-prompt';
 import { useSession } from '@/features/auth/store/session.store';
@@ -15,6 +16,7 @@ export default function RootLayout() {
         <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="sign-up" options={{ presentation: 'modal' }} />
       </Stack>
+      <StatusBarScrim />
       <AuthPromptHost />
       <PushBridge />
       <ChatBridge />
