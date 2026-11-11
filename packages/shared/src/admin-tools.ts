@@ -22,18 +22,26 @@ export function areaSlug(nameEn: string): string {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** Every calendar day from `from` to `to` (YYYY-MM-DD, both included); empty if backwards or over the limit. */
+const ymd = (t: number) => {
+  const d = new Date(t);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+};
+
+/** The day as a UTC time, or NaN unless it is a real YYYY-MM-DD day (no 30 February rolling over to March). */
+function dayTime(day: string): number {
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+  const t = Date.UTC(y, m - 1, d);
+  return Number.isFinite(t) && ymd(t) === day ? t : NaN;
+}
+
+/** Every calendar day from `from` to `to` (YYYY-MM-DD, both included); empty if a day isn't real, backwards or over the limit. */
 export function daysBetween(from: string, to: string): string[] {
-  const [fy, fm, fd] = from.split('-').map(Number) as [number, number, number];
-  const [ty, tm, td] = to.split('-').map(Number) as [number, number, number];
-  const start = Date.UTC(fy, fm - 1, fd);
-  const end = Date.UTC(ty, tm - 1, td);
+  const start = dayTime(from);
+  const end = dayTime(to);
+  if (Number.isNaN(start) || Number.isNaN(end)) return [];
   const n = Math.round((end - start) / 86_400_000) + 1;
   if (n < 1 || n > DAYS_OFF_MAX) return [];
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date(start + i * 86_400_000);
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-  });
+  return Array.from({ length: n }, (_, i) => ymd(start + i * 86_400_000));
 }
 
 /** What is wrong with a week of hours, or null. A weekday left out is a day off. */
