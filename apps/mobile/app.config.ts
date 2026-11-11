@@ -22,10 +22,13 @@ const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
  * - Expo creates native views by reflection through a (Context, AppContext) constructor. Expo keeps
  *   it for ExpoView subclasses only, so expo-gl's GLView (a TextureView) lost it and opening the
  *   360° tour crashed ("Didn't find a correct constructor").
+ * - expo-gl's C++ calls GLContext.flush() by name (JNI); once R8 renamed it, the tour aborted the
+ *   app ("no non-static method flush()V"). expo-gl ships no keep rules, so keep its classes whole.
  */
 const KEEP_RULES = `
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 -keepclassmembers class * extends android.view.View { public <init>(android.content.Context, expo.modules.kotlin.AppContext); }
+-keep class expo.modules.gl.** { *; }
 `;
 
 /**
