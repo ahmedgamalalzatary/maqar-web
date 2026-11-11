@@ -1,15 +1,17 @@
-import { ROLE_LABEL } from '@maqar/shared';
+import { ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { Calculator, ChevronLeft, ChevronRight, Languages, Moon, SlidersHorizontal, UserPen } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Calculator, ChevronLeft, ChevronRight, FileText, Languages, Mail, Moon, ShieldCheck, SlidersHorizontal, UserPen } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { Toggle } from '@/components/toggle';
+import { mediaUrl } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSignOut } from '@/features/auth/hooks/use-auth';
@@ -118,6 +120,28 @@ export function MeScreen() {
         ) : null}
       </Card>
 
+      {/* Required by both stores (contract §15 privacy), for guests too. */}
+      <Txt size={15} weight="semibold">
+        {t('عن مقر', 'About Maqar')}
+      </Txt>
+      <Card style={styles.list}>
+        <LinkRow
+          icon={<ShieldCheck size={20} color={colors.accentInk} />}
+          label={t('سياسة الخصوصية', 'Privacy policy')}
+          onPress={() => openPage(SITE_PAGES.privacy)}
+        />
+        <LinkRow
+          icon={<FileText size={20} color={colors.accentInk} />}
+          label={t('الشروط والأحكام', 'Terms of use')}
+          onPress={() => openPage(SITE_PAGES.terms)}
+        />
+        <LinkRow
+          icon={<Mail size={20} color={colors.accentInk} />}
+          label={t('كلّم الدعم', 'Contact support')}
+          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => {})}
+        />
+      </Card>
+
       {user ? (
         <View style={styles.actions}>
           <Button label={t('تسجيل الخروج', 'Sign out')} variant="secondary" onPress={signOut} />
@@ -137,6 +161,12 @@ export function MeScreen() {
       {user ? <DeleteAccountSheet open={deleting} onClose={() => setDeleting(false)} /> : null}
     </Screen>
   );
+}
+
+/** A public page on the API's host, in the in-app browser. */
+function openPage(path: string) {
+  const url = mediaUrl(path);
+  if (url) void WebBrowser.openBrowserAsync(url).catch(() => {});
 }
 
 function Row({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {

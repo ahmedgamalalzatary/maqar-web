@@ -776,7 +776,9 @@ Contract §11 (moved there from §9.1).
 - Store readiness (`store-readiness.md` §5 items 1–3): the unused calendar package and the camera, microphone, storage and overlay permissions are gone; the motion and photo permission texts say what they are for, in Arabic and English; iOS export compliance is answered in the build.
 - Tests: e2e files reset every table from the schema (the interest history table was left over between files); the insights test sends a chat message, since opening an empty conversation is not interest (INS-04).
 
-Still to do: the privacy policy, terms, support and account-deletion pages and their links in the Me screen (`store-readiness.md` §5 items 4–7, needs the owner's contact details); the store consoles; the deferred items (contract §17.2); the full regression on phones.
+- Public pages (`store-readiness.md` §5 items 4, 6, 7): privacy policy, terms, support and account deletion in Arabic and English at `/privacy`, `/terms`, `/support`, `/delete-account`, deployed with `deploy.sh`; the Me screen links them for everyone.
+
+Still to do: deploy (the pages, the nginx change, the per-account limits); the store consoles (`store-readiness.md` §2.3–2.5, §3.3–3.4); the deferred items (contract §17.2); the full regression on phones.
 
 **Decided already:** analytics and crash reporting are out of scope for now (#14, 2026-11-09); nothing to build there.
 
