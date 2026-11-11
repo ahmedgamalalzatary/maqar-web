@@ -107,6 +107,26 @@ export class UsersRepository {
     );
   }
 
+  /** Every active client who has been through onboarding, with their saved preferences. */
+  async clientsWithPrefs(): Promise<{ userId: number; prefs: Prefs }[]> {
+    const rows = await this.db
+      .select({ userId: clientPrefs.userId, prefs: clientPrefs })
+      .from(clientPrefs)
+      .innerJoin(users, eq(users.id, clientPrefs.userId))
+      .where(and(eq(users.role, 'client'), isNull(users.deletedAt)));
+    return rows.map((r) => ({
+      userId: r.userId,
+      prefs: {
+        purpose: r.prefs.purposes,
+        budgetMax: r.prefs.budgetMax,
+        areas: r.prefs.areaIds,
+        types: r.prefs.types,
+        beds: r.prefs.minBeds,
+        interests: r.prefs.interests,
+      },
+    }));
+  }
+
   /** Saves a client's preferences, replacing any saved before. */
   async savePrefs(userId: number, p: Prefs): Promise<void> {
     const row = { purposes: p.purpose, budgetMax: p.budgetMax, areaIds: p.areas, types: p.types, minBeds: p.beds, interests: p.interests };

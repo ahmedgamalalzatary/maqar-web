@@ -77,7 +77,7 @@ describe('Listing insights (admin listing screen)', () => {
     expect(await screen.findByLabelText('مشاهدات: ١٥, ١٢٠ من الأول')).toBeTruthy();
     expect(fetchMock.mock.calls.some((_, i) => queryOf(fetchMock, i).days === '7')).toBe(true);
 
-    fireEvent.press(screen.getByLabelText('٥ نوفمبر: ١ مشاهدة'));
+    fireEvent.press(screen.getByLabelText('٥ نوفمبر: ١ مشاهدة، ٠ حفظ، ٠ مهتم جديد'));
     expect(await screen.findByText('١ مشاهدة | ٠ حفظ | ٠ مهتم جديد')).toBeTruthy();
     expect(screen.getAllByText('٥ نوفمبر')).toHaveLength(2);
 
@@ -94,7 +94,7 @@ describe('Listing insights (admin listing screen)', () => {
     expect(await screen.findByLabelText('مشاهدات: ٩٨, ١٢٠ من الأول')).toBeTruthy();
 
     const gone = lastDays('2026-11-11', 90)[10]!;
-    fireEvent.press(screen.getByLabelText(`${fmtDate(`${gone}T12:00:00Z`, 'ar')}: ١ مشاهدة`));
+    fireEvent.press(screen.getByLabelText(`${fmtDate(`${gone}T12:00:00Z`, 'ar')}: ١ مشاهدة، ٠ حفظ، ٠ مهتم جديد`));
     expect(await screen.findByText(`${fmtDate(`${gone}T12:00:00Z`, 'ar')}`)).toBeTruthy();
 
     fireEvent.press(screen.getByRole('radio', { name: '٧ يوم' }));

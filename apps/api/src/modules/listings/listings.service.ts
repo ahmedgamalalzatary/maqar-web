@@ -12,6 +12,7 @@ import {
   type PropertyStatus,
 } from '@maqar/shared';
 import { PricesService } from '../prices/prices.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { NewPropertyRow } from '../properties/properties.schema.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 import type { AdminListingsQueryDto } from './dto/listing.dto.js';
@@ -87,6 +88,7 @@ export class ListingsService {
     private readonly repo: ListingsRepository,
     private readonly prices: PricesService,
     private readonly uploads: UploadsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async page(q: AdminListingsQueryDto): Promise<AdminListingsPage> {
@@ -208,7 +210,22 @@ export class ListingsService {
     // The write itself requires the old status and a still-active advisor, so a publish racing a
     // status change or a deactivation loses instead of overwriting.
     await this.moveOrFail(id, 'approved', { status: 'approved', agentId: advisor, publishedAt: cur.publishedAt ? undefined : new Date() }, advisor);
-    return this.get(id);
+    // The publish committed: matching clients are told (OPS-08). Secondary, so it never fails this.
+    const saved = await this.get(id);
+    void this.notifications
+      .notifyMatches({
+        id: saved.id,
+        category: saved.category,
+        type: saved.type,
+        price: saved.price,
+        area: { id: saved.area.id, nameAr: saved.area.nameAr, nameEn: saved.area.nameEn },
+        beds: saved.beds,
+        features: saved.features,
+        plan: saved.plan !== null,
+        tour: saved.tour,
+      })
+      .catch(() => undefined);
+    return saved;
   }
 
   async unpublish(id: number): Promise<AdminListing> {

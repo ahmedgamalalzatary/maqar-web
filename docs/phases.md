@@ -61,7 +61,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 16 | Live chat | 🟨 | ~~12~~ decided |
 | 17 | Admin listings | 🟨 | decided |
 | 18 | Admin tools | 🟨 | ~~6~~ decided |
-| 19 | Listing insights (for admins) | 🟨 | decided |
+| 19 | Listing insights (for admins) | ✅ | decided |
 | 20 | Release | ⬜ | ~~14~~ out of scope |
 
 ---
@@ -748,7 +748,7 @@ Contract §11.
 
 Contract §11 (moved there from §9.1).
 
-**Status (2026-11-11): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left. Notes:
+**Status (2026-11-11): built and deployed.** The insights shipped with commit `8acbae7` and are live with the pre-release fixes. Notes:
 - `listing_stats` (migration `0012`): views and saves per listing per Cairo day, counted as they happen. A save counts on the day it is made, even if undone later; saving again counts nothing.
 - Interested clients are not stored again: they come from saves, price alerts, chats and viewings, one entry per client, leaving out deleted accounts. A day's "new interested" counts clients whose first action was that day.
 - The all-time views are the listing's existing counter, so they include views from before this phase; the daily chart starts at the deploy.
@@ -771,14 +771,14 @@ Contract §11 (moved there from §9.1).
 
 ## Phase 20: Release
 
-**Decide first:** analytics and crash reporting (#14).
+**Decided already:** analytics and crash reporting are out of scope for now (#14, 2026-11-09); nothing to build there.
 
 Contract §15.
 
 - **Accessibility:** screen-reader labels, contrast, text scaling, reduce motion.
 - **Performance:** paging everywhere, image sizes, app start time.
 - **Security:** rate limits, upload checks, secrets, and a review of every role guard.
-- **Production:** the server and automatic deploys already run from Phase 2; check the backups and the restore again.
+- **Production:** deploys are still manual (Phase 2's automatic deploy on push, daily backups and the restore test are not done yet); whatever ships must state its version and the backups/restore have to be checked before release.
 - **Mobile:** signed store builds for Android (the `store-build` GitHub Action) and iOS, store listings, app icons and splash in Maqar branding.
 - **Full regression:** every phase's "done when" is run again.
 

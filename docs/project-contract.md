@@ -118,11 +118,11 @@ Rules:
 | API | NestJS 12 (ESM): modules, guards, pipes, WebSocket gateway |
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
-| Not installed yet (waiting on §16.1) | Video (#5). Timed jobs use `@nestjs/schedule` inside the API, with no queue (#13). Push is sent to Expo's HTTP API directly, with no SDK. |
+| Not installed yet (waiting on §16.1) | Video (#5, decided in-person only for now). Timed jobs use `@nestjs/schedule` inside the API, with no queue (#13). Push is sent to Expo's HTTP API directly, with no SDK. |
 | API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
-| Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations (`src/db/schema.ts` → `drizzle/`) |
+| Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations (`src/core/db/schema.ts` → `drizzle/`) |
 | Local database | The MySQL 8.0 already installed on the PC (`localhost:3306`, user `root`, the same password as the other work projects), database `maqar` (utf8mb4). root `.env` → `DATABASE_URL=mysql://root:…@localhost:3306/maqar` |
 | Production database | A `mysql` service in the project's Docker Compose, configured by `.env.production` on the server (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`; `.env.production.example` in the repo lists them). The Docker files and `.env.production` are added in Phase 2. |
 | Production server | Its own Hostinger KVM2 VPS (2 CPUs, 8 GB, about 100 GB disk), used only by Maqar. nginx on the server with a Let's Encrypt certificate for `api.<domain>` (the free domain from the Hostinger plan). Each deploy backs up the database and images, then runs the migrations (Phase 2). |
@@ -306,7 +306,7 @@ The price is compared on the client's terms:
 ### 8.7 Viewing booking
 
 - Entry points: the property page, a chat "available times" card, and reschedule from My viewings.
-- **Mode:** on-site visit, or live video.
+- **Mode:** on-site visit (decided §16.1 #5; live video may come later).
 - **Day strip:** the next 14 days. After 19:00 the default day is tomorrow.
 - **Hour slots:** 10:00 to 20:00, every hour, grouped Morning (before 13:00), Afternoon and Evening.
 
@@ -330,7 +330,7 @@ The price is compared on the client's terms:
 
 - Tabs for upcoming and past.
 - Each viewing shows the home, date and time, mode, advisor and status: `confirmed`, `rescheduled`, `cancelled` or `completed`.
-- Actions: reschedule, cancel (asks to confirm), directions (opens maps), call or chat with the advisor, add to calendar, join video (for live video).
+- Actions: reschedule, cancel (asks to confirm), directions (opens maps), call or chat with the advisor, add to calendar.
 - Reminders arrive as in-app notifications plus phone notifications at the chosen offsets. [Real] The server schedules the push notifications.
 
 ### 8.9 Saved homes and price drop alerts
@@ -413,7 +413,7 @@ The price is compared on the client's terms:
   | `price` | A followed home's price dropped |
   | `reminder` | A viewing reminder |
   | `booking` | A viewing was confirmed, rescheduled or cancelled |
-  | `match` | New homes match the client's preferences |
+  | `match` | New homes match the client's preferences: a listing reaching a good match (70+) for a client is announced once, when it is published — at most 200 clients per listing, and never twice for the same home |
   | `lead` | Agent: new lead or new booking |
   | `chat` | New chat message |
   | `system` | Maqar's own messages, such as "Notifications are on" when the switch is turned on |
@@ -466,7 +466,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 - "Your day, <first name>" with the Sales app badge.
 - Stats: today's viewings, new leads, active leads.
 - Monthly target: deals won against the target, with a progress bar and a comparison with the team.
-- Today's viewings with time, client, home or "Live video", and a "New from app" badge. Coming up: the next viewings.
+- Today's viewings with time, client and home, and a "New from app" badge. Coming up: the next viewings.
 - Pipeline summary by stage, linking to all leads.
 - "Needs a first call": new leads that nobody has contacted yet.
 
@@ -525,7 +525,6 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 
 - **Tab bars:**
   - Client: Home, Explore, Viewings (badge: upcoming count), Saved, Me.
-  - Owner: Portal, Add (listing wizard), Alerts (unread badge), Me.
   - Agent: Today, Leads, Chats (unread badge), Alerts (unread badge), Me.
   The tab bar is hidden on property, tour, booking, chat, listing wizard and lead screens.
 - **Toasts** for quick feedback (gold, sage or danger), optionally tappable.
@@ -539,7 +538,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 
 ## 13. Data model
 
-This is the target MySQL model behind the real API. Names are given for the Drizzle schema in `apps/api/src/db/schema.ts`.
+This is the target MySQL model behind the real API. Names are given for the Drizzle schema in `apps/api/src/core/db/schema.ts`.
 
 Conventions:
 - Fields that hold text in two languages are stored as `*_ar` and `*_en` columns.
@@ -562,7 +561,7 @@ Conventions:
 | **price_history** | id, property_id, old_price, new_price, changed_by, at |
 | **favorites** | user_id, property_id, created_at |
 | **price_alerts** | user_id, property_id, created_at |
-| **viewings** | id, property_id, client_id, agent_id, starts_at (UTC; shown as the Cairo day and hour), mode (`visit` / `video`; `visit` only for now), status (`confirmed` / `rescheduled` / `cancelled` / `completed`), rescheduled_from, video_url, created_at, updated_at, active (generated: 1 while confirmed or rescheduled, else NULL). Unique (agent_id, starts_at, active), so an agent has one live viewing per hour. |
+| **viewings** | id, property_id, client_id, agent_id, starts_at (UTC; shown as the Cairo day and hour), mode (`visit`; `video` may come later but is not used), status (`confirmed` / `rescheduled` / `cancelled` / `completed`), rescheduled_from, created_at, updated_at, active (generated: 1 while confirmed or rescheduled, else NULL). Unique (agent_id, starts_at, active), so an agent has one live viewing per hour. |
 | **viewing_reminders** | viewing_id, offset (`1d` / `2h` / `30m`), sent_at |
 | **leads** | id, client_id or name and phone, property_id, agent_id, budget, source (`booking` / `tour` / `price_alert` / `smart_pick` / `calculator` / `chat` / `call` / `walk_in`), stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at, seen_at, won_at |
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
@@ -617,7 +616,7 @@ Access is checked by role guards on every route. Agents and clients can only rea
   - Lists are paged.
   - Images are served resized; panoramas are loaded room by room.
   - The app opens fast, with the splash shown only while loading.
-- **Reliability:** booking a slot is atomic, so the same slot can't be booked twice. Reminders and pushes run from a server job queue [Open].
+- **Reliability:** booking a slot is atomic, so the same slot can't be booked twice. Reminders and pushes run from the in-process scheduler inside the API (`@nestjs/schedule`, §16.1 #13); there is no queue.
 - **Accessibility:** screen-reader labels on icon buttons, contrast in both themes, text that scales with system settings, reduce-motion support.
 - **Quality:**
   - Strict TypeScript.

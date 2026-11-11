@@ -66,4 +66,14 @@ export class NotificationsRepository {
   async deleteTokens(tokens: string[]): Promise<void> {
     if (tokens.length) await this.db.delete(pushTokens).where(inArray(pushTokens.token, tokens));
   }
+
+  /** Which of these users already have a notification with this href (de-duplicating a fan-out). */
+  async notifiedUsers(href: string, userIds: number[]): Promise<Set<number>> {
+    if (!userIds.length) return new Set();
+    const rows = await this.db
+      .selectDistinct({ userId: notifications.userId })
+      .from(notifications)
+      .where(and(eq(notifications.href, href), inArray(notifications.userId, userIds)));
+    return new Set(rows.map((r) => r.userId));
+  }
 }

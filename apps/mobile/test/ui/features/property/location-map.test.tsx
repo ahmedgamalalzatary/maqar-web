@@ -1,47 +1,30 @@
 import { render, screen } from '@testing-library/react-native';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-import { LocationMap } from '@/features/property/components/location-map';
+import { ExecutionEnvironment } from 'expo-constants';
+import { canShowMap, LocationMap } from '@/features/property/components/location-map';
 
-jest.mock('expo-constants', () => ({
-  __esModule: true,
-  default: { expoConfig: { extra: {} }, executionEnvironment: 'standalone' },
-  ExecutionEnvironment: { StoreClient: 'storeClient', Standalone: 'standalone' },
-}));
-
-const setUp = (os: 'android' | 'ios', hasKey: boolean, environment = 'standalone') => {
-  jest.replaceProperty(Platform, 'OS', os);
-  (Constants.expoConfig as { extra: object }).extra = { hasGoogleMapsKey: hasKey };
-  (Constants as { executionEnvironment: string }).executionEnvironment = environment;
-};
-
-afterEach(() => jest.restoreAllMocks());
-
-// On Android, Google Maps with no key does not show an empty map: it closes the app.
-describe('LocationMap', () => {
-  const show = () => render(<LocationMap lat={30} lng={31} title="Home" />);
-
-  it('leaves the map out of an Android build with no key, so the page still opens', async () => {
-    setUp('android', false);
-    await show();
-    expect(screen.queryByTestId('map')).toBeNull();
+// jest cannot fake Platform.OS for the component (it resolves another instance), so the four
+// build cases are asserted on the pure gate, and the render test only checks the wiring.
+describe('when a map can be shown', () => {
+  it('not on Android with no key, so the page still opens', () => {
+    expect(canShowMap('android', ExecutionEnvironment.Standalone, false)).toBe(false);
   });
 
-  it('shows the map on Android when the build has a key', async () => {
-    setUp('android', true);
-    await show();
-    expect(screen.getByTestId('map')).toBeOnTheScreen();
+  it('on Android when the build has a key', () => {
+    expect(canShowMap('android', ExecutionEnvironment.Standalone, true)).toBe(true);
   });
 
-  it('shows the map in Expo Go, which brings its own key', async () => {
-    setUp('android', false, 'storeClient');
-    await show();
-    expect(screen.getByTestId('map')).toBeOnTheScreen();
+  it('in Expo Go, which brings its own key', () => {
+    expect(canShowMap('android', ExecutionEnvironment.StoreClient, false)).toBe(true);
   });
 
-  it('shows the map on iOS, where Apple Maps needs no key', async () => {
-    setUp('ios', false);
-    await show();
+  it('on iOS, where Apple Maps needs no key', () => {
+    expect(canShowMap('ios', ExecutionEnvironment.Standalone, false)).toBe(true);
+  });
+});
+
+describe('LocationMap rendering', () => {
+  it('shows the map with the pin', async () => {
+    await render(<LocationMap lat={30} lng={31} title="Home" />);
     expect(screen.getByTestId('map')).toBeOnTheScreen();
   });
 });

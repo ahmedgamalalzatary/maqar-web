@@ -54,7 +54,7 @@ export function BudgetSlider({
         ]}
       />
       <View
-        {...thumbResponder}
+        {...thumbResponder()}
         onResponderGrant={(e: GestureResponderEvent) => {
           drag.current = { x: e.nativeEvent.pageX, from: value };
         }}

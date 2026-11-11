@@ -1,6 +1,14 @@
 #!/bin/sh
 # Runs on the server, from deploy/deploy.sh: build, migrate, start, check, roll back.
 # It only ever acts on Maqar's compose project. This server is temporary, so there are no backups.
+#
+# Version pairing (OPS-06): the dashboard is built and validated on the PC before this script runs,
+# and its swap happens after the new API is healthy. So migrations must stay backward-compatible
+# with the previous API image and the previous dashboard: additive tables/columns first; renaming
+# or dropping columns waits for the deploy after the code that stops using them is live. An
+# interrupted deploy recovers as: a failed build changes nothing; a failed migration leaves the old
+# API running (a half-applied migration is retried by the next run); an unhealthy new API is
+# rolled back to the previous image.
 set -eu
 TAG="$1"
 SRC=/root/maqar

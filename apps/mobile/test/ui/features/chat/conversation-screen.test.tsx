@@ -80,7 +80,7 @@ describe('Conversation (client)', () => {
     ]);
     await renderWithProviders(<Page />);
     expect(await screen.findByRole('header', { name: 'عمر حسن' })).toBeOnTheScreen();
-    expect(screen.getByText('مستشار مبيعات | بيرد خلال ٤ د')).toBeOnTheScreen();
+    expect(screen.getByText('مستشار مبيعات | هدفنا الرد خلال ٤ د')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'الوحدة: فيلا في التجمع' })).toBeOnTheScreen();
     expect(await screen.findByLabelText('أنت: لسه متاحة؟، اتقرت')).toBeOnTheScreen();
     expect(screen.getByText('القسط الشهري')).toBeOnTheScreen();

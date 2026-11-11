@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
-import { Platform, StyleSheet } from 'react-native';
 import { RangeSlider } from '@/features/listings/components/range-slider';
 import { BudgetSlider } from '@/features/prefs/components/budget-slider';
+import { thumbResponder, thumbStyle } from '@/components/slider-thumb';
 
 const scale = { min: 0, max: 100, step: 10 };
 
@@ -12,9 +12,9 @@ const SLIDERS = [
 
 const thumb = () => screen.getByRole('adjustable', { name: 'thumb' });
 
-afterEach(() => jest.restoreAllMocks());
-
-// A gesture belongs to a thumb only if it started there. A list scrolling past must not hand it one.
+// jest cannot fake Platform.OS for the components (they resolve another instance), so the web and
+// phone behaviors are asserted on the helpers with an explicit platform, and the render tests
+// below only check that a thumb carries the responder wiring.
 describe.each(SLIDERS)('The thumb of the %s slider', (_name, slider) => {
   it('takes a touch that starts on it, and not one that merely moves over it', async () => {
     await render(slider());
@@ -22,16 +22,13 @@ describe.each(SLIDERS)('The thumb of the %s slider', (_name, slider) => {
     expect(thumb().props.onMoveShouldSetResponder).toBeUndefined();
   });
 
-  it('on a phone, keeps the drag once it has it, so the page does not scroll instead', async () => {
-    jest.replaceProperty(Platform, 'OS', 'android');
-    await render(slider());
-    expect(thumb().props.onResponderTerminationRequest()).toBe(false);
+  it('keeps the drag once it has it, so the page does not scroll instead', () => {
+    expect(thumbResponder('android').onResponderTerminationRequest()).toBe(false);
+    expect(thumbResponder('web').onResponderTerminationRequest()).toBe(true);
   });
 
-  it('on the web, stops the browser panning from it, and never refuses the page a scroll', async () => {
-    jest.replaceProperty(Platform, 'OS', 'web');
-    await render(slider());
-    expect(StyleSheet.flatten(thumb().props.style).touchAction).toBe('none');
-    expect(thumb().props.onResponderTerminationRequest()).toBe(true);
+  it('stops the browser panning from it on the web only', () => {
+    expect(thumbStyle('web')).toMatchObject({ touchAction: 'none' });
+    expect(thumbStyle('android')).toEqual({});
   });
 });
