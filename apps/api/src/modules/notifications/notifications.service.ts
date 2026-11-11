@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { type NotificationItem, type NotificationKind, NOTIFICATIONS_LIMIT, type NotificationsResponse, type PushPlatform } from '@maqar/shared';
+import { GOOD_MATCH, matchScore, type MatchListing, type NotificationItem, type NotificationKind, NOTIFICATIONS_LIMIT, type NotificationsResponse, type PushPlatform } from '@maqar/shared';
 import { UsersRepository } from '../users/users.repository.js';
 import type { UserRow } from '../users/users.schema.js';
 import { NotificationsRepository } from './notifications.repository.js';
@@ -27,6 +27,9 @@ const toItem = (r: NotificationRow): NotificationItem => ({
   read: r.readAt !== null,
   createdAt: r.createdAt.toISOString(),
 });
+
+/** The most clients one listing's publish may notify (OPS-08): a bounded fan-out. */
+const MATCH_NOTIFY_CAP = 200;
 
 /**
  * The one way to tell a user something (contract §8.13). Other modules call `notify`: it saves the
@@ -96,6 +99,38 @@ export class NotificationsService {
 
   async markRead(userId: number, id: number): Promise<void> {
     if (!(await this.repo.markRead(userId, id))) throw new NotFoundException('Notification not found');
+  }
+
+  /**
+   * A listing was published (or republished): tell the clients whose saved preferences score a good
+   * match (§8.3). Bounded to 200 per listing, and a client is told about a listing once, however
+   * often it is published. Delivery is secondary, like `notify`.
+   */
+  async notifyMatches(l: MatchListing & { id: number }): Promise<number> {
+    try {
+      const href = `/property/${l.id}`;
+      const clients = await this.users.clientsWithPrefs();
+      const matching = clients.filter((c) => matchScore(l, c.prefs).score >= GOOD_MATCH);
+      const already = await this.repo.notifiedUsers(href, matching.map((c) => c.userId));
+      const fresh = matching.filter((c) => !already.has(c.userId)).slice(0, MATCH_NOTIFY_CAP);
+      let sent = 0;
+      for (const c of fresh) {
+        const score = matchScore(l, c.prefs);
+        const item = await this.notify(c.userId, {
+          kind: 'match',
+          titleAr: 'بيت جديد يناسبك',
+          titleEn: 'A new home to see',
+          bodyAr: `${l.area.nameAr} — تطابق ${score.score}٪`,
+          bodyEn: `${l.area.nameEn} — ${score.score}% match`,
+          href,
+        });
+        if (item) sent += 1;
+      }
+      return sent;
+    } catch (err) {
+      this.log.error(`Match notifications for listing ${l.id} failed: ${(err as Error).message}`);
+      return 0;
+    }
   }
 
   /** Sent when phone notifications are turned on, so the user sees at once that they work. */

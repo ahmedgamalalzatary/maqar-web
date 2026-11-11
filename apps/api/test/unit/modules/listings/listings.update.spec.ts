@@ -48,7 +48,7 @@ const deps = (over: Record<string, unknown> = {}) => {
   };
   const prices = { changePrice: vi.fn(async () => ({})), announce: vi.fn(async () => undefined) };
   const uploads = { assertListingFiles: vi.fn(async () => undefined), removeListingFiles: vi.fn(async () => undefined) };
-  const service = new ListingsService(repo as never, prices as never, uploads as never);
+  const service = new ListingsService(repo as never, prices as never, uploads as never, { notifyMatches: vi.fn(async () => 0) } as never);
   return { service, repo, prices, uploads };
 };
 

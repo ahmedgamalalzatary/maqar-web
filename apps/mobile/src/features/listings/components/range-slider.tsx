@@ -49,7 +49,7 @@ export function RangeSlider({ scale, value, onChange, counts, minLabel, maxLabel
 
   /** Touch handlers for one thumb: the thumb follows the finger, mirrored in Arabic. */
   const touch = (which: 0 | 1) => ({
-    ...thumbResponder,
+    ...thumbResponder(),
     onResponderGrant: (e: GestureResponderEvent) => {
       drag.current = { x: e.nativeEvent.pageX, from: value[which] };
     },

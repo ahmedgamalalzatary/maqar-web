@@ -32,23 +32,31 @@ $SSH "set -eu
 if [ "${1:-}" = "--setup" ]; then
   $SSH "sh $DIR/deploy/setup-server.sh"
 fi
-$SSH "sh $DIR/deploy/server-deploy.sh $(git rev-parse --short HEAD)"
 
-# The admin dashboard (apps/web): built here from the same clean commit, then swapped in at once.
-# nginx serves /srv/maqar/web/admin at /admin/ (deploy/nginx-maqar.conf).
+# Build and validate every artifact BEFORE anything on the server changes (OPS-06): the dashboard
+# first, since a failed or wrong build here must leave the running API and dashboard untouched.
 pnpm --filter @maqar/shared build >/dev/null
 # MSYS_NO_PATHCONV: Git Bash on Windows would otherwise turn "/v1" into "C:/Program Files/Git/v1".
 MSYS_NO_PATHCONV=1 NEXT_PUBLIC_API_URL=/v1 pnpm --filter @maqar/web build >/dev/null
 if ! grep -rqF '"/v1"' apps/web/out/_next/static || grep -rqF 'Program Files' apps/web/out; then
-  echo "The dashboard was built with the wrong API address; nothing was copied." >&2
+  echo "The dashboard was built with the wrong API address; nothing was deployed." >&2
   exit 1
 fi
+
+# Now the API: built on the server, migrated, started and health-checked with rollback
+# (deploy/server-deploy.sh). The dashboard build above targets this same commit's API surface.
+$SSH "sh $DIR/deploy/server-deploy.sh $(git rev-parse --short HEAD)"
+
+# Swap the dashboard in only after the new API is healthy. The previous generation of assets is
+# kept once: a dashboard opened before the swap keeps loading its old hashed files (nginx serves
+# /admin/ from /srv/maqar/web/admin, so an open page pointing at admin.old files still works).
 tar -C apps/web/out -cf - . | $SSH "set -eu
   mkdir -p /srv/maqar/web
-  rm -rf /srv/maqar/web/admin.new /srv/maqar/web/admin.old
+  rm -rf /srv/maqar/web/admin.new /srv/maqar/web/admin.old.old
+  [ ! -d /srv/maqar/web/admin.old ] || mv /srv/maqar/web/admin.old /srv/maqar/web/admin.old.old
   mkdir /srv/maqar/web/admin.new
   tar -xf - -C /srv/maqar/web/admin.new
   if [ -d /srv/maqar/web/admin ]; then mv /srv/maqar/web/admin /srv/maqar/web/admin.old; fi
   mv /srv/maqar/web/admin.new /srv/maqar/web/admin
-  rm -rf /srv/maqar/web/admin.old"
-echo "Deployed the admin dashboard at /admin/"
+  rm -rf /srv/maqar/web/admin.old.old"
+echo "Deployed maqar-api:$COMMIT and the admin dashboard at /admin/"

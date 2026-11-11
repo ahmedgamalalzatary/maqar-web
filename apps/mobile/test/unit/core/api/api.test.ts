@@ -1,4 +1,4 @@
-import { ApiError, REQUEST_TIMEOUT_MS, apiFetch } from '@/core/api/api';
+import { ApiError, REQUEST_TIMEOUT_MS, apiFetch, apiBaseUrl } from '@/core/api/api';
 
 const fetchMock = jest.fn();
 beforeEach(() => {
@@ -13,7 +13,7 @@ describe('apiFetch', () => {
   it('calls the API base URL from .env.test and returns the JSON body', async () => {
     fetchMock.mockResolvedValue(json(200, { status: 'ok' }));
     await expect(apiFetch('/health')).resolves.toEqual({ status: 'ok' });
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4001/v1/health');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${apiBaseUrl()}/health`);
   });
 
   it('throws an ApiError with the status and the server message', async () => {

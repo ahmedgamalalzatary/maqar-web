@@ -64,7 +64,7 @@ EXPO_PUBLIC_API_URL=http://localhost:4001/v1
 ## API database
 
 ```sh
-pnpm --filter @maqar/api db:generate     # SQL migrations from src/db/schema.ts
+pnpm --filter @maqar/api db:generate     # SQL migrations from src/core/db/schema.ts
 pnpm --filter @maqar/api db:migrate
 pnpm --filter @maqar/api db:studio
 ```

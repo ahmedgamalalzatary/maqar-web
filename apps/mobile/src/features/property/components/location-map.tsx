@@ -5,12 +5,16 @@ import { radius, useTheme } from '@/core/theme';
 
 /**
  * Google Maps with no key closes the app on Android, so a build without one leaves the map out.
- * Apple Maps needs no key, and Expo Go brings its own.
+ * Apple Maps needs no key, and Expo Go brings its own. Pure so tests can be explicit (jest cannot
+ * fake Platform.OS reliably).
  */
-const canShowMap = () =>
-  Platform.OS !== 'android' ||
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
-  Constants.expoConfig?.extra?.hasGoogleMapsKey === true;
+export function canShowMap(os: string, executionEnvironment: string | undefined, hasGoogleMapsKey: boolean | undefined): boolean {
+  return (
+    os !== 'android' ||
+    executionEnvironment === ExecutionEnvironment.StoreClient ||
+    hasGoogleMapsKey === true
+  );
+}
 
 /**
  * A small, still map with the listing's pin (react-native-maps: Apple Maps on iOS, Google
@@ -19,7 +23,7 @@ const canShowMap = () =>
  */
 export function LocationMap({ lat, lng, title }: { lat: number; lng: number; title: string }) {
   const { colors, scheme } = useTheme();
-  if (!canShowMap()) return null;
+  if (!canShowMap(Platform.OS, Constants.executionEnvironment, Constants.expoConfig?.extra?.hasGoogleMapsKey as boolean | undefined)) return null;
   return (
     <View style={[styles.box, { borderColor: colors.line }]}>
       <MapView

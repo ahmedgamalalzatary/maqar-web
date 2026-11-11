@@ -11,15 +11,21 @@ export type TxtProps = TextProps & {
   align?: 'start' | 'center' | 'end';
 };
 
+/**
+ * The CSS textAlign for an alignment. On phones "left" means start and "right" means end: a
+ * right-to-left layout swaps them. Only the web takes them literally. The platform is a parameter
+ * so tests can be explicit (jest cannot fake Platform.OS reliably).
+ */
+export function textAlignFor(os: string, dir: 'ltr' | 'rtl', align: TxtProps['align']): TextStyle['textAlign'] {
+  const startIsRight = os === 'web' && dir === 'rtl';
+  if (align === 'center') return 'center';
+  return (align === 'start') === startIsRight ? 'right' : 'left';
+}
+
 /** All app text. Uses Readex Pro and aligns to the reading direction. */
 export function Txt({ size = 15, weight = 'regular', color = 'ink', align = 'start', style, ...rest }: TxtProps) {
   const { colors } = useTheme();
   const dir = useDir();
-  // On phones "left" means start and "right" means end: a right-to-left layout swaps them.
-  // Only the web takes them literally.
-  const startIsRight = Platform.OS === 'web' && dir === 'rtl';
-  const textAlign: TextStyle['textAlign'] =
-    align === 'center' ? 'center' : (align === 'start') === startIsRight ? 'right' : 'left';
   return (
     <RNText
       {...rest}
@@ -29,7 +35,7 @@ export function Txt({ size = 15, weight = 'regular', color = 'ink', align = 'sta
           fontSize: size,
           lineHeight: Math.round(size * 1.5),
           color: colors[color],
-          textAlign,
+          textAlign: textAlignFor(Platform.OS, dir, align),
           writingDirection: dir,
         },
         style,
