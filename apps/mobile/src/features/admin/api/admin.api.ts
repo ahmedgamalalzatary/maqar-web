@@ -47,7 +47,8 @@ export const closeRequest = (id: number) => apiFetch<AdminListing>(`/admin/listi
 export const getListingStats = (id: number, days: InsightRange, signal?: AbortSignal) =>
   apiFetch<ListingStats>(`/admin/listings/${id}/stats?days=${days}`, { signal });
 
-export const getInterested = (id: number, signal?: AbortSignal) => apiFetch<InterestedClient[]>(`/admin/listings/${id}/interested`, { signal });
+export const getInterested = (id: number, page = 1, signal?: AbortSignal) =>
+  apiFetch<InterestedClient[]>(`/admin/listings/${id}/interested?page=${page}`, { signal });
 
 export const getAdminAgents = (signal?: AbortSignal) => apiFetch<AdminAgentOption[]>('/admin/agents?active=true', { signal });
 

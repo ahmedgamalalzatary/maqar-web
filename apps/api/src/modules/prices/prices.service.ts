@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { type PriceChangeResponse, type PropertyCard, priceDropText } from '@maqar/shared';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { ListingCounter } from '../insights/insights.service.js';
 import { PropertiesService } from '../properties/properties.service.js';
 import { PricesRepository } from './prices.repository.js';
 
@@ -11,6 +12,7 @@ export class PricesService {
     private readonly repo: PricesRepository,
     private readonly properties: PropertiesService,
     private readonly notifications: NotificationsService,
+    private readonly counter: ListingCounter,
   ) {}
 
   /** Homes that stop being approved leave the list, and come back if they are approved again. */
@@ -23,6 +25,7 @@ export class PricesService {
     const home = await this.properties.bookingTarget(propertyId);
     if (home.category === 'stay') throw new BadRequestException('Stays have no price alerts');
     await this.repo.follow(userId, propertyId);
+    await this.counter.interest(propertyId, userId, 'followed');
   }
 
   unfollow(userId: number, propertyId: number): Promise<void> {

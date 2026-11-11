@@ -17,8 +17,13 @@ export interface ListingDay {
 /** `GET /admin/listings/:id/stats?days=30`. */
 export interface ListingStats {
   days: ListingDay[];
-  /** All time: views since the listing went up; saves, followers, chats and viewings as they are now. */
+  /**
+   * All time: views since the listing went up; saves, followers, chats and viewings as they are now.
+   * Viewings counts the bookings that were never cancelled.
+   */
   totals: { views: number; saves: number; followers: number; interested: number; chats: number; viewings: number };
+  /** The first Cairo day daily tracking has numbers for (null until then): days before it are unknown, not zero. */
+  since: string | null;
 }
 
 export const INTEREST_KINDS = ['saved', 'followed', 'chatted', 'booked'] as const;
