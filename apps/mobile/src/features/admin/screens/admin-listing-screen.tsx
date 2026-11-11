@@ -1,4 +1,4 @@
-import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDate, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from '@maqar/shared';
+import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDate, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, Phone } from 'lucide-react-native';
@@ -137,7 +137,7 @@ function Body({ l }: { l: AdminListing }) {
             <Txt weight="medium">{l.ownerName ?? t('مش متسجل', 'Not recorded')}</Txt>
             {l.ownerPhone ? (
               <Txt size={13} color="ink2">
-                {l.ownerPhone}
+                {ltrPhone(l.ownerPhone)}
               </Txt>
             ) : null}
           </View>

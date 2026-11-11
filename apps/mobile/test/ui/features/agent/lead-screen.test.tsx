@@ -54,7 +54,8 @@ describe('Lead page', () => {
     await renderWithProviders(<Page />);
     expect(await screen.findByRole('header', { name: 'كريم محمود' })).toBeOnTheScreen();
     expect(screen.getByText('حجز من التطبيق')).toBeOnTheScreen();
-    expect(screen.getByText('+201014124412')).toBeOnTheScreen();
+    // Left-to-right marks keep the + in front inside an Arabic line.
+    expect(screen.getByText('‎+201014124412‎')).toBeOnTheScreen();
     expect(screen.getByText('جديد من التطبيق')).toBeOnTheScreen();
     expect(screen.getByRole('switch', { name: 'عميل مهم', checked: true })).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: 'معاينة', checked: true })).toBeOnTheScreen();

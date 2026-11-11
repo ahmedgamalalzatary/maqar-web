@@ -17,11 +17,15 @@ const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
 
 /**
- * Release builds shrink the code with R8. Room creates its database classes by name, so R8 sees
- * their constructors as unused and removes them; WorkManager's then crashes the app on launch.
+ * Release builds shrink the code with R8, which removes constructors nothing calls directly:
+ * - Room creates its database classes by name; without them WorkManager crashes the app on launch.
+ * - Expo creates native views by reflection through a (Context, AppContext) constructor. Expo keeps
+ *   it for ExpoView subclasses only, so expo-gl's GLView (a TextureView) lost it and opening the
+ *   360° tour crashed ("Didn't find a correct constructor").
  */
 const KEEP_RULES = `
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keepclassmembers class * extends android.view.View { public <init>(android.content.Context, expo.modules.kotlin.AppContext); }
 `;
 
 /**

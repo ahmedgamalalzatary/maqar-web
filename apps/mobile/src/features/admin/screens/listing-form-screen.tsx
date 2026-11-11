@@ -30,7 +30,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw, Star, Trash2 } from 'lucide-react-native';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -183,7 +184,7 @@ function Form({ saved }: { saved?: AdminListing }) {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.fill, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoiding style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.top, { paddingTop: insets.top + 8, borderBottomColor: colors.line }]}>
         <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={leave} />
         <View style={styles.flex}>
@@ -220,7 +221,7 @@ function Form({ saved }: { saved?: AdminListing }) {
           </>
         )}
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoiding>
   );
 }
 

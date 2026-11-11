@@ -162,3 +162,11 @@ export function relTime(at: Date | number, lang: Lang, now: number = Date.now())
   const words = `${n} ${unit.en}${n === 1 ? '' : 's'}`;
   return past ? `${words} ago` : `in ${words}`;
 }
+
+/**
+ * A phone number shown inside text that may be right to left: left-to-right marks keep the
+ * leading + in front ("+2010…"), which Arabic layout otherwise moves to the end ("2010…+").
+ */
+export function ltrPhone(phone: string): string {
+  return `‎${phone}‎`;
+}

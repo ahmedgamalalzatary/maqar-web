@@ -12,7 +12,7 @@ import {
 } from '@maqar/shared';
 import { Phone } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Pressable, Share, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Segmented } from '@/components/segmented';
@@ -177,30 +177,30 @@ function ViewsChart({ days }: { days: ListingDay[] }) {
           `${shown.views} views | ${shown.saves} saves | ${shown.interested} new interested`,
         )}
       </Txt>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={[styles.bars, { borderBottomColor: colors.line2 }]}>
-          {days.map((d) => (
-            <Pressable
-              key={d.day}
-              accessibilityRole="button"
-              accessibilityState={{ selected: d.day === pickedDay }}
-              accessibilityLabel={t(
-                `${date(d.day)}: ${fmtNum(d.views, 'ar')} مشاهدة، ${fmtNum(d.saves, 'ar')} حفظ، ${fmtNum(d.interested, 'ar')} مهتم جديد`,
-                `${date(d.day)}: ${d.views} views, ${d.saves} saves, ${d.interested} new interested`,
-              )}
-              onPress={() => setPickedDay(d.day === pickedDay ? null : d.day)}
-              style={styles.barSlot}
-            >
-              <View
-                style={[
-                  styles.bar,
-                  { height: d.views ? `${Math.max(2, (d.views / top) * 100)}%` : 0, backgroundColor: d.day === pickedDay ? colors.accentInk : colors.accent },
-                ]}
-              />
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+      {/* Every day shares the width, so the whole range (and today) is always in view: a scrolling
+          chart opened on its oldest days, which hid today's bar on a phone. */}
+      <View style={[styles.bars, { borderBottomColor: colors.line2, gap: days.length > 31 ? 1 : 2 }]}>
+        {days.map((d) => (
+          <Pressable
+            key={d.day}
+            accessibilityRole="button"
+            accessibilityState={{ selected: d.day === pickedDay }}
+            accessibilityLabel={t(
+              `${date(d.day)}: ${fmtNum(d.views, 'ar')} مشاهدة، ${fmtNum(d.saves, 'ar')} حفظ، ${fmtNum(d.interested, 'ar')} مهتم جديد`,
+              `${date(d.day)}: ${d.views} views, ${d.saves} saves, ${d.interested} new interested`,
+            )}
+            onPress={() => setPickedDay(d.day === pickedDay ? null : d.day)}
+            style={styles.barSlot}
+          >
+            <View
+              style={[
+                styles.bar,
+                { height: d.views ? `${Math.max(2, (d.views / top) * 100)}%` : 0, backgroundColor: d.day === pickedDay ? colors.accentInk : colors.accent },
+              ]}
+            />
+          </Pressable>
+        ))}
+      </View>
       <View style={styles.row}>
         <Txt size={10} color="ink3" style={styles.flex}>
           {date(days[0]!.day)}
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 8 },
   tile: { flex: 1, borderRadius: radius.md, padding: 10, gap: 2 },
   chart: { gap: 6 },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 2, borderBottomWidth: 1 },
-  barSlot: { width: 18, height: '100%', justifyContent: 'flex-end' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', height: 120, borderBottomWidth: 1 },
+  barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   rule: { height: StyleSheet.hairlineWidth },
   person: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },

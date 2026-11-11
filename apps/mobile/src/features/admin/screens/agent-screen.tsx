@@ -1,4 +1,4 @@
-import { type AdminAgentDetail, fmtDate, fmtNum, fmtTime, weekdayName } from '@maqar/shared';
+import { type AdminAgentDetail, fmtDate, fmtNum, fmtTime, weekdayName, ltrPhone } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Phone, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
@@ -97,7 +97,7 @@ function Body({ a }: { a: AdminAgentDetail }) {
           <View style={styles.flex}>
             <Txt size={13}>{a.email}</Txt>
             <Txt size={13} color="ink2">
-              {a.phone}
+              {a.phone ? ltrPhone(a.phone) : null}
             </Txt>
           </View>
           <IconButton label={t('اتصال', 'Call')} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${a.phone}`)} />
