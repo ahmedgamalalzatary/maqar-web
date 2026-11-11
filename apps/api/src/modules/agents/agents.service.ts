@@ -66,15 +66,30 @@ export class AgentsService {
 
   /**
    * Changes what is sent. Turning an agent off signs them out at once; it is refused while they
-   * are the advisor of a live listing, which must move to someone else first.
+   * are the advisor of a live listing, which must move to someone else first, and while they have
+   * upcoming viewings, conversations or open leads — unless `reassignTo` names the advisor who
+   * takes them over (or there is nothing to move).
    */
   async update(id: number, body: UpdateAgentDto): Promise<AdminAgentDetail> {
     const cur = await this.repo.find(id);
     if (!cur) throw new NotFoundException('Agent not found');
-    const { password, email, active, ...profile } = body;
+    const { password, email, active, reassignTo, ...profile } = body;
     if (email && email !== cur.email && (await this.repo.emailTaken(email))) throw new ConflictException('That email already has an account');
     if (active === false && cur.active && cur.live > 0) {
       throw new ConflictException('Move this advisor’s live listings to someone else first');
+    }
+    if (active === false && cur.active) {
+      const work = await this.repo.upcomingWork(id);
+      const total = work.viewings + work.threads + work.leads;
+      if (total > 0) {
+        if (reassignTo === undefined) {
+          throw new ConflictException(
+            `This advisor still has ${work.viewings} upcoming viewing(s), ${work.threads} conversation(s) and ${work.leads} open lead(s). Pass reassignTo to hand them over.`,
+          );
+        }
+        await this.assertHandover(id, reassignTo);
+        await this.repo.reassign(id, reassignTo);
+      }
     }
     await this.repo.update(
       id,
@@ -89,6 +104,18 @@ export class AgentsService {
     if (password || email !== undefined || active === false) await this.repo.endSessions(id);
     if (password || email !== undefined) await this.repo.touchCredentials(id);
     return this.get(id);
+  }
+
+  /** Hands an agent's open work to another advisor, without deactivating anyone. */
+  async reassign(id: number, reassignTo: number): Promise<{ viewings: number; threads: number; leads: number }> {
+    await this.assertHandover(id, reassignTo);
+    return this.repo.reassign(id, reassignTo);
+  }
+
+  private async assertHandover(id: number, reassignTo: number): Promise<void> {
+    if (reassignTo === id) throw new BadRequestException('Pick a different advisor to hand over to');
+    const to = await this.repo.find(reassignTo);
+    if (!to || !to.active) throw new NotFoundException('That advisor is not an active agent');
   }
 
   /** The same week for each agent. */
