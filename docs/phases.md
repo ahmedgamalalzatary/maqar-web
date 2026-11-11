@@ -778,7 +778,10 @@ Contract §11 (moved there from §9.1).
 
 - Public pages (`store-readiness.md` §5 items 4, 6, 7): privacy policy, terms, support and account deletion in Arabic and English at `/privacy`, `/terms`, `/support`, `/delete-account`, deployed with `deploy.sh`; the Me screen links them for everyone.
 
-Still to do: deploy (the pages, the nginx change, the per-account limits); the store consoles (`store-readiness.md` §2.3–2.5, §3.3–3.4); the deferred items (contract §17.2); the full regression on phones.
+- Deployed (`5fd13b6`): the pages, the nginx change and the per-account limits are live; minikoshk checked unaffected.
+- Phone check (POCO F3, Android 13, release APK; final build `c800a8f`, APK/AAB/IPA in `apk-out/c800a8f/`). Found and fixed: the 360° tour crashed (R8 removed the `(Context, AppContext)` constructor of expo-gl's view, then renamed `GLContext.flush()` that expo-gl's C++ calls by name) and, once open, drew a grey grid (the panorama was uploaded as RGB while expo-gl decodes photos to RGBA); the keyboard covered the chat box and form fields (edge to edge, so `KeyboardAvoidingView` pads on Android too); "Add to calendar" offered no calendar app (Android now opens the file with a view intent); scrolled content showed under the status bar (a backdrop strip); the insights chart opened on its oldest days (it fits the width now); phone numbers lost their leading `+` in Arabic text (left-to-right marks); unused overlay, activity, biometric permissions blocked. Verified on the phone afterwards: all of these, plus sign-in, booking and cancelling, chat, About Maqar links, the requested permissions (internet, notifications, vibrate, wake lock, boot, foreground service).
+
+Still to do: the store consoles (`store-readiness.md` §2.3–2.5, §3.3–3.4); the deferred items (contract §17.2); the full regression on phones.
 
 **Decided already:** analytics and crash reporting are out of scope for now (#14, 2026-11-09); nothing to build there.
 
