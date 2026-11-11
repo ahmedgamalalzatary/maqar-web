@@ -5,7 +5,7 @@ The goal is to pass review on the first try.
 
 What the app's builds actually contain was read with `npx expo config --type introspect` (the final Android permissions and iOS `Info.plist`), not guessed from `app.json`.
 
-Marks: ✅ done · ❌ missing (to fix in code) · 📝 to do in the store console (no code) · ⏸ deferred by the owner (see "Deferred by the owner" in `pre-release-review.md`) · ⚠️ check on the first real upload.
+Marks: ✅ done · ❌ missing (to fix in code) · 📝 to do in the store console (no code) · ⏸ deferred by the owner (contract §17.2, last line) · ⚠️ check on the first real upload.
 
 ---
 
@@ -17,8 +17,8 @@ These are the items that would get a submission rejected or stop it from uploadi
 |---|---|---|---|
 | B1 | Both | **Privacy policy:** a public web page, linked in the store listing **and** inside the app | ❌ none exists |
 | B2 | Google Play | **Web link for account deletion:** a public page where a user can ask for their account to be deleted, without the app | ❌ none exists (deleting from inside the app ✅ works) |
-| B3 | Both | **Permissions the app never uses:** Android ships camera, microphone, calendar and old storage permissions; iOS ships calendar, reminders and Face ID texts | ❌ see §2.2 and §3.2 |
-| B4 | App Store | **Vague iOS permission texts** ("Allow Maqar to access your device motion"); Apple rejects these under 5.1.1 | ❌ see §3.2 |
+| B3 | Both | **Permissions the app never uses:** Android ships camera, microphone, calendar and old storage permissions; iOS ships calendar, reminders and Face ID texts | ✅ fixed in Phase 20 (was ❌) see §2.2 and §3.2 |
+| B4 | App Store | **Vague iOS permission texts** ("Allow Maqar to access your device motion"); Apple rejects these under 5.1.1 | ✅ fixed in Phase 20 (was ❌) see §3.2 |
 | B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ❌ |
 | B6 | App Store | **Paid Apple Developer account, signed build, APNs key** | ⏸ OPS-02 |
 | B7 | Google Play | **Firebase `google-services.json`** (no Android push without it) | ⏸ OPS-01 |
@@ -48,7 +48,7 @@ Items B1, B2, B3, B4 and B5 are small code and web changes that can be done now,
 | 16 KB memory pages (required for apps targeting Android 15+ since 2025-11-01) | ✅ ⚠️ | React Native ≥ 0.77 and NDK 27 support it. Check the first upload in Play Console → App bundle explorer, which flags any native library that fails ("Does not support 16 KB"). |
 | App Bundle (.aab), signed | ✅ | `android-aab.yml`, started by hand. |
 | HTTPS only | ✅ | The release API is `https://187-55-224-15.sslip.io/v1`, so cleartext stays off. |
-| **Permissions the app doesn't use** | ❌ | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
+| **Permissions the app doesn't use** | ✅ fixed in Phase 20 (was ❌) | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
 | Push (FCM) | ⏸ | OPS-01: needs `google-services.json`. |
 | **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.maqar.app` and the upload and Play signing SHA-1s. |
@@ -110,7 +110,7 @@ What account deletion does is solid. `UsersRepository.softDelete` blanks the nam
 | Signing, provisioning profile, **Push Notifications capability and APNs key** (uploaded to Expo for Expo push) | ⏸ | OPS-02. `ios-ipa.yml` builds unsigned on purpose today. |
 | Built with **Xcode 26 / iOS 26 SDK** (required for uploads since 2026-04-28) | ⚠️ | `macos-latest` should be on Xcode 26 by now. Print `xcodebuild -version` in the workflow to prove it. Uploads must also target iOS 13 or later; Expo SDK 58 targets much higher ✅. |
 | Build number goes up on each upload | ⏸ | OPS-03 |
-| **Export compliance** | ❌ | Not set, so every upload stops at "Missing Compliance". The app only uses HTTPS and the OS's own encryption, which is exempt. Set `ios.config.usesNonExemptEncryption: false` (this becomes `ITSAppUsesNonExemptEncryption = NO`). |
+| **Export compliance** | ✅ fixed in Phase 20 (was ❌) | Not set, so every upload stops at "Missing Compliance". The app only uses HTTPS and the OS's own encryption, which is exempt. Set `ios.config.usesNonExemptEncryption: false` (this becomes `ITSAppUsesNonExemptEncryption = NO`). |
 | **Privacy manifest** (`PrivacyInfo.xcprivacy`, "required reason" APIs) | ⚠️ | Expo SDK packages ship their own. A third-party native library without one (for example `react-native-maps` or async-storage) gets an **ITMS-91053** e-mail after upload. Add what it lists under `ios.privacyManifests` in `app.json`, then upload again. Do this on the first TestFlight upload, before sending for review. |
 | iPad | ⚠️ | `supportsTablet: false` ✅, so no iPad screenshots are needed. But iPhone-only apps still run on iPads in compatibility mode, and reviewers sometimes test on an iPad. Open the app once on an iPad simulator to check nothing is cut off. |
 
@@ -120,10 +120,10 @@ From the final `Info.plist`:
 
 | Key | Text now | Used? | Fix |
 |---|---|---|---|
-| `NSPhotoLibraryUsageDescription` | "Maqar uses your photos only when you choose some to send in a chat with your sales advisor." | Yes | ✅ Good. Add an Arabic version. |
-| `NSMotionUsageDescription` | "Allow $(PRODUCT_NAME) to access your device motion" | Yes, the 360° tour gyroscope | ❌ Too vague. Say what it's for, e.g. "Maqar uses motion so you can look around a 360° tour by moving your phone." Set it through the `expo-sensors` plugin (`motionPermission`). |
-| `NSCalendarsUsageDescription`, `NSCalendarsFullAccessUsageDescription`, `NSRemindersUsageDescription`, `NSRemindersFullAccessUsageDescription` | Generic | **No** (`expo-calendar` is never imported) | ❌ Remove the `expo-calendar` package. Asking for calendar access and never using it is a 5.1.1 rejection. |
-| `NSFaceIDUsageDescription` | Generic | **No** (`requireAuthentication` is never used) | ❌ Add the `expo-secure-store` plugin option `faceIDPermission: false`. |
+| `NSPhotoLibraryUsageDescription` | "Maqar uses your photos only when you choose some to send in a chat with your sales advisor." | Yes | ✅ Good; Arabic and English texts in `locales/` (Phase 20). |
+| `NSMotionUsageDescription` | "Allow $(PRODUCT_NAME) to access your device motion" | Yes, the 360° tour gyroscope | ✅ fixed in Phase 20 (was ❌) Too vague. Say what it's for, e.g. "Maqar uses motion so you can look around a 360° tour by moving your phone." Set it through the `expo-sensors` plugin (`motionPermission`). |
+| `NSCalendarsUsageDescription`, `NSCalendarsFullAccessUsageDescription`, `NSRemindersUsageDescription`, `NSRemindersFullAccessUsageDescription` | Generic | **No** (`expo-calendar` is never imported) | ✅ fixed in Phase 20 (was ❌) Remove the `expo-calendar` package. Asking for calendar access and never using it is a 5.1.1 rejection. |
+| `NSFaceIDUsageDescription` | Generic | **No** (`requireAuthentication` is never used) | ✅ fixed in Phase 20 (was ❌) Add the `expo-secure-store` plugin option `faceIDPermission: false`. |
 
 The app's main language is Arabic, so add **Arabic** permission texts too. Use Expo's `locales` (`ios.infoPlist` per language), so an Arabic phone shows them in Arabic.
 
@@ -168,9 +168,9 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 ## 5. Fix list, in order
 
 **Code: small, and can be done now (no deferred items needed):**
-1. Remove `expo-calendar`. Add `android.blockedPermissions` (`CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) and the `expo-secure-store` option `faceIDPermission: false`. Then rerun `expo config --type introspect` and check the result.
-2. Write a clear motion permission text in Arabic and English (the `expo-sensors` plugin), and add the Arabic photo text.
-3. Set `ios.config.usesNonExemptEncryption: false`.
+1. ✅ Done (Phase 20): Remove `expo-calendar`. Add `android.blockedPermissions` (`CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) and the `expo-secure-store` option `faceIDPermission: false`. Then rerun `expo config --type introspect` and check the result.
+2. ✅ Done (Phase 20): Write a clear motion permission text in Arabic and English (the `expo-sensors` plugin), and add the Arabic photo text.
+3. ✅ Done (Phase 20): Set `ios.config.usesNonExemptEncryption: false`.
 4. Add privacy policy, terms and support / contact rows to the Me screen. They open the public pages in `expo-web-browser`, which is already installed.
 5. Optional (1.2 insurance): agents can report or block a client in the chat.
 

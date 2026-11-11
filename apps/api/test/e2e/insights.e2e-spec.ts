@@ -98,7 +98,10 @@ describe('Listing insights (e2e)', () => {
 
     await http().put(`/v1/favorites/${home.id}`).set(as(saver.accessToken)).expect(204);
     await http().put(`/v1/alerts/${home.id}`).set(as(saver.accessToken)).expect(204);
-    await http().post('/v1/chats').set(as(chatter.accessToken)).send({ propertyId: home.id }).expect(201);
+    // Chatting means sending a message: opening an empty conversation is not interest (INS-04).
+    const thread = (await http().post('/v1/chats').set(as(chatter.accessToken)).send({ propertyId: home.id }).expect(201)).body as { id: number };
+    expect((await interested(home.id)).map((c) => c.name)).not.toContain('Chatter');
+    await http().post(`/v1/chats/${thread.id}/messages`).set(as(chatter.accessToken)).send({ kind: 'text', text: 'Is it still available?' }).expect(201);
     const day = ((await http().get(`/v1/properties/${home.id}/slots`).expect(200)).body as SlotsResponse).days[2]!;
     await http().post('/v1/viewings').set(as(booker.accessToken)).send({ propertyId: home.id, date: day.date, time: '11:00', reminders: [] }).expect(201);
 

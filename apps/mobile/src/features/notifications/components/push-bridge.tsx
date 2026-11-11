@@ -62,7 +62,7 @@ function NativePushBridge() {
     }
     const href = safeHref(data?.href);
     if (href) router.push(href as Href);
-  }, [response, status, router, queryClient]);
+  }, [response, status, router, queryClient, userId]);
 
   useEffect(() => {
     if (pushSupported() && status !== 'loading') Notifications.setBadgeCountAsync(status === 'signedIn' ? unread : 0).catch(() => {});

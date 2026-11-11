@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { AccountThrottlerGuard } from '../../../src/common/rate-limit.js';
 import 'reflect-metadata';
 import { ChatController } from '../../../src/modules/chat/chat.controller.js';
 import { FavoritesController } from '../../../src/modules/favorites/favorites.controller.js';
@@ -9,7 +10,9 @@ import { NotificationsController, PushTokensController } from '../../../src/modu
 import { UploadsController } from '../../../src/modules/uploads/uploads.controller.js';
 
 const guardsOf = (controller: Function): unknown[] => Reflect.getMetadata('__guards__', controller) ?? [];
-const throttled = (controller: Function) => guardsOf(controller).some((g) => g === ThrottlerGuard || (g as Function | undefined)?.name === 'ThrottlerGuard');
+// Writes are limited per account (AccountThrottlerGuard is a ThrottlerGuard keyed on the user).
+const throttled = (controller: Function) =>
+  guardsOf(controller).some((g) => g === AccountThrottlerGuard || (typeof g === 'function' && g.prototype instanceof ThrottlerGuard));
 
 // One cheap read route stands in for each controller, so the metadata is really attached.
 @Controller('spec')
