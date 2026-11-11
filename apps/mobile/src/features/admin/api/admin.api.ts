@@ -11,7 +11,10 @@ import type {
   DaysOffBody,
   DaysOffResult,
   HoursBody,
+  InsightRange,
+  InterestedClient,
   ListingBody,
+  ListingStats,
   PropertyStatus,
   UploadResponse,
 } from '@maqar/shared';
@@ -40,6 +43,11 @@ export const publishRequest = (id: number, agentId?: number) =>
 export const unpublishRequest = (id: number) => apiFetch<AdminListing>(`/admin/listings/${id}/unpublish`, { method: 'POST', body: {} });
 
 export const closeRequest = (id: number) => apiFetch<AdminListing>(`/admin/listings/${id}/close`, { method: 'POST', body: {} });
+
+export const getListingStats = (id: number, days: InsightRange, signal?: AbortSignal) =>
+  apiFetch<ListingStats>(`/admin/listings/${id}/stats?days=${days}`, { signal });
+
+export const getInterested = (id: number, signal?: AbortSignal) => apiFetch<InterestedClient[]>(`/admin/listings/${id}/interested`, { signal });
 
 export const getAdminAgents = (signal?: AbortSignal) => apiFetch<AdminAgentOption[]>('/admin/agents?active=true', { signal });
 

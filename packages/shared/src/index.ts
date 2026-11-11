@@ -13,3 +13,4 @@ export * from './chat.js';
 export * from './listings.js';
 export * from './listing-form.js';
 export * from './admin-tools.js';
+export * from './insights.js';

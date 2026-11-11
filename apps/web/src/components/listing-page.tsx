@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/api";
 import { type Action, useAction, useAgents, useListing, usePatchListing } from "@/lib/admin";
 import { mediaUrl } from "@/lib/client";
 import { useLang, useT } from "@/lib/i18n";
+import { ListingInsights } from "./listing-insights";
 import { priceSuffix } from "./listings-page";
 import { useNotice } from "./shell";
 import { Button, Card, StatusBadge, useErrorText } from "./ui";
@@ -92,6 +93,7 @@ function Body({ l }: { l: AdminListing }) {
           {l.features.length ? <p className="text-sm">{l.features.map((f) => t(FEATURE_LABEL[f])).join("، ")}</p> : null}
           {(lang === "ar" ? l.descAr : l.descEn) ? <p className="whitespace-pre-line text-sm leading-7 text-ink-2">{lang === "ar" ? l.descAr : l.descEn}</p> : null}
         </Card>
+        {l.status === "draft" ? null : <ListingInsights l={l} />}
       </div>
 
       <aside className="flex flex-col gap-5">

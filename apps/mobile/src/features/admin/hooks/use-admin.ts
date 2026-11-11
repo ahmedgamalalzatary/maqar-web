@@ -1,4 +1,4 @@
-import type { AdminListing, AgentBody, AreaBody, DaysOffBody, HoursBody, ListingBody } from '@maqar/shared';
+import type { AdminListing, AgentBody, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';
 import {
@@ -11,6 +11,8 @@ import {
   getAdminLeads,
   getAgent,
   getAgents,
+  getInterested,
+  getListingStats,
   removeDayOffRequest,
   setHoursRequest,
   updateAgentRequest,
@@ -47,6 +49,22 @@ export function useAdminListing(id: number | undefined) {
     queryFn: ({ signal }) => getAdminListing(id!, signal),
     enabled: adminId !== null && id !== undefined,
   });
+}
+
+/** Phase 19: a listing's daily numbers for the last `days`, and its interested clients. */
+export function useListingStats(id: number, days: InsightRange) {
+  const adminId = useAdminId();
+  return useQuery({
+    queryKey: [...adminKey(adminId), 'listing', id, 'stats', days],
+    queryFn: ({ signal }) => getListingStats(id, days, signal),
+    enabled: adminId !== null,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useInterested(id: number) {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'listing', id, 'interested'], queryFn: ({ signal }) => getInterested(id, signal), enabled: adminId !== null });
 }
 
 export function useAdminAgents(enabled = true) {

@@ -83,7 +83,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
   const book = useBook();
   const update = useUpdateViewing();
   const [picked, setPicked] = useState<string | null>(existing?.date ?? null);
-  const [time, setTime] = useState<string | null>(existing?.time ?? null);
+  const [pickedTime, setTime] = useState<string | null>(existing?.time ?? null);
   const [reminders, setReminders] = useState<ReminderOffset[]>(existing?.reminders ?? ['1d', '2h']);
   const [done, setDone] = useState<ViewingItem | null>(null);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
@@ -97,6 +97,8 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
   const days = slots.data?.days ?? [];
   const date = picked ?? slots.data?.defaultDate ?? null;
   const day = days.find((d) => d.date === date);
+  // The times refresh whenever the screen comes back: a picked time counts only while it is still free.
+  const time = pickedTime && day?.slots.some((s) => s.time === pickedTime && s.state === 'free') ? pickedTime : null;
   const groups: { icon: LucideIcon; label: string; slots: Slot[] }[] = [
     { icon: Sunrise, label: t('الصبح', 'Morning'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) < 13) },
     { icon: Sun, label: t('بعد الضهر', 'Afternoon'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 13 && hourOf(s.time) < 17) },
@@ -118,7 +120,10 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
       body: already ? t('غيّر ميعادها من معايناتي.', 'Change its time from My viewings.') : undefined,
       tone: 'danger',
     });
-    if (taken && !already) setTime(null);
+    if (taken && !already) {
+      setTime(null);
+      void slots.refetch();
+    }
   };
 
   const confirm = () =>

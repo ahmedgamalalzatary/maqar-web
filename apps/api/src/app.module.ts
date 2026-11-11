@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { InsightsModule } from './modules/insights/insights.module.js';
 import { ListingsModule } from './modules/listings/listings.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -53,6 +54,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AreasModule,
     PropertiesModule,
     FavoritesModule,
+    InsightsModule,
     NotificationsModule,
     PricesModule,
     ViewingsModule,

@@ -16,6 +16,7 @@ import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { priceSuffix, StatusBadge } from '../components/admin-parts';
+import { ListingInsights } from '../components/listing-insights';
 import { type ListingAction, useAdminAgents, useAdminListing, useListingAction, usePatchListing } from '../hooks/use-admin';
 
 /** `/admin/listing/:id`: one listing with its owner and advisor, and what can be done with it. */
@@ -172,6 +173,8 @@ function Body({ l }: { l: AdminListing }) {
           {t('العقارات المميزة بتظهر أول حاجة في الرئيسية لما تكون منشورة.', 'Featured listings show first on Home while they are live.')}
         </Txt>
       </View>
+
+      {l.status === 'draft' ? null : <ListingInsights l={l} />}
 
       <View style={styles.actions}>
         {canMoveTo(l.status, 'approved') ? (

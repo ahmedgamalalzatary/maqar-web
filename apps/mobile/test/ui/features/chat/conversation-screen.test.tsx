@@ -163,6 +163,38 @@ describe('Conversation (client)', () => {
     expect(writes()).toContainEqual([`/chats/1/messages/${card.id}/book`, { time: '17:00' }]);
   });
 
+  it('offers a retry when the messages fail to load, and when older ones do', async () => {
+    let failFirst = true;
+    let failOlder = true;
+    mockFetch().mockImplementation(async (url: string) => {
+      const [path, qs] = url.replace(/^.*\/v1/, '').split('?');
+      if (path === '/chats/1') return jsonResponse(200, thread());
+      if (path === '/chats/1/messages' && !qs) {
+        if (failFirst) return jsonResponse(500, { statusCode: 500, message: 'Server error' });
+        return jsonResponse(200, { items: [msg('agent', { kind: 'text', text: 'أحدث رسالة' }, { id: 50 })], hasMore: true });
+      }
+      if (path === '/chats/1/messages') {
+        if (failOlder) return jsonResponse(500, { statusCode: 500, message: 'Server error' });
+        return jsonResponse(200, { items: [msg('agent', { kind: 'text', text: 'رسالة قديمة' }, { id: 10 })], hasMore: false });
+      }
+      return new Response(null, { status: 204 });
+    });
+    await renderWithProviders(<Page />);
+
+    expect(await screen.findByText('مقدرناش نجيب الرسايل')).toBeOnTheScreen();
+    failFirst = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'حاول تاني' }));
+    expect(await screen.findByText('أحدث رسالة')).toBeOnTheScreen();
+
+    await fireEvent(screen.getByTestId('messages'), 'endReached');
+    const retry = await screen.findByRole('button', { name: 'حاول تاني' });
+    expect(screen.getByText('مقدرناش نجيب الرسايل القديمة')).toBeOnTheScreen();
+    failOlder = false;
+    await fireEvent.press(retry);
+    expect(await screen.findByText('رسالة قديمة')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'حاول تاني' })).toBeNull();
+  });
+
   it('says when the time was just taken', async () => {
     serve(thread(), [msg('agent', { kind: 'slots', date: '2026-11-13', times: ['16:00'], chosen: null })], { bookStatus: 409 });
     await renderWithProviders(<Page />);
