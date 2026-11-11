@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundRe
 import type { AdminAgentDetail, AdminAgentItem, DaysOffResult } from '@maqar/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { DatePipe } from './date.pipe.js';
-import { AgentsQueryDto, CreateAgentDto, DaysOffDto, HoursDto, UpdateAgentDto } from './dto/agents.dto.js';
+import { AgentsQueryDto, CreateAgentDto, DaysOffDto, HoursDto, ReassignDto, UpdateAgentDto } from './dto/agents.dto.js';
 import { AgentsService } from './agents.service.js';
 
 /** Router for `/v1/admin/agents` (phase 18, contract §11): accounts, weekly hours and days off. */
@@ -46,9 +46,15 @@ export class AdminAgentsController {
   }
 
   @Patch(':id')
-  @ApiConflictResponse({ description: 'Still the advisor of live listings, or the email is taken' })
+  @ApiConflictResponse({ description: 'Still the advisor of live listings, the email is taken, or there is unassigned work' })
   update(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateAgentDto): Promise<AdminAgentDetail> {
     return this.agents.update(id, body);
+  }
+
+  /** Moves an advisor's upcoming viewings, conversations and open leads to another advisor. */
+  @Post(':id/reassign')
+  reassign(@Param('id', ParseIntPipe) id: number, @Body() body: ReassignDto): Promise<{ viewings: number; threads: number; leads: number }> {
+    return this.agents.reassign(id, body.reassignTo);
   }
 
   @Delete(':id/days-off/:date')

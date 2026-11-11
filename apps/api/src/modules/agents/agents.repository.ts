@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { DayHours } from '@maqar/shared';
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { refreshTokens } from '../auth/auth.schema.js';
+import { chatThreads } from '../chat/chat.schema.js';
 import { leads } from '../leads/leads.schema.js';
 import { properties } from '../properties/properties.schema.js';
 import { type NewUserRow, users } from '../users/users.schema.js';
@@ -120,5 +121,45 @@ export class AgentsRepository {
       .where(and(inArray(viewings.agentId, ids), isNotNull(viewings.active), gte(viewings.startsAt, from), lt(viewings.startsAt, to)))
       .groupBy(viewings.agentId);
     return new Map(rows.map((r) => [r.agentId, r.n]));
+  }
+
+  /** How much open work would be stranded: upcoming viewings, conversations, open leads. */
+  async upcomingWork(agentId: number): Promise<{ viewings: number; threads: number; leads: number }> {
+    const [v] = await this.db
+      .select({ n: count() })
+      .from(viewings)
+      .where(and(eq(viewings.agentId, agentId), isNotNull(viewings.active), gt(viewings.startsAt, sql`now()`)));
+    const [t] = await this.db.select({ n: count() }).from(chatThreads).where(eq(chatThreads.agentId, agentId));
+    const [l] = await this.db
+      .select({ n: count() })
+      .from(leads)
+      .where(and(eq(leads.agentId, agentId), inArray(leads.stage, ['new', 'contacted', 'viewing', 'negotiation'])));
+    return { viewings: Number(v?.n ?? 0), threads: Number(t?.n ?? 0), leads: Number(l?.n ?? 0) };
+  }
+
+  /**
+   * Moves an agent's upcoming viewings, conversations and open leads to another advisor in one
+   * transaction. Leads that would collide with one the client already has with the new advisor
+   * (one lead per client and advisor) stay where they are.
+   */
+  async reassign(fromId: number, toId: number): Promise<{ viewings: number; threads: number; leads: number }> {
+    return this.db.transaction(async (tx) => {
+      const [v] = await tx
+        .update(viewings)
+        .set({ agentId: toId })
+        .where(and(eq(viewings.agentId, fromId), isNotNull(viewings.active), gt(viewings.startsAt, sql`now()`)));
+      const [t] = await tx.update(chatThreads).set({ agentId: toId }).where(eq(chatThreads.agentId, fromId));
+      const [l] = await tx
+        .update(leads)
+        .set({ agentId: toId })
+        .where(
+          and(
+            eq(leads.agentId, fromId),
+            inArray(leads.stage, ['new', 'contacted', 'viewing', 'negotiation']),
+            sql`not exists (select 1 from ${leads} other where other.client_id = ${leads.clientId} and other.agent_id = ${toId})`,
+          ),
+        );
+      return { viewings: v.affectedRows ?? 0, threads: t.affectedRows ?? 0, leads: l.affectedRows ?? 0 };
+    });
   }
 }

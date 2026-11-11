@@ -80,6 +80,21 @@ export class UpdateAgentDto extends PartialType(OmitType(CreateAgentDto, ['passw
 
   @ApiPropertyOptional() @IsOptional() @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ description: 'Move their upcoming viewings, open chats and open leads to this advisor when deactivating' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  reassignTo?: number;
+}
+
+export class ReassignDto {
+  @ApiProperty({ description: 'The advisor who takes over the work' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  reassignTo!: number;
 }
 
 export class DayHoursDto implements DayHours {
