@@ -85,8 +85,8 @@ export class NotificationsService {
     await this.repo.deleteTokens(tokens.filter((_, k) => outcomes[k] === 'gone'));
   }
 
-  async list(userId: number, limit = NOTIFICATIONS_LIMIT): Promise<NotificationsResponse> {
-    const [rows, unread] = await Promise.all([this.repo.list(userId, limit), this.repo.countUnread(userId)]);
+  async list(userId: number, limit = NOTIFICATIONS_LIMIT, before?: number): Promise<NotificationsResponse> {
+    const [rows, unread] = await Promise.all([this.repo.list(userId, limit, before), this.repo.countUnread(userId)]);
     return { items: rows.map(toItem), unread };
   }
 

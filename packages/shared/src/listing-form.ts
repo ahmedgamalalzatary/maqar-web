@@ -19,6 +19,10 @@ export type ListingForm = {
   titleEn: string;
   compoundAr: string;
   compoundEn: string;
+  developerAr: string;
+  developerEn: string;
+  floor: string;
+  maintenanceFee: string;
   beds: string;
   baths: string;
   sizeM2: string;
@@ -45,6 +49,10 @@ export const emptyListingForm = (): ListingForm => ({
   titleEn: '',
   compoundAr: '',
   compoundEn: '',
+  developerAr: '',
+  developerEn: '',
+  floor: '',
+  maintenanceFee: '',
   beds: '',
   baths: '',
   sizeM2: '',
@@ -123,6 +131,10 @@ export function listingBodyOf(s: ListingForm): ListingBody {
     titleEn: s.titleEn.trim(),
     compoundAr: s.compoundAr.trim(),
     compoundEn: s.compoundEn.trim(),
+    developerAr: s.developerAr.trim() || null,
+    developerEn: s.developerEn.trim() || null,
+    floor: s.floor.trim() ? (readWholeNumber(s.floor) ?? null) : null,
+    maintenanceFee: s.maintenanceFee.trim() ? (readWholeNumber(s.maintenanceFee) ?? null) : null,
     descAr: s.descAr.trim(),
     descEn: s.descEn.trim(),
     price: readWholeNumber(s.price)!,
@@ -149,6 +161,10 @@ export function listingFormOf(l: AdminListing): ListingForm {
     titleEn: l.titleEn,
     compoundAr: l.compoundAr,
     compoundEn: l.compoundEn,
+    developerAr: l.developerAr ?? '',
+    developerEn: l.developerEn ?? '',
+    floor: l.floor == null ? '' : String(l.floor),
+    maintenanceFee: l.maintenanceFee == null ? '' : String(l.maintenanceFee),
     beds: String(l.beds),
     baths: String(l.baths),
     sizeM2: String(l.sizeM2),

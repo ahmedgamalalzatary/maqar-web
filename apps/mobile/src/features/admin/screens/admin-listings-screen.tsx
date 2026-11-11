@@ -2,7 +2,7 @@ import { fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus }
 import { useRouter } from 'expo-router';
 import { Building2, Plus, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
@@ -27,13 +27,15 @@ export function AdminListingsScreen() {
   const words = useDebounced(q, 300);
   const listings = useAdminListings({ status: filter === 'all' ? undefined : filter, q: words });
   const data = listings.data;
-  const count = (s: Filter) => (data ? (s === 'all' ? Object.values(data.counts).reduce((a, b) => a + b, 0) : data.counts[s]) : 0);
+  const items = data?.pages.flatMap((p) => p.items) ?? [];
+  const counts = data?.pages[0]?.counts;
+  const count = (s: Filter) => (counts ? (s === 'all' ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[s]) : 0);
 
   return (
     <FlatList
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
-      data={data?.items ?? []}
+      data={items}
       keyExtractor={(l) => String(l.id)}
       renderItem={({ item }) => <AdminListingRow item={item} />}
       ItemSeparatorComponent={() => <View style={styles.gap} />}
@@ -47,7 +49,7 @@ export function AdminListingsScreen() {
               </Txt>
               {data ? (
                 <Txt size={13} color="ink2">
-                  {t(`${fmtNum(count('all'), 'ar')} عقار، ${fmtNum(data.counts.approved, 'ar')} منشور`, `${count('all')} listings, ${data.counts.approved} live`)}
+                  {t(`${fmtNum(count('all'), 'ar')} عقار، ${fmtNum(counts?.approved ?? 0, 'ar')} منشور`, `${count('all')} listings, ${counts?.approved ?? 0} live`)}
                 </Txt>
               ) : null}
             </View>
@@ -111,6 +113,17 @@ export function AdminListingsScreen() {
           </View>
         )
       }
+      ListFooterComponent={
+        listings.isFetchingNextPage ? (
+          <ActivityIndicator color={colors.accent} style={styles.empty} />
+        ) : listings.isError && items.length > 0 ? (
+          <ListingsError onRetry={() => listings.fetchNextPage()} />
+        ) : undefined
+      }
+      onEndReached={() => {
+        if (listings.hasNextPage && !listings.isFetchingNextPage) listings.fetchNextPage();
+      }}
+      onEndReachedThreshold={0.5}
       refreshControl={<RefreshControl refreshing={listings.isRefetching} onRefresh={() => void listings.refetch()} tintColor={colors.accent} />}
     />
   );

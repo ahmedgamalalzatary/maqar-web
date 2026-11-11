@@ -41,16 +41,35 @@ const deps = (over: Record<string, unknown> = {}) => {
     move: vi.fn(async () => true),
     agentOptions: vi.fn(async () => [{ id: 3 }]),
     images: vi.fn(async () => new Map()),
+    imagesUsedElsewhere: vi.fn(async () => new Set<string>()),
     withTour: vi.fn(async () => new Set()),
     features: vi.fn(async () => []),
     ...Object.fromEntries(Object.entries(over).filter(([k]) => k !== 'update')),
   };
   const prices = { changePrice: vi.fn(async () => ({})), announce: vi.fn(async () => undefined) };
-  const service = new ListingsService(repo as never, prices as never);
-  return { service, repo, prices };
+  const uploads = { assertListingFiles: vi.fn(async () => undefined), removeListingFiles: vi.fn(async () => undefined) };
+  const service = new ListingsService(repo as never, prices as never, uploads as never);
+  return { service, repo, prices, uploads };
 };
 
 describe('editing a listing with a price change', () => {
+  it('refuses photos that are not on the server, and saves nothing', async () => {
+    const { service, repo, uploads } = deps({ images: vi.fn(async () => new Map([[7, ['/uploads/listings/old.jpg']]])) });
+    uploads.assertListingFiles.mockRejectedValueOnce(new Error('missing'));
+    await expect(service.update(7, { images: ['/uploads/listings/new.jpg'] } as never, 1)).rejects.toBeTruthy();
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('collects the photos the edit removed, but only ones no other listing shows', async () => {
+    const { service, repo, uploads } = deps({
+      images: vi.fn(async () => new Map([[7, ['/uploads/listings/old.jpg', '/uploads/listings/shared.jpg']]])),
+    });
+    repo.imagesUsedElsewhere = vi.fn(async () => new Set(['/uploads/listings/shared.jpg']));
+    await service.update(7, { images: ['/uploads/listings/new.jpg'] } as never, 1);
+    expect(repo.imagesUsedElsewhere).toHaveBeenCalledWith(['/uploads/listings/old.jpg', '/uploads/listings/shared.jpg'], 7);
+    expect(uploads.removeListingFiles).toHaveBeenCalledWith(['/uploads/listings/old.jpg']);
+  });
+
   it('commits the fields and the price in one repository transaction', async () => {
     const { service, repo, prices } = deps();
     await service.update(7, { price: 900_000, titleAr: 'شقة جديدة' } as never, 1);

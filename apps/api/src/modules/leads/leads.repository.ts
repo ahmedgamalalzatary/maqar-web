@@ -42,11 +42,12 @@ export class LeadsRepository {
       .orderBy(desc(leads.lastActivityAt), desc(leads.id));
   }
 
-  /** Every agent's leads for the admin tools (phase 18), the latest activity first. */
-  listAll(f: { agentId?: number; stage?: LeadStage }): Promise<LeadWithClient[]> {
+  /** Every agent's leads for the admin tools (phase 18), the latest activity first, 500 a page. */
+  listAll(f: { agentId?: number; stage?: LeadStage; page?: number }): Promise<LeadWithClient[]> {
     return this.selectLeads()
       .where(and(f.agentId ? eq(leads.agentId, f.agentId) : undefined, f.stage ? eq(leads.stage, f.stage) : undefined))
       .orderBy(desc(leads.lastActivityAt), desc(leads.id))
+      .offset(((f.page ?? 1) - 1) * 500)
       .limit(500);
   }
 

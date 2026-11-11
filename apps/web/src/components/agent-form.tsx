@@ -45,11 +45,15 @@ export function AgentForm({ saved }: { saved?: AdminAgentDetail }) {
   const set = (k: Key, v: string) => setD((cur) => ({ ...cur, [k]: v }));
 
   const problems: Key[] = [];
-  for (const k of ["nameAr", "nameEn", "roleTitleAr", "roleTitleEn", "languagesAr", "languagesEn"] as const) if (d[k].trim().length < 2) problems.push(k);
+  // The same bounds the API's DTO enforces, so local validation never passes what the server refuses.
+  for (const k of ["nameAr", "nameEn", "roleTitleAr", "roleTitleEn", "languagesAr", "languagesEn"] as const) {
+    if (d[k].trim().length < 2 || d[k].trim().length > 100) problems.push(k);
+  }
   if (!/^\S+@\S+\.\S+$/.test(d.email.trim())) problems.push("email");
   if ((!saved || d.password) && (d.password.length < 8 || !/[A-Za-z]/.test(d.password) || !/\d/.test(d.password))) problems.push("password");
   if (!readPhone(d.phone)) problems.push("phone");
-  if (readWholeNumber(d.monthlyTarget) === undefined) problems.push("monthlyTarget");
+  const target = readWholeNumber(d.monthlyTarget);
+  if (target === undefined || target > 1000) problems.push("monthlyTarget");
   const err = (k: Key, msg: string) => (showErrors && problems.includes(k) ? msg : undefined);
 
   const submit = (e: FormEvent) => {

@@ -23,8 +23,8 @@ import type { PhotoPart } from '@/features/chat/photos';
 
 export type ListingsQuery = { status?: PropertyStatus; q?: string };
 
-export function getAdminListings({ status, q }: ListingsQuery, signal?: AbortSignal) {
-  const qs = new URLSearchParams({ limit: '100' });
+export function getAdminListings({ status, q, page = 1 }: ListingsQuery & { page?: number }, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ limit: '100', page: String(page) });
   if (status) qs.set('status', status);
   if (q?.trim()) qs.set('q', q.trim());
   return apiFetch<AdminListingsPage>(`/admin/listings?${qs}`, { signal });
@@ -76,8 +76,10 @@ export const addDaysOffRequest = (body: DaysOffBody) => apiFetch<DaysOffResult>(
 
 export const removeDayOffRequest = (id: number, date: string) => apiFetch<void>(`/admin/agents/${id}/days-off/${date}`, { method: 'DELETE' });
 
-export function getAdminLeads(agentId: number | undefined, signal?: AbortSignal) {
-  return apiFetch<AdminLeadItem[]>(`/admin/leads${agentId ? `?agentId=${agentId}` : ''}`, { signal });
+export function getAdminLeads(agentId: number | undefined, page = 1, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ page: String(page) });
+  if (agentId) qs.set('agentId', String(agentId));
+  return apiFetch<AdminLeadItem[]>(`/admin/leads?${qs}`, { signal });
 }
 
 export const assignLeadRequest = (id: number, agentId: number) => apiFetch<AdminLeadItem>(`/admin/leads/${id}/assign`, { method: 'PATCH', body: { agentId } });

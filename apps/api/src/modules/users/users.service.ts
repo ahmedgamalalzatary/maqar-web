@@ -68,13 +68,20 @@ export class UsersService {
     return this.users.findPrefs(id);
   }
 
-  /** Only profile fields are written, whatever the request carries. An empty change is a no-op. */
+  /** Only profile fields are written, whatever the request carries. An empty change is a no-op.
+   *  For a staff member the edit reaches their public advisor profile as well. */
   async updateMe(id: number, body: UpdateMeBody): Promise<Me> {
     const { name, phone, lang, theme, pushEnabled } = body;
     const changes = Object.fromEntries(
       Object.entries({ name, phone, lang, theme, pushEnabled }).filter(([, v]) => v !== undefined),
     );
-    if (Object.keys(changes).length) await this.users.update(id, changes);
+    if (Object.keys(changes).length) {
+      const cur = await this.users.findActiveById(id);
+      await this.users.update(id, changes);
+      if (cur?.role === 'agent' && (name !== undefined || phone !== undefined)) {
+        await this.users.syncAgentProfile(id, { ...(name !== undefined ? { name } : {}), ...(phone !== undefined ? { phone } : {}) }, cur.name);
+      }
+    }
     return this.getMe(id);
   }
 
