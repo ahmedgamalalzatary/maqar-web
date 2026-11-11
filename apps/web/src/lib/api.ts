@@ -14,7 +14,37 @@ export class ApiError extends Error {
 /** Where the session is kept between visits (the browser's localStorage in the app). */
 export type TokenStore = { load: () => AuthResponse | null; save: (auth: AuthResponse | null) => void };
 
-export type RequestOptions = { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"; body?: unknown; signal?: AbortSignal };
+export type RequestOptions = { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"; body?: unknown; signal?: AbortSignal; timeoutMs?: number };
+
+/** The application deadline for every request, so nothing waits on a stalled connection. */
+export const REQUEST_TIMEOUT_MS = 20_000;
+
+/** One signal for the caller's cancel and the deadline, whichever lands first. */
+function boundedSignal(opts: RequestOptions): { signal: AbortSignal; timedOut: () => boolean; done: () => void } {
+  const controller = new AbortController();
+  let callerAborted = false;
+  let timedOutFlag = false;
+  const onCallerAbort = () => {
+    callerAborted = true;
+    controller.abort();
+  };
+  if (opts.signal) {
+    if (opts.signal.aborted) onCallerAbort();
+    else opts.signal.addEventListener("abort", onCallerAbort);
+  }
+  const timer = setTimeout(() => {
+    timedOutFlag = true;
+    controller.abort();
+  }, opts.timeoutMs ?? REQUEST_TIMEOUT_MS);
+  return {
+    signal: controller.signal,
+    timedOut: () => timedOutFlag && !callerAborted,
+    done: () => {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", onCallerAbort);
+    },
+  };
+}
 
 type Config = {
   /** The API's `/v1` URL. */
@@ -41,16 +71,20 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock }: Conf
     const form = typeof FormData !== "undefined" && opts.body instanceof FormData;
     if (opts.body !== undefined && !form) headers.set("content-type", "application/json");
     if (token) headers.set("authorization", `Bearer ${token}`);
+    const bound = boundedSignal(opts);
     try {
       return await fetch(base + path, {
         method: opts.method ?? "GET",
         headers,
         body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
-        signal: opts.signal,
+        signal: bound.signal,
       });
     } catch (e) {
+      if (bound.timedOut()) throw new ApiError(0, "Request timed out");
       if (e instanceof DOMException && e.name === "AbortError") throw e;
       throw new ApiError(0, "Network request failed");
+    } finally {
+      bound.done();
     }
   }
 

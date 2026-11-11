@@ -271,7 +271,15 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
             />
           )
         }
-        ListFooterComponent={browse.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.more} /> : undefined}
+        ListFooterComponent={
+          browse.isFetchingNextPage ? (
+            <ActivityIndicator color={colors.accent} style={styles.more} />
+          ) : // A later page that failed keeps the loaded cards on screen and offers a retry;
+          // without it the list looks like it simply ended.
+          browse.isError && cards.length > 0 ? (
+            <ListingsError onRetry={() => browse.fetchNextPage()} />
+          ) : undefined
+        }
         onEndReached={() => {
           if (browse.hasNextPage && !browse.isFetchingNextPage) browse.fetchNextPage();
         }}

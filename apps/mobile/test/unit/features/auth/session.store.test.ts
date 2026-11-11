@@ -1,6 +1,26 @@
 import * as SecureStore from 'expo-secure-store';
+import { setPendingAction, takePendingAction } from '@/features/auth/pending-action';
 import { useSession } from '@/features/auth/store/session.store';
 import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
+
+describe('the interrupted guest action', () => {
+  it('survives until sign-in takes it, once', () => {
+    let ran = 0;
+    setPendingAction(() => {
+      ran += 1;
+    });
+    const resume = takePendingAction();
+    expect(resume).not.toBeNull();
+    resume?.();
+    expect(ran).toBe(1);
+    // Taken: a later sign-in (e.g. from the Me screen) must not replay it.
+    expect(takePendingAction()).toBeNull();
+  });
+
+  it('is empty when the guest never acted', () => {
+    expect(takePendingAction()).toBeNull();
+  });
+});
 
 describe('session refresh', () => {
   beforeEach(async () => {

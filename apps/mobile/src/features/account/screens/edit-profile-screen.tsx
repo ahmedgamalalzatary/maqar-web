@@ -5,6 +5,7 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
+import { errorText } from '@/core/api/error-text';
 import { useT } from '@/core/i18n';
 import { useSession } from '@/features/auth/store/session.store';
 import { useUpdateMe } from '../hooks/use-account';
@@ -39,9 +40,7 @@ export function EditProfileScreen() {
         autoComplete="tel"
         placeholder="+20 100 000 0000"
       />
-      {update.isError ? (
-        <Txt color="danger">{t('اتأكد من الاسم ورقم الموبايل', 'Check the name and mobile number')}</Txt>
-      ) : null}
+      {update.isError ? <Txt color="danger">{errorText(update.error, t)}</Txt> : null}
       <Button label={t('احفظ', 'Save')} disabled={name.trim().length < 2} loading={update.isPending} onPress={save} />
       <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={() => router.back()} />
     </Screen>

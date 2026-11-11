@@ -49,16 +49,48 @@ function refreshOnce(handlers: AuthHandlers): Promise<boolean> {
   return refreshing;
 }
 
+/** The application deadline for every request, so nothing waits on a stalled connection. */
+export const REQUEST_TIMEOUT_MS = 20_000;
+
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /** Override the request deadline (tests, long uploads). */
+  timeoutMs?: number;
   /** Do not send the access token or try to refresh (the auth routes themselves). */
   anonymous?: boolean;
   /** Return the body as text (e.g. a calendar file) instead of reading JSON. */
   text?: boolean;
 };
+
+/** One signal for the caller's cancel and the deadline, whichever lands first. */
+function boundedSignal(opts: ApiOptions): { signal: AbortSignal; timedOut: () => boolean; done: () => void } {
+  const controller = new AbortController();
+  let callerAborted = false;
+  let timedOutFlag = false;
+  const onCallerAbort = () => {
+    callerAborted = true;
+    controller.abort();
+  };
+  if (opts.signal) {
+    if (opts.signal.aborted) onCallerAbort();
+    else opts.signal.addEventListener('abort', onCallerAbort);
+  }
+  const timer = setTimeout(() => {
+    timedOutFlag = true;
+    controller.abort();
+  }, opts.timeoutMs ?? REQUEST_TIMEOUT_MS);
+  return {
+    signal: controller.signal,
+    timedOut: () => timedOutFlag && !callerAborted,
+    done: () => {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', onCallerAbort);
+    },
+  };
+}
 
 async function send(path: string, opts: ApiOptions, token: string | null | undefined): Promise<Response> {
   const headers = new Headers(opts.headers);
@@ -67,15 +99,19 @@ async function send(path: string, opts: ApiOptions, token: string | null | undef
   const form = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   if (opts.body !== undefined && !form) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  const bound = boundedSignal(opts);
   try {
     return await fetch(apiBaseUrl() + path, {
       method: opts.method ?? 'GET',
       headers,
       body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
-      signal: opts.signal,
+      signal: bound.signal,
     });
   } catch {
+    if (bound.timedOut()) throw new ApiError(0, 'Request timed out');
     throw new ApiError(0, 'Network request failed');
+  } finally {
+    bound.done();
   }
 }
 

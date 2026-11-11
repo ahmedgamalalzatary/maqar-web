@@ -115,8 +115,15 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   const sendText = (text: string) => {
     const v = text.trim();
     if (!v) return;
-    post({ kind: 'text', text: v });
-    setDraft('');
+    // The draft leaves the box only once the server took the message; a failed send keeps the
+    // text so it can be retried without retyping.
+    send.mutate(
+      { kind: 'text', text: v },
+      {
+        onSuccess: () => setDraft(''),
+        onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }),
+      },
+    );
   };
 
   const attach = async () => {
