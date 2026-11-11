@@ -15,18 +15,18 @@ These are the items that would get a submission rejected or stop it from uploadi
 
 | # | Store | Item | Status |
 |---|---|---|---|
-| B1 | Both | **Privacy policy:** a public web page, linked in the store listing **and** inside the app | ❌ none exists |
-| B2 | Google Play | **Web link for account deletion:** a public page where a user can ask for their account to be deleted, without the app | ❌ none exists (deleting from inside the app ✅ works) |
+| B1 | Both | **Privacy policy:** a public web page, linked in the store listing **and** inside the app | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
+| B2 | Google Play | **Web link for account deletion:** a public page where a user can ask for their account to be deleted, without the app | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B3 | Both | **Permissions the app never uses:** Android ships camera, microphone, calendar and old storage permissions; iOS ships calendar, reminders and Face ID texts | ✅ fixed in Phase 20 (was ❌) see §2.2 and §3.2 |
 | B4 | App Store | **Vague iOS permission texts** ("Allow Maqar to access your device motion"); Apple rejects these under 5.1.1 | ✅ fixed in Phase 20 (was ❌) see §3.2 |
-| B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ❌ |
+| B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B6 | App Store | **Paid Apple Developer account, signed build, APNs key** | ⏸ OPS-02 |
 | B7 | Google Play | **Firebase `google-services.json`** (no Android push without it) | ⏸ OPS-01 |
 | B8 | Both | **Version and build numbers that go up on each upload.** The first upload works; the second is refused without this. | ⏸ OPS-03 |
 | B9 | Google Play | **New personal developer account:** a closed test with **12 testers opted in for 14 days in a row** before production can be requested | 📝 an account choice (see §2.1) |
 | B10 | Both | **A working review account and a server that stays up** throughout review | 📝 demo accounts exist ✅; the server is temporary, see §4 |
 
-Items B1, B2, B3, B4 and B5 are small code and web changes that can be done now, without any of the deferred items.
+Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`deploy.sh` copies `deploy/site` and installs the nginx change after `nginx -t`). Their URLs, for the store consoles: `https://<host>/privacy`, `/terms`, `/support`, `/delete-account`; support e-mail `maqarcompany@gmail.com`.
 
 ---
 
@@ -171,12 +171,12 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 1. ✅ Done (Phase 20): Remove `expo-calendar`. Add `android.blockedPermissions` (`CAMERA`, `RECORD_AUDIO`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) and the `expo-secure-store` option `faceIDPermission: false`. Then rerun `expo config --type introspect` and check the result.
 2. ✅ Done (Phase 20): Write a clear motion permission text in Arabic and English (the `expo-sensors` plugin), and add the Arabic photo text.
 3. ✅ Done (Phase 20): Set `ios.config.usesNonExemptEncryption: false`.
-4. Add privacy policy, terms and support / contact rows to the Me screen. They open the public pages in `expo-web-browser`, which is already installed.
+4. ✅ Done (Phase 20): Add privacy policy, terms and support / contact rows to the Me screen. They open the public pages in `expo-web-browser`, which is already installed.
 5. Optional (1.2 insurance): agents can report or block a client in the chat.
 
 **Web: one static page set:**
-6. A privacy policy (AR/EN): what we collect (§2.4), why, who handles it (Expo push, Google/Apple push, Google Maps), what deletion removes and what it keeps, that chat photos are public by link, and a contact.
-7. An account-deletion page (Maqar name, steps in the app, and a request form or an e-mail address), plus a support page.
+6. ✅ Done (Phase 20): A privacy policy (AR/EN): what we collect (§2.4), why, who handles it (Expo push, Google/Apple push, Google Maps), what deletion removes and what it keeps, that chat photos are public by link, and a contact.
+7. ✅ Done (Phase 20): An account-deletion page (Maqar name, steps in the app, and a request form or an e-mail address), plus a support page.
 
 **Store consoles (no code):**
 8. The Play app content forms (§2.3, §2.4), the listing (§2.5), and the closed test with 12 testers for 14 days if the account is personal.

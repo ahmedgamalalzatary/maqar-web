@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, screen } from '@testing-library/react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Linking } from 'react-native';
 import { MeScreen } from '@/features/account/screens/me-screen';
 import { useSession } from '@/features/auth/store/session.store';
 import { jsonResponse, makeAuth, mockFetch, requestOf } from '../../../utils/api';
@@ -7,6 +9,7 @@ import { renderWithProviders } from '../../../utils/render';
 import { mockRouter } from '../../../utils/router';
 
 jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
+jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn().mockResolvedValue({ type: 'opened' }) }));
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -92,5 +95,19 @@ describe('MeScreen', () => {
     expect(requestOf(fetchMock)).toMatchObject({ method: 'DELETE', path: '/me', body: { password: 'Secret123' } });
     expect(useSession.getState().user).toBeNull();
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
+  });
+
+  // Store rules (Apple 5.1.1, Google Play User Data): a privacy policy and a support contact,
+  // reachable inside the app by everyone, guests included.
+  it('everyone can open the privacy policy and terms, and write to support', async () => {
+    const mail = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const origin = new URL(process.env.EXPO_PUBLIC_API_URL!).origin;
+    await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'سياسة الخصوصية' }));
+    expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/privacy`);
+    await fireEvent.press(screen.getByRole('button', { name: 'الشروط والأحكام' }));
+    expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/terms`);
+    await fireEvent.press(screen.getByRole('button', { name: 'كلّم الدعم' }));
+    expect(mail).toHaveBeenCalledWith('mailto:maqarcompany@gmail.com');
   });
 });

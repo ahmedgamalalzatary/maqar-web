@@ -59,4 +59,34 @@ tar -C apps/web/out -cf - . | $SSH "set -eu
   if [ -d /srv/maqar/web/admin ]; then mv /srv/maqar/web/admin /srv/maqar/web/admin.old; fi
   mv /srv/maqar/web/admin.new /srv/maqar/web/admin
   rm -rf /srv/maqar/web/admin.old.old"
-echo "Deployed maqar-api:$COMMIT and the admin dashboard at /admin/"
+
+# The public pages (privacy, terms, support, account deletion): plain files, swapped in at once.
+tar -C deploy/site -cf - . | $SSH "set -eu
+  rm -rf /srv/maqar/web/site.new
+  mkdir -p /srv/maqar/web/site.new
+  tar -xf - -C /srv/maqar/web/site.new
+  rm -rf /srv/maqar/web/site.old
+  if [ -d /srv/maqar/web/site ]; then mv /srv/maqar/web/site /srv/maqar/web/site.old; fi
+  mv /srv/maqar/web/site.new /srv/maqar/web/site
+  rm -rf /srv/maqar/web/site.old"
+
+# Maqar's nginx site, only when this commit changed it. nginx is shared with minikoshk, so the new
+# file must pass nginx -t before any reload; if it does not, the previous file is put back.
+$SSH "set -eu
+  NEW=$DIR/deploy/nginx-maqar.conf
+  LIVE=/etc/nginx/sites-available/maqar
+  if ! cmp -s \"\$NEW\" \"\$LIVE\"; then
+    cp \"\$LIVE\" \"\$LIVE.previous\"
+    cp \"\$NEW\" \"\$LIVE\"
+    if nginx -t 2>/dev/null; then
+      systemctl reload nginx
+      rm -f \"\$LIVE.previous\"
+      echo 'nginx: Maqar site updated'
+    else
+      mv \"\$LIVE.previous\" \"\$LIVE\"
+      nginx -t
+      echo 'nginx refused the new Maqar site; the previous one is back and nothing was reloaded' >&2
+      exit 1
+    fi
+  fi"
+echo "Deployed maqar-api:$COMMIT, the admin dashboard at /admin/ and the public pages"

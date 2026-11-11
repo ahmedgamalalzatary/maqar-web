@@ -1,0 +1,50 @@
+/* Maqar's public pages (privacy, terms, support, account deletion). No scripts, no outside fonts. */
+:root {
+  --bg: #f7f4ef;
+  --surface: #ffffff;
+  --ink: #041525;
+  --ink2: #4a5a68;
+  --gold: #b38959;
+  --line: #e6dfd4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #041525;
+    --surface: #0b2238;
+    --ink: #f3ede4;
+    --ink2: #b4c0cb;
+    --gold: #d1a878;
+    --line: #1d3650;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.7 system-ui, "Segoe UI", Tahoma, "Noto Sans Arabic", Arial, sans-serif;
+}
+header {
+  background: #041525;
+  color: #f3ede4;
+  padding: 20px 16px;
+}
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+header strong { font-size: 22px; color: #d1a878; letter-spacing: 0.5px; }
+header nav a { color: #f3ede4; margin-inline-start: 14px; font-size: 14px; }
+.wrap { max-width: 760px; margin: 0 auto; }
+main { padding: 24px 16px 48px; }
+section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+h1 { font-size: 24px; margin: 0 0 4px; }
+h2 { font-size: 18px; margin: 22px 0 6px; color: var(--gold); }
+p, li { color: var(--ink); }
+.muted { color: var(--ink2); font-size: 14px; }
+a { color: var(--gold); }
+ul, ol { padding-inline-start: 22px; }
+footer { text-align: center; color: var(--ink2); font-size: 13px; padding-bottom: 32px; }

@@ -1,5 +1,5 @@
 import type { NotificationItem, NotificationsResponse } from '@maqar/shared';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { NotificationsScreen } from '@/features/notifications/screens/notifications-screen';
 import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
@@ -107,7 +107,8 @@ describe('The notifications inbox', () => {
     await renderWithProviders(<NotificationsScreen back />);
     await fireEvent.press(await screen.findByRole('button', { name: 'علّم الكل مقروء' }));
     expect(calls()).toContain('POST /notifications/read-all');
-    expect(screen.queryAllByTestId('unread-dot')).toHaveLength(0);
+    // The inbox refreshes after the request; under a loaded test run that takes a moment.
+    await waitFor(() => expect(screen.queryAllByTestId('unread-dot')).toHaveLength(0));
     expect(screen.queryByRole('button', { name: 'علّم الكل مقروء' })).toBeNull();
   });
 
