@@ -47,7 +47,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Maqar uses your photos only when you choose some to send in a chat with your sales advisor.",
+          "photosPermission": "Maqar uses your photos only when you choose some to send, in a chat or when adding photos to a listing or an area.",
           "cameraPermission": false,
           "microphonePermission": false
         }

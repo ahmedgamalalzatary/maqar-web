@@ -27,9 +27,10 @@ import {
   readWholeNumber,
 } from "@maqar/shared";
 import { ImagePlus, Loader2, MoveLeft, MoveRight, RotateCcw, Star, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type Dispatch, useEffect, type SetStateAction, useRef, useState } from "react";
-import { uploadPhoto, useAction, useAreas, useListing, useSave } from "@/lib/admin";
+import { uploadPhoto, useAction, useAreas, useListing, useSave, readId } from "@/lib/admin";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { mediaUrl } from "@/lib/client";
 import { type T, useLang, useT } from "@/lib/i18n";
@@ -67,9 +68,18 @@ let photoKey = 0;
 
 /** `/listing/edit/?id=7`: the same form, filled in from the saved listing. */
 export function EditListing() {
-  const id = Number(useSearchParams().get("id"));
+  const id = readId(useSearchParams().get("id"));
   const listing = useListing(id);
   const t = useT();
+  if (id === undefined)
+    return (
+      <Card>
+        {t("الرابط مش صحيح: مفيش رقم عقار.", "That link is not right: no listing number.")}{" "}
+        <Link href="/listings/" className="text-accent-ink hover:underline">
+          {t("كل العقارات", "All listings")}
+        </Link>
+      </Card>
+    );
   if (listing.isError) return <Card>{t("مقدرناش نجيب العقار", "We couldn’t load the listing")}</Card>;
   if (!listing.data) return <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />;
   return <ListingForm key={id} saved={listing.data} />;

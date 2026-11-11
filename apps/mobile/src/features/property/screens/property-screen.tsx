@@ -139,7 +139,9 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const share = () =>
     Share.share({
       title,
-      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t('على مقر', 'On Maqar')}`.replace(/ \n/g, '\n'),
+      // The deep link opens this exact listing in an installed app; without the app the text
+      // above still carries what was shared.
+      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t('على مقر', 'On Maqar')}\nmaqar://property/${p.id}`.replace(/ \n/g, '\n'),
     });
 
   return (

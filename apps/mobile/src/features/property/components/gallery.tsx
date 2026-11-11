@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang } from '@/core/i18n';
@@ -17,6 +18,7 @@ export function Gallery({ images, label }: { images: string[]; label: string }) 
   const height = Math.round(width * 0.9);
   // Whether scroll positions count down from the far end. Only known once scrolling starts.
   const fromFarEnd = useRef<boolean | null>(null);
+  const reduceMotion = useReduceMotion();
 
   /**
    * Which photo is showing. In a right-to-left layout the position depends on the platform: the web
@@ -44,7 +46,7 @@ export function Gallery({ images, label }: { images: string[]; label: string }) 
         {images.map((path, i) => {
           const uri = mediaUrl(path);
           return uri ? (
-            <Image key={`${path}-${i}`} source={{ uri }} style={{ width, height }} contentFit="cover" transition={200} />
+            <Image key={`${path}-${i}`} source={{ uri }} style={{ width, height }} contentFit="cover" transition={reduceMotion ? 0 : 200} />
           ) : null;
         })}
       </ScrollView>

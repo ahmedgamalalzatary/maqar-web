@@ -162,10 +162,9 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
             vals={[monthly[0]?.payment ?? null, monthly[1]?.payment ?? null]}
             fmt={(v, i) => {
               const m = monthly[i]!;
-              return `${fmtMoney(Math.round(v), lang)}\n${t(
-                `مقدم ${fmtPct(m.downPct, 'ar')} على ${fmtNum(m.years, 'ar')} سنين`,
-                `${m.downPct}% down over ${m.years}y`,
-              )}`;
+              const terms = `${t(`مقدم ${fmtPct(m.downPct, 'ar')} على ${fmtNum(m.years, 'ar')} سنين`, `${m.downPct}% down over ${m.years}y`)}`;
+              // A home with no plan is judged on assumed terms; the cell says so.
+              return `${fmtMoney(Math.round(v), lang)}\n${m.estimated ? `${terms} ${t('(تقديري)', '(estimated)')}` : terms}`;
             }}
           />
         ) : null}

@@ -30,11 +30,12 @@ describe('winner', () => {
 
 describe('compareMonthly', () => {
   it('uses the listing plan for homes to buy', () => {
-    expect(compareMonthly(home())).toEqual({ payment: 150_000, downPct: 10, years: 5 });
+    expect(compareMonthly(home())).toEqual({ payment: 150_000, downPct: 10, years: 5, estimated: false });
   });
 
-  it('falls back to 20% over 5 years without a plan, as the demo does', () => {
-    expect(compareMonthly(home({ plan: null }))).toEqual({ payment: 133_333.33333333334, downPct: 20, years: 5 });
+  it('falls back to 20% over 5 years without a plan, as the demo does, and says it is an estimate', () => {
+    expect(compareMonthly(home({ plan: null }))).toEqual({ payment: 133_333.33333333334, downPct: 20, years: 5, estimated: true });
+    expect(compareMonthly(home())).toEqual({ payment: 150_000, downPct: 10, years: 5, estimated: false });
   });
 
   it('has none for rent and stays', () => {
@@ -87,5 +88,13 @@ describe('compareVerdict', () => {
     const lines = en(home(), home({ category: 'rent', price: 50_000, sizeM2: 200 }));
     expect(lines.some((l) => l.includes('per month'))).toBe(false);
     expect(lines.some((l) => l.includes('fit'))).toBe(false);
+  });
+
+  it('qualifies the installment line when either payment rests on the assumed plan', () => {
+    const real = home();
+    const assumed = home({ plan: null, price: 9_000_000, sizeM2: 200 });
+    const lines = en(real, assumed);
+    const monthly = lines.find((l) => l.includes('per month'));
+    expect(monthly).toContain('assumed');
   });
 });

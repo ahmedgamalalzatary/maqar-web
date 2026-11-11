@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
-import { type Action, useAction, useAgents, useListing, usePatchListing } from "@/lib/admin";
+import { type Action, useAction, useAgents, useListing, usePatchListing, readId } from "@/lib/admin";
 import { mediaUrl } from "@/lib/client";
 import { useLang, useT } from "@/lib/i18n";
 import { ListingInsights } from "./listing-insights";
@@ -18,7 +18,7 @@ import { Button, Card, StatusBadge, useErrorText } from "./ui";
 export function ListingPage() {
   const t = useT();
   const lang = useLang();
-  const id = Number(useSearchParams().get("id"));
+  const id = readId(useSearchParams().get("id"));
   const listing = useListing(id);
   const Back = lang === "ar" ? ArrowRight : ArrowLeft;
   return (
@@ -27,7 +27,9 @@ export function ListingPage() {
         <Back className="size-4" aria-hidden />
         {t("كل العقارات", "All listings")}
       </Link>
-      {listing.isPending ? (
+      {id === undefined ? (
+        <Card>{t("الرابط مش صحيح: مفيش رقم عقار.", "That link is not right: no listing number.")}</Card>
+      ) : listing.isPending ? (
         <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />
       ) : listing.isError ? (
         <Card>

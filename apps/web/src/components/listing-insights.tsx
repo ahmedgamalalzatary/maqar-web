@@ -135,7 +135,7 @@ function Tile({ label, value, all }: { label: string; value: string; all: string
   );
 }
 
-/** Views per Cairo day as thin bars, with each day's numbers on hover and a table for screen readers. */
+/** Views per Cairo day as bars: hover or keyboard-focus a bar to see that day's numbers. */
 function ViewsChart({ days }: { days: ListingDay[] }) {
   const t = useT();
   const lang = useLang();
@@ -150,14 +150,27 @@ function ViewsChart({ days }: { days: ListingDay[] }) {
       <figcaption className="text-xs text-ink-2">{t("المشاهدات في اليوم", "Views per day")}</figcaption>
       <div className="relative">
         <span className="absolute -top-1 start-0 text-[11px] text-ink-3 tabular">{fmtNum(top, lang)}</span>
-        <div aria-hidden className="flex h-40 items-end gap-[2px] border-b border-line-2 pt-4" onMouseLeave={() => setHover(null)}>
+        <div className="flex h-40 items-end gap-[2px] border-b border-line-2 pt-4" onMouseLeave={() => setHover(null)}>
           {days.map((d, i) => (
-            <div key={d.day} className="flex h-full min-w-0 flex-1 items-end" onMouseEnter={() => setHover(i)}>
+            <button
+              key={d.day}
+              type="button"
+              className="flex h-full min-w-0 flex-1 cursor-default items-end"
+              aria-label={t(
+                `${date(d.day)}: ${fmtNum(d.views, lang)} مشاهدة، ${fmtNum(d.saves, lang)} حفظ، ${fmtNum(d.interested, lang)} مهتم جديد`,
+                `${date(d.day)}: ${d.views} views, ${d.saves} saves, ${d.interested} new interested`,
+              )}
+              aria-pressed={hover === i}
+              onMouseEnter={() => setHover(i)}
+              onFocus={() => setHover(i)}
+              onBlur={() => setHover(null)}
+              onClick={() => setHover(hover === i ? null : i)}
+            >
               <div
                 className={`w-full rounded-t-[4px] ${hover === i ? "bg-accent-ink" : "bg-accent"}`}
                 style={{ height: d.views ? `${Math.max(2, (d.views / top) * 100)}%` : 0 }}
               />
-            </div>
+            </button>
           ))}
         </div>
         {h && hover !== null ? (
