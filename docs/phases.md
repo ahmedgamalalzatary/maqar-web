@@ -56,11 +56,11 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 11 | Notifications and push | 🟨 | ~~3, 13~~ decided |
 | 12 | Price drop alerts | 🟨 | |
 | 13 | Viewing booking | 🟨 | ~~5, 8~~ decided |
-| 14 | Viewing reminders | ⬜ | ~~13~~ decided |
-| 15 | Sales agent app | ⬜ | |
-| 16 | Live chat | ⬜ | ~~12~~ decided |
-| 17 | Admin listings | ⬜ | decided |
-| 18 | Admin tools | ⬜ | ~~6~~ decided |
+| 14 | Viewing reminders | 🟨 | ~~13~~ decided |
+| 15 | Sales agent app | 🟨 | |
+| 16 | Live chat | 🟨 | ~~12~~ decided |
+| 17 | Admin listings | 🟨 | decided |
+| 18 | Admin tools | 🟨 | ~~6~~ decided |
 | 19 | Listing insights (for admins) | ⬜ | decided |
 | 20 | Release | ⬜ | ~~14~~ out of scope |
 
@@ -701,7 +701,7 @@ Contract §9.2 and §11 (to be updated to match).
 
 **Done when** an admin creates a listing with real photos on the web dashboard or in the app, publishes it, and it appears in Explore.
 
-**Status (2026-11-10): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left. Notes:
+**Status (2026-11-11): in progress.** Code and tests are green. Deployed 2026-11-11 (`964efb7`, migration `0011`, with Phase 18), with the nginx `/admin/` and `/v1/uploads` blocks; the dashboard is at `https://187-55-224-15.sslip.io/admin/`. The phone check (rule 6) is left. Notes:
 - Decided: the web dashboard is `apps/web` (`@maqar/web`): Next.js 16 and Tailwind like the demo, a static export served by nginx at `/admin/` on the API's host, so it calls `/v1` on the same origin with no CORS. `deploy.sh` builds it from the same clean commit and swaps it in at `/srv/maqar/web/admin`. Admins sign in with their account; any other role is signed out at once.
 - Migration `0011`: `owner_name` and `owner_phone` on the listing (admins only ever see them), `agent_id` empty until the listing is published, and the review statuses (`pending`, `changes`) are gone: any listing in them becomes a draft. Statuses are now draft, approved (live), unpublished, sold and rented.
 - `POST /uploads` (admins, one photo in `photo`): turned upright, at most 2000 px, JPEG, under `uploads/listings`. Photos are made smaller on the phone or in the browser first. nginx takes 12 MB on that route; the API refuses over 10 MB.
@@ -730,7 +730,7 @@ Contract §11.
 
 **Done when** an admin changes an agent's hours or adds a holiday, and the booking slots and the chat follow at once.
 
-**Status (2026-11-10): in progress.** Code and tests are green; the deploy and the phone check (rule 6) are left (with Phase 17's). Notes:
+**Status (2026-11-11): in progress.** Code and tests are green, CodeRabbit fixes in `0fce9f6`. Deployed 2026-11-11 (`964efb7`, with Phase 17). The phone check (rule 6) is left. Notes:
 - No migration: the tables were already there (`agents.active`, `agent_hours`, `agent_days_off`, `leads.agent_id`, `properties.featured`). Slots and the away reply read the hours and days off whenever they are needed, so a change applies at once; the e2e tests check both.
 - Agents (`/admin/agents`): an admin creates an agent with a starting password to pass on (no email is sent), edits the profile, sets a new password (which signs them out everywhere), and turns them off or on. A turned-off agent is signed out and cannot sign in, and every request with an old token is refused at once. An agent who is still the advisor of a live listing cannot be turned off: the listing moves first (`PATCH /admin/listings/:id` takes `agentId`). There is no delete, so history keeps its links. `GET /admin/agents?active=true` is the advisor picker.
 - Hours (`PUT /admin/agents/hours`): the same week for one agent or several, replacing what they had; a weekday left out is a day off, and at least one day is worked. A new agent has the default week until one is set.
