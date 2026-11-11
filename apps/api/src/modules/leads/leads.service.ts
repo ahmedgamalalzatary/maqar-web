@@ -109,8 +109,11 @@ export class LeadsService {
   }
 
   /** Every agent's leads (admins), with the full phone and whose each lead is. */
-  async adminList(f: { agentId?: number; stage?: LeadStage }): Promise<AdminLeadItem[]> {
-    const rows = await this.repo.listAll(f);
+  adminList(f: { agentId?: number; stage?: LeadStage }): Promise<AdminLeadItem[]> {
+    return this.repo.listAll(f).then((rows) => this.adminItems(rows));
+  }
+
+  private async adminItems(rows: LeadWithClient[]): Promise<AdminLeadItem[]> {
     const [props, agents] = await Promise.all([this.cardsOf(rows.map((r) => r.lead.propertyId)), this.repo.agentsOf(rows.map((r) => r.lead.agentId))]);
     return rows.flatMap((r) => {
       const agent = agents.get(r.lead.agentId);
@@ -142,7 +145,7 @@ export class LeadsService {
         href: `/agent/lead/${id}`,
       });
     }
-    const [item] = (await this.adminList({})).filter((l) => l.id === id);
+    const [item] = await this.adminItems([(await this.repo.findById(id))!]);
     return item!;
   }
 

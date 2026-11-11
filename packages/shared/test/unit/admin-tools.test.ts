@@ -22,6 +22,12 @@ describe('daysBetween', () => {
     expect(daysBetween('2026-01-01', '2026-12-31')).toEqual([]);
     expect(daysBetween('2026-01-01', '2026-01-01').length).toBeLessThanOrEqual(DAYS_OFF_MAX);
   });
+  it('is empty when a day does not exist, instead of rolling over to the next month', () => {
+    expect(daysBetween('2026-02-30', '2026-03-03')).toEqual([]);
+    expect(daysBetween('2026-03-01', '2026-04-31')).toEqual([]);
+    expect(daysBetween('2026-13-01', '2026-13-02')).toEqual([]);
+    expect(daysBetween('nope', '2026-03-01')).toEqual([]);
+  });
 });
 
 describe('weekProblem', () => {
