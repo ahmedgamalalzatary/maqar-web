@@ -213,3 +213,37 @@ describe("the dashboard's API client", () => {
     });
   });
 });
+
+describe("uploads with progress (listing videos, phase 26)", () => {
+  it("sends the form with the token, reports progress, and renews an expired token once", async () => {
+    let refreshes = 0;
+    const fetch = vi.fn(async () => {
+      refreshes += 1;
+      return json(200, auth(2));
+    });
+    const sent: { url: string; token: string | null }[] = [];
+    const upload = vi.fn(async (url: string, _form: FormData, headers: Headers, onProgress?: (f: number) => void) => {
+      sent.push({ url, token: headers.get("authorization") });
+      onProgress?.(0.5);
+      onProgress?.(1);
+      return headers.get("authorization") === "Bearer access-2" ? json(201, { url: "/uploads/videos/v.mp4" }) : json(401, { statusCode: 401, message: "Unauthorized" });
+    });
+    const store = memoryStore(auth(1));
+    const api = createApi({ base: "/v1", fetch, store, upload });
+    const progress: number[] = [];
+    const form = new FormData();
+    await expect(api.upload("/uploads/videos", form, (f) => progress.push(f))).resolves.toEqual({ url: "/uploads/videos/v.mp4" });
+    expect(sent).toEqual([
+      { url: "/v1/uploads/videos", token: "Bearer access-1" },
+      { url: "/v1/uploads/videos", token: "Bearer access-2" },
+    ]);
+    expect(refreshes).toBe(1);
+    expect(progress.at(-1)).toBe(1);
+  });
+
+  it("reads the server's refusal like any request", async () => {
+    const upload = vi.fn(async () => json(400, { statusCode: 400, message: "A video can be at most 3 minutes long" }));
+    const api = createApi({ base: "/v1", fetch: vi.fn(), store: memoryStore(auth(1)), upload });
+    await expect(api.upload("/uploads/videos", new FormData())).rejects.toMatchObject({ status: 400, message: "A video can be at most 3 minutes long" });
+  });
+});

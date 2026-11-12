@@ -103,7 +103,7 @@ export class ListingsService {
   async get(id: number): Promise<AdminListing> {
     const row = await this.repo.find(id);
     if (!row) throw new NotFoundException('Listing not found');
-    const [images, tourRooms, features] = await Promise.all([this.repo.images([id]), this.repo.tour(id), this.repo.features(id)]);
+    const [images, tourRooms, features, videos] = await Promise.all([this.repo.images([id]), this.repo.tour(id), this.repo.features(id), this.repo.videos(id)]);
     const { p } = row;
     return {
       ...toItem(row, images.get(id) ?? [], tourRooms.length > 0),
@@ -117,6 +117,7 @@ export class ListingsService {
       images: images.get(id) ?? [],
       location: p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null,
       tourRooms,
+      videos,
     };
   }
 
@@ -124,6 +125,7 @@ export class ListingsService {
   async create(body: ListingBody): Promise<AdminListing> {
     await this.uploads.assertListingFiles(body.images);
     if (body.tour) await this.uploads.assertTourFiles(body.tour.map((r) => r.pano));
+    const videos = body.videos ? await this.uploads.videoDetails(body.videos) : [];
     const area = await this.areaOf(body.areaId);
     const title = defaultTitle(body, area);
     const id = await this.repo.insert(
@@ -148,6 +150,7 @@ export class ListingsService {
       body.images,
       body.features,
       body.tour,
+      videos,
     );
     return this.get(id);
   }
@@ -185,7 +188,8 @@ export class ListingsService {
       body.price !== undefined && body.price !== cur.price ? { next: body.price, by, reset: categoryChanged } : undefined;
     if (body.images !== undefined) await this.uploads.assertListingFiles(body.images);
     if (body.tour !== undefined) await this.uploads.assertTourFiles(body.tour.map((r) => r.pano));
-    const change = await this.repo.update(id, set, body.images, body.features, priceChange, body.tour);
+    const videos = body.videos !== undefined ? await this.uploads.videoDetails(body.videos) : undefined;
+    const change = await this.repo.update(id, set, body.images, body.features, priceChange, body.tour, videos);
     // The edit committed: photos it dropped are collected, unless another listing still shows them.
     if (body.images !== undefined) {
       const removed = cur.images.filter((url) => !body.images!.includes(url));
@@ -201,6 +205,14 @@ export class ListingsService {
       if (removed.length) {
         const usedElsewhere = await this.repo.panosUsedElsewhere(removed, id);
         await this.uploads.removeTourFiles(removed.filter((url) => !usedElsewhere.has(url)));
+      }
+    }
+    // And videos the edit dropped, with their posters.
+    if (body.videos !== undefined) {
+      const removed = cur.videos.map((v) => v.url).filter((url) => !body.videos!.includes(url));
+      if (removed.length) {
+        const usedElsewhere = await this.repo.videosUsedElsewhere(removed, id);
+        await this.uploads.removeVideoFiles(removed.filter((url) => !usedElsewhere.has(url)));
       }
     }
     if (change) await this.prices.announce(id, change);

@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FEATURE_LABEL, FINISHING_LABEL, fmtDate, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from "@maqar/shared";
+import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FEATURE_LABEL, FINISHING_LABEL, fmtDate, fmtDuration, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from "@maqar/shared";
 import { ArrowLeft, ArrowRight, Check, Pencil, Phone } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -69,6 +69,16 @@ function Body({ l }: { l: AdminListing }) {
             </div>
           ))}
         </div>
+        {l.videos.length ? (
+          <div className="grid gap-2 sm:grid-cols-2" aria-label={t("الفيديوهات", "Videos")}>
+            {l.videos.map((v, i) => (
+              <figure key={v.url} className="relative overflow-hidden rounded-xl bg-navy">
+                <video src={mediaUrl(v.url)} poster={mediaUrl(v.poster)} controls preload="none" playsInline className="aspect-video w-full object-contain" aria-label={t(`الفيديو ${fmtNum(i + 1, "ar")}`, `Video ${i + 1}`)} />
+                <span className="pointer-events-none absolute start-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white tabular">{fmtDuration(v.durationS, lang)}</span>
+              </figure>
+            ))}
+          </div>
+        ) : null}
         <Card className="flex flex-col gap-2">
           <StatusBadge status={l.status} />
           <h1 className="text-2xl font-semibold">{title}</h1>

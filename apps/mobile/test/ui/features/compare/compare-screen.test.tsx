@@ -11,6 +11,7 @@ jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
 const detail = (over: Partial<PropertyDetail>): PropertyDetail => ({
   ...makeCard(),
   developerAr: null,
+  videos: [],
   developerEn: null,
   floor: null,
   maintenanceFee: null,

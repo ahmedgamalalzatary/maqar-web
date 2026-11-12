@@ -1,6 +1,6 @@
-import type { PropertyCard, Page, TourRoom } from './api.js';
-import type { Category, Feature, Finishing, PropertyStatus, PropertyType } from './enums.js';
-import { fmtNum } from './format.js';
+import type { ListingVideo, PropertyCard, Page, TourRoom } from './api.js';
+import type { Category, Feature, Finishing, Lang, PropertyStatus, PropertyType } from './enums.js';
+import { fmtNum, localDigits } from './format.js';
 import { type Bi, PROPERTY_TYPE_LABEL } from './labels.js';
 
 // ---- Admin listings (phase 17) ----
@@ -21,6 +21,35 @@ export function panoramaProblem(width: number, height: number): 'ratio' | 'small
   if (!height || Math.abs(width / height - 2) > 0.02) return 'ratio';
   if (width < PANO_SIZE.width || height < PANO_SIZE.height) return 'small';
   return null;
+}
+
+/** The most videos one listing keeps (phase 26). */
+export const LISTING_VIDEOS_MAX = 5;
+
+/** The longest video a listing takes, in seconds. */
+export const VIDEO_MAX_SECONDS = 180;
+
+/** The biggest video file the server takes before it converts it. */
+export const VIDEO_MAX_BYTES = 150 * 1024 * 1024;
+
+/** The file types a listing video may be: what phones record (MP4, and MOV on iPhones). */
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime'] as const;
+
+/**
+ * Why this file cannot be a listing video, or null when it can: an MP4 or MOV of at most 150 MB
+ * and 3 minutes. The duration is checked when it is known; the server checks it again anyway.
+ */
+export function videoProblem(f: { type: string; bytes: number; durationS?: number }): 'type' | 'size' | 'long' | null {
+  if (!(VIDEO_TYPES as readonly string[]).includes(f.type)) return 'type';
+  if (f.bytes > VIDEO_MAX_BYTES) return 'size';
+  if (f.durationS !== undefined && Math.round(f.durationS) > VIDEO_MAX_SECONDS) return 'long';
+  return null;
+}
+
+/** A video's length as m:ss, in the language's digits. */
+export function fmtDuration(seconds: number, lang: Lang = 'en'): string {
+  const s = Math.max(0, Math.round(seconds));
+  return localDigits(`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, lang);
 }
 
 /** One room of a tour as the listing form sends it: both names and a path from `POST /uploads/panoramas`. */
@@ -111,6 +140,8 @@ export type ListingBody = {
   ownerPhone?: string | null;
   /** The 360° tour's rooms in order (phase 21). Left out keeps the tour; an empty list removes it. */
   tour?: TourRoomBody[];
+  /** Paths from `POST /uploads/videos`, in order (phase 26). Left out keeps the videos; an empty list removes them. */
+  videos?: string[];
 };
 
 /** The advisor a listing is assigned to, as the admin tools show them. */
@@ -146,6 +177,8 @@ export type AdminListing = AdminListingItem & {
   location: { lat: number; lng: number } | null;
   /** The 360° tour's rooms in order; empty when it has none (phase 21). */
   tourRooms: TourRoom[];
+  /** The listing's videos in order; empty when it has none (phase 26). */
+  videos: ListingVideo[];
 };
 
 /** `POST /admin/listings/:id/publish`. Without an advisor, the one with the fewest live listings is picked. */
@@ -153,3 +186,6 @@ export type PublishBody = { agentId?: number };
 
 /** `POST /uploads`: where the photo is now. */
 export type UploadResponse = { url: string };
+
+/** `POST /uploads/videos`: the converted video, its poster frame and its size (phase 26). */
+export type VideoUploadResponse = ListingVideo;

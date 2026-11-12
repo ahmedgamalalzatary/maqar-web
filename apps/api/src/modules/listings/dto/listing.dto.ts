@@ -7,6 +7,7 @@ import {
   FINISHINGS,
   type Finishing,
   LISTING_IMAGES_MAX,
+  LISTING_VIDEOS_MAX,
   type ListingBody,
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
@@ -44,6 +45,8 @@ const notProvided = (_target: unknown, value: unknown) => value !== undefined;
 const UPLOADED = /^\/uploads\/(listings|seed)\/[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/;
 /** Only panoramas uploaded with POST /uploads/panoramas (or the seed's). */
 const PANO = /^\/uploads\/(tours|seed\/pano)\/[A-Za-z0-9_-]+\.jpe?g$/;
+/** Only videos uploaded with POST /uploads/videos (phase 26). */
+const VIDEO = /^\/uploads\/videos\/[A-Za-z0-9_-]+\.mp4$/;
 /** Admin lists are longer than the public ones. */
 const ADMIN_PAGE_MAX = 100;
 const AREA_ID = /^[a-z0-9-]{1,40}$/;
@@ -165,6 +168,11 @@ export class ListingDto implements ListingBody {
   @ApiPropertyOptional({ type: TourRoomDto, isArray: true, description: 'The 360° tour in order; empty removes it (phase 21)' })
   @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(TOUR_ROOMS_MAX) @ValidateNested({ each: true }) @Type(() => TourRoomDto)
   tour?: TourRoomDto[];
+
+  @ApiPropertyOptional({ isArray: true, type: String, description: 'Videos in order, from POST /uploads/videos; empty removes them (phase 26)' })
+  @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(LISTING_VIDEOS_MAX) @ArrayUnique()
+  @Matches(VIDEO, { each: true, message: 'Videos must be uploaded with POST /uploads/videos' })
+  videos?: string[];
 }
 
 /**
@@ -233,6 +241,10 @@ export class UpdateListingDto extends PartialType(ListingDto) {
 
   @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(TOUR_ROOMS_MAX) @ValidateNested({ each: true }) @Type(() => TourRoomDto)
   declare tour?: TourRoomDto[];
+
+  @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(LISTING_VIDEOS_MAX) @ArrayUnique()
+  @Matches(VIDEO, { each: true, message: 'Videos must be uploaded with POST /uploads/videos' })
+  declare videos?: string[];
 
   @ApiPropertyOptional({ description: 'Move the listing to another active advisor (phase 18)' }) @IsOptional() @IsInt() @Min(1)
   agentId?: number;

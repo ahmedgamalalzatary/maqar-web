@@ -1,5 +1,5 @@
 import { LISTING_STEPS, emptyListingForm, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
-import { type AdminListing, panoramaProblem } from '../../src/listings.js';
+import { type AdminListing, fmtDuration, panoramaProblem, videoProblem } from '../../src/listings.js';
 
 const filled = (over: Partial<ListingForm> = {}): ListingForm => ({
   ...emptyListingForm(),
@@ -73,11 +73,19 @@ describe('Listing form steps (contract §9.2)', () => {
 
   it('the 360° tour may be empty, but each room needs both names and an uploaded panorama', () => {
     const room = { key: 'r', nameAr: 'الصالة', nameEn: 'Living room', url: '/uploads/tours/r.jpg' };
-    expect(LISTING_STEPS).toEqual(['type', 'location', 'details', 'photos', 'tour', 'review']);
+    expect(LISTING_STEPS).toEqual(['type', 'location', 'details', 'photos', 'videos', 'tour', 'review']);
     expect(listingStepErrors('tour', filled())).toEqual([]);
     expect(listingStepErrors('tour', filled({ tour: [room] }))).toEqual([]);
     expect(listingStepErrors('tour', filled({ tour: [{ ...room, nameEn: ' ' }] }))).toEqual(['tour']);
     expect(listingStepErrors('tour', filled({ tour: [{ ...room, url: undefined, local: 'file:///r.jpg' }] }))).toEqual(['tour']);
+  });
+
+  it('videos may be none, but each must be uploaded before the form goes on', () => {
+    const video = { key: 'v', url: '/uploads/videos/v.mp4', poster: '/uploads/videos/v.jpg', durationS: 42 };
+    expect(listingStepErrors('videos', filled())).toEqual([]);
+    expect(listingStepErrors('videos', filled({ videos: [video] }))).toEqual([]);
+    expect(listingStepErrors('videos', filled({ videos: [{ key: 'w', local: 'file:///w.mov' }] }))).toEqual(['videos']);
+    expect(listingStepErrors('videos', filled({ videos: [{ key: 'w', local: 'file:///w.mov', failed: true }] }))).toEqual(['videos']);
   });
 });
 
@@ -122,8 +130,21 @@ describe('listingBodyOf', () => {
       images: ['/uploads/listings/b.jpg', '/uploads/listings/a.jpg'],
       ownerName: 'Hany',
       ownerPhone: null,
+      videos: [],
       tour: [],
     });
+  });
+
+  it('sends the uploaded videos in order', () => {
+    const body = listingBodyOf(
+      filled({
+        videos: [
+          { key: 'b', url: '/uploads/videos/b.mp4', poster: '/uploads/videos/b.jpg', durationS: 30 },
+          { key: 'a', url: '/uploads/videos/a.mp4', poster: '/uploads/videos/a.jpg', durationS: 12 },
+        ],
+      }),
+    );
+    expect(body.videos).toEqual(['/uploads/videos/b.mp4', '/uploads/videos/a.mp4']);
   });
 
   it('sends the tour in order with trimmed names', () => {
@@ -174,6 +195,7 @@ it('listingFormOf fills the form back from a saved listing', () => {
     ownerName: null,
     ownerPhone: '+20100',
     tourRooms: [{ id: 7, nameAr: 'الصالة', nameEn: 'Living room', pano: '/uploads/seed/pano/a.jpg' }],
+    videos: [{ url: '/uploads/videos/v.mp4', poster: '/uploads/videos/v.jpg', durationS: 75, width: 1280, height: 720 }],
   } as unknown as AdminListing;
   expect(listingFormOf(l)).toMatchObject({
     category: 'rent',
@@ -189,7 +211,22 @@ it('listingFormOf fills the form back from a saved listing', () => {
     ownerPhone: '+20100',
     downPct: '',
     tour: [{ nameAr: 'الصالة', nameEn: 'Living room', url: '/uploads/seed/pano/a.jpg' }],
+    videos: [{ key: '/uploads/videos/v.mp4', url: '/uploads/videos/v.mp4', poster: '/uploads/videos/v.jpg', durationS: 75 }],
   });
+});
+
+it('videoProblem: an MP4 or MOV, at most 150 MB and 3 minutes', () => {
+  const mb = 1024 * 1024;
+  expect(videoProblem({ type: 'video/mp4', bytes: 40 * mb, durationS: 95 })).toBeNull();
+  expect(videoProblem({ type: 'video/quicktime', bytes: 150 * mb, durationS: 180 })).toBeNull();
+  // The duration is not always known before the upload; the server checks it then.
+  expect(videoProblem({ type: 'video/mp4', bytes: mb })).toBeNull();
+  expect(videoProblem({ type: 'video/webm', bytes: mb, durationS: 5 })).toBe('type');
+  expect(videoProblem({ type: 'video/mp4', bytes: 150 * mb + 1, durationS: 5 })).toBe('size');
+  expect(videoProblem({ type: 'video/mp4', bytes: mb, durationS: 180.6 })).toBe('long');
+  expect(fmtDuration(75)).toBe('1:15');
+  expect(fmtDuration(9)).toBe('0:09');
+  expect(fmtDuration(180, 'ar')).toBe('٣:٠٠');
 });
 
 it('panoramaProblem: a tour photo is 2:1 within 1% and at least 4096×2048', () => {

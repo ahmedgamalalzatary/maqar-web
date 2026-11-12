@@ -55,14 +55,38 @@ type Config = {
   onSignedOut?: () => void;
   /** Serializes token renewal across tabs (navigator.locks in the app). */
   refreshLock?: <T>(fn: () => Promise<T>) => Promise<T>;
+  /** Sends a form and reports how much of it went (XMLHttpRequest in the app; fetch has no upload progress). */
+  upload?: UploadTransport;
 };
+
+/** Posts a form to `url` with these headers, calling `onProgress` with the fraction sent. */
+export type UploadTransport = (url: string, form: FormData, headers: Headers, onProgress?: (sent: number) => void) => Promise<Response>;
+
+/** Uploads wait this long: a listing video can take minutes to send and to convert. */
+export const UPLOAD_TIMEOUT_MS = 15 * 60_000;
+
+/** The browser's upload with progress. Network failures and the deadline become status-0 errors. */
+export const xhrUpload: UploadTransport = (url, form, headers, onProgress) =>
+  new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", url);
+    headers.forEach((v, k) => x.setRequestHeader(k, v));
+    x.timeout = UPLOAD_TIMEOUT_MS;
+    x.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    x.onload = () => resolve(new Response(x.responseText || null, { status: x.status, statusText: x.statusText }));
+    x.onerror = () => reject(new ApiError(0, "Network request failed"));
+    x.ontimeout = () => reject(new ApiError(0, "Request timed out"));
+    x.send(form);
+  });
 
 /** Renewing one at a time; without lock support (tests) this is just the function itself. */
 const withLock = (lock: Config["refreshLock"] | undefined): NonNullable<Config["refreshLock"]> =>
   lock ?? ((fn) => fn());
 
 /** The dashboard's API client: admin sign-in, access tokens renewed once when they expire. */
-export function createApi({ base, fetch, store, onSignedOut, refreshLock }: Config) {
+export function createApi({ base, fetch, store, onSignedOut, refreshLock, upload: transport = xhrUpload }: Config) {
   let refreshing: Promise<boolean> | undefined;
   const lock = withLock(refreshLock);
 
@@ -146,6 +170,24 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock }: Conf
     return read<T>(res);
   }
 
+  /** A form posted with progress (listing videos), renewing an expired token once like `request`. */
+  async function upload<T>(path: string, form: FormData, onProgress?: (sent: number) => void): Promise<T> {
+    const go = (token: string | undefined) => {
+      const headers = new Headers({ accept: "application/json" });
+      if (token) headers.set("authorization", `Bearer ${token}`);
+      return transport(base + path, form, headers, onProgress);
+    };
+    const sentWith = store.load()?.accessToken;
+    let res = await go(sentWith);
+    if (res.status === 401 && sentWith) {
+      const now = store.load()?.accessToken;
+      if (now && now !== sentWith) res = await go(now);
+      else if (await refreshOnce()) res = await go(store.load()?.accessToken);
+      else end();
+    }
+    return read<T>(res);
+  }
+
   /** Only admins use the dashboard: any other account is signed out again at once. */
   async function signIn(email: string, password: string): Promise<AuthResponse> {
     const auth = await read<AuthResponse>(await send("/auth/sign-in", { method: "POST", body: { email, password } }, undefined));
@@ -163,7 +205,7 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock }: Conf
     if (cur) await send("/auth/sign-out", { method: "POST", body: { refreshToken: cur.refreshToken } }, undefined).catch(() => undefined);
   }
 
-  return { request, signIn, signOut, session: () => store.load() };
+  return { request, upload, signIn, signOut, session: () => store.load() };
 }
 
 export type Api = ReturnType<typeof createApi>;

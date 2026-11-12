@@ -43,7 +43,7 @@ import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
 import { cairoClock } from '../viewings/slots.js';
 import { listingStats } from '../insights/insights.schema.js';
-import { type PropertyRow, properties, propertyFeatures, propertyImages, tourRooms } from './properties.schema.js';
+import { type PropertyRow, properties, propertyFeatures, propertyImages, propertyVideos, tourRooms } from './properties.schema.js';
 
 export type BrowseFilter = ListingFilters & { sort: Sort; offset: number; limit: number; prefs?: Prefs };
 
@@ -370,6 +370,15 @@ export class PropertiesRepository {
       .from(tourRooms)
       .where(eq(tourRooms.propertyId, id))
       .orderBy(asc(tourRooms.sort), asc(tourRooms.id));
+  }
+
+  /** A listing's videos, in gallery order (phase 26). */
+  async findVideos(id: number) {
+    return this.db
+      .select({ url: propertyVideos.url, poster: propertyVideos.poster, durationS: propertyVideos.durationS, width: propertyVideos.width, height: propertyVideos.height })
+      .from(propertyVideos)
+      .where(eq(propertyVideos.propertyId, id))
+      .orderBy(asc(propertyVideos.sort), asc(propertyVideos.id));
   }
 
   async findCovers(ids: number[]): Promise<Map<number, string>> {

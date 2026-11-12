@@ -11,7 +11,13 @@ import { renderWithProviders } from '../../../utils/render';
 import { mockRouter } from '../../../utils/router';
 
 jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
-jest.mock('expo-file-system', () => ({ File: jest.fn().mockImplementation(() => ({ bytes: async () => new Uint8Array([1]) })) }));
+// Videos upload natively from the phone's disk (File.upload); photos are sent as bytes.
+const VIDEO = { url: '/uploads/videos/new.mp4', poster: '/uploads/videos/new.jpg', durationS: 42, width: 1280, height: 720 };
+const mockUpload = jest.fn(async (_url: string, _opts: { fieldName?: string; headers?: Record<string, string> }) => ({ status: 201, body: JSON.stringify(VIDEO), headers: {} }));
+jest.mock('expo-file-system', () => ({
+  UploadType: { BINARY_CONTENT: 0, MULTIPART: 1 },
+  File: jest.fn().mockImplementation(() => ({ bytes: async () => new Uint8Array([1]), upload: mockUpload })),
+}));
 
 const { publishedAt: _p, match: _m, ...card } = makeCard({ id: 7, titleAr: 'شقة على الحديقة', titleEn: 'Garden flat', category: 'sale' });
 const item = (over: Partial<AdminListingItem> = {}): AdminListingItem => ({
@@ -28,6 +34,7 @@ const item = (over: Partial<AdminListingItem> = {}): AdminListingItem => ({
 const detail = (over: Partial<AdminListing> = {}): AdminListing => ({
   ...item(),
   tourRooms: [],
+  videos: [],
   developerAr: null,
   developerEn: null,
   floor: null,
@@ -193,7 +200,7 @@ describe('Listing form', () => {
     const writes = serve();
     pickTwo();
     await renderWithProviders(withToasts(<ListingFormScreen />));
-    expect(screen.getByText('الخطوة ١ من ٦: النوع')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ١ من ٧: النوع')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     expect(screen.getByText('اختار نوع الوحدة')).toBeOnTheScreen();
@@ -201,13 +208,13 @@ describe('Listing form', () => {
     await fireEvent.press(screen.getByRole('radio', { name: 'شقة' }));
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByText('الخطوة ٢ من ٦: المكان')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٢ من ٧: المكان')).toBeOnTheScreen();
     await fireEvent.press(await screen.findByRole('radio', { name: 'الشيخ زايد' }));
     await fireEvent.changeText(screen.getByLabelText('اسم المالك'), 'هاني عادل');
     await fireEvent.changeText(screen.getByLabelText('موبايل المالك'), '+201001234567');
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByText('الخطوة ٣ من ٦: التفاصيل')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٣ من ٧: التفاصيل')).toBeOnTheScreen();
     // A rent has no payment plan.
     expect(screen.queryByText('خطة السداد (اختياري)')).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('الغرف'), '٢');
@@ -220,7 +227,7 @@ describe('Listing form', () => {
     await fireEvent.press(screen.getByRole('checkbox', { name: 'حمام سباحة' }));
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByText('الخطوة ٤ من ٦: الصور')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٤ من ٧: الصور')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     expect(screen.getByText('ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'ضيف صور' }));
@@ -230,11 +237,13 @@ describe('Listing form', () => {
     expect(screen.getAllByTestId('form-photo')).toHaveLength(1);
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    // The 360° tour may stay empty.
-    expect(screen.getByText('الخطوة ٥ من ٦: جولة ٣٦٠°')).toBeOnTheScreen();
+    // Videos and the 360° tour may stay empty.
+    expect(screen.getByText('الخطوة ٥ من ٧: الفيديوهات')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    expect(screen.getByText('الخطوة ٦ من ٧: جولة ٣٦٠°')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByText('الخطوة ٦ من ٦: المراجعة')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٧ من ٧: المراجعة')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'المالك: هاني عادل | +201001234567' })).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
     expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
@@ -254,6 +263,7 @@ describe('Listing form', () => {
       ownerName: 'هاني عادل',
       ownerPhone: '+201001234567',
       titleAr: '',
+      videos: [],
       tour: [],
     });
     expect(writes().some(([, u]) => String(u).endsWith('/publish'))).toBe(false);
@@ -293,7 +303,7 @@ describe('Listing form', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'حاول ترفعها تاني' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'حاول ترفعها تاني' })).toBeNull());
     expect(screen.getAllByTestId('form-photo')).toHaveLength(2);
-    for (let i = 0; i < 2; i++) await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    for (let i = 0; i < 3; i++) await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
     expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
     const save = writes().find(([m, u]) => m === 'POST' && u === '/admin/listings');
@@ -307,7 +317,7 @@ describe('Listing form', () => {
     expect(screen.getByRole('radio', { name: 'شقة', checked: true })).toBeOnTheScreen();
     for (let i = 0; i < 2; i++) await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     await fireEvent.changeText(screen.getByLabelText('السعر (جنيه)'), '6900000');
-    for (let i = 0; i < 3; i++) await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    for (let i = 0; i < 4; i++) await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     expect(screen.queryByRole('button', { name: 'احفظ وانشر' })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ التعديلات' }));
     expect(await screen.findByText('التعديلات اتحفظت')).toBeOnTheScreen();
@@ -317,8 +327,8 @@ describe('Listing form', () => {
     expect(mockRouter.back).toHaveBeenCalled();
   });
 
-  /** Fills the steps up to the 360° tour with the least the form needs. */
-  async function fillToTour() {
+  /** Fills the steps up to the videos with the least the form needs. */
+  async function fillToVideos() {
     await fireEvent.press(screen.getByRole('radio', { name: 'شقة' }));
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     await fireEvent.press(await screen.findByRole('radio', { name: 'الشيخ زايد' }));
@@ -335,6 +345,10 @@ describe('Listing form', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'حاول ترفعها تاني' })).toBeNull());
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
   }
+  async function fillToTour() {
+    await fillToVideos();
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+  }
   async function fillAll() {
     await fillToTour();
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
@@ -344,7 +358,7 @@ describe('Listing form', () => {
     const writes = serve();
     await renderWithProviders(withToasts(<ListingFormScreen />));
     await fillToTour();
-    expect(screen.getByText('الخطوة ٥ من ٦: جولة ٣٦٠°')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٦ من ٧: جولة ٣٦٠°')).toBeOnTheScreen();
 
     // A normal photo is not a panorama: nothing is added or uploaded.
     jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///flat.jpg', width: 4000, height: 3000 }] as ImagePicker.ImagePickerAsset[] });
@@ -369,6 +383,38 @@ describe('Listing form', () => {
     expect(save?.[2]).toMatchObject({ tour: [{ nameAr: 'الصالة', nameEn: 'Living room', pano: '/uploads/tours/new.jpg' }] });
   });
 
+  it('adds videos: refuses one over 3 minutes, uploads the rest from the phone, and saves them in order', async () => {
+    const writes = serve();
+    await renderWithProviders(withToasts(<ListingFormScreen />));
+    await fillToVideos();
+    expect(screen.getByText('الخطوة ٥ من ٧: الفيديوهات')).toBeOnTheScreen();
+
+    const asset = (over: Partial<ImagePicker.ImagePickerAsset>) =>
+      ({ uri: 'file:///v.mov', width: 1920, height: 1080, type: 'video', mimeType: 'video/quicktime', fileSize: 30_000_000, duration: 42_000, ...over }) as ImagePicker.ImagePickerAsset;
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [asset({ uri: 'file:///long.mov', duration: 200_000 })] });
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف فيديوهات' }));
+    expect(await screen.findByText('الفيديو أطول من ٣ دقايق')).toBeOnTheScreen();
+    expect(screen.queryAllByTestId('form-video')).toHaveLength(0);
+    expect(jest.mocked(ImagePicker.launchImageLibraryAsync).mock.calls.at(-1)![0]).toMatchObject({ mediaTypes: ['videos'] });
+
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [asset({})] });
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف فيديوهات' }));
+    await waitFor(() => expect(screen.getAllByTestId('form-video')).toHaveLength(1));
+    expect(await screen.findByText('٠:٤٢')).toBeOnTheScreen();
+    // Streamed from disk as the video field, with the session's token.
+    const [url, opts] = mockUpload.mock.calls.at(-1)!;
+    expect(url).toMatch(/\/v1\/uploads\/videos$/);
+    expect(opts).toMatchObject({ fieldName: 'video', headers: { Authorization: expect.stringMatching(/^Bearer /) } });
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
+
+    expect(screen.getByRole('button', { name: 'الفيديوهات: ١ فيديو' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
+    expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
+    const save = writes().find(([m, u]) => m === 'POST' && u === '/admin/listings');
+    expect(save?.[2]).toMatchObject({ videos: ['/uploads/videos/new.mp4'] });
+  });
+
   it('when publishing fails after the save, says so and opens the saved draft instead of saving it twice', async () => {
     const writes = serve(detail(), { publishFails: true });
     await renderWithProviders(withToasts(<ListingFormScreen />));
@@ -388,13 +434,13 @@ describe('Listing form', () => {
     await fireEvent.changeText(screen.getByLabelText('موبايل المالك'), 'call me');
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     expect(screen.getByText('رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨')).toBeOnTheScreen();
-    expect(screen.getByText('الخطوة ٢ من ٦: المكان')).toBeOnTheScreen();
+    expect(screen.getByText('الخطوة ٢ من ٧: المكان')).toBeOnTheScreen();
   });
 
   it('says which step it is in English too', async () => {
     serve();
     await renderWithProviders(<ListingFormScreen />, { lang: 'en' });
-    expect(screen.getByText('Step 1 of 6: Type')).toBeOnTheScreen();
+    expect(screen.getByText('Step 1 of 7: Type')).toBeOnTheScreen();
   });
 
   it('says so when the listing to edit cannot be found, instead of loading for ever', async () => {

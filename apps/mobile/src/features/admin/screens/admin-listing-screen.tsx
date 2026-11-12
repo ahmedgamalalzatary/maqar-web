@@ -1,7 +1,7 @@
-import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDate, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
+import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDate, fmtDuration, fmtMoney, fmtNum, type ListingVideo, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, ArrowRight, Check, Phone } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Check, Phone, Play } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import { radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { priceSuffix, StatusBadge } from '../components/admin-parts';
 import { ListingInsights } from '../components/listing-insights';
+import { VideoPlayerModal } from '@/features/property/components/video-player';
 import { type ListingAction, useAdminAgents, useAdminListing, useListingAction, usePatchListing } from '../hooks/use-admin';
 
 /** `/admin/listing/:id`: one listing with its owner and advisor, and what can be done with it. */
@@ -61,6 +62,7 @@ function Body({ l }: { l: AdminListing }) {
   const action = useListingAction(l.id);
   const patch = usePatchListing(l.id);
   const [picking, setPicking] = useState<'publish' | 'move' | null>(null);
+  const [playing, setPlaying] = useState<ListingVideo | null>(null);
   const closed = closedStatusFor(l.category);
 
   const failed = (err: unknown) =>
@@ -100,7 +102,27 @@ function Body({ l }: { l: AdminListing }) {
             ) : null}
           </View>
         ))}
+        {l.videos.map((v, i) => (
+          <Pressable
+            key={v.url}
+            accessibilityRole="button"
+            accessibilityLabel={t(`شغّل الفيديو ${fmtNum(i + 1, 'ar')} (${fmtDuration(v.durationS, 'ar')})`, `Play video ${i + 1} (${fmtDuration(v.durationS)})`)}
+            onPress={() => setPlaying(v)}
+            style={[styles.photo, styles.center, { backgroundColor: colors.navy }]}
+          >
+            <Image source={{ uri: mediaUrl(v.poster)! }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <View style={styles.play}>
+              <Play size={18} color="#fff" fill="#fff" />
+            </View>
+            <View style={[styles.cover, styles.duration]}>
+              <Txt size={11} weight="medium" style={styles.white}>
+                {fmtDuration(v.durationS, lang)}
+              </Txt>
+            </View>
+          </Pressable>
+        ))}
       </ScrollView>
+      <VideoPlayerModal video={playing} onClose={() => setPlaying(null)} />
 
       <View style={styles.head}>
         <StatusBadge status={l.status} />
@@ -257,6 +279,10 @@ const styles = StyleSheet.create({
   photos: { gap: 8, paddingHorizontal: 16 },
   photo: { width: 260, height: 180, borderRadius: radius.lg, overflow: 'hidden' },
   cover: { position: 'absolute', top: 8, start: 8, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  play: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  duration: { backgroundColor: 'rgba(0,0,0,0.55)' },
+  white: { color: '#fff' },
   head: { gap: 4, alignItems: 'flex-start' },
   card: { borderRadius: radius.lg, borderWidth: 1, padding: 14, gap: 4 },
   ownerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
