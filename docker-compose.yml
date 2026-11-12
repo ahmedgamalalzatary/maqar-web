@@ -40,7 +40,8 @@ services:
     volumes:
       # On the host too, because nginx serves the photos (contract §16.1 #2).
       - /srv/maqar/uploads:/app/apps/api/uploads
-    mem_limit: 384m
+    # 640 MB, up from 384 MB: converting a listing video (phase 26) runs ffmpeg inside this limit.
+    mem_limit: 640m
     healthcheck:
       test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4010/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
       interval: 10s

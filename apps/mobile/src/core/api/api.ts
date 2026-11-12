@@ -1,5 +1,6 @@
 import type { ApiErrorBody } from '@maqar/shared';
 import Constants from 'expo-constants';
+import { File, UploadType } from 'expo-file-system';
 import { mediaUrlFrom, resolveApiUrl } from './api-url';
 
 /** An HTTP error from the API. `status` is 0 when the server could not be reached. */
@@ -161,6 +162,50 @@ export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<
   if (!res.ok) {
     const msg = (data as Partial<ApiErrorBody> | undefined)?.message;
     throw new ApiError(res.status, Array.isArray(msg) ? msg.join('\n') : (msg ?? res.statusText));
+  }
+  return data as T;
+}
+
+/** A file from the phone's disk for `apiUpload`: the form field it goes in and its type. */
+export type UploadFile = { uri: string; field: string; type: string };
+
+/**
+ * Sends one file from the phone's disk as a multipart field, streamed by the OS rather than read
+ * into memory (listing videos are up to 150 MB). Reports the fraction sent; renews the access
+ * token once if it expired on the way, like `apiFetch`.
+ */
+export async function apiUpload<T>(path: string, file: UploadFile, onProgress?: (sent: number) => void): Promise<T> {
+  const send = async (token: string | null | undefined) => {
+    try {
+      return await new File(file.uri).upload(apiBaseUrl() + path, {
+        uploadType: UploadType.MULTIPART,
+        fieldName: file.field,
+        mimeType: file.type,
+        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        sessionType: 'foreground',
+        onProgress: ({ bytesSent, totalBytes }) => onProgress?.(totalBytes > 0 ? Math.min(1, bytesSent / totalBytes) : 0),
+      });
+    } catch {
+      throw new ApiError(0, 'Network request failed');
+    }
+  };
+  const sentWith = auth?.getAccessToken();
+  let res = await send(sentWith);
+  if (res.status === 401 && auth && sentWith) {
+    const handlers = auth;
+    if (handlers.getAccessToken() !== sentWith) res = await send(handlers.getAccessToken());
+    else if (await refreshOnce(handlers)) res = await send(handlers.getAccessToken());
+    else handlers.onAuthFailure();
+  }
+  let data: unknown;
+  try {
+    data = res.body ? JSON.parse(res.body) : undefined;
+  } catch {
+    throw new ApiError(res.status, res.status >= 400 ? 'Request failed' : 'The server sent an unreadable response');
+  }
+  if (res.status < 200 || res.status >= 300) {
+    const msg = (data as Partial<ApiErrorBody> | undefined)?.message;
+    throw new ApiError(res.status, Array.isArray(msg) ? msg.join('\n') : (msg ?? 'Request failed'));
   }
   return data as T;
 }

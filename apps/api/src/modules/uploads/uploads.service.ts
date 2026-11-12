@@ -1,11 +1,13 @@
 import { access, mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { tmpdir } from 'node:os';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PANO_SIZE, panoramaProblem, type UploadResponse } from '@maqar/shared';
+import { type ListingVideo, PANO_SIZE, panoramaProblem, type UploadResponse, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@maqar/shared';
 import sharp from 'sharp';
 import type { Env } from '../../core/config/env.js';
+import { convertArgs, ffTools, posterArgs, probe, run } from './video.js';
 
 /** Listing photos keep at most this many pixels on the longest side. */
 export const LISTING_PHOTO_PX = 2000;
@@ -16,10 +18,29 @@ export const LISTING_PHOTO_PX = 2000;
 /** Panorama files: a bare uuid-style name, so a path can never climb out of the folder. */
 const PANO_NAME = /^[A-Za-z0-9_-]+\.jpe?g$/;
 
+/** Video files, the same way: the MP4 and its poster share the bare name. */
+const VIDEO_NAME = /^[A-Za-z0-9_-]+\.mp4$/;
+
+/** Posters keep at most this many pixels on the longest side. */
+export const VIDEO_POSTER_PX = 1280;
+
+/** A conversion that takes longer than this is stopped (a 3-minute 4K video takes a few minutes on one core). */
+const CONVERT_TIMEOUT_MS = 10 * 60_000;
+
 /** Listing photos on the server's disk (contract §16.1 #2), served by nginx under `/uploads/listings/`. */
 @Injectable()
 export class UploadsService {
-  constructor(private readonly config: ConfigService<Env, true>) {}
+  private readonly ff: { ffmpeg: string; ffprobe: string };
+  /** Videos are converted one at a time: the server has one core and a neighbour. */
+  private videoQueue: Promise<unknown> = Promise.resolve();
+
+  constructor(private readonly config: ConfigService<Env, true>) {
+    this.ff = ffTools({
+      NODE_ENV: config.get('NODE_ENV', { infer: true }),
+      FFMPEG_PATH: config.get('FFMPEG_PATH', { infer: true }),
+      FFPROBE_PATH: config.get('FFPROBE_PATH', { infer: true }),
+    });
+  }
 
   /** Turned upright, made at most 2000 px on the longest side and stored as JPEG. */
   async savePhoto(buffer: Buffer): Promise<UploadResponse> {
@@ -132,6 +153,90 @@ export class UploadsService {
           if (!/^[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/.test(name)) return Promise.resolve();
           return unlink(path.join(dir, name)).catch(() => undefined);
         }),
+    );
+  }
+
+  private videosDir(): string {
+    return path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'videos');
+  }
+
+  /**
+   * A listing video (phase 26), from the temp file the upload went to (deleted afterwards). At most
+   * 3 minutes. Stored as an H.264 MP4 without metadata, with a JPEG poster of the same name.
+   */
+  async saveVideo(input: string): Promise<VideoUploadResponse> {
+    const job = this.videoQueue.then(() => this.convertVideo(input));
+    this.videoQueue = job.catch(() => undefined);
+    try {
+      return await job;
+    } finally {
+      await unlink(input).catch(() => undefined);
+    }
+  }
+
+  private async convertVideo(input: string): Promise<VideoUploadResponse> {
+    const p = await probe(this.ff.ffprobe, input);
+    if (!p) throw new BadRequestException('That file is not a video we can read');
+    if (Math.round(p.durationS) > VIDEO_MAX_SECONDS) throw new BadRequestException('A video can be at most 3 minutes long');
+    const dir = this.videosDir();
+    await mkdir(dir, { recursive: true });
+    const name = randomUUID();
+    const [video, poster, frame] = [path.join(dir, `${name}.mp4`), path.join(dir, `${name}.jpg`), path.join(tmpdir(), `${name}-frame.jpg`)];
+    try {
+      await run(this.ff.ffmpeg, convertArgs(p, input, video), CONVERT_TIMEOUT_MS);
+      const out = await probe(this.ff.ffprobe, video);
+      if (!out) throw new BadRequestException('We could not convert that video');
+      // The frame is decoded the way players show it, so an upright phone video gets an upright poster.
+      await run(this.ff.ffmpeg, posterArgs(out.durationS, video, frame), 60_000);
+      await sharp(frame).resize(VIDEO_POSTER_PX, VIDEO_POSTER_PX, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toFile(poster);
+      return {
+        url: `/uploads/videos/${name}.mp4`,
+        poster: `/uploads/videos/${name}.jpg`,
+        durationS: Math.max(1, Math.round(out.durationS)),
+        width: out.shown.width,
+        height: out.shown.height,
+      };
+    } catch (e) {
+      await Promise.all([unlink(video), unlink(poster)].map((x) => x.catch(() => undefined)));
+      if (e instanceof HttpException) throw e;
+      throw new BadRequestException('We could not convert that video');
+    } finally {
+      await unlink(frame).catch(() => undefined);
+    }
+  }
+
+  /**
+   * The saved form of each listing video, in order: every path must be a video this server
+   * converted, with its poster. Its length and size are read from the file itself.
+   */
+  async videoDetails(urls: string[]): Promise<ListingVideo[]> {
+    const dir = this.videosDir();
+    const out: ListingVideo[] = [];
+    for (const url of urls) {
+      const name = url.startsWith('/uploads/videos/') ? url.slice('/uploads/videos/'.length) : '';
+      if (!VIDEO_NAME.test(name)) throw new BadRequestException('Videos must be uploaded with POST /uploads/videos');
+      const posterName = name.replace(/\.mp4$/, '.jpg');
+      try {
+        await access(path.join(dir, posterName));
+      } catch {
+        throw new BadRequestException(`A video is missing from the server's disk: ${name}`);
+      }
+      const p = await probe(this.ff.ffprobe, path.join(dir, name));
+      if (!p) throw new BadRequestException(`A video is missing from the server's disk: ${name}`);
+      out.push({ url, poster: `/uploads/videos/${posterName}`, durationS: Math.max(1, Math.round(p.durationS)), width: p.shown.width, height: p.shown.height });
+    }
+    return out;
+  }
+
+  /** Deletes videos (and their posters) no listing uses any more; never anything outside the folder. */
+  async removeVideoFiles(urls: string[]): Promise<void> {
+    const dir = this.videosDir();
+    await Promise.all(
+      urls.flatMap((url) => {
+        const name = url.startsWith('/uploads/videos/') ? url.slice('/uploads/videos/'.length) : '';
+        if (!VIDEO_NAME.test(name)) return [];
+        return [name, name.replace(/\.mp4$/, '.jpg')].map((f) => unlink(path.join(dir, f)).catch(() => undefined));
+      }),
     );
   }
 }

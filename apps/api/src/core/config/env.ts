@@ -71,6 +71,18 @@ export class Env {
   UPLOADS_DIR = 'uploads';
 
   /**
+   * Optional: where ffmpeg and ffprobe are, for listing videos (phase 26). Without them the API
+   * uses the dev packages outside production, and the PATH in production (the image installs them).
+   */
+  @IsOptional()
+  @IsString()
+  FFMPEG_PATH?: string;
+
+  @IsOptional()
+  @IsString()
+  FFPROBE_PATH?: string;
+
+  /**
    * Optional: Expo's push security token, when "enhanced push security" is on for the Expo
    * project. Without it Expo accepts pushes from anyone who knows a token.
    */

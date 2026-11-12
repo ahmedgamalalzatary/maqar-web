@@ -21,6 +21,7 @@ const villa: PropertyDetail = {
   images: ['/uploads/seed/p1.jpg', '/uploads/seed/p3.jpg'],
   views: 2141,
   tourRooms: [],
+  videos: [],
   location: { lat: 30.0074, lng: 31.4913 },
   agent: {
     id: 3,
@@ -105,6 +106,31 @@ describe('PropertyScreen', () => {
     await renderWithProviders(<PropertyScreen id={1} />);
     await screen.findByText('فيلا مستقلة بحمام سباحة خاص');
     expect(screen.queryByRole('button', { name: 'جولة ٣٦٠°' })).toBeNull();
+  });
+
+  it('shows the videos after the photos and plays one full screen; a home without videos shows none', async () => {
+    const videos = [
+      { url: '/uploads/videos/a.mp4', poster: '/uploads/videos/a.jpg', durationS: 75, width: 1280, height: 720 },
+      { url: '/uploads/videos/b.mp4', poster: '/uploads/videos/b.jpg', durationS: 9, width: 720, height: 1280 },
+    ];
+    routeFetch({ '/properties/1': () => ({ ...villa, videos }), '/properties/1/similar': () => [] });
+    const view = await renderWithProviders(<PropertyScreen id={1} />);
+    expect(await screen.findAllByTestId('gallery-video')).toHaveLength(2);
+    expect(screen.getByText('١ / ٤')).toBeOnTheScreen();
+    // The chip plays the first video; closing stops it.
+    await fireEvent.press(screen.getByRole('button', { name: '٢ فيديو، شغّل الأول' }));
+    expect(await screen.findByTestId('video-view')).toHaveProp('accessibilityLabel', expect.stringMatching(/\/uploads\/videos\/a\.mp4$/));
+    await fireEvent.press(screen.getByRole('button', { name: 'اقفل الفيديو' }));
+    expect(screen.queryByTestId('video-view')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'شغّل الفيديو ٢ (٠:٠٩)' }));
+    expect(await screen.findByTestId('video-view')).toHaveProp('accessibilityLabel', expect.stringMatching(/b\.mp4$/));
+    await view.unmount();
+
+    api();
+    await renderWithProviders(<PropertyScreen id={1} />);
+    await screen.findByText('فيلا مستقلة بحمام سباحة خاص');
+    expect(screen.queryAllByTestId('gallery-video')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /فيديو/ })).toBeNull();
   });
 
   it('puts a solid strip behind the top buttons once the photos scroll away, so they never sit on text', async () => {

@@ -10,11 +10,13 @@ import {
   FEATURES,
   FINISHING_LABEL,
   FINISHINGS,
+  fmtDuration,
   fmtMoney,
   fmtNum,
   hasPaymentPlan,
   LISTING_IMAGES_MAX,
   LISTING_STEPS,
+  LISTING_VIDEOS_MAX,
   listingBodyOf,
   type ListingField,
   type ListingForm as FormState,
@@ -22,17 +24,20 @@ import {
   listingFormOf,
   type ListingFormPhoto,
   type ListingFormRoom,
+  type ListingFormVideo,
   listingStepErrors,
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
   readWholeNumber,
   TOUR_ROOMS_MAX,
+  VIDEO_TYPES,
+  videoProblem,
 } from "@maqar/shared";
-import { ImagePlus, Loader2, MoveLeft, MoveRight, Rotate3d, RotateCcw, Star, Trash2 } from "lucide-react";
+import { Clapperboard, Film, ImagePlus, Loader2, MoveLeft, MoveRight, Play, Rotate3d, RotateCcw, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type Dispatch, useEffect, type SetStateAction, useRef, useState } from "react";
-import { uploadPanorama, uploadPhoto, useAction, useAreas, useListing, useSave, readId } from "@/lib/admin";
+import { uploadPanorama, uploadPhoto, uploadVideo, useAction, useAreas, useListing, useSave, readId, videoDuration } from "@/lib/admin";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { mediaUrl } from "@/lib/client";
 import { type T, useLang, useT } from "@/lib/i18n";
@@ -45,6 +50,7 @@ const STEP_LABEL: Record<(typeof LISTING_STEPS)[number], Bi> = {
   location: { ar: "المكان", en: "Location" },
   details: { ar: "التفاصيل", en: "Details" },
   photos: { ar: "الصور", en: "Photos" },
+  videos: { ar: "الفيديوهات", en: "Videos" },
   tour: { ar: "جولة ٣٦٠°", en: "360° tour" },
   review: { ar: "المراجعة", en: "Review" },
 };
@@ -61,6 +67,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   planYears: { ar: "من ١ لـ ٣٠ سنة", en: "1 to 30 years" },
   ownerPhone: { ar: "رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨", en: "A phone number in digits, e.g. 01012345678" },
   photos: { ar: "ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع", en: "Add at least one photo, and wait for the uploads" },
+  videos: { ar: "استنى لحد ما الفيديوهات تترفع، أو امسح اللي ماترفعش", en: "Wait for the videos to upload, or remove the ones that failed" },
   tour: { ar: "كل غرفة محتاجة اسمها بالعربي والإنجليزي، واستنى لحد ما الصور تترفع", en: "Each room needs its Arabic and English name, and wait for the uploads" },
 };
 
@@ -171,7 +178,7 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
         <p className="text-sm text-ink-2">{t("العقار بيظهر للعملاء في التطبيق لما تنشره بس.", "Clients see the listing in the app only once you publish it.")}</p>
       </div>
 
-      <ol className="grid grid-cols-5 gap-2" aria-label={t("خطوات الإضافة", "Steps")}>
+      <ol className="grid grid-cols-4 gap-2 sm:grid-cols-7" aria-label={t("خطوات الإضافة", "Steps")}>
         {LISTING_STEPS.map((k, i) => (
           <li key={k}>
             <button
@@ -194,6 +201,7 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
         {current === "location" ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === "details" ? <DetailsStep s={s} set={set} err={err} /> : null}
         {current === "photos" ? <PhotosStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
+        {current === "videos" ? <VideosStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
         {current === "tour" ? <TourStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
         {current === "review" ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </Card>
@@ -479,6 +487,194 @@ function PhotosStep({
 }
 
 /** The 360° tour (phase 21): one panorama per room, both names, in the order the tour opens them. Optional. */
+/**
+ * Listing videos (phase 26): MP4 or MOV files, each sent with a progress bar and then converted on
+ * the server, which can take a few minutes. Optional; the app shows them after the photos.
+ */
+function VideosStep({
+  s,
+  setS,
+  blobs,
+  setBlobs,
+  err,
+}: {
+  s: FormState;
+  setS: Dispatch<SetStateAction<FormState>>;
+  blobs: Record<string, Blob>;
+  setBlobs: Dispatch<SetStateAction<Record<string, Blob>>>;
+  err: StepProps["err"];
+}) {
+  const t = useT();
+  const lang = useLang();
+  const notice = useNotice();
+  const errorText = useErrorText();
+  const input = useRef<HTMLInputElement>(null);
+  const [sent, setSent] = useState<Record<string, number>>({});
+  const room = LISTING_VIDEOS_MAX - s.videos.length;
+  const patch = (key: string, p: Partial<ListingFormVideo>) => setS((cur) => ({ ...cur, videos: cur.videos.map((x) => (x.key === key ? { ...x, ...p } : x)) }));
+
+  const upload = async (key: string, file: File) => {
+    patch(key, { failed: false });
+    setSent((cur) => ({ ...cur, [key]: 0 }));
+    try {
+      const v = await uploadVideo(file, (f) => setSent((cur) => ({ ...cur, [key]: f })));
+      patch(key, { url: v.url, poster: v.poster, durationS: v.durationS });
+    } catch (e) {
+      patch(key, { failed: true });
+      notice({ text: errorText(e), tone: "bad" });
+    }
+  };
+  const add = async (files: FileList | null | undefined) => {
+    const picked = Array.from(files ?? []).slice(0, room);
+    const ok: { file: File; durationS?: number }[] = [];
+    for (const file of picked) {
+      const durationS = await videoDuration(file);
+      const problem = videoProblem({ type: file.type, bytes: file.size, durationS });
+      if (!problem) ok.push({ file, durationS });
+      else
+        notice({
+          text: {
+            long: t(`${file.name}: الفيديو أطول من ٣ دقايق`, `${file.name}: longer than 3 minutes`),
+            size: t(`${file.name}: الفيديو أكبر من ١٥٠ ميجا`, `${file.name}: over 150 MB`),
+            type: t(`${file.name}: الفيديو لازم يكون MP4 أو MOV`, `${file.name}: a video must be an MP4 or MOV`),
+          }[problem],
+          tone: "bad",
+        });
+    }
+    if (!ok.length) return;
+    const added: ListingFormVideo[] = ok.map(({ file, durationS }) => ({ key: `v${++photoKey}`, local: file.name, durationS: durationS ? Math.round(durationS) : undefined }));
+    setS((cur) => ({ ...cur, videos: [...cur.videos, ...added] }));
+    setBlobs((cur) => ({ ...cur, ...Object.fromEntries(added.map((v, i) => [v.key, ok[i]!.file])) }));
+    // One at a time: the server converts them one at a time anyway.
+    for (const [i, v] of added.entries()) await upload(v.key, ok[i]!.file);
+  };
+  const move = (from: number, to: number) =>
+    setS((cur) => {
+      const videos = [...cur.videos];
+      const [v] = videos.splice(from, 1);
+      videos.splice(to, 0, v!);
+      return { ...cur, videos };
+    });
+  const remove = (key: string) => {
+    setS((cur) => ({ ...cur, videos: cur.videos.filter((v) => v.key !== key) }));
+    setBlobs((cur) => {
+      if (!(key in cur)) return cur;
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+  };
+  const Earlier = lang === "ar" ? MoveRight : MoveLeft;
+  const Later = lang === "ar" ? MoveLeft : MoveRight;
+
+  return (
+    <>
+      <p className="text-sm text-ink-2">
+        {t(
+          "اختياري. لحد ٥ فيديوهات MP4 أو MOV، كل واحد لحد ٣ دقايق و١٥٠ ميجا. بتظهر في التطبيق بعد الصور. الفيديو بيتجهز على السيرفر بعد ما يترفع، وده ممكن ياخد كام دقيقة.",
+          "Optional. Up to 5 MP4 or MOV videos, each up to 3 minutes and 150 MB. The app shows them after the photos. Each is prepared on the server after it uploads, which can take a few minutes.",
+        )}
+      </p>
+      {room > 0 ? (
+        <>
+          <input ref={input} type="file" accept={VIDEO_TYPES.join(",")} multiple hidden onChange={(e) => void add(e.target.files).finally(() => (e.target.value = ""))} />
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              void add(e.dataTransfer.files);
+            }}
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-accent-soft text-accent-ink hover:bg-accent/20"
+          >
+            <Clapperboard className="size-6" aria-hidden />
+            <span className="font-medium">{t(`ضيف فيديوهات أو اسحبها هنا (لحد ${fmtNum(room, "ar")})`, `Add videos or drop them here (up to ${room})`)}</span>
+          </button>
+        </>
+      ) : null}
+      {err("videos") ? <p className="text-sm text-danger">{err("videos")}</p> : null}
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {s.videos.map((v, i) => {
+          const progress = sent[v.key];
+          const n = i + 1;
+          return (
+            <li key={v.key} className="relative aspect-video overflow-hidden rounded-xl bg-navy" data-testid="form-video">
+              {v.poster ? (
+                // eslint-disable-next-line @next/next/no-img-element -- posters on the API host
+                <img src={mediaUrl(v.poster)} alt={t(`الفيديو ${fmtNum(n, "ar")}`, `Video ${n}`)} className="size-full object-cover" />
+              ) : (
+                <div className="grid size-full place-items-center">
+                  <Film className="size-7 text-white/60" aria-hidden />
+                </div>
+              )}
+              {v.url ? (
+                <a
+                  href={mediaUrl(v.url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={t(`شغّل الفيديو ${fmtNum(n, "ar")}`, `Play video ${n}`)}
+                  className="absolute inset-0 grid place-items-center"
+                >
+                  <span className="grid size-10 place-items-center rounded-full bg-black/45">
+                    <Play className="size-4 fill-white text-white" aria-hidden />
+                  </span>
+                </a>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-navy/60 px-4 text-white">
+                  {v.failed && blobs[v.key] ? (
+                    <Button variant="secondary" onClick={() => void upload(v.key, blobs[v.key] as File)}>
+                      <RotateCcw className="size-4" aria-hidden />
+                      {t("حاول تاني", "Retry")}
+                    </Button>
+                  ) : v.failed ? (
+                    <span className="text-center text-xs">{t("ماترفعش، امسحه وضيفه تاني", "Not uploaded: remove it and add it again")}</span>
+                  ) : progress !== undefined && progress < 1 ? (
+                    <>
+                      <span className="text-xs font-medium">{t(`بيترفع ${fmtNum(Math.round(progress * 100), "ar")}٪`, `Uploading ${Math.round(progress * 100)}%`)}</span>
+                      <span
+                        role="progressbar"
+                        aria-valuenow={Math.round(progress * 100)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={t(`رفع الفيديو ${fmtNum(n, "ar")}`, `Video ${n} upload`)}
+                        className="block h-1.5 w-full overflow-hidden rounded-full bg-white/25"
+                      >
+                        <span className="block h-full rounded-full bg-accent" style={{ width: `${progress * 100}%` }} />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="size-6 animate-spin" aria-hidden />
+                      <span className="text-xs font-medium">{t("بيتجهز…", "Preparing…")}</span>
+                    </>
+                  )}
+                </div>
+              )}
+              {v.durationS ? <span className="absolute start-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white tabular">{fmtDuration(v.durationS, lang)}</span> : null}
+              <div className="absolute bottom-2 end-2 flex gap-1.5">
+                {i > 0 ? (
+                  <IconAction label={t(`قدّم الفيديو ${fmtNum(n, "ar")}`, `Move video ${n} earlier`)} onClick={() => move(i, i - 1)}>
+                    <Earlier className="size-4" aria-hidden />
+                  </IconAction>
+                ) : null}
+                {i < s.videos.length - 1 ? (
+                  <IconAction label={t(`أخّر الفيديو ${fmtNum(n, "ar")}`, `Move video ${n} later`)} onClick={() => move(i, i + 1)}>
+                    <Later className="size-4" aria-hidden />
+                  </IconAction>
+                ) : null}
+                <IconAction label={t(`امسح الفيديو ${fmtNum(n, "ar")}`, `Remove video ${n}`)} onClick={() => remove(v.key)} danger>
+                  <Trash2 className="size-4" aria-hidden />
+                </IconAction>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 function TourStep({
   s,
   setS,
@@ -639,7 +835,8 @@ function ReviewStep({ s, errors, onEdit }: { s: FormState; errors: ListingField[
     [2, t("التشطيب", "Finishing"), s.finishing ? t(FINISHING_LABEL[s.finishing]) : "—"],
     [2, t("المميزات", "Amenities"), s.features.map((f) => t(FEATURE_LABEL[f])).join("، ") || "—"],
     [3, t("الصور", "Photos"), t(`${fmtNum(uploaded, "ar")} صورة`, `${uploaded} photos`)],
-    [4, t("جولة ٣٦٠°", "360° tour"), s.tour.length ? t(`${fmtNum(s.tour.length, "ar")} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? "room" : "rooms"}`) : t("مفيش", "None")],
+    [4, t("الفيديوهات", "Videos"), s.videos.length ? t(`${fmtNum(s.videos.length, "ar")} فيديو`, `${s.videos.length} ${s.videos.length === 1 ? "video" : "videos"}`) : t("مفيش", "None")],
+    [5, t("جولة ٣٦٠°", "360° tour"), s.tour.length ? t(`${fmtNum(s.tour.length, "ar")} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? "room" : "rooms"}`) : t("مفيش", "None")],
   ];
   return (
     <>

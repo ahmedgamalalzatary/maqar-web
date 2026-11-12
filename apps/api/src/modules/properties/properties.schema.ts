@@ -116,5 +116,26 @@ export const tourRooms = mysqlTable(
   (t) => [index('tour_rooms_property_idx').on(t.propertyId, t.sort)],
 );
 
+/**
+ * Videos of a listing (phase 26), in gallery order. `url` is an H.264 MP4 the server converted,
+ * `poster` a JPEG frame from it; both under `/uploads/videos/`.
+ */
+export const propertyVideos = mysqlTable(
+  'property_videos',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    propertyId: bigint('property_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => properties.id, { onDelete: 'cascade' }),
+    url: varchar('url', { length: 255 }).notNull(),
+    poster: varchar('poster', { length: 255 }).notNull(),
+    durationS: smallint('duration_s', { unsigned: true }).notNull(),
+    width: smallint('width', { unsigned: true }).notNull(),
+    height: smallint('height', { unsigned: true }).notNull(),
+    sort: tinyint('sort', { unsigned: true }).notNull().default(0),
+  },
+  (t) => [index('property_videos_property_idx').on(t.propertyId, t.sort)],
+);
+
 export type PropertyRow = typeof properties.$inferSelect;
 export type NewPropertyRow = typeof properties.$inferInsert;

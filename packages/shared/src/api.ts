@@ -162,6 +162,12 @@ export type ListingAgent = {
 /** One room of a 360° tour (contract §8.6). `pano` is an equirectangular photo under the API host. */
 export type TourRoom = { id: number; nameAr: string; nameEn: string; pano: string };
 
+/**
+ * A listing video (phase 26): an H.264 MP4 under the API host, with a JPEG poster frame from it.
+ * `durationS` is whole seconds; width and height are the stored video's.
+ */
+export type ListingVideo = { url: string; poster: string; durationS: number; width: number; height: number };
+
 /** `GET /v1/properties/:id`: everything the property page shows. */
 export type PropertyDetail = PropertyCard & {
   developerAr: string | null;
@@ -178,6 +184,8 @@ export type PropertyDetail = PropertyCard & {
   views: number;
   /** The 360° tour's rooms in order; empty when the home has no tour. */
   tourRooms: TourRoom[];
+  /** Videos in order, shown after the photos; empty when the home has none (phase 26). */
+  videos: ListingVideo[];
   location: { lat: number; lng: number } | null;
   agent: ListingAgent;
 };

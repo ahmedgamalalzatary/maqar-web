@@ -930,3 +930,25 @@ Contract §11, §12.
 - App: Overview is the admin's first tab and Listings the second (the tabs are Overview, Listings, Agents, Leads, More); open reports link to Chats. Web: the dashboard's home is the overview and Listings moved to `/listings/` (a link there already existed and now works).
 - Checked by hand on the web dashboard against the local API, at 1280, 1536, 1600 and 1920 px wide: no sideways scroll.
 - Tests: API e2e `admin-overview.e2e-spec.ts` (2, counting each number's change after real actions), unit tests `overview/window.spec.ts` (4), mobile UI test `overview.test.tsx` (2).
+
+## Phase 26: Admin: listing videos
+
+Contract §8.6, §9.2, §14.
+
+**API:** `POST /uploads/videos` (admins): one MP4 or MOV, at most 150 MB and 3 minutes. The server keeps an H.264 (8-bit 4:2:0) video up to 1920 px as it is and converts anything else (HEVC, 4K, other codecs) to H.264 at most 1280 px, with AAC sound; either way the metadata (where it was filmed) is dropped and the index is moved to the front so playback starts at once. A JPEG poster frame of the same name is made from the stored video. The listing's `videos` (paths, in order, at most 5) is saved on create and edit like the tour: left out keeps them, an empty list removes them, and removed videos and their posters are deleted unless another listing uses them. `AdminListing.videos` and `PropertyDetail.videos` carry each video's poster, length and size.
+
+**Admin UI:** a Videos step after Photos in the listing form, in the app and on the web (optional; add, reorder, remove, retry). The app picks videos from the phone and streams them from disk with progress; on iPhones the picker hands over H.264, which the server keeps. The web checks type, size and length in the browser first and shows upload progress. Both admin listing pages show the videos.
+
+**Client UI:** the property gallery shows the videos after the photos, as their posters with a play button and the length; a chip on the gallery plays the first. A video plays full screen with the platform's controls (`expo-video`, a native module: it reaches phones with the next app build).
+
+**Tests:** upload rules (admins only; refusals; copy versus convert; upright phone videos; no location metadata; range requests), saving and replacing on a listing, the form step in the app and on the web client, the gallery and player.
+
+**Done when** an admin adds a phone video to a listing in the app and on the web, and a client plays it on the listing.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy (ffmpeg in the API image, migration `0021`, nginx) and the phone check (rule 6), which needs a new app build for `expo-video`. Notes:
+- Migration `0021`: `property_videos` (url, poster, duration in seconds, width, height, sort).
+- Conversion runs one video at a time at the lowest CPU priority with one thread (the server is shared), and is stopped after 10 minutes. The API's memory cap rose from 384 MB to 640 MB for ffmpeg.
+- nginx: `/v1/uploads/videos` takes 160 MB and waits up to 10 minutes for the answer; the file reaches the API only once nginx has all of it, so a slow connection does not hold the API.
+- The upload goes to a temp file, never into memory; the app sends from disk natively (`File.upload`), the web with `XMLHttpRequest` for progress.
+- Local development and tests use ffmpeg from dev packages (`@ffmpeg-installer/ffmpeg`, `@ffprobe-installer/ffprobe`); `FFMPEG_PATH` and `FFPROBE_PATH` override.
+- Videos uploaded but never saved on a listing stay on disk, as photos and panoramas do.

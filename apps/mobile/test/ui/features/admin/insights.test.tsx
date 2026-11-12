@@ -13,6 +13,7 @@ const { publishedAt: _p, match: _m, ...card } = makeCard({ id: 7, titleAr: 'شق
 const listing = (over: Partial<AdminListing> = {}): AdminListing => ({
   ...card,
   tourRooms: [],
+  videos: [],
   status: 'approved',
   publishedAt: '2026-11-01T10:00:00.000Z',
   createdAt: '2026-11-01T10:00:00.000Z',

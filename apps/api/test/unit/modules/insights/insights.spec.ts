@@ -121,6 +121,7 @@ describe('Counters commit with their source operation', () => {
       findImages: vi.fn(async () => []),
       findFeatures: vi.fn(async () => []),
       findTourRooms: vi.fn(async () => []),
+      findVideos: vi.fn(async () => []),
       addView: vi.fn(async () => {}),
     };
     const service = new PropertiesService(repo as never, {} as never);

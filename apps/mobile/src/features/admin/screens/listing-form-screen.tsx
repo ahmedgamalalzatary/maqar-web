@@ -7,16 +7,19 @@ import {
   FEATURES,
   FINISHING_LABEL,
   FINISHINGS,
+  fmtDuration,
   fmtMoney,
   fmtNum,
   emptyListingForm,
   hasPaymentPlan,
   LISTING_IMAGES_MAX,
   LISTING_STEPS,
+  LISTING_VIDEOS_MAX,
   type ListingField,
   type ListingForm,
   type ListingFormPhoto,
   type ListingFormRoom,
+  type ListingFormVideo,
   type ListingStep,
   listingBodyOf,
   listingFormErrors,
@@ -27,11 +30,12 @@ import {
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
   TOUR_ROOMS_MAX,
+  videoProblem,
 } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ImagePlus, Rotate3d, RotateCcw, Star, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Clapperboard, Film, ImagePlus, Play, Rotate3d, RotateCcw, Star, Trash2 } from 'lucide-react-native';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
@@ -48,7 +52,7 @@ import { type PhotoPart, preparePhotos } from '@/features/chat/photos';
 import * as SecureStore from 'expo-secure-store';
 import { ToggleChip } from '@/features/listings/components/chips';
 import { useAreas } from '@/features/listings/hooks/use-listings';
-import { uploadPanoramaRequest, uploadPhotoRequest } from '../api/admin.api';
+import { uploadPanoramaRequest, uploadPhotoRequest, uploadVideoRequest } from '../api/admin.api';
 import { preparePanorama } from '../panorama';
 import { useAdminListing, usePublishListing, useSaveListing } from '../hooks/use-admin';
 
@@ -57,6 +61,7 @@ const STEP_LABEL: Record<ListingStep, Bi> = {
   location: { ar: 'المكان', en: 'Location' },
   details: { ar: 'التفاصيل', en: 'Details' },
   photos: { ar: 'الصور', en: 'Photos' },
+  videos: { ar: 'الفيديوهات', en: 'Videos' },
   tour: { ar: 'جولة ٣٦٠°', en: '360° tour' },
   review: { ar: 'المراجعة', en: 'Review' },
 };
@@ -74,6 +79,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   planYears: { ar: 'من ١ لـ ٣٠ سنة', en: '1 to 30 years' },
   ownerPhone: { ar: 'رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨', en: 'A phone number in digits, e.g. 01012345678' },
   photos: { ar: 'ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع', en: 'Add at least one photo, and wait for the uploads' },
+  videos: { ar: 'استنى لحد ما الفيديوهات تترفع، أو امسح اللي ماترفعش', en: 'Wait for the videos to upload, or remove the ones that failed' },
   tour: { ar: 'كل غرفة محتاجة اسمها بالعربي والإنجليزي، واستنى لحد ما الصور تترفع', en: 'Each room needs its Arabic and English name, and wait for the uploads' },
 };
 
@@ -81,6 +87,10 @@ const thisYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 7 }, (_, i) => thisYear + i);
 
 let photoKey = 0;
+
+/** Each picked video's file type, by its form key, for a retry. */
+const videoTypes = new Map<string, string>();
+const typeOfVideo = (a: ImagePicker.ImagePickerAsset) => a.mimeType || (/\.mov$/i.test(a.uri) ? 'video/quicktime' : 'video/mp4');
 
 /** `/admin/new` and `/admin/listing/:id/edit`: the listing form in steps (contract §9.2). */
 export function ListingFormScreen({ id }: { id?: number }) {
@@ -211,6 +221,7 @@ function Form({ saved }: { saved?: AdminListing }) {
         {current === 'location' ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === 'details' ? <DetailsStep s={s} set={set} err={err} /> : null}
         {current === 'photos' ? <PhotosStep s={s} setS={setS} parts={parts} setParts={setParts} err={err} /> : null}
+        {current === 'videos' ? <VideosStep s={s} setS={setS} err={err} /> : null}
         {current === 'tour' ? <TourStep s={s} setS={setS} parts={parts} setParts={setParts} err={err} /> : null}
         {current === 'review' ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </ScrollView>
@@ -473,6 +484,154 @@ function PhotosStep({
   );
 }
 
+/**
+ * Listing videos (phase 26): picked from the phone, sent from its disk, then converted on the
+ * server, which can take a few minutes for a long one. Optional; shown after the photos.
+ */
+function VideosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<React.SetStateAction<ListingForm>>; err: StepProps['err'] }) {
+  const t = useT();
+  const lang = useLang();
+  const { colors } = useTheme();
+  const [sent, setSent] = useState<Record<string, number>>({});
+  const room = LISTING_VIDEOS_MAX - s.videos.length;
+  const patch = (key: string, p: Partial<ListingFormVideo>) => setS((cur) => ({ ...cur, videos: cur.videos.map((x) => (x.key === key ? { ...x, ...p } : x)) }));
+
+  const upload = async (key: string, uri: string) => {
+    patch(key, { failed: false });
+    setSent((cur) => ({ ...cur, [key]: 0 }));
+    try {
+      const v = await uploadVideoRequest(uri, videoTypes.get(key) ?? 'video/mp4', (f) => setSent((cur) => ({ ...cur, [key]: f })));
+      patch(key, { url: v.url, poster: v.poster, durationS: v.durationS });
+    } catch (e) {
+      patch(key, { failed: true });
+      if (e instanceof ApiError && e.status === 400) toast.show({ title: e.message, tone: 'danger' });
+    }
+  };
+  const pick = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      allowsMultipleSelection: true,
+      selectionLimit: room,
+      // iPhones film HEVC; this hands over H.264, which the server keeps as it is.
+      preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+    });
+    if (res.canceled || !res.assets.length) return;
+    const ok: ImagePicker.ImagePickerAsset[] = [];
+    for (const a of res.assets.slice(0, room)) {
+      const problem = videoProblem({ type: typeOfVideo(a), bytes: a.fileSize ?? 0, durationS: a.duration ? a.duration / 1000 : undefined });
+      if (!problem) ok.push(a);
+      else
+        toast.show({
+          title:
+            problem === 'long'
+              ? t('الفيديو أطول من ٣ دقايق', 'That video is longer than 3 minutes')
+              : problem === 'size'
+                ? t('الفيديو أكبر من ١٥٠ ميجا', 'That video is over 150 MB')
+                : t('الفيديو لازم يكون MP4 أو MOV', 'A video must be an MP4 or MOV'),
+          tone: 'danger',
+        });
+    }
+    const added: ListingFormVideo[] = ok.map((a) => ({ key: `v${++photoKey}`, local: a.uri, durationS: a.duration ? Math.round(a.duration / 1000) : undefined }));
+    ok.forEach((a, i) => videoTypes.set(added[i]!.key, typeOfVideo(a)));
+    if (!added.length) return;
+    setS((cur) => ({ ...cur, videos: [...cur.videos, ...added] }));
+    // One at a time: the server converts them one at a time anyway.
+    for (const v of added) await upload(v.key, v.local!);
+  };
+  const remove = (key: string) => setS((cur) => ({ ...cur, videos: cur.videos.filter((v) => v.key !== key) }));
+  const move = (i: number, by: -1 | 1) =>
+    setS((cur) => {
+      const videos = [...cur.videos];
+      const [v] = videos.splice(i, 1);
+      videos.splice(i + by, 0, v!);
+      return { ...cur, videos };
+    });
+
+  return (
+    <>
+      <Txt size={13} color="ink2">
+        {t(
+          'اختياري. لحد ٥ فيديوهات، كل واحد لحد ٣ دقايق و١٥٠ ميجا. بتظهر بعد الصور. الفيديو بيتجهز على السيرفر بعد ما يترفع، وده ممكن ياخد كام دقيقة.',
+          'Optional. Up to 5 videos, each up to 3 minutes and 150 MB. They show after the photos. Each is prepared on the server after it uploads, which can take a few minutes.',
+        )}
+      </Txt>
+      {room > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('ضيف فيديوهات', 'Add videos')}
+          onPress={() => void pick()}
+          style={({ pressed }) => [styles.add, { borderColor: colors.accent, backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Clapperboard size={22} color={colors.accentInk} />
+          <Txt weight="medium" style={{ color: colors.accentInk }}>
+            {t(`ضيف فيديوهات (لحد ${fmtNum(room, 'ar')})`, `Add videos (up to ${room})`)}
+          </Txt>
+        </Pressable>
+      ) : null}
+      {err('videos') ? (
+        <Txt size={12} color="danger">
+          {err('videos')}
+        </Txt>
+      ) : null}
+      <View style={styles.grid}>
+        {s.videos.map((v, i) => {
+          const n = i + 1;
+          const progress = sent[v.key];
+          return (
+            <View key={v.key} testID="form-video" style={[styles.tile, styles.videoTile, { backgroundColor: colors.navy, borderColor: colors.line }]}>
+              {v.poster ? <Image source={{ uri: mediaUrl(v.poster)! }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Film size={28} color="rgba(255,255,255,0.6)" />}
+              {v.url ? (
+                <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
+                  <View style={styles.play}>
+                    <Play size={16} color="#fff" fill="#fff" />
+                  </View>
+                </View>
+              ) : (
+                <View style={[StyleSheet.absoluteFill, styles.veil, styles.videoState]}>
+                  {v.failed ? (
+                    v.local ? (
+                      <IconButton label={t('حاول ترفعه تاني', 'Retry the upload')} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(v.key, v.local!)} />
+                    ) : null
+                  ) : (
+                    <>
+                      <ActivityIndicator color="#fff" />
+                      <Txt size={11} weight="medium" style={styles.white}>
+                        {progress !== undefined && progress < 1 ? `${fmtNum(Math.round(progress * 100), lang)}%` : t('بيتجهز…', 'Preparing…')}
+                      </Txt>
+                    </>
+                  )}
+                </View>
+              )}
+              {v.durationS ? (
+                <View style={styles.duration}>
+                  <Txt size={11} weight="medium" style={styles.white}>
+                    {fmtDuration(v.durationS, lang)}
+                  </Txt>
+                </View>
+              ) : null}
+              <View style={styles.tileActions}>
+                {i > 0 ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(`قدّم الفيديو ${fmtNum(n, 'ar')}`, `Move video ${n} earlier`)} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                    <ArrowUp size={14} color={colors.ink} />
+                  </Pressable>
+                ) : null}
+                {i < s.videos.length - 1 ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(`أخّر الفيديو ${fmtNum(n, 'ar')}`, `Move video ${n} later`)} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                    <ArrowDown size={14} color={colors.ink} />
+                  </Pressable>
+                ) : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={t(`امسح الفيديو ${fmtNum(n, 'ar')}`, `Remove video ${n}`)} onPress={() => remove(v.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Trash2 size={14} color={colors.danger} />
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </>
+  );
+}
+
 /** The 360° tour (phase 21): one panorama per room, both names, in the order the tour opens them. Optional. */
 function TourStep({
   s,
@@ -625,7 +784,8 @@ function ReviewStep({ s, errors, onEdit }: { s: ListingForm; errors: ListingFiel
     [2, t('التشطيب', 'Finishing'), s.finishing ? t(FINISHING_LABEL[s.finishing]) : '—'],
     [2, t('المميزات', 'Amenities'), s.features.map((f) => t(FEATURE_LABEL[f])).join('، ') || '—'],
     [3, t('الصور', 'Photos'), t(`${fmtNum(s.photos.filter((p) => p.url).length, 'ar')} صورة`, `${s.photos.filter((p) => p.url).length} photos`)],
-    [4, t('جولة ٣٦٠°', '360° tour'), s.tour.length ? t(`${fmtNum(s.tour.length, 'ar')} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? 'room' : 'rooms'}`) : t('مفيش', 'None')],
+    [4, t('الفيديوهات', 'Videos'), s.videos.length ? t(`${fmtNum(s.videos.length, 'ar')} فيديو`, `${s.videos.length} ${s.videos.length === 1 ? 'video' : 'videos'}`) : t('مفيش', 'None')],
+    [5, t('جولة ٣٦٠°', '360° tour'), s.tour.length ? t(`${fmtNum(s.tour.length, 'ar')} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? 'room' : 'rooms'}`) : t('مفيش', 'None')],
   ];
   return (
     <>
@@ -676,6 +836,11 @@ const styles = StyleSheet.create({
   tileActions: { position: 'absolute', bottom: 6, end: 6, flexDirection: 'row', gap: 6 },
   mini: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   roomCard: { borderRadius: radius.lg, borderWidth: 1, padding: 12, gap: 10 },
+  videoTile: { alignItems: 'center', justifyContent: 'center' },
+  videoState: { gap: 6 },
+  play: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  duration: { position: 'absolute', top: 6, start: 6, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: 'rgba(0,0,0,0.55)' },
+  white: { color: '#fff' },
   pano: { width: '100%', aspectRatio: 2, borderRadius: radius.md, overflow: 'hidden' },
   alert: { borderRadius: radius.md, padding: 12 },
   card: { borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 4 },

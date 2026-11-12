@@ -37,8 +37,9 @@ import type {
   ListingStats,
   PropertyStatus,
   UploadResponse,
+  VideoUploadResponse,
 } from '@maqar/shared';
-import { apiFetch } from '@/core/api/api';
+import { apiFetch, apiUpload } from '@/core/api/api';
 import type { PhotoPart } from '@/features/chat/photos';
 
 export type ListingsQuery = { status?: PropertyStatus; q?: string };
@@ -86,6 +87,10 @@ export function uploadPanoramaRequest(pano: PhotoPart) {
   form.append('pano', pano as unknown as Blob);
   return apiFetch<UploadResponse>('/uploads/panoramas', { method: 'POST', body: form });
 }
+
+/** One listing video from the phone's disk (phase 26); the server converts it, which can take minutes. */
+export const uploadVideoRequest = (uri: string, type: string, onProgress?: (sent: number) => void) =>
+  apiUpload<VideoUploadResponse>('/uploads/videos', { uri, field: 'video', type }, onProgress);
 
 // ---- Admin tools (phase 18) ----
 

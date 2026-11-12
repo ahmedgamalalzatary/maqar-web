@@ -156,7 +156,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}
       >
         <View>
-          <Gallery images={p.images} label={title} />
+          <Gallery images={p.images} videos={p.videos} label={title} />
           {p.tourRooms.length ? (
             <Pressable
               accessibilityRole="button"

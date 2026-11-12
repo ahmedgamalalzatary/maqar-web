@@ -20,6 +20,7 @@ import type {
   ListingStats,
   PropertyStatus,
   UploadResponse,
+  VideoUploadResponse,
 } from "@maqar/shared";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, useSession } from "./client";
@@ -128,6 +129,29 @@ export function uploadPanorama(pano: Blob): Promise<UploadResponse> {
   const form = new FormData();
   form.append("pano", pano, "pano.jpg");
   return api.request<UploadResponse>("/uploads/panoramas", { method: "POST", body: form });
+}
+
+/** One listing video (phase 26), with how much has been sent; the server then converts it, which can take minutes. */
+export function uploadVideo(file: File, onProgress?: (sent: number) => void): Promise<VideoUploadResponse> {
+  const form = new FormData();
+  form.append("video", file, file.name);
+  return api.upload<VideoUploadResponse>("/uploads/videos", form, onProgress);
+}
+
+/** A video file's length in seconds as the browser reads it, or undefined when it cannot (the server checks it anyway). */
+export function videoDuration(file: File): Promise<number | undefined> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    const done = (d: number | undefined) => {
+      URL.revokeObjectURL(url);
+      resolve(d);
+    };
+    v.preload = "metadata";
+    v.onloadedmetadata = () => done(Number.isFinite(v.duration) ? v.duration : undefined);
+    v.onerror = () => done(undefined);
+    v.src = url;
+  });
 }
 
 // ---- Admin tools (phase 18) ----

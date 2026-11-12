@@ -159,10 +159,11 @@ export class PropertiesService {
   }
 
   private async toDetail({ p, area, agent }: NonNullable<Awaited<ReturnType<PropertiesRepository['findApprovedById']>>>): Promise<PropertyDetail> {
-    const [images, features, tourRooms] = await Promise.all([
+    const [images, features, tourRooms, videos] = await Promise.all([
       this.repo.findImages(p.id),
       this.repo.findFeatures(p.id),
       this.repo.findTourRooms(p.id),
+      this.repo.findVideos(p.id),
     ]);
     return {
       ...toCard(p, area, images[0] ?? null, tourRooms.length > 0),
@@ -176,6 +177,7 @@ export class PropertiesService {
       images,
       views: p.views,
       tourRooms,
+      videos,
       location: p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null,
       agent: toAgent(agent),
     };

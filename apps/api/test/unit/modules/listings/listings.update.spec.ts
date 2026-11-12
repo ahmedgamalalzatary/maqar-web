@@ -44,6 +44,8 @@ const deps = (over: Record<string, unknown> = {}) => {
     imagesUsedElsewhere: vi.fn(async () => new Set<string>()),
     withTour: vi.fn(async () => new Set()),
     tour: vi.fn(async () => []),
+    videos: vi.fn(async () => []),
+    videosUsedElsewhere: vi.fn(async () => new Set<string>()),
     panosUsedElsewhere: vi.fn(async () => new Set<string>()),
     features: vi.fn(async () => []),
     ...Object.fromEntries(Object.entries(over).filter(([k]) => k !== 'update')),
