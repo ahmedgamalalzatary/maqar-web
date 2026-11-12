@@ -222,7 +222,7 @@ export class ListingsService {
     }
     // The write itself requires the old status and a still-active advisor, so a publish racing a
     // status change or a deactivation loses instead of overwriting.
-    await this.moveOrFail(id, 'approved', { status: 'approved', agentId: advisor, publishedAt: cur.publishedAt ? undefined : new Date() }, advisor);
+    await this.moveOrFail(id, 'approved', { status: 'approved', agentId: advisor, publishedAt: cur.publishedAt ? undefined : new Date(), closedAt: null }, advisor);
     // The publish committed: matching clients are told (OPS-08). Secondary, so it never fails this.
     const saved = await this.get(id);
     void this.notifications
@@ -252,7 +252,7 @@ export class ListingsService {
     const cur = await this.get(id);
     const to = closedStatusFor(cur.category);
     await this.movable(id, to, cur);
-    await this.moveOrFail(id, to, { status: to });
+    await this.moveOrFail(id, to, { status: to, closedAt: new Date() });
     return this.get(id);
   }
 

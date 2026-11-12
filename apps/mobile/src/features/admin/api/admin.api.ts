@@ -1,4 +1,6 @@
 import type {
+  AdminOverview,
+  OverviewRange,
   AdminChatDetail,
   AdminChatsPage,
   AdminReportItem,
@@ -166,3 +168,7 @@ export const unblockChatRequest = (id: number) => apiFetch<AdminChatDetail>(`/ad
 export const getOpenReports = (signal?: AbortSignal) => apiFetch<AdminReportItem[]>('/admin/reports?open=true', { signal });
 
 export const resolveReportRequest = (id: number, outcome: ReportOutcome) => apiFetch<ChatReport>(`/admin/reports/${id}`, { method: 'PATCH', body: { outcome } });
+
+// ---- Overview (phase 25) ----
+
+export const getOverview = (days: OverviewRange, signal?: AbortSignal) => apiFetch<AdminOverview>(`/admin/overview?days=${days}`, { signal });

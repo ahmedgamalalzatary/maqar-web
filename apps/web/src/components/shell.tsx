@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, CalendarCheck, LogOut, MessagesSquare, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
+import { Building2, CalendarCheck, LayoutDashboard, LogOut, MessagesSquare, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -63,7 +63,8 @@ function Header({ name }: { name: string }) {
   const dark = useDark();
   const toggleTheme = () => setDark(!dark);
   const nav = [
-    { href: "/", label: t("العقارات", "Listings"), icon: Building2, on: path === "/" || path.startsWith("/listing") },
+    { href: "/", label: t("نظرة عامة", "Overview"), icon: LayoutDashboard, on: path === "/" },
+    { href: "/listings/", label: t("العقارات", "Listings"), icon: Building2, on: path.startsWith("/listing") },
     { href: "/new/", label: t("أضف عقار", "Add a listing"), icon: PlusSquare, on: path.startsWith("/new") },
     { href: "/agents/", label: t("المسؤولين", "Agents"), icon: UserCog, on: path.startsWith("/agent") },
     { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
@@ -75,7 +76,7 @@ function Header({ name }: { name: string }) {
   ];
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 2xl:max-w-none">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "Maqar admin")}>
           <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
           <span className="hidden text-sm font-semibold sm:inline">{t("لوحة الإدارة", "Admin")}</span>

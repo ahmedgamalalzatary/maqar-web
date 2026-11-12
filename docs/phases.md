@@ -67,7 +67,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 22 | Admin: clients and admins | 🟨 | decided |
 | 23 | Admin: viewings | 🟨 | decided |
 | 24 | Admin: chats, report and block | 🟨 | decided |
-| 25 | Admin: overview | ⬜ | decided |
+| 25 | Admin: overview | 🟨 | decided |
 
 Phases 21–25 were added on 2026-11-12 after a review of the admin tools; they are built before Phase 20's store submission.
 
@@ -922,3 +922,11 @@ Contract §11, §12.
 **Tests:** each count and its date range on seeded data, Cairo day buckets, won leads this month against the target, admin-only access; the page's main flow.
 
 **Done when** the overview's numbers match what happened in the app over the chosen range.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
+- Migration `0020`: `properties.closed_at`, set when a listing closes as sold or rented and cleared when it is published again, so "closed in the range" can be counted. Listings closed before this phase have none.
+- The range is the last 7, 30 or 90 Cairo days, today included, as UTC instants (summer time handled); the daily chart buckets by Cairo day. Unit tests cover the window and the buckets.
+- What each number means: listings by status now, published (first publish) and closed in the range; clients now and new in the range; leads made in the range by their current stage, and leads won in the range; viewings booked in the range, completed (by their time), cancelled (when cancelled), and confirmed in the next 7 days; conversations started in the range, messages sent, and open reports. Per advisor: live listings and open leads now, viewings booked in the range and not cancelled, and leads won this Cairo month against the monthly target.
+- App: Overview is the admin's first tab and Listings the second (the tabs are Overview, Listings, Agents, Leads, More); open reports link to Chats. Web: the dashboard's home is the overview and Listings moved to `/listings/` (a link there already existed and now works).
+- Checked by hand on the web dashboard against the local API, at 1280, 1536, 1600 and 1920 px wide: no sideways scroll.
+- Tests: API e2e `admin-overview.e2e-spec.ts` (2, counting each number's change after real actions), unit tests `overview/window.spec.ts` (4), mobile UI test `overview.test.tsx` (2).

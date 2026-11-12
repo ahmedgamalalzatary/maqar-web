@@ -28,7 +28,7 @@ export function AdminListingScreen({ id }: { id: number }) {
   const insets = useSafeAreaInsets();
   const listing = useAdminListing(id);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/admin'));
+  const back = () => (router.canGoBack() ? router.back() : router.replace('/admin/listings'));
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>

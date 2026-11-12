@@ -1,4 +1,4 @@
-import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, ReportOutcome, ViewingWhen } from '@maqar/shared';
+import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, OverviewRange, ReportOutcome, ViewingWhen } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAdminRequest,
@@ -11,6 +11,7 @@ import {
   resolveReportRequest,
   unblockChatRequest,
   getAdminViewings,
+  getOverview,
   getClient,
   getClients,
   updateAdminRequest,
@@ -128,4 +129,10 @@ export function useResolveReport() {
 export function useUnblockChat(id: number) {
   const refresh = useRefresh();
   return useMutation({ mutationFn: () => unblockChatRequest(id), onSuccess: refresh });
+}
+
+/** Phase 25: the business at a glance for the last 7, 30 or 90 days. */
+export function useOverview(days: OverviewRange) {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'overview', days], queryFn: ({ signal }) => getOverview(days, signal), enabled: adminId !== null, placeholderData: (prev) => prev });
 }

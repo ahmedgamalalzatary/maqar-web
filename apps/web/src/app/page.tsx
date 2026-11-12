@@ -1,5 +1,5 @@
-import { ListingsPage } from "@/components/listings-page";
+import { OverviewPage } from "@/components/overview-page";
 
 export default function Page() {
-  return <ListingsPage />;
+  return <OverviewPage />;
 }

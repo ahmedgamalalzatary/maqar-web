@@ -23,7 +23,7 @@ export function ListingPage() {
   const Back = lang === "ar" ? ArrowRight : ArrowLeft;
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/" className="inline-flex w-fit items-center gap-2 text-sm text-ink-2 hover:text-ink">
+      <Link href="/listings/" className="inline-flex w-fit items-center gap-2 text-sm text-ink-2 hover:text-ink">
         <Back className="size-4" aria-hidden />
         {t("كل العقارات", "All listings")}
       </Link>
