@@ -952,3 +952,18 @@ Contract §8.6, §9.2, §14.
 - The upload goes to a temp file, never into memory; the app sends from disk natively (`File.upload`), the web with `XMLHttpRequest` for progress.
 - Local development and tests use ffmpeg from dev packages (`@ffmpeg-installer/ffmpeg`, `@ffprobe-installer/ffprobe`); `FFMPEG_PATH` and `FFPROBE_PATH` override.
 - Videos uploaded but never saved on a listing stay on disk, as photos and panoramas do.
+
+## Phase 27: Admin: reports
+
+Contract §11, §13, §14.
+
+**Shared:** the catalogue of reports (id, group, titles, which filters apply, whether it has a range), the range rules (presets, Cairo days, at most 366 days, never in the future, the previous period of the same length), and one response shape every report uses: totals with the previous period, charts (per day, bars, week-by-hour), and tables of typed cells with links. Cell formatting and the CSV file (UTF-8 with a byte-order mark so spreadsheets read Arabic; raw numbers, ISO dates) live here too, so the app and the web show and export the same thing.
+
+**API:** `GET /admin/reports/:id?from&to&agentId&areaId&category` for the eleven reports in §11. Migration `0022`: `viewings.cancelled_by` (client, agent or admin, set on every cancel; a suspension's cancels count as admin) and `leads.lost_at` (set when a lead moves to lost, cleared when it leaves it).
+
+**Admin UI:** Reports in the web menu (`/reports/` and `/report/?id=`) and under More in the app: the reports by group, then one report with its range, filters, totals with the change from the previous period, charts, tables (sortable on the web; cards on the phone) with links to the listing, advisor, client or chat, CSV export (download on the web, share from the app), and print on the web.
+
+**Tests:** the range rules, cells and CSV (shared unit tests); each report's numbers after real actions, filters, the previous period, validation and admin-only access (API e2e); the reports hub, one report's range and filters, and the export (app and web).
+
+**Done when** an admin can answer, from Reports alone, what sold and who sold it, how each advisor is doing, where leads come from and what they turn into, what the listings lack and which nobody wants, where demand is, and how quickly clients get answers.
+
