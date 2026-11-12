@@ -19,7 +19,8 @@ export function firstReplies(threads: ThreadFact[], messages: MessageFact[], w: 
     const ms = (byThread.get(t.id) ?? []).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
     const asked = ms.find((m) => m.sender === 'client');
     if (!asked) continue;
-    const answer = ms.find((m) => m.sender === 'agent' && m.createdAt >= asked.createdAt);
+    // The automatic out-of-hours reply is not an answer from the advisor.
+    const answer = ms.find((m) => m.sender === 'agent' && !m.auto && m.createdAt >= asked.createdAt);
     out.push({ threadId: t.id, agentId: t.agentId, minutes: answer ? (answer.createdAt.getTime() - asked.createdAt.getTime()) / 60_000 : null });
   }
   return out;

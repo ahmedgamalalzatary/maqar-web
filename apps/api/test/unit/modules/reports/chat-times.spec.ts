@@ -32,6 +32,20 @@ describe('first reply times (phase 27)', () => {
     ]);
   });
 
+  // Phone check 2026-11-12: out of hours the chat answers itself ("we'll reply in the morning").
+  it('does not count the automatic out-of-hours reply as the advisor answering', () => {
+    const out = firstReplies(
+      [thread(1, '20:00')],
+      [
+        { threadId: 1, sender: 'client', createdAt: at('21:30') },
+        { threadId: 1, sender: 'agent', createdAt: at('21:30'), auto: true },
+        { threadId: 1, sender: 'agent', createdAt: at('23:00') },
+      ],
+      w,
+    );
+    expect(out).toEqual([{ threadId: 1, agentId: 3, minutes: 90 }]);
+  });
+
   it('counts only conversations started in the range', () => {
     const out = firstReplies([thread(1, '09:00'), { ...thread(2, '09:00'), createdAt: at('09:00', '2026-11-09') }], [{ threadId: 2, sender: 'client', createdAt: at('09:00') }], w);
     expect(out).toEqual([]);

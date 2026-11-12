@@ -65,7 +65,11 @@ export type ViewingFact = {
 };
 
 export type ThreadFact = { id: number; clientId: number; agentId: number; propertyId: number; createdAt: Date; blockedAt: Date | null; blockedBy: string | null };
-export type MessageFact = { threadId: number; sender: 'client' | 'agent'; createdAt: Date };
+/** `auto`: the out-of-hours reply the chat sends by itself; it is not the advisor answering. */
+export type MessageFact = { threadId: number; sender: 'client' | 'agent'; createdAt: Date; auto?: boolean };
+
+/** True for the chat's automatic out-of-hours reply (`body.auto`). */
+const isAuto = sql<number>`coalesce(${chatMessages.body}->>'$.auto', '') = 'true'`;
 
 /**
  * The rows behind the admin's reports (phase 27). Each loader takes what the range and the
@@ -175,12 +179,12 @@ export class ReportsRepository {
     const ids = threads.map((t) => t.id);
     const messages = ids.length
       ? await this.db
-          .select({ threadId: chatMessages.threadId, sender: chatMessages.sender, createdAt: chatMessages.createdAt })
+          .select({ threadId: chatMessages.threadId, sender: chatMessages.sender, createdAt: chatMessages.createdAt, auto: isAuto })
           .from(chatMessages)
           .where(inArray(chatMessages.threadId, ids))
           .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id))
       : [];
-    return { threads, messages };
+    return { threads, messages: messages.map((m) => ({ ...m, auto: Number(m.auto) === 1 })) };
   }
 
   /** Messages sent since `since` (any conversation), by sender. */
@@ -192,9 +196,14 @@ export class ReportsRepository {
       .where(gte(chatMessages.createdAt, since));
   }
 
-  /** Open conversations whose last message is the client's: they wait for a reply. */
+  /**
+   * Open conversations whose last message is the client's: they wait for a reply. The automatic
+   * out-of-hours reply does not count as one, so its time and sender are skipped.
+   */
   async waiting() {
-    const last = sql<string>`(select m.sender from ${chatMessages} m where m.thread_id = ${chatThreads.id} order by m.created_at desc, m.id desc limit 1)`;
+    const human = sql.raw(`coalesce(m.body->>'$.auto', '') <> 'true'`);
+    const last = sql<string>`(select m.sender from ${chatMessages} m where m.thread_id = ${chatThreads.id} and ${human} order by m.created_at desc, m.id desc limit 1)`;
+    const lastAt = sql<Date>`(select m.created_at from ${chatMessages} m where m.thread_id = ${chatThreads.id} and ${human} order by m.created_at desc, m.id desc limit 1)`;
     const rows = await this.db
       .select({
         id: chatThreads.id,
@@ -202,13 +211,16 @@ export class ReportsRepository {
         agentId: chatThreads.agentId,
         propertyId: chatThreads.propertyId,
         lastMessageAt: chatThreads.lastMessageAt,
+        lastHumanAt: lastAt,
         last,
         clientName: users.name,
       })
       .from(chatThreads)
       .innerJoin(users, eq(users.id, chatThreads.clientId))
       .where(and(isNotNull(chatThreads.lastMessageAt), isNull(chatThreads.blockedAt), isNull(users.deletedAt)));
-    return rows.filter((r) => r.last === 'client').map(({ last: _l, ...r }) => ({ ...r, lastMessageAt: r.lastMessageAt! }));
+    return rows
+      .filter((r) => r.last === 'client')
+      .map(({ last: _l, lastHumanAt, ...r }) => ({ ...r, lastMessageAt: lastHumanAt ? new Date(lastHumanAt) : r.lastMessageAt! }));
   }
 
   chatReports(since: Date) {

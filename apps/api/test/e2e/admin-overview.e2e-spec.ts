@@ -70,6 +70,9 @@ describe('Admin overview (e2e)', () => {
     await http().patch(`/v1/viewings/${v2.id}`).set(as(a.accessToken)).send({ action: 'cancel' }).expect(200);
     const t = (await http().post('/v1/chats').set(as(b.accessToken)).send({ propertyId: omarHomes[2]!.id }).expect(201)).body as ChatThread;
     await http().post(`/v1/chats/${t.id}/messages`).set(as(b.accessToken)).send({ kind: 'text', text: 'Hi' }).expect(201);
+    // Out of the advisor's hours (after 21:00 Cairo) the chat also gets the automatic reply, so
+    // count what the chat really holds instead of assuming one message.
+    const sent = ((await http().get(`/v1/chats/${t.id}/messages`).set(as(b.accessToken)).expect(200)).body as { items: unknown[] }).items.length;
     await http().post(`/v1/chats/${t.id}/report`).set(as(omar)).send({ reason: 'spam' }).expect(201);
     // Omar wins b's lead.
     const leads = (await http().get('/v1/agent/leads').set(as(omar)).expect(200)).body as { id: number; name: string }[];
@@ -96,7 +99,7 @@ describe('Admin overview (e2e)', () => {
     expect(after.viewings.cancelled - before.viewings.cancelled).toBe(1);
     expect(after.viewings.next7Days - before.viewings.next7Days).toBe(1);
     expect(after.chats.new - before.chats.new).toBe(1);
-    expect(after.chats.messages - before.chats.messages).toBe(1);
+    expect(after.chats.messages - before.chats.messages).toBe(sent);
     expect(after.chats.openReports - before.chats.openReports).toBe(1);
     expect(after.listings.published - before.listings.published).toBe(1);
     expect(after.listings.closed - before.listings.closed).toBe(1);

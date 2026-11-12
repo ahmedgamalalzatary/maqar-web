@@ -995,4 +995,9 @@ The owner's list after using the app in the browser, checked against the store r
 
 **Tests:** API e2e (sign-up keeps a valid phone, refuses a bad one); shared unit (`readMobile`); mobile unit (`parseYears`, `osmEmbedUrl`); mobile UI (sign-up phone, typed years, compare without views, the footer, the typed size range, the Home preferences section).
 
-**Status (2026-11-12): built, not deployed.** Needs an API deploy for the sign-up phone, and a new app build for the rest on phones.
+**Status (2026-11-12): deployed and checked on the phone, with Phases 21–27.** Deployed `7f1a03e` (the server was at `5fd13b6`, before Phase 21: migrations up to `0022`, ffmpeg in the image, the API at 640 MB, the video route in nginx). APK `7f1a03e` checked on an Android 13 phone (Poco F3) as admin, client and advisor: the overview, every admin list (clients, admins, viewings, chats), the reports, the 7-step listing form (tour and videos), the sign-up phone, Home preferences, the typed years and size range, compare without views, the account footer, and a real chat (client on the PC, advisor on the phone) closed by the client and seen closed by the admin. Android shows no map until `GOOGLE_MAPS_API_KEY` is set (Directions works).
+
+Fixed after the phone check:
+- The calculator: typing "15" passed through "1" and showed a 1-year plan; a number above the limit now counts as the limit.
+- The compare bar hid the end of tab pages (the account footer): `Screen` keeps room under the page while it shows.
+- Reports: the automatic out-of-hours chat reply counted as the advisor answering (first-reply times looked instant, and the chat left "waiting for a reply"). It is skipped now. Two e2e tests failed after 21:00 Cairo for the same reason.

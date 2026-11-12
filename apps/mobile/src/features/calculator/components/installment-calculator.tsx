@@ -53,8 +53,9 @@ export function InstallmentCalculator({
   const downShare = plan.total > 0 ? (plan.down / plan.total) * 100 : 0;
   const changeYears = (text: string) => {
     setYearsText(text);
-    const n = parseYears(text, maxYears);
-    if (n !== undefined) setLastYears(n);
+    // Any whole number counts, capped at the limit: "15" must not leave the "1" typed on the way.
+    const n = parseYears(text, 99);
+    if (n !== undefined) setLastYears(Math.min(n, maxYears));
   };
   const cream = { color: colors.cream };
   const faded = { color: colors.cream, opacity: 0.7 };
