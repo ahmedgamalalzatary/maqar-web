@@ -12,6 +12,7 @@ jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
 const { publishedAt: _p, match: _m, ...card } = makeCard({ id: 7, titleAr: 'شقة على الحديقة', titleEn: 'Garden flat', category: 'sale' });
 const listing = (over: Partial<AdminListing> = {}): AdminListing => ({
   ...card,
+  tourRooms: [],
   status: 'approved',
   publishedAt: '2026-11-01T10:00:00.000Z',
   createdAt: '2026-11-01T10:00:00.000Z',

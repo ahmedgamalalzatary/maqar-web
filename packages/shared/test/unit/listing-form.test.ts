@@ -1,5 +1,5 @@
-import { emptyListingForm, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
-import type { AdminListing } from '../../src/listings.js';
+import { LISTING_STEPS, emptyListingForm, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
+import { type AdminListing, panoramaProblem } from '../../src/listings.js';
 
 const filled = (over: Partial<ListingForm> = {}): ListingForm => ({
   ...emptyListingForm(),
@@ -70,6 +70,15 @@ describe('Listing form steps (contract §9.2)', () => {
     expect(listingStepErrors('photos', filled({ photos: [{ key: 'b', local: 'file:///b.jpg' }] }))).toEqual(['photos']);
     expect(listingStepErrors('photos', filled())).toEqual([]);
   });
+
+  it('the 360° tour may be empty, but each room needs both names and an uploaded panorama', () => {
+    const room = { key: 'r', nameAr: 'الصالة', nameEn: 'Living room', url: '/uploads/tours/r.jpg' };
+    expect(LISTING_STEPS).toEqual(['type', 'location', 'details', 'photos', 'tour', 'review']);
+    expect(listingStepErrors('tour', filled())).toEqual([]);
+    expect(listingStepErrors('tour', filled({ tour: [room] }))).toEqual([]);
+    expect(listingStepErrors('tour', filled({ tour: [{ ...room, nameEn: ' ' }] }))).toEqual(['tour']);
+    expect(listingStepErrors('tour', filled({ tour: [{ ...room, url: undefined, local: 'file:///r.jpg' }] }))).toEqual(['tour']);
+  });
 });
 
 describe('listingBodyOf', () => {
@@ -113,7 +122,23 @@ describe('listingBodyOf', () => {
       images: ['/uploads/listings/b.jpg', '/uploads/listings/a.jpg'],
       ownerName: 'Hany',
       ownerPhone: null,
+      tour: [],
     });
+  });
+
+  it('sends the tour in order with trimmed names', () => {
+    const body = listingBodyOf(
+      filled({
+        tour: [
+          { key: 'k', nameAr: ' المطبخ ', nameEn: 'Kitchen ', url: '/uploads/tours/k.jpg' },
+          { key: 'l', nameAr: 'الصالة', nameEn: 'Living room', url: '/uploads/tours/l.jpg' },
+        ],
+      }),
+    );
+    expect(body.tour).toEqual([
+      { nameAr: 'المطبخ', nameEn: 'Kitchen', pano: '/uploads/tours/k.jpg' },
+      { nameAr: 'الصالة', nameEn: 'Living room', pano: '/uploads/tours/l.jpg' },
+    ]);
   });
 
   it('sends the owner’s phone in the form the server takes', () => {
@@ -148,6 +173,7 @@ it('listingFormOf fills the form back from a saved listing', () => {
     images: ['/uploads/seed/p1.jpg'],
     ownerName: null,
     ownerPhone: '+20100',
+    tourRooms: [{ id: 7, nameAr: 'الصالة', nameEn: 'Living room', pano: '/uploads/seed/pano/a.jpg' }],
   } as unknown as AdminListing;
   expect(listingFormOf(l)).toMatchObject({
     category: 'rent',
@@ -162,5 +188,15 @@ it('listingFormOf fills the form back from a saved listing', () => {
     ownerName: '',
     ownerPhone: '+20100',
     downPct: '',
+    tour: [{ nameAr: 'الصالة', nameEn: 'Living room', url: '/uploads/seed/pano/a.jpg' }],
   });
+});
+
+it('panoramaProblem: a tour photo is 2:1 within 1% and at least 4096×2048', () => {
+  expect(panoramaProblem(4096, 2048)).toBeNull();
+  expect(panoramaProblem(8192, 4096)).toBeNull();
+  expect(panoramaProblem(4100, 2049)).toBeNull();
+  expect(panoramaProblem(4096, 3072)).toBe('ratio');
+  expect(panoramaProblem(4096, 0)).toBe('ratio');
+  expect(panoramaProblem(2048, 1024)).toBe('small');
 });

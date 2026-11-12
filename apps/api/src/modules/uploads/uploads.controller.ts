@@ -9,7 +9,10 @@ import { UploadsService } from './uploads.service.js';
 /** Photos up to 10 MB before resizing (nginx takes 12 MB). */
 export const UPLOAD_BYTES = 10 * 1024 * 1024;
 
-/** Router for `/v1/uploads` (contract §14): listing photos, for the admin listing form. */
+/** 360° panoramas up to 30 MB before scaling (nginx takes 32 MB on that route). */
+export const PANO_BYTES = 30 * 1024 * 1024;
+
+/** Router for `/v1/uploads` (contract §14): listing photos and 360° panoramas, for the admin listing form. */
 @ApiTags('admin')
 @ApiBearerAuth()
 @Roles('admin')
@@ -32,5 +35,21 @@ export class UploadsController {
   upload(@UploadedFile() file?: { buffer: Buffer }): Promise<UploadResponse> {
     if (!file) throw new BadRequestException('Add a photo (JPEG, PNG, WebP or HEIC) in the photo field');
     return this.uploads.savePhoto(file.buffer);
+  }
+
+  /** One 360° panorama in the `pano` field: a 2:1 JPEG of at least 4096×2048 (phase 21). Returns its path, for the listing's `tour`. */
+  @Post('panoramas')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { pano: { type: 'string', format: 'binary' } } } })
+  @ApiPayloadTooLargeResponse({ description: 'Over 30 MB' })
+  @UseInterceptors(
+    FileInterceptor('pano', {
+      limits: { fileSize: PANO_BYTES, files: 1 },
+      fileFilter: (_req, file, done) => done(null, file.mimetype === 'image/jpeg'),
+    }),
+  )
+  uploadPanorama(@UploadedFile() file?: { buffer: Buffer }): Promise<UploadResponse> {
+    if (!file) throw new BadRequestException('Add a panorama (a JPEG) in the pano field');
+    return this.uploads.savePanorama(file.buffer);
   }
 }

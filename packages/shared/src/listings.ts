@@ -1,4 +1,4 @@
-import type { PropertyCard, Page } from './api.js';
+import type { PropertyCard, Page, TourRoom } from './api.js';
 import type { Category, Feature, Finishing, PropertyStatus, PropertyType } from './enums.js';
 import { fmtNum } from './format.js';
 import { type Bi, PROPERTY_TYPE_LABEL } from './labels.js';
@@ -9,6 +9,22 @@ import { type Bi, PROPERTY_TYPE_LABEL } from './labels.js';
 
 /** The most photos one listing keeps. */
 export const LISTING_IMAGES_MAX = 20;
+
+/** The most rooms one 360° tour has (phase 21). */
+export const TOUR_ROOMS_MAX = 12;
+
+/** Panoramas are stored at exactly this size; smaller ones are refused (contract §8.6). */
+export const PANO_SIZE = { width: 4096, height: 2048 } as const;
+
+/** Why a photo of this size cannot be a tour panorama, or null when it can: 2:1 within 1%, at least 4096×2048. */
+export function panoramaProblem(width: number, height: number): 'ratio' | 'small' | null {
+  if (!height || Math.abs(width / height - 2) > 0.02) return 'ratio';
+  if (width < PANO_SIZE.width || height < PANO_SIZE.height) return 'small';
+  return null;
+}
+
+/** One room of a tour as the listing form sends it: both names and a path from `POST /uploads/panoramas`. */
+export type TourRoomBody = { nameAr: string; nameEn: string; pano: string };
 
 export const PROPERTY_STATUS_LABEL: Record<PropertyStatus, Bi> = {
   draft: { ar: 'مسودة', en: 'Draft' },
@@ -93,6 +109,8 @@ export type ListingBody = {
   /** Who the home belongs to. Admins only ever see it. */
   ownerName?: string | null;
   ownerPhone?: string | null;
+  /** The 360° tour's rooms in order (phase 21). Left out keeps the tour; an empty list removes it. */
+  tour?: TourRoomBody[];
 };
 
 /** The advisor a listing is assigned to, as the admin tools show them. */
@@ -126,6 +144,8 @@ export type AdminListing = AdminListingItem & {
   features: Feature[];
   images: string[];
   location: { lat: number; lng: number } | null;
+  /** The 360° tour's rooms in order; empty when it has none (phase 21). */
+  tourRooms: TourRoom[];
 };
 
 /** `POST /admin/listings/:id/publish`. Without an advisor, the one with the fewest live listings is picked. */

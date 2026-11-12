@@ -39,6 +39,7 @@ const EXPECTED: Record<string, string> = {
   'GET /admin/listings/:id/stats': 'admin',
   'GET /admin/listings/:id/interested': 'admin',
   'POST /uploads': 'admin',
+  'POST /uploads/panoramas': 'admin',
 
   'GET /agent/today': 'agent',
   'GET /agent/leads': 'agent',

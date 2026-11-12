@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type AdminAgentOption, applyPriceChange, type Feature, type PropertyStatus } from '@maqar/shared';
+import { type AdminAgentOption, applyPriceChange, type Feature, type PropertyStatus, type TourRoom, type TourRoomBody } from '@maqar/shared';
 import { and, asc, count, desc, eq, inArray, like, ne, or, type SQL, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';
@@ -35,11 +35,12 @@ export class ListingsRepository {
   }
 
   /** Adds the listing with its photos (in order, the first is the cover) and amenities. */
-  async insert(row: NewPropertyRow, images: string[], features: Feature[]): Promise<number> {
+  async insert(row: NewPropertyRow, images: string[], features: Feature[], tour: TourRoomBody[] = []): Promise<number> {
     return this.db.transaction(async (tx) => {
       const [{ id }] = await tx.insert(properties).values(row).$returningId();
       await tx.insert(propertyImages).values(images.map((url, sort) => ({ propertyId: id, url, sort })));
       if (features.length) await tx.insert(propertyFeatures).values(features.map((feature) => ({ propertyId: id, feature })));
+      if (tour.length) await tx.insert(tourRooms).values(tour.map((r, sort) => ({ propertyId: id, ...r, sort })));
       return id;
     });
   }
@@ -54,9 +55,14 @@ export class ListingsRepository {
     images?: string[],
     features?: Feature[],
     price?: { next: number; by: number; reset?: boolean },
+    tour?: TourRoomBody[],
   ): Promise<ChangedListing | undefined> {
     return this.db.transaction(async (tx) => {
       if (Object.keys(set).length) await tx.update(properties).set(set).where(eq(properties.id, id));
+      if (tour) {
+        await tx.delete(tourRooms).where(eq(tourRooms.propertyId, id));
+        if (tour.length) await tx.insert(tourRooms).values(tour.map((r, sort) => ({ propertyId: id, ...r, sort })));
+      }
       if (images) {
         await tx.delete(propertyImages).where(eq(propertyImages.propertyId, id));
         await tx.insert(propertyImages).values(images.map((url, sort) => ({ propertyId: id, url, sort })));
@@ -143,6 +149,25 @@ export class ListingsRepository {
   async features(id: number): Promise<Feature[]> {
     const rows = await this.db.select({ f: propertyFeatures.feature }).from(propertyFeatures).where(eq(propertyFeatures.propertyId, id));
     return rows.map((r) => r.f);
+  }
+
+  /** The tour's rooms in order (phase 21). */
+  async tour(id: number): Promise<TourRoom[]> {
+    return this.db
+      .select({ id: tourRooms.id, nameAr: tourRooms.nameAr, nameEn: tourRooms.nameEn, pano: tourRooms.pano })
+      .from(tourRooms)
+      .where(eq(tourRooms.propertyId, id))
+      .orderBy(asc(tourRooms.sort), asc(tourRooms.id));
+  }
+
+  /** Which of these panoramas another listing's tour still uses, so a removed one is not deleted. */
+  async panosUsedElsewhere(urls: string[], exceptId: number): Promise<Set<string>> {
+    if (!urls.length) return new Set();
+    const rows = await this.db
+      .select({ url: tourRooms.pano })
+      .from(tourRooms)
+      .where(and(inArray(tourRooms.pano, urls), ne(tourRooms.propertyId, exceptId)));
+    return new Set(rows.map((r) => r.url));
   }
 
   async withTour(ids: number[]): Promise<Set<number>> {

@@ -16,19 +16,22 @@ import {
   type ListingField,
   type ListingForm,
   type ListingFormPhoto,
+  type ListingFormRoom,
   type ListingStep,
   listingBodyOf,
   listingFormErrors,
   listingFormOf,
   listingStepErrors,
   readWholeNumber,
+  panoramaProblem,
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
+  TOUR_ROOMS_MAX,
 } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw, Star, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ImagePlus, Rotate3d, RotateCcw, Star, Trash2 } from 'lucide-react-native';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
@@ -45,7 +48,8 @@ import { type PhotoPart, preparePhotos } from '@/features/chat/photos';
 import * as SecureStore from 'expo-secure-store';
 import { ToggleChip } from '@/features/listings/components/chips';
 import { useAreas } from '@/features/listings/hooks/use-listings';
-import { uploadPhotoRequest } from '../api/admin.api';
+import { uploadPanoramaRequest, uploadPhotoRequest } from '../api/admin.api';
+import { preparePanorama } from '../panorama';
 import { useAdminListing, usePublishListing, useSaveListing } from '../hooks/use-admin';
 
 const STEP_LABEL: Record<ListingStep, Bi> = {
@@ -53,6 +57,7 @@ const STEP_LABEL: Record<ListingStep, Bi> = {
   location: { ar: 'المكان', en: 'Location' },
   details: { ar: 'التفاصيل', en: 'Details' },
   photos: { ar: 'الصور', en: 'Photos' },
+  tour: { ar: 'جولة ٣٦٠°', en: '360° tour' },
   review: { ar: 'المراجعة', en: 'Review' },
 };
 
@@ -69,6 +74,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   planYears: { ar: 'من ١ لـ ٣٠ سنة', en: '1 to 30 years' },
   ownerPhone: { ar: 'رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨', en: 'A phone number in digits, e.g. 01012345678' },
   photos: { ar: 'ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع', en: 'Add at least one photo, and wait for the uploads' },
+  tour: { ar: 'كل غرفة محتاجة اسمها بالعربي والإنجليزي، واستنى لحد ما الصور تترفع', en: 'Each room needs its Arabic and English name, and wait for the uploads' },
 };
 
 const thisYear = new Date().getFullYear();
@@ -76,7 +82,7 @@ const YEARS = Array.from({ length: 7 }, (_, i) => thisYear + i);
 
 let photoKey = 0;
 
-/** `/admin/new` and `/admin/listing/:id/edit`: the listing form in five steps (contract §9.2). */
+/** `/admin/new` and `/admin/listing/:id/edit`: the listing form in steps (contract §9.2). */
 export function ListingFormScreen({ id }: { id?: number }) {
   const t = useT();
   const listing = useAdminListing(id);
@@ -205,6 +211,7 @@ function Form({ saved }: { saved?: AdminListing }) {
         {current === 'location' ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === 'details' ? <DetailsStep s={s} set={set} err={err} /> : null}
         {current === 'photos' ? <PhotosStep s={s} setS={setS} parts={parts} setParts={setParts} err={err} /> : null}
+        {current === 'tour' ? <TourStep s={s} setS={setS} parts={parts} setParts={setParts} err={err} /> : null}
         {current === 'review' ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </ScrollView>
 
@@ -466,6 +473,141 @@ function PhotosStep({
   );
 }
 
+/** The 360° tour (phase 21): one panorama per room, both names, in the order the tour opens them. Optional. */
+function TourStep({
+  s,
+  setS,
+  parts,
+  setParts,
+  err,
+}: {
+  s: ListingForm;
+  setS: React.Dispatch<React.SetStateAction<ListingForm>>;
+  parts: Record<string, PhotoPart>;
+  setParts: React.Dispatch<React.SetStateAction<Record<string, PhotoPart>>>;
+  err: StepProps['err'];
+}) {
+  const t = useT();
+  const { colors } = useTheme();
+  const patch = (key: string, p: Partial<ListingFormRoom>) => setS((cur) => ({ ...cur, tour: cur.tour.map((x) => (x.key === key ? { ...x, ...p } : x)) }));
+
+  const upload = async (key: string, part: PhotoPart) => {
+    patch(key, { failed: false });
+    try {
+      const { url } = await uploadPanoramaRequest(part);
+      patch(key, { url });
+    } catch {
+      patch(key, { failed: true });
+    }
+  };
+  const add = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
+    const asset = res.canceled ? undefined : res.assets?.[0];
+    if (!asset) return;
+    const problem = panoramaProblem(asset.width, asset.height);
+    if (problem) {
+      return toast.show({
+        title:
+          problem === 'ratio'
+            ? t('الصورة دي مش ٣٦٠°: لازم عرضها ضعف طولها (٢:١)', 'That is not a 360° photo: it must be twice as wide as it is high (2:1)')
+            : t('الصورة صغيرة: لازم ٤٠٩٦×٢٠٤٨ على الأقل', 'That photo is too small: it must be at least 4096×2048'),
+        tone: 'danger',
+      });
+    }
+    const part = await preparePanorama(asset).catch(() => null);
+    if (!part) return toast.show({ title: t('مقدرناش نجهز الصورة', 'We couldn’t prepare the photo'), tone: 'danger' });
+    const room: ListingFormRoom = { key: `t${++photoKey}`, local: asset.uri, nameAr: '', nameEn: '' };
+    setS((cur) => ({ ...cur, tour: [...cur.tour, room] }));
+    setParts((cur) => ({ ...cur, [room.key]: part }));
+    await upload(room.key, part);
+  };
+  const remove = (key: string) => {
+    setS((cur) => ({ ...cur, tour: cur.tour.filter((r) => r.key !== key) }));
+    setParts((cur) => {
+      if (!(key in cur)) return cur;
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+  };
+  const move = (i: number, by: -1 | 1) =>
+    setS((cur) => {
+      const tour = [...cur.tour];
+      const [r] = tour.splice(i, 1);
+      tour.splice(i + by, 0, r!);
+      return { ...cur, tour };
+    });
+
+  return (
+    <>
+      <Txt size={13} color="ink2">
+        {t(
+          'اختياري. صورة ٣٦٠° لكل غرفة (عرضها ضعف طولها، ٤٠٩٦×٢٠٤٨ على الأقل). الجولة بتفتح على أول غرفة.',
+          'Optional. One 360° photo per room (twice as wide as high, at least 4096×2048). The tour opens on the first room.',
+        )}
+      </Txt>
+      {s.tour.length < TOUR_ROOMS_MAX ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('ضيف غرفة', 'Add a room')}
+          onPress={() => void add()}
+          style={({ pressed }) => [styles.add, { borderColor: colors.accent, backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Rotate3d size={22} color={colors.accentInk} />
+          <Txt weight="medium" style={{ color: colors.accentInk }}>
+            {t(`ضيف غرفة (لحد ${fmtNum(TOUR_ROOMS_MAX, 'ar')})`, `Add a room (up to ${TOUR_ROOMS_MAX})`)}
+          </Txt>
+        </Pressable>
+      ) : null}
+      {err('tour') ? (
+        <Txt size={12} color="danger">
+          {err('tour')}
+        </Txt>
+      ) : null}
+      {s.tour.map((r, i) => {
+        const uri = r.url ? mediaUrl(r.url)! : r.local!;
+        const part = parts[r.key];
+        const n = i + 1;
+        return (
+          <View key={r.key} testID="tour-room" style={[styles.roomCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <View style={[styles.pano, { backgroundColor: colors.surface2 }]}>
+              <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              {!r.url ? (
+                <View style={[StyleSheet.absoluteFill, styles.veil]}>
+                  {r.failed ? (
+                    part ? (
+                      <IconButton label={t('حاول ترفعها تاني', 'Retry the upload')} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(r.key, part)} />
+                    ) : null
+                  ) : (
+                    <ActivityIndicator color="#fff" />
+                  )}
+                </View>
+              ) : null}
+              <View style={styles.tileActions}>
+                {i > 0 ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(`طلّع الغرفة ${fmtNum(n, 'ar')} لفوق`, `Move room ${n} up`)} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                    <ArrowUp size={14} color={colors.ink} />
+                  </Pressable>
+                ) : null}
+                {i < s.tour.length - 1 ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(`نزّل الغرفة ${fmtNum(n, 'ar')} لتحت`, `Move room ${n} down`)} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                    <ArrowDown size={14} color={colors.ink} />
+                  </Pressable>
+                ) : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={t(`امسح الغرفة ${fmtNum(n, 'ar')}`, `Remove room ${n}`)} onPress={() => remove(r.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Trash2 size={14} color={colors.danger} />
+                </Pressable>
+              </View>
+            </View>
+            <TextField label={t(`اسم الغرفة ${fmtNum(n, 'ar')} (عربي)`, `Room ${n} name (Arabic)`)} value={r.nameAr} onChangeText={(v) => patch(r.key, { nameAr: v })} maxLength={80} />
+            <TextField label={t(`اسم الغرفة ${fmtNum(n, 'ar')} (إنجليزي)`, `Room ${n} name (English)`)} value={r.nameEn} onChangeText={(v) => patch(r.key, { nameEn: v })} maxLength={80} />
+          </View>
+        );
+      })}
+    </>
+  );
+}
+
 function ReviewStep({ s, errors, onEdit }: { s: ListingForm; errors: ListingField[]; onEdit: (step: number) => void }) {
   const t = useT();
   const lang = useLang();
@@ -483,6 +625,7 @@ function ReviewStep({ s, errors, onEdit }: { s: ListingForm; errors: ListingFiel
     [2, t('التشطيب', 'Finishing'), s.finishing ? t(FINISHING_LABEL[s.finishing]) : '—'],
     [2, t('المميزات', 'Amenities'), s.features.map((f) => t(FEATURE_LABEL[f])).join('، ') || '—'],
     [3, t('الصور', 'Photos'), t(`${fmtNum(s.photos.filter((p) => p.url).length, 'ar')} صورة`, `${s.photos.filter((p) => p.url).length} photos`)],
+    [4, t('جولة ٣٦٠°', '360° tour'), s.tour.length ? t(`${fmtNum(s.tour.length, 'ar')} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? 'room' : 'rooms'}`) : t('مفيش', 'None')],
   ];
   return (
     <>
@@ -532,6 +675,8 @@ const styles = StyleSheet.create({
   coverTag: { position: 'absolute', top: 6, start: 6, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
   tileActions: { position: 'absolute', bottom: 6, end: 6, flexDirection: 'row', gap: 6 },
   mini: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  roomCard: { borderRadius: radius.lg, borderWidth: 1, padding: 12, gap: 10 },
+  pano: { width: '100%', aspectRatio: 2, borderRadius: radius.md, overflow: 'hidden' },
   alert: { borderRadius: radius.md, padding: 12 },
   card: { borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 4 },
   reviewRow: { flexDirection: 'row', gap: 12, paddingVertical: 10 },

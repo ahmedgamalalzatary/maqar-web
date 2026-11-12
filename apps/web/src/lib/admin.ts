@@ -123,6 +123,13 @@ export function uploadPhoto(photo: Blob): Promise<UploadResponse> {
   return api.request<UploadResponse>("/uploads", { method: "POST", body: form });
 }
 
+/** One 360° panorama, already scaled in the browser, to the tours folder (phase 21). */
+export function uploadPanorama(pano: Blob): Promise<UploadResponse> {
+  const form = new FormData();
+  form.append("pano", pano, "pano.jpg");
+  return api.request<UploadResponse>("/uploads/panoramas", { method: "POST", body: form });
+}
+
 // ---- Admin tools (phase 18) ----
 
 /** After a change to agents, leads or areas, everything the admin sees refetches. */
