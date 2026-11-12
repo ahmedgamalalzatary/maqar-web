@@ -8,6 +8,9 @@ import { useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useCompare } from '../store/compare.store';
 
+/** Room a page keeps under its last line while the bar shows: its height and the gap above the tab bar. */
+export const COMPARE_TRAY_SPACE = 80;
+
 /** The bar above the tab bar while homes are picked (contract §8.10). `bottom` is the tab bar's height. */
 export function CompareTray({ bottom }: { bottom: number }) {
   const t = useT();

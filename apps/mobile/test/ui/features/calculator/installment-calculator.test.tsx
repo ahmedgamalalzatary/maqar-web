@@ -82,16 +82,27 @@ describe('The installment calculator', () => {
     expect(screen.getByText(money(installment(PRICE, 20, 5, 40).payment))).toBeOnTheScreen();
   });
 
-  it('takes typed years from 1 to 10, keeps the last good number while the field is wrong, and fixes it once typing ends', async () => {
+  it('takes typed years from 1 to 10; an empty or zero field keeps the last good number until typing ends', async () => {
     await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
     const field = () => screen.getByLabelText('مدة التقسيط (بالسنين)');
     await fireEvent.changeText(field(), '7');
     expect(screen.getByText(money(installment(PRICE, 20, 7).payment))).toBeOnTheScreen();
-    await fireEvent.changeText(field(), '11');
-    expect(screen.getByText('من ١ لـ ١٠ سنين')).toBeOnTheScreen();
+    await fireEvent.changeText(field(), '');
     expect(screen.getByText(money(installment(PRICE, 20, 7).payment))).toBeOnTheScreen();
     await fireEvent(field(), 'endEditing');
     expect(field().props.value).toBe('٧');
+  });
+
+  // Phone check 2026-11-12: typing "15" passed through "1", and the plan showed 1 year.
+  it('counts more than 10 years as 10, and says so', async () => {
+    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+    const field = () => screen.getByLabelText('مدة التقسيط (بالسنين)');
+    await fireEvent.changeText(field(), '1');
+    await fireEvent.changeText(field(), '15');
+    expect(screen.getByText('من ١ لـ ١٠ سنين')).toBeOnTheScreen();
+    expect(screen.getByText(money(installment(PRICE, 20, 10).payment))).toBeOnTheScreen();
+    await fireEvent(field(), 'endEditing');
+    expect(field().props.value).toBe('١٠');
   });
 
   it('allows a listing’s own plan to run longer than 10 years', async () => {
