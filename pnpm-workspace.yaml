@@ -2,20 +2,20 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
-  # Dev-only ffmpeg/ffprobe for tests (Phase 26): their install scripts are not needed on CI or in the
-  # API image (which uses the system ffmpeg), and an unapproved one stops pnpm install.
-  '@ffmpeg-installer/darwin-arm64': false
-  '@ffmpeg-installer/darwin-x64': false
-  '@ffmpeg-installer/linux-arm': false
-  '@ffmpeg-installer/linux-arm64': false
-  '@ffmpeg-installer/linux-ia32': false
-  '@ffmpeg-installer/linux-x64': false
-  '@ffprobe-installer/darwin-arm64': false
-  '@ffprobe-installer/darwin-x64': false
-  '@ffprobe-installer/linux-arm': false
-  '@ffprobe-installer/linux-arm64': false
-  '@ffprobe-installer/linux-ia32': false
-  '@ffprobe-installer/linux-x64': false
+  # Dev-only ffmpeg/ffprobe for tests (Phase 26). Their install scripts only make the binary executable;
+  # pnpm stops on an unapproved one, so each platform's package is allowed by name.
+  '@ffmpeg-installer/darwin-arm64': true
+  '@ffmpeg-installer/darwin-x64': true
+  '@ffmpeg-installer/linux-arm': true
+  '@ffmpeg-installer/linux-arm64': true
+  '@ffmpeg-installer/linux-ia32': true
+  '@ffmpeg-installer/linux-x64': true
+  '@ffprobe-installer/darwin-arm64': true
+  '@ffprobe-installer/darwin-x64': true
+  '@ffprobe-installer/linux-arm': true
+  '@ffprobe-installer/linux-arm64': true
+  '@ffprobe-installer/linux-ia32': true
+  '@ffprobe-installer/linux-x64': true
   '@parcel/watcher': true
   '@scarf/scarf': false
   esbuild: true
