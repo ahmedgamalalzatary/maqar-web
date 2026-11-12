@@ -1,4 +1,12 @@
 import type {
+  AdminAccount,
+  AdminAccountBody,
+  AdminAccountUpdate,
+  AdminClientDetail,
+  AdminClientsPage,
+  ClientStatus,
+  ClientUpdateBody,
+  ClientUpdateResult,
   AdminAgentDetail,
   AdminAgentItem,
   AdminAgentOption,
@@ -98,3 +106,24 @@ export const createAreaRequest = (body: AreaBody) => apiFetch<AdminArea>('/admin
 export const updateAreaRequest = (id: string, body: Partial<AreaBody>) => apiFetch<AdminArea>(`/admin/areas/${id}`, { method: 'PATCH', body });
 
 export const deleteAreaRequest = (id: string) => apiFetch<void>(`/admin/areas/${id}`, { method: 'DELETE' });
+
+// ---- Clients and admin accounts (phase 22) ----
+
+export function getClients({ q, status, page = 1 }: { q?: string; status?: ClientStatus; page?: number }, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ limit: '50', page: String(page) });
+  if (status) qs.set('status', status);
+  if (q?.trim()) qs.set('q', q.trim());
+  return apiFetch<AdminClientsPage>(`/admin/clients?${qs}`, { signal });
+}
+
+export const getClient = (id: number, signal?: AbortSignal) => apiFetch<AdminClientDetail>(`/admin/clients/${id}`, { signal });
+
+export const updateClientRequest = (id: number, body: ClientUpdateBody) => apiFetch<ClientUpdateResult>(`/admin/clients/${id}`, { method: 'PATCH', body });
+
+export const deleteClientRequest = (id: number) => apiFetch<void>(`/admin/clients/${id}`, { method: 'DELETE' });
+
+export const getAdmins = (signal?: AbortSignal) => apiFetch<AdminAccount[]>('/admin/admins', { signal });
+
+export const createAdminRequest = (body: AdminAccountBody) => apiFetch<AdminAccount>('/admin/admins', { method: 'POST', body });
+
+export const updateAdminRequest = (id: number, body: AdminAccountUpdate) => apiFetch<AdminAccount>(`/admin/admins/${id}`, { method: 'PATCH', body });

@@ -120,6 +120,20 @@
       "when": 1794382468049,
       "tag": "0016_cooing_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1794470452274,
+      "tag": "0017_parched_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1794471218008,
+      "tag": "0018_married_selene",
+      "breakpoints": true
     }
   ]
 }

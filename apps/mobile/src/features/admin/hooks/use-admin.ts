@@ -29,8 +29,8 @@ import {
 } from '../api/admin.api';
 
 /** The signed-in admin's id. Keys the cache, so another account never sees it. */
-const useAdminId = () => useSession((s) => (s.status === 'signedIn' && s.user?.role === 'admin' ? s.user.id : null));
-const adminKey = (adminId: number | null) => ['admin', adminId];
+export const useAdminId = () => useSession((s) => (s.status === 'signedIn' && s.user?.role === 'admin' ? s.user.id : null));
+export const adminKey = (adminId: number | null) => ['admin', adminId];
 
 export function useAdminListings(q: ListingsQuery) {
   const adminId = useAdminId();
@@ -122,7 +122,7 @@ export function usePublishListing() {
 // ---- Admin tools (phase 18) ----
 
 /** After a change to agents, leads or areas: everything the admin sees refetches. */
-function useRefresh() {
+export function useRefresh() {
   const adminId = useAdminId();
   const qc = useQueryClient();
   return () => {

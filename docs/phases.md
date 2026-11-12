@@ -64,7 +64,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 19 | Listing insights (for admins) | ✅ | decided |
 | 20 | Release | 🟨 | ~~14~~ out of scope |
 | 21 | Admin: 360° tours | 🟨 | decided |
-| 22 | Admin: clients and admins | ⬜ | decided |
+| 22 | Admin: clients and admins | 🟨 | decided |
 | 23 | Admin: viewings | ⬜ | decided |
 | 24 | Admin: chats, report and block | ⬜ | decided |
 | 25 | Admin: overview | ⬜ | decided |
@@ -842,9 +842,20 @@ Contract §11, §12, §13.
 
 **Admin UI:** the app's admin tabs become Listings, Agents, Leads, More (Clients, Areas, Admins, account settings); the web menu gains Clients and Admins.
 
-**Tests:** suspension (tokens refused, sign-in refused, viewings cancelled), password reset signing out, delete matching the client's own, the self and last-admin rules, admin-only access; the screens' main flows.
+**Tests:** suspension (tokens refused, sign-in refused, viewings cancelled), password reset signing out, delete matching the client's own, the rule that an admin cannot suspend themselves, admin-only access; the screens' main flows.
 
 **Done when** an admin suspends a client and that client's phone is signed out at once.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
+- Migrations `0017` (`users.suspended_at`) and `0018` (`credentials_changed_at` in milliseconds, below).
+- Suspension: the account check every request and the chat socket use (`findActive`) skips suspended accounts, so access ends at once; the sessions are ended too, so restoring needs a fresh sign-in. Suspending a client first cancels their upcoming viewings and tells only the advisors (the client is being signed out). Sign-up now checks the email against every account, so a suspended client's address is not offered again.
+- Deleting a client runs exactly the client's own delete (`UsersService.removeClient`) and ends the sessions.
+- An admin cannot suspend themselves. The planned "not the last active admin" rule turned out to follow from that (whoever suspends is an active admin), so it is not a separate check.
+- "Last seen" is the last sign-in or session refresh.
+- Found and fixed (SEC-02 edge): an access token issued in the same second as a password change outlived it, because `iat` has whole seconds. Tokens now carry `iatMs`, and the change time is stored in milliseconds from the API's clock. Older tokens without `iatMs` count from their second.
+- App: the admin's tabs are Listings, Agents, Leads, More; More holds Client accounts, Areas and Admin accounts above the settings. Web: Clients and Admins in the menu (labels show on wide screens; icons with tooltips otherwise).
+- Checked by hand on the web dashboard against the local API: the client list, a client's page, the admins page.
+- Tests: API e2e `admin-people.e2e-spec.ts` (9), token unit tests for the same-second cases, mobile UI tests `people.test.tsx` (6); the route-access table has the new routes.
 
 ---
 

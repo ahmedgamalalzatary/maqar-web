@@ -25,7 +25,7 @@ export class AuthService {
 
   /** Only clients sign up themselves (contract §2). The DTO refuses other roles. */
   async signUp(body: SignUpBody): Promise<AuthResponse> {
-    if (await this.users.findActiveByEmail(body.email)) throw new ConflictException('This email already has an account');
+    if (await this.users.emailInUse(body.email)) throw new ConflictException('This email already has an account');
     const id = await this.users.create({
       name: body.name,
       email: body.email,
@@ -68,7 +68,7 @@ export class AuthService {
 
   private async issue(userId: number): Promise<AuthResponse> {
     const user = await this.profiles.getMe(userId);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, role: user.role });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, role: user.role, iatMs: Date.now() });
     const { exp, iat } = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
 
     const refreshToken = randomBytes(32).toString('base64url');

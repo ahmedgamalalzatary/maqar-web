@@ -69,7 +69,7 @@ export class AgentsRepository {
 
   /** Invalidates every access token issued so far, so a password change signs the agent out at once. */
   async touchCredentials(userId: number): Promise<void> {
-    await this.db.update(users).set({ credentialsChangedAt: sql`now(3)` }).where(eq(users.id, userId));
+    await this.db.update(users).set({ credentialsChangedAt: new Date() }).where(eq(users.id, userId));
   }
 
   /** How many of these ids are agents. */

@@ -6,9 +6,9 @@ import {
   CalendarCheck,
   Heart,
   Home,
+  LayoutGrid,
   type LucideIcon,
   MessagesSquare,
-  MapPin,
   Search,
   Sun,
   UserCog,
@@ -49,8 +49,8 @@ export const TABS: Record<TabRole, Tab[]> = {
     { name: 'index', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
     { name: 'agents', label: { ar: 'المسؤولين', en: 'Agents' }, icon: UserCog },
     { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
-    { name: 'areas', label: { ar: 'المناطق', en: 'Areas' }, icon: MapPin },
-    me,
+    // Phase 22: clients, areas, admins and the account settings live under More.
+    { name: 'more', label: { ar: 'المزيد', en: 'More' }, icon: LayoutGrid },
   ],
 };
 
