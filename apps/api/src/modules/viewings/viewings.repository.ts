@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ReminderOffset } from '@maqar/shared';
+import type { ReminderOffset, ViewingCanceller } from '@maqar/shared';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agentDaysOff, agentHours, agents } from '../agents/agents.schema.js';
@@ -125,10 +125,10 @@ export class ViewingsRepository {
   }
 
   /** Cancels only while the viewing is still active; false when another change got there first. */
-  async cancel(id: number): Promise<boolean> {
+  async cancel(id: number, by: ViewingCanceller): Promise<boolean> {
     const [res] = await this.db
       .update(viewings)
-      .set({ status: 'cancelled' })
+      .set({ status: 'cancelled', cancelledBy: by })
       .where(and(eq(viewings.id, id), inArray(viewings.status, ['confirmed', 'rescheduled'])));
     return res.affectedRows === 1;
   }

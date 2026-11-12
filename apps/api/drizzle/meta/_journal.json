@@ -155,6 +155,13 @@
       "when": 1794490075888,
       "tag": "0021_dry_union_jack",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1794491291096,
+      "tag": "0022_condemned_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

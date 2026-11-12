@@ -12,6 +12,7 @@ import {
   type UpdateViewingBody,
   VIEWING_MINUTES,
   type ViewingItem,
+  type ViewingCanceller,
 } from '@maqar/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -132,7 +133,7 @@ export class ViewingsService {
   }
 
   async update(user: AuthUser, id: number, body: UpdateViewingBody): Promise<ViewingItem> {
-    return this.change(await this.ownViewing(user, id), body);
+    return this.change(await this.ownViewing(user, id), body, undefined, user.role === 'agent' ? 'agent' : 'client');
   }
 
   /**
@@ -152,18 +153,18 @@ export class ViewingsService {
   async adminUpdate(id: number, body: AdminViewingUpdateDto): Promise<AdminViewingItem> {
     const v = await this.repo.findById(id);
     if (!v) throw new NotFoundException('Viewing not found');
-    await this.change(v, body.action === 'cancel' ? { action: 'cancel' } : { action: 'reschedule', date: body.date!, time: body.time! }, body.reason);
+    await this.change(v, body.action === 'cancel' ? { action: 'cancel' } : { action: 'reschedule', date: body.date!, time: body.time! }, body.reason, 'admin');
     return adminItem((await this.repo.adminOne(id))!);
   }
 
   /** Cancel or reschedule one active, future viewing; `note` (an admin's reason) goes in the notices. */
-  private async change(v: ViewingRow, body: UpdateViewingBody, note?: string): Promise<ViewingItem> {
+  private async change(v: ViewingRow, body: UpdateViewingBody, note: string | undefined, by: ViewingCanceller): Promise<ViewingItem> {
     const id = v.id;
     if (v.status !== 'confirmed' && v.status !== 'rescheduled') throw new ConflictException('This viewing is not active any more');
     if (v.startsAt.getTime() <= Date.now()) throw new ConflictException('This viewing has already started');
     if (body.action === 'cancel') {
       // The write itself carries the expected state, so a cancel racing a reschedule has one winner.
-      if (!(await this.repo.cancel(id))) throw new ConflictException('This viewing is not active any more');
+      if (!(await this.repo.cancel(id, by))) throw new ConflictException('This viewing is not active any more');
       const item = await this.item(id);
       await this.tell(item, 'cancelled', true, note);
       return item;
@@ -193,7 +194,7 @@ export class ViewingsService {
     const upcoming = (await this.repo.list({ clientId })).filter((v) => (v.status === 'confirmed' || v.status === 'rescheduled') && v.startsAt.getTime() > now);
     let cancelled = 0;
     for (const v of upcoming) {
-      if (!(await this.repo.cancel(v.id))) continue;
+      if (!(await this.repo.cancel(v.id, 'admin'))) continue;
       cancelled++;
       await this.tell(await this.item(v.id), 'cancelled', false);
     }

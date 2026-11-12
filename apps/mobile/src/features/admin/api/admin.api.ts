@@ -38,6 +38,9 @@ import type {
   PropertyStatus,
   UploadResponse,
   VideoUploadResponse,
+  ReportId,
+  ReportQuery,
+  ReportResult,
 } from '@maqar/shared';
 import { apiFetch, apiUpload } from '@/core/api/api';
 import type { PhotoPart } from '@/features/chat/photos';
@@ -177,3 +180,11 @@ export const resolveReportRequest = (id: number, outcome: ReportOutcome) => apiF
 // ---- Overview (phase 25) ----
 
 export const getOverview = (days: OverviewRange, signal?: AbortSignal) => apiFetch<AdminOverview>(`/admin/overview?days=${days}`, { signal });
+
+// ---- Reports (phase 27) ----
+
+/** One report for a range and the filters it takes (`/admin/analytics`: `/admin/reports` is chat reports). */
+export function getReport(id: ReportId, q: ReportQuery, signal?: AbortSignal) {
+  const params = new URLSearchParams(Object.entries(q).flatMap(([k, v]) => (v === undefined || v === '' ? [] : [[k, String(v)]])));
+  return apiFetch<ReportResult>(`/admin/analytics/${id}?${params}`, { signal, timeoutMs: 60_000 });
+}

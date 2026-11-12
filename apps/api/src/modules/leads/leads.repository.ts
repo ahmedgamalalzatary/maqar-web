@@ -87,7 +87,7 @@ export class LeadsRepository {
     await this.db.update(leads).set({ seenAt: new Date() }).where(eq(leads.id, id));
   }
 
-  /** A new stage dates the lead's activity; Won is stamped once and cleared if the lead moves back. */
+  /** A new stage dates the lead's activity; Won and Lost are stamped once and cleared if the lead moves on. */
   async update(id: number, change: { stage?: LeadStage; hot?: boolean }): Promise<void> {
     await this.db
       .update(leads)
@@ -98,6 +98,7 @@ export class LeadsRepository {
           : {
               stage: change.stage,
               wonAt: change.stage === 'won' ? sql`coalesce(${leads.wonAt}, now())` : null,
+              lostAt: change.stage === 'lost' ? sql`coalesce(${leads.lostAt}, now())` : null,
               lastActivityAt: sql`now(3)`,
             }),
       })

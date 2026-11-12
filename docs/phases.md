@@ -959,7 +959,7 @@ Contract §11, §13, §14.
 
 **Shared:** the catalogue of reports (id, group, titles, which filters apply, whether it has a range), the range rules (presets, Cairo days, at most 366 days, never in the future, the previous period of the same length), and one response shape every report uses: totals with the previous period, charts (per day, bars, week-by-hour), and tables of typed cells with links. Cell formatting and the CSV file (UTF-8 with a byte-order mark so spreadsheets read Arabic; raw numbers, ISO dates) live here too, so the app and the web show and export the same thing.
 
-**API:** `GET /admin/reports/:id?from&to&agentId&areaId&category` for the eleven reports in §11. Migration `0022`: `viewings.cancelled_by` (client, agent or admin, set on every cancel; a suspension's cancels count as admin) and `leads.lost_at` (set when a lead moves to lost, cleared when it leaves it).
+**API:** `GET /admin/analytics/:id?from&to&agentId&areaId&category` (`/admin/reports` is already chat reports) for the eleven reports in §11. Migration `0022`: `viewings.cancelled_by` (client, agent or admin, set on every cancel; a suspension's cancels count as admin) and `leads.lost_at` (set when a lead moves to lost, cleared when it leaves it).
 
 **Admin UI:** Reports in the web menu (`/reports/` and `/report/?id=`) and under More in the app: the reports by group, then one report with its range, filters, totals with the change from the previous period, charts, tables (sortable on the web; cards on the phone) with links to the listing, advisor, client or chat, CSV export (download on the web, share from the app), and print on the web.
 
@@ -967,3 +967,14 @@ Contract §11, §13, §14.
 
 **Done when** an admin can answer, from Reports alone, what sold and who sold it, how each advisor is doing, where leads come from and what they turn into, what the listings lack and which nobody wants, where demand is, and how quickly clients get answers.
 
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy (migration `0022`) and the phone check (rule 6). Notes:
+- The API path is `/admin/analytics/:id`, because `/admin/reports` already holds chat reports (Phase 24); the screens say "Reports".
+- Each report is built from focused row sets added up in code (`modules/reports`), so every number can be traced to rows; the reports read what they need since the start of the previous period.
+- A range defaults to the last 30 Cairo days; the previous period has the same length and ends the day before. Snapshot reports (inventory, listing quality) have neither. A filter a report does not take is refused (400).
+- Definitions shown under each report: deal prices are asking prices at closing; conversion is leads won in the range ÷ new leads in the range; the target for a range is the monthly target × days ÷ 30.4; first reply time counts every hour, from the client's first message to the advisor's first answer, in conversations started in the range; "idle" leads are open and untouched for 7 days; "waiting" chats are open, end with the client's message, an hour or more ago; viewings "done" and the cancellation rate are by when the viewing was due.
+- Who cancelled a viewing and when a lead was lost are recorded from this phase on (migration `0022`); older ones show as "not recorded".
+- Web: the range and filters are in the address (`/report/?id=deals&preset=90d&agentId=3`), so a view can be bookmarked or shared; tables sort by any column; print hides the menu and controls. The menu (now eleven pages) scrolls inside itself on narrow screens, so no dashboard page scrolls sideways any more (it did on phones before this phase).
+- App: More → Reports; presets instead of free dates; tables as cards, 25 at a time; CSV through the share sheet.
+- Checked by hand on the web dashboard against the local API: the hub, advisors, viewings (with the heat map), at 360, 390, 768, 1024, 1280 and 1536 px; no sideways scroll.
+- Tests: API e2e `admin-analytics.e2e-spec.ts` (4: access and validation, the shape of all eleven, every report's numbers after real actions, filters and the previous period), unit `reports/chat-times.spec.ts` (3), shared `reports.test.ts` (7), mobile `reports.test.tsx` (3).

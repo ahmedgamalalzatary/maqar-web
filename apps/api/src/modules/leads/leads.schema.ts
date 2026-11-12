@@ -36,6 +36,8 @@ export const leads = mysqlTable(
     seenAt: timestamp('seen_at', { fsp: 3 }),
     /** When it moved to Won (cleared if it moves back): the monthly target counts these. */
     wonAt: timestamp('won_at'),
+    /** When it moved to lost (phase 27's reports); cleared if it leaves lost. Older lost leads have none. */
+    lostAt: timestamp('lost_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [unique('leads_client_agent_unique').on(t.clientId, t.agentId), index('leads_agent_idx').on(t.agentId, t.stage)],

@@ -18,6 +18,7 @@ import { OverviewModule } from './modules/overview/overview.module.js';
 import { PeopleModule } from './modules/people/people.module.js';
 import { PricesModule } from './modules/prices/prices.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { ViewingsModule } from './modules/viewings/viewings.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -67,6 +68,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AgentsModule,
     PeopleModule,
     OverviewModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
