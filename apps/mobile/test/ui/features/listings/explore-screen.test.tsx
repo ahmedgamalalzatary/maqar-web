@@ -288,6 +288,50 @@ describe('ExploreScreen', () => {
     await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ category: 'rent', maxPrice: '50000' }));
   });
 
+  it('takes a typed size range, like the price (2026-11-12)', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen />);
+    await openFilters();
+
+    const min = () => screen.getByLabelText('أقل مساحة بالمتر');
+    const max = () => screen.getByLabelText('أكبر مساحة بالمتر');
+    expect(min().props.value).toBe(fmtNum(50, 'ar'));
+    expect(max().props.value).toBe('أي مساحة');
+    await fireEvent(min(), 'focus');
+    await fireEvent.changeText(min(), '١٢٠');
+    await fireEvent(min(), 'blur');
+    await fireEvent(max(), 'focus');
+    await fireEvent.changeText(max(), '250');
+    await fireEvent(max(), 'blur');
+    expect(min().props.value).toBe(fmtNum(120, 'ar'));
+    expect(max().props.value).toBe(fmtNum(250, 'ar'));
+    // The slider follows the typed numbers.
+    expect(screen.getByRole('adjustable', { name: 'أقل مساحة' }).props.accessibilityValue.now).toBe(120);
+
+    await fireEvent.press(await screen.findByRole('button', { name: /^اعرض/ }));
+    await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ minSize: '120', maxSize: '250' }));
+  });
+
+  it('keeps a typed size range in order and drops a maximum past the scale', async () => {
+    const fetchMock = api();
+    await renderWithProviders(<ExploreScreen />);
+    await openFilters();
+    const type = async (label: string, text: string) => {
+      await fireEvent(screen.getByLabelText(label), 'focus');
+      await fireEvent.changeText(screen.getByLabelText(label), text);
+      await fireEvent(screen.getByLabelText(label), 'blur');
+    };
+    await type('أكبر مساحة بالمتر', '200');
+    await type('أقل مساحة بالمتر', '300');
+    expect(screen.getByLabelText('أقل مساحة بالمتر').props.value).toBe(fmtNum(190, 'ar'));
+    await type('أكبر مساحة بالمتر', '900');
+    expect(screen.getByLabelText('أكبر مساحة بالمتر').props.value).toBe('أي مساحة');
+
+    await fireEvent.press(await screen.findByRole('button', { name: /^اعرض/ }));
+    await waitFor(() => expect(lastListQuery(fetchMock)).toMatchObject({ minSize: '190' }));
+    expect(lastListQuery(fetchMock)).not.toHaveProperty('maxSize');
+  });
+
   it('offers to clear the filters when nothing matches them', async () => {
     const fetchMock = api([flat]);
     await renderWithProviders(<ExploreScreen category="rent" />);

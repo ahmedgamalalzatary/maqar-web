@@ -19,6 +19,7 @@ import { PropertyRow } from '@/features/listings/components/property-row';
 import { useAreas, useProperties } from '@/features/listings/hooks/use-listings';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
+import { MyPrefs } from '../components/my-prefs';
 import { NextViewingCard } from '@/features/viewings/components/next-viewing-card';
 
 const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string }[] = [
@@ -109,6 +110,8 @@ export function Home() {
       <NextViewingCard />
 
       <Featured cardWidth={cardWidth} />
+
+      <MyPrefs />
 
       <Picks cardWidth={cardWidth} />
 

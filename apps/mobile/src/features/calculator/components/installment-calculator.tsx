@@ -1,19 +1,17 @@
 import { fmtMoney, fmtNum, fmtPct, installment, localDigits } from '@maqar/shared';
 import { Info } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
-import { ToggleChip } from '@/features/listings/components/chips';
 import { BudgetSlider } from '@/features/prefs/components/budget-slider';
-import { parseRate } from '../rate';
+import { MAX_YEARS, parseRate, parseYears } from '../rate';
 
 const PRICE_SCALE = { min: 1_000_000, max: 40_000_000, step: 100_000 };
 const DOWN_SCALE = { min: 0, max: 60, step: 5 };
-const YEARS = [1, 2, 3, 4, 5, 6, 7, 8, 10];
 const DEFAULT_RATE = 18;
 
 type Mode = 'dev' | 'bank';
@@ -39,7 +37,12 @@ export function InstallmentCalculator({
   const { colors } = useTheme();
   const [typedPrice, setTypedPrice] = useState(initialPrice);
   const [down, setDown] = useState(defaultDown);
-  const [years, setYears] = useState(defaultYears);
+  // Typed, not picked (2026-11-12): 1 to 10 years, or longer when the listing's own plan is.
+  const maxYears = Math.max(MAX_YEARS, defaultYears);
+  const [yearsText, setYearsText] = useState(localDigits(String(defaultYears), lang));
+  const typedYears = parseYears(yearsText, maxYears);
+  const [lastYears, setLastYears] = useState(defaultYears);
+  const years = typedYears ?? lastYears;
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [mode, setMode] = useState<Mode>('dev');
   const [rateText, setRateText] = useState(localDigits(String(DEFAULT_RATE), lang));
@@ -48,10 +51,11 @@ export function InstallmentCalculator({
   const rate = parseRate(rateText);
   const plan = installment(price, down, years, mode === 'bank' ? rate : 0, frequency === 'quarterly');
   const downShare = plan.total > 0 ? (plan.down / plan.total) * 100 : 0;
-  // A listing's plan can run for years that are not among the usual choices.
-  const yearOptions = YEARS.includes(defaultYears) ? YEARS : [...YEARS, defaultYears].sort((a, b) => a - b);
-  const yearsLabel = (y: number) =>
-    t(y === 1 ? 'سنة' : y === 2 ? 'سنتين' : `${fmtNum(y, 'ar')} سنين`, y === 1 ? '1 year' : `${y} years`);
+  const changeYears = (text: string) => {
+    setYearsText(text);
+    const n = parseYears(text, maxYears);
+    if (n !== undefined) setLastYears(n);
+  };
   const cream = { color: colors.cream };
   const faded = { color: colors.cream, opacity: 0.7 };
 
@@ -122,14 +126,17 @@ export function InstallmentCalculator({
       </View>
 
       <View style={styles.years}>
-        <Txt size={13} weight="medium" color="ink2">
-          {t('مدة التقسيط', 'Payment period')}
+        <TextField
+          label={t('مدة التقسيط (بالسنين)', 'Payment period (years)')}
+          value={yearsText}
+          onChangeText={changeYears}
+          onEndEditing={() => setYearsText(localDigits(String(years), lang))}
+          keyboardType="number-pad"
+          maxLength={2}
+        />
+        <Txt size={12} color={typedYears === undefined ? 'danger' : 'ink3'}>
+          {t(`من ١ لـ ${fmtNum(maxYears, 'ar')} سنين`, `1 to ${maxYears} years`)}
         </Txt>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearChips} accessibilityRole="radiogroup">
-          {yearOptions.map((y) => (
-            <ToggleChip key={y} role="radio" label={yearsLabel(y)} selected={years === y} onPress={() => setYears(y)} />
-          ))}
-        </ScrollView>
       </View>
 
       <Segmented
@@ -195,7 +202,6 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 4 },
   figures: { flexDirection: 'row', gap: 8, marginTop: 12 },
   years: { gap: 8 },
-  yearChips: { gap: 8 },
   note: { flexDirection: 'row', gap: 6 },
   flex: { flex: 1 },
 });

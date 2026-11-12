@@ -1,5 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react-native';
-import { fmtNum } from '@maqar/shared';
+import { fireEvent, screen, within } from '@testing-library/react-native';
+import { fmtMoney, fmtNum } from '@maqar/shared';
 import { useSettings } from '@/core/settings/store';
 import { useSession } from '@/features/auth/store/session.store';
 import { Home } from '@/features/home/screens/home-screen';
@@ -100,6 +100,38 @@ describe('Home', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'كل الترشيحات' }));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/explore', params: { sort: 'match' } });
+  });
+
+  it('shows a client what they chose at sign-up, and opens it to edit (2026-11-12)', async () => {
+    const prefs = { purpose: ['sale' as const], budgetMax: 8_000_000, areas: ['new-cairo'], types: ['villa' as const], beds: 3, interests: ['pool' as const] };
+    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client', prefs }), accessToken: 'access' });
+    api();
+    await renderWithProviders(<Home />);
+
+    const box = await screen.findByTestId('my-prefs');
+    expect(within(box).getByText('اللي بتدور عليه')).toBeOnTheScreen();
+    for (const text of ['للبيع', `لحد ${fmtMoney(8_000_000, 'ar')}`, 'فيلا', `${fmtNum(3, 'ar')}+ غرف`, 'حمام سباحة']) {
+      expect(within(box).getByText(text)).toBeOnTheScreen();
+    }
+    expect(await within(box).findByText('التجمع الخامس')).toBeOnTheScreen();
+    await fireEvent.press(within(box).getByRole('button', { name: 'عدّل تفضيلاتك' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('asks a client who skipped the questions to answer them, and shows a guest nothing', async () => {
+    useSession.setState({ status: 'signedIn', user: makeMe({ role: 'client', prefs: null }), accessToken: 'access' });
+    api();
+    const { unmount } = await renderWithProviders(<Home />);
+    const box = await screen.findByTestId('my-prefs');
+    await fireEvent.press(within(box).getByRole('button', { name: 'قولنا بتدور على إيه' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/onboarding');
+    await unmount();
+
+    await useSession.getState().clear();
+    api();
+    await renderWithProviders(<Home />);
+    await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات');
+    expect(screen.queryByTestId('my-prefs')).toBeNull();
   });
 
   it('invites a guest to get picks instead, without asking the API', async () => {

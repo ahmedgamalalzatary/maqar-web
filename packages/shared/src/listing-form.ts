@@ -94,6 +94,15 @@ export function readPhone(text: string): string | undefined {
   return /^\+?\d{6,20}$/.test(latin) ? latin : undefined;
 }
 
+/**
+ * A client's mobile number the way the API takes it on an account (8 to 15 digits, maybe a
+ * leading +), from what they typed; undefined when it is not one.
+ */
+export function readMobile(text: string): string | undefined {
+  const phone = readPhone(text);
+  return phone && /^\+?\d{8,15}$/.test(phone) ? phone : undefined;
+}
+
 const between = (text: string, min: number, max: number) => {
   const n = readWholeNumber(text);
   return n !== undefined && n >= min && n <= max;

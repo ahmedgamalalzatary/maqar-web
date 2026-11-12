@@ -73,7 +73,7 @@ describe('PropertyScreen', () => {
     await renderWithProviders(<PropertyScreen id={1} />);
 
     expect(await screen.findByText('خطة الوحدة: مقدم ٢٥٪ على ٤ سنين. غيّرها براحتك.')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: '٤ سنين', checked: true })).toBeOnTheScreen();
+    expect(screen.getByLabelText('مدة التقسيط (بالسنين)').props.value).toBe('٤');
     expect(screen.getByText(fmtMoney(Math.round(installment(24_500_000, 25, 4).payment), 'ar', false))).toBeOnTheScreen();
     expect(screen.queryByRole('adjustable', { name: 'سعر الوحدة' })).toBeNull();
   });

@@ -107,7 +107,9 @@ describe('MeScreen', () => {
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/privacy`);
     await fireEvent.press(screen.getByRole('button', { name: 'الشروط والأحكام' }));
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/terms`);
-    await fireEvent.press(screen.getByRole('button', { name: 'كلّم الدعم' }));
+    // The support row left the list (2026-11-12); the address stays in the footer (Apple 1.2 and 1.5).
+    expect(screen.queryByRole('button', { name: 'كلّم الدعم' })).toBeNull();
+    await fireEvent.press(screen.getByRole('link', { name: 'maqarcompany@gmail.com' }));
     expect(mail).toHaveBeenCalledWith('mailto:maqarcompany@gmail.com');
   });
 
@@ -115,7 +117,15 @@ describe('MeScreen', () => {
     jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('No app handles mailto'));
     const origin = new URL(process.env.EXPO_PUBLIC_API_URL!).origin;
     await renderWithProviders(<MeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'كلّم الدعم' }));
+    await fireEvent.press(screen.getByRole('link', { name: 'maqarcompany@gmail.com' }));
     await waitFor(() => expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/support`));
+  });
+
+  it('ends with the developer credit, whose number can be called', async () => {
+    const call = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await renderWithProviders(<MeScreen />);
+    expect(screen.getByText('Powered by Bit Tech')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('link', { name: '01501053600' }));
+    expect(call).toHaveBeenCalledWith('tel:01501053600');
   });
 });

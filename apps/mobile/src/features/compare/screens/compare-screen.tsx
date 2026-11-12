@@ -225,10 +225,7 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
           </View>
         ))}
       </Group>
-
-      <Group title={t('الاهتمام', 'Demand')}>
-        <Row label={t('المشاهدات', 'Views')} better={null} vals={num((p) => p.views)} fmt={(v) => fmtNum(v, lang)} />
-      </Group>
+      {/* No "Demand" (views) group: removed by the owner on 2026-11-12. */}
     </>
   );
 }

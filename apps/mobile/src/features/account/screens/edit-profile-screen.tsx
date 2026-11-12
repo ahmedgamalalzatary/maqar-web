@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { readPhone } from '@maqar/shared';
+import { readMobile } from '@maqar/shared';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
@@ -23,7 +23,7 @@ export function EditProfileScreen() {
     update.mutate(
       // Normalized the way the server takes phones (Arabic digits read, separators dropped), so a
       // formatted paste cannot pass the form and fail the API.
-      { name: name.trim(), phone: phone.trim() ? (readPhone(phone) ?? null) : null },
+      { name: name.trim(), phone: phone.trim() ? (readMobile(phone) ?? null) : null },
       {
         onSuccess: () => {
           toast.show({ title: t('اتحفظت بياناتك', 'Profile saved'), tone: 'sage' });
@@ -44,10 +44,10 @@ export function EditProfileScreen() {
         placeholder="+20 100 000 0000"
       />
       {update.isError ? <Txt color="danger">{errorText(update.error, t)}</Txt> : null}
-      {phone.trim() && !readPhone(phone) ? <Txt color="danger">{t('اكتب رقم موبايل صحيح', 'Enter a valid mobile number')}</Txt> : null}
+      {phone.trim() && !readMobile(phone) ? <Txt color="danger">{t('اكتب رقم موبايل صحيح', 'Enter a valid mobile number')}</Txt> : null}
       <Button
         label={t('احفظ', 'Save')}
-        disabled={name.trim().length < 2 || (!!phone.trim() && !readPhone(phone))}
+        disabled={name.trim().length < 2 || (!!phone.trim() && !readMobile(phone))}
         loading={update.isPending}
         onPress={save}
       />

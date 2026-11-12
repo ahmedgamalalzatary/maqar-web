@@ -29,6 +29,7 @@ export class AuthService {
     const id = await this.users.create({
       name: body.name,
       email: body.email,
+      phone: body.phone ?? null,
       role: 'client',
       lang: body.lang ?? 'ar',
       passwordHash: await hashPassword(body.password),

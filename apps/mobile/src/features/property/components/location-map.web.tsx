@@ -1,18 +1,23 @@
-import { MapPin } from 'lucide-react-native';
+import { createElement } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Txt } from '@/components/text';
 import { radius, useTheme } from '@/core/theme';
+import { osmEmbedUrl } from '../directions';
 
-/** react-native-maps has no web version: the web preview shows the coordinates instead. */
-export function LocationMap({ lat, lng }: { lat: number; lng: number; title: string }) {
+/**
+ * react-native-maps has no web version, so the web preview embeds an OpenStreetMap map with the
+ * listing's pin, as the demo does (2026-11-12). Phones use the native map (location-map.tsx).
+ */
+export function LocationMap({ lat, lng, title }: { lat: number; lng: number; title: string }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.box, { backgroundColor: colors.surface2, borderColor: colors.line }]}>
-      <MapPin size={28} color={colors.accent} />
-      {/* Coordinates read left to right, even in Arabic. */}
-      <Txt size={12} color="ink2" align="center" style={styles.ltr}>
-        {`${lat.toFixed(4)}, ${lng.toFixed(4)}`}
-      </Txt>
+      {createElement('iframe', {
+        title,
+        src: osmEmbedUrl({ lat, lng }),
+        loading: 'lazy',
+        referrerPolicy: 'no-referrer-when-downgrade',
+        style: { width: '100%', height: '100%', border: 0 },
+      })}
     </View>
   );
 }
@@ -22,9 +27,6 @@ const styles = StyleSheet.create({
     height: 176,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    overflow: 'hidden',
   },
-  ltr: { writingDirection: 'ltr' },
 });

@@ -1,3 +1,4 @@
+import { readMobile } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -18,7 +19,10 @@ export function SignUpScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const ready = name.trim().length >= 2 && email.trim() !== '' && password !== '';
+  // Optional (App Store 5.1.1: browsing needs no number); it can be added later from the profile.
+  const [phone, setPhone] = useState('');
+  const badPhone = phone.trim() !== '' && !readMobile(phone);
+  const ready = name.trim().length >= 2 && email.trim() !== '' && password !== '' && !badPhone;
 
   return (
     <Screen title={t('حساب جديد', 'Create an account')}>
@@ -35,6 +39,16 @@ export function SignUpScreen() {
         keyboardType="email-address"
         textContentType="emailAddress"
       />
+      <TextField
+        label={t('رقم الموبايل (اختياري)', 'Mobile number (optional)')}
+        value={phone}
+        onChangeText={setPhone}
+        autoComplete="tel"
+        keyboardType="phone-pad"
+        textContentType="telephoneNumber"
+        placeholder={t('عشان المسؤول يقدر يكلمك', 'So your advisor can call you')}
+      />
+      {badPhone ? <Txt color="danger">{t('اكتب رقم موبايل صحيح', 'Enter a valid mobile number')}</Txt> : null}
       <TextField
         label={t('كلمة السر', 'Password')}
         value={password}
@@ -53,7 +67,10 @@ export function SignUpScreen() {
         label={t('إنشاء حساب', 'Create account')}
         disabled={!ready}
         loading={signUp.isPending}
-        onPress={() => signUp.mutate({ name: name.trim(), email: email.trim(), password, lang })}
+        onPress={() => {
+          const mobile = readMobile(phone);
+          signUp.mutate({ name: name.trim(), email: email.trim(), password, lang, ...(mobile ? { phone: mobile } : {}) });
+        }}
       />
       <Button label={t('عندك حساب؟ ادخل', 'Have an account? Sign in')} variant="ghost" onPress={() => router.replace('/sign-in')} />
     </Screen>
