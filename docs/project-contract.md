@@ -77,7 +77,7 @@ MQR is the competing app (Expo / React Native, Arabic and English). We analysed 
 | **Guest** | Not signed in | Home | Browse, search, view listings, 360° tour, calculator, compare |
 | **Client** (`buyer`) | Signed-in home seeker | Home | Everything a guest can, plus: save homes, price alerts, chat, book and manage viewings, notifications, preferences |
 | **Sales agent** | Maqar employee | `/agent` | See assigned leads and viewings, move leads through stages, add notes, chat with clients |
-| **Admin** [Real] | Maqar team | `/admin` in the app, and the web dashboard | Create, edit, publish and close listings for owners (there are no owner accounts), manage agents, assign leads, manage areas |
+| **Admin** [Real] | Maqar team | `/admin` in the app, and the web dashboard | Create, edit, publish and close listings for owners (there are no owner accounts), upload 360° tours, manage agents, clients and other admins, assign leads, oversee viewings and chats, handle reports, manage areas, see the business overview |
 
 Rules:
 
@@ -301,7 +301,7 @@ The price is compared on the client's terms:
 - Controls: drag with inertia, pinch and wheel zoom, gyroscope (with permission), hotspots inside the scene that move to other rooms, and a cross-fade between rooms. There is also a room list.
 - Demo rooms: living room, kitchen and dining, master bedroom, bathroom, study, second bedroom.
 - Panoramas are 4096×2048 or sharper.
-- [Real] Admins upload panoramas per room (Phase 17; there are no owner accounts). [Open] How panoramas are captured and checked.
+- [Real] Admins upload panoramas per room and set the rooms' names and order (Phase 21; there are no owner accounts). The server checks each panorama: a JPEG, 2:1 within 1%, at least 4096×2048 (a wider one is scaled down to 8192×4096), at most 30 MB. [Open] How panoramas are captured.
 - [Real] Rooms are stored per listing (`tour_rooms`) and sent with the listing; cards say whether a home has a tour, and Explore's "360° tour" quick filter uses it.
 
 ### 8.7 Viewing booking
@@ -403,6 +403,7 @@ The price is compared on the client's terms:
 - [Real] Out of the agent's working hours (their weekly hours and days off, Cairo time), a client's message gets one automatic reply, marked as such, until the agent answers in person (§16.1 #12).
 - [Real] Photos are resized on the phone (1600 px on the longest side) and again on the server, stored as JPEG under `/uploads/chat/<conversation>/`, with names nobody can guess. Booking from a times card follows the booking screen's rules, and a confirmation card follows.
 - [Real] Deleting an account deletes the client's conversations.
+- [Real] **Report and block** (Phase 24, store guideline 1.2): in a conversation, the client or the agent can report it (spam, abuse, scam or other, with an optional note) and block it. A blocked conversation stays readable, but nobody can send in it any more, and both sides see that it is closed. Only an admin can open it again. Reports go to the admins (§11).
 
 ### 8.13 Notifications
 
@@ -519,6 +520,15 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
   - the interested clients (saved, follows the price, chatted or booked), with what each did, their phone and when they were last active. Deleted accounts leave the list;
   - a short summary in the admin's language to copy (web) or share (app) with the owner.
   A save is counted on the day it is made, even if it is undone later. Every property page open counts as a view, as before.
+- **360° tours** (Phase 21): on the listing form, the admin uploads one panorama per room, names it in both languages, and orders or removes rooms. The tour is saved with the listing; removed panoramas are deleted from the disk like removed photos.
+- **Clients** (Phase 22): every client account, searchable by name, email or phone, with what each has done (saved homes, viewings, conversations, leads). An admin can:
+  - set a new password to pass on (no email is sent; the client is signed out everywhere);
+  - suspend the account: signed out at once and cannot sign in; their upcoming viewings are cancelled and the advisors told; chats and history stay. Lifting the suspension restores access;
+  - delete the account, exactly as a client deleting it themselves (§8.14).
+- **Admins** (Phase 22): create admin accounts with a starting password, edit them, suspend or restore them. An admin cannot suspend themselves, and the last active admin cannot be suspended.
+- **Viewings** (Phase 23): every viewing, filtered by status, advisor, day range and client; the admin can reschedule one to a free time of the same advisor, or cancel it with a reason. The client and the advisor are notified.
+- **Chats** (Phase 24): every conversation, by advisor, client or home, opened read-only (an admin cannot send, and opening it marks nothing read). Reports: the open ones are listed with the conversation; the admin closes each as dismissed, conversation blocked, or client suspended. A blocked conversation can be opened again.
+- **Overview** (Phase 25), the admin's first page: for the last 7, 30 or 90 days, listings by status and how many were published and closed; new clients; leads by stage and won; viewings booked, completed and cancelled, and the next 7 days' count; new conversations and messages; open reports. Per advisor: live listings, open leads, viewings in the range, and leads won this month against the monthly target. A daily chart of new clients, leads and viewings.
 
 ---
 
@@ -527,6 +537,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 - **Tab bars:**
   - Client: Home, Explore, Viewings (badge: upcoming count), Saved, Me.
   - Agent: Today, Leads, Chats (unread badge), Alerts (unread badge), Me.
+  - Admin (Phase 22 on): Overview (from Phase 25; Listings until then), Listings, Agents, Leads, More. More holds Clients, Viewings, Chats (open reports badge), Areas, Admins and the account settings. The web dashboard lists the same pages in its menu.
   The tab bar is hidden on property, tour, booking, chat, listing wizard and lead screens.
 - **Toasts** for quick feedback (gold, sage or danger), optionally tappable.
 - **Splash screen** while state loads.
@@ -548,7 +559,7 @@ Conventions:
 
 | Entity | Main fields |
 |---|---|
-| **users** | id, role (`client` / `agent` / `admin`), name, phone, email (unique; cleared on deletion), password_hash (argon2id; empty for Google-only accounts later), lang (`ar` / `en`), theme (`system` / `light` / `dark`), push_enabled, created_at, updated_at, deleted_at |
+| **users** | id, role (`client` / `agent` / `admin`), name, phone, email (unique; cleared on deletion), password_hash (argon2id; empty for Google-only accounts later), lang (`ar` / `en`), theme (`system` / `light` / `dark`), push_enabled, created_at, updated_at, deleted_at, credentials_changed_at, suspended_at (Phase 22: clients and admins; agents use `agents.active`) |
 | **refresh_tokens** | id, user_id, token_hash (SHA-256 of the token), expires_at, revoked_at, created_at. A token is used once: refresh revokes it and issues a new one; replaying a revoked token revokes all of that user's tokens. |
 | **client_prefs** | user_id, purposes[], budget_max, area_ids[], types[], min_beds, interests[] |
 | **agents** (profile) | user_id, name_ar / name_en, role_title_ar / role_title_en, rating, deals_count, years, languages, avg_reply_mins, phone, colour, monthly_target, active |
@@ -566,7 +577,8 @@ Conventions:
 | **viewing_reminders** | viewing_id, offset (`1d` / `2h` / `30m`), sent_at |
 | **leads** | id, client_id or name and phone, property_id, agent_id, budget, source (`booking` / `tour` / `price_alert` / `smart_pick` / `calculator` / `chat` / `call` / `walk_in`), stage (`new` / `contacted` / `viewing` / `negotiation` / `won` / `lost`), hot, from_app, last_activity_at, seen_at, won_at |
 | **lead_notes** | id, lead_id, agent_id, text, created_at |
-| **chat_threads** | id, client_id, property_id, agent_id, lead_id, last_message_at, created_at. Unique (client_id, property_id). |
+| **chat_threads** | id, client_id, property_id, agent_id, lead_id, last_message_at, created_at, blocked_at and blocked_by (`client` / `agent`; Phase 24). Unique (client_id, property_id). |
+| **chat_reports** | id, thread_id, by (`client` / `agent`), reporter_id, reason (`spam` / `abuse` / `scam` / `other`), note, created_at, resolved_at, resolved_by, outcome (`dismissed` / `blocked` / `suspended`) (Phase 24) |
 | **chat_messages** | id, thread_id, sender (`client` / `agent`), kind (`text` / `images` / `property` / `plan` / `tour` / `slots` / `booking`), body (JSON), read_at, created_at |
 | **notifications** | id, user_id, kind (`price` / `reminder` / `booking` / `match` / `lead` / `chat` / `system`), title_ar / title_en, body_ar / body_en, href, read_at, created_at |
 | **push_tokens** | id, user_id, token (unique), platform (`ios` / `android`), created_at, updated_at |
@@ -595,9 +607,11 @@ Supporting rules:
 | viewings | `GET /properties/:id/slots?reschedule` (public; the next 14 days), `POST /viewings`, `GET /viewings`, `PATCH /viewings/:id` (reschedule, cancel), `GET /viewings/:id/ics` | client; agent sees own |
 | chat | `GET /chats`, `POST /chats` (property; clients), `GET /chats/:id`, `GET /chats/:id/messages?before`, `POST /chats/:id/messages` (text; agents also cards), `POST /chats/:id/images` (1 to 4 photos), `POST /chats/:id/read`, `POST /chats/:id/messages/:messageId/book` (a time from a times card; clients). Socket.IO at `/v1/socket.io` (signed in with the access token): `message`, `updated`, `typing`, `read` from the server; `open` and `typing` from the app | client, agent, own conversations only |
 | notifications | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` | signed in |
-| uploads | `POST /uploads` (one listing photo in `photo`; panoramas later), stored on the server disk and served at `/uploads/listings/...`. Chat photos go through `POST /chats/:id/images`. Served publicly by nginx at `/uploads/...`: **decided** — listing photos are the product, chat photo names are unguessable per conversation, and uploads themselves are authenticated, authorized and rate limited | admin |
+| uploads | `POST /uploads` (one listing photo in `photo`), `POST /uploads/panoramas` (one 360° panorama in `pano`, Phase 21), stored on the server disk and served at `/uploads/listings/...`. Chat photos go through `POST /chats/:id/images`. Served publicly by nginx at `/uploads/...`: **decided** — listing photos are the product, chat photo names are unguessable per conversation, and uploads themselves are authenticated, authorized and rate limited | admin |
 | agent | `GET /agent/today`, `GET /agent/leads?stage`, `GET/PATCH /agent/leads/:id` (stage, hot; opening it marks it seen), `POST /agent/leads/:id/notes` | agent, own leads only |
 | admin: tools | `GET/POST /admin/agents` (`?active=true` for pickers), `GET/PATCH /admin/agents/:id` (profile, password, `active`; deactivating is refused while the advisor still has live listings or open work — upcoming viewings, conversations, open leads — unless `reassignTo` names the advisor who takes them over), `POST /admin/agents/:id/reassign` (moves that work to another advisor), `PUT /admin/agents/hours` (several agents), `POST /admin/agents/days-off` (several agents, a day or a range), `DELETE /admin/agents/:id/days-off/:date`, `GET /admin/leads?agentId&stage`, `PATCH /admin/leads/:id/assign`, `GET/POST /admin/areas`, `PATCH/DELETE /admin/areas/:id`; featured and the advisor through `PATCH /admin/listings/:id` | admin |
+| admin: controls | Phase 21: the tour through `PATCH /admin/listings/:id` (`tour`: the rooms in order, each with names and a panorama). Phase 22: `GET /admin/clients?q&status&page&limit`, `GET/PATCH/DELETE /admin/clients/:id` (`password`, `suspended`), `GET/POST /admin/admins`, `PATCH /admin/admins/:id`. Phase 23: `GET /admin/viewings?status&agentId&from&to&q&page&limit`, `PATCH /admin/viewings/:id` (reschedule or cancel, with `reason`). Phase 24: `GET /admin/chats?agentId&clientId&propertyId&reported&page&limit`, `GET /admin/chats/:id`, `GET /admin/chats/:id/messages?before`, `POST /admin/chats/:id/unblock`, `GET /admin/reports?open`, `PATCH /admin/reports/:id` (`outcome`). Phase 25: `GET /admin/overview?days` | admin |
+| chat: safety | `POST /chats/:id/report` (`reason`, `note`), `POST /chats/:id/block` (Phase 24) | client, agent, own conversations |
 
 Access is checked by role guards on every route. Agents and clients can only reach their own data.
 
@@ -654,6 +668,7 @@ Access is checked by role guards on every route. Agents and clients can only rea
 - Broker or agency accounts outside Maqar.
 - Mortgage applications with banks (the calculator only estimates).
 - A public web version of the app. `apps/demo` is a sales demo, not a product.
+- Admin tools left out on 2026-11-12: hard-deleting listings or agents (they are closed or turned off, so history keeps its links), broadcast notifications, and an audit log of admin changes.
 
 ---
 
@@ -725,3 +740,4 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-11 | Phase 20 started. Write rate limits count per account (§15 already said so; the guard counted per address). Every route's access is pinned by an e2e table. Reminder claims respect a live lease. The app drops the unused calendar package and the camera, microphone, storage and overlay permissions, explains motion and photo access in Arabic and English, and declares no non-exempt encryption. `pre-release-review.md` removed: its items are fixed or recorded here and in §17. |
 | 2026-11-11 | Phase 20: the privacy policy, terms, support and account-deletion pages (Arabic and English, `deploy/site`), served by nginx at `/privacy`, `/terms`, `/support` and `/delete-account`; `deploy.sh` copies them and installs a changed Maqar nginx site only after `nginx -t`, restoring the previous file otherwise. The Me screen links the policy and terms and e-mails support (§8.14). The data controller named on the pages is "Maqar". |
 | 2026-11-11 | Phase 20 phone check (release APK on an Android phone). Release builds keep the view constructors Expo creates by reflection and all of expo-gl's classes (its C++ calls them by name), so the 360° tour opens; the panorama is uploaded as RGBA, the layout expo-gl decodes photos into. Text fields stay above the keyboard on Android too (edge to edge). Android "Add to calendar" opens the viewing in a calendar app (view intent), falling back to the share sheet. A backdrop keeps scrolled content out of the status bar, except under the property photo, the tour and chat headers. The insights chart fits its range without scrolling; phone numbers keep their leading `+` in Arabic text. Overlay, activity-recognition and biometric permissions are blocked as unused. |
+| 2026-11-12 | Scope added (owner's call on the admin gap review): admins upload 360° tours (Phase 21); manage clients and other admins, with suspension (Phase 22); oversee viewings (Phase 23); read every chat, with report and block for clients and agents (Phase 24); a business overview (Phase 25). Left out on purpose: hard-deleting listings or agents, broadcast notifications, an audit log. §2, §8.6, §8.12, §11, §12, §13, §14 updated. |
