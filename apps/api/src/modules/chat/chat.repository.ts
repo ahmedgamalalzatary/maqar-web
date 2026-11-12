@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatBody, ChatSender } from '@maqar/shared';
+import type { ChatBlocker, ChatBody, ChatReportReason, ChatSender, ReportOutcome } from '@maqar/shared';
 import { and, count, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { leads } from '../leads/leads.schema.js';
 import { users } from '../users/users.schema.js';
-import { type ChatMessageRow, type ChatThreadRow, chatMessages, chatThreads } from './chat.schema.js';
+import { type ChatMessageRow, type ChatReportRow, type ChatThreadRow, chatMessages, chatReports, chatThreads } from './chat.schema.js';
 
 @Injectable()
 export class ChatRepository {
@@ -141,5 +141,112 @@ export class ChatRepository {
       .orderBy(desc(chatThreads.lastMessageAt))
       .limit(1);
     return row?.id;
+  }
+
+  // ---- Report and block (phase 24) ----
+
+  /** Closes the conversation, only if it is open. False when it was already closed. */
+  async block(threadId: number, by: ChatBlocker): Promise<boolean> {
+    const [res] = await this.db
+      .update(chatThreads)
+      .set({ blockedAt: new Date(), blockedBy: by })
+      .where(and(eq(chatThreads.id, threadId), isNull(chatThreads.blockedAt)));
+    return res.affectedRows === 1;
+  }
+
+  async unblock(threadId: number): Promise<void> {
+    await this.db.update(chatThreads).set({ blockedAt: null, blockedBy: null }).where(eq(chatThreads.id, threadId));
+  }
+
+  async addReport(r: { threadId: number; by: ChatSender; reporterId: number; reason: ChatReportReason; note: string | null }): Promise<number> {
+    const [{ id }] = await this.db.insert(chatReports).values(r).$returningId();
+    return id;
+  }
+
+  async findReport(id: number): Promise<ChatReportRow | undefined> {
+    const [row] = await this.db.select().from(chatReports).where(eq(chatReports.id, id));
+    return row;
+  }
+
+  /** Closes a report with its outcome, only while it is open. False when someone already closed it. */
+  async resolveReport(id: number, outcome: ReportOutcome, by: number): Promise<boolean> {
+    const [res] = await this.db
+      .update(chatReports)
+      .set({ outcome, resolvedBy: by, resolvedAt: new Date() })
+      .where(and(eq(chatReports.id, id), isNull(chatReports.resolvedAt)));
+    return res.affectedRows === 1;
+  }
+
+  /** Reports newest first: the open ones only, or every one; or those on given conversations. */
+  reports(where: { open?: boolean; threadIds?: number[] }, limit = 200): Promise<ChatReportRow[]> {
+    if (where.threadIds && !where.threadIds.length) return Promise.resolve([]);
+    return this.db
+      .select()
+      .from(chatReports)
+      .where(and(where.open ? isNull(chatReports.resolvedAt) : undefined, where.threadIds ? inArray(chatReports.threadId, where.threadIds) : undefined))
+      .orderBy(desc(chatReports.createdAt), desc(chatReports.id))
+      .limit(limit);
+  }
+
+  /** Open reports per conversation. */
+  async openReports(threadIds: number[]): Promise<Map<number, number>> {
+    if (!threadIds.length) return new Map();
+    const rows = await this.db
+      .select({ threadId: chatReports.threadId, n: count() })
+      .from(chatReports)
+      .where(and(inArray(chatReports.threadId, threadIds), isNull(chatReports.resolvedAt)))
+      .groupBy(chatReports.threadId);
+    return new Map(rows.map((r) => [r.threadId, Number(r.n)]));
+  }
+
+  /** Messages per conversation. */
+  async messageCounts(threadIds: number[]): Promise<Map<number, number>> {
+    if (!threadIds.length) return new Map();
+    const rows = await this.db
+      .select({ threadId: chatMessages.threadId, n: count() })
+      .from(chatMessages)
+      .where(inArray(chatMessages.threadId, threadIds))
+      .groupBy(chatMessages.threadId);
+    return new Map(rows.map((r) => [r.threadId, Number(r.n)]));
+  }
+
+  /** Every conversation with messages for the admin, latest first, by advisor, client, home, or with open reports. */
+  async adminThreads(q: { agentId?: number; clientId?: number; propertyId?: number; reported?: boolean; page: number; limit: number }): Promise<{ rows: ChatThreadRow[]; total: number }> {
+    const openReport = sql`exists (select 1 from ${chatReports} where ${chatReports.threadId} = ${sql.raw('`chat_threads`.`id`')} and ${chatReports.resolvedAt} is null)`;
+    const where = and(
+      isNotNull(chatThreads.lastMessageAt),
+      q.agentId ? eq(chatThreads.agentId, q.agentId) : undefined,
+      q.clientId ? eq(chatThreads.clientId, q.clientId) : undefined,
+      q.propertyId ? eq(chatThreads.propertyId, q.propertyId) : undefined,
+      q.reported ? openReport : undefined,
+    );
+    const [rows, [{ total }]] = await Promise.all([
+      this.db
+        .select()
+        .from(chatThreads)
+        .where(where)
+        .orderBy(desc(chatThreads.lastMessageAt), desc(chatThreads.id))
+        .limit(q.limit)
+        .offset((q.page - 1) * q.limit),
+      this.db.select({ total: count() }).from(chatThreads).where(where),
+    ]);
+    return { rows, total: Number(total) };
+  }
+
+  /** Names for reporters and resolvers. */
+  async names(ids: number[]): Promise<Map<number, string>> {
+    const unique = [...new Set(ids)];
+    if (!unique.length) return new Map();
+    const rows = await this.db.select({ id: users.id, name: users.name, deletedAt: users.deletedAt }).from(users).where(inArray(users.id, unique));
+    return new Map(rows.filter((r) => !r.deletedAt).map((r) => [r.id, r.name]));
+  }
+
+  /** The admins who hear about new reports. */
+  async activeAdminIds(): Promise<number[]> {
+    const rows = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, 'admin'), isNull(users.deletedAt), isNull(users.suspendedAt)));
+    return rows.map((r) => r.id);
   }
 }

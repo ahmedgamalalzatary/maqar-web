@@ -1,12 +1,12 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import { CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
+import { ApiBearerAuth, ApiConflictResponse, ApiConsumes, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
+import { CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatReport, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';
 import { ChatService } from './chat.service.js';
-import { BookSlotDto, PageQueryDto, SendMessageDto, StartChatDto } from './dto/chat.dto.js';
+import { BookSlotDto, PageQueryDto, ReportChatDto, SendMessageDto, StartChatDto } from './dto/chat.dto.js';
 
 /** Photos up to 8 MB each, before resizing. */
 const PHOTO_BYTES = 8 * 1024 * 1024;
@@ -74,6 +74,19 @@ export class ChatController {
   @ApiNoContentResponse({ description: 'The other side’s messages are read' })
   read(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.chat.read(user, id);
+  }
+
+  /** Reports the conversation to the admins (phase 24). */
+  @Post(':id/report')
+  report(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ReportChatDto): Promise<ChatReport> {
+    return this.chat.report(user, id, body);
+  }
+
+  /** Closes the conversation for both sides (phase 24); only an admin opens it again. */
+  @Post(':id/block')
+  @ApiConflictResponse({ description: 'Already closed' })
+  block(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<ChatThread> {
+    return this.chat.block(user, id);
   }
 
   /** Books a time from an agent's times card (clients). */

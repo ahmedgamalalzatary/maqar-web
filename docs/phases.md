@@ -66,7 +66,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 21 | Admin: 360° tours | 🟨 | decided |
 | 22 | Admin: clients and admins | 🟨 | decided |
 | 23 | Admin: viewings | 🟨 | decided |
-| 24 | Admin: chats, report and block | ⬜ | decided |
+| 24 | Admin: chats, report and block | 🟨 | decided |
 | 25 | Admin: overview | ⬜ | decided |
 
 Phases 21–25 were added on 2026-11-12 after a review of the admin tools; they are built before Phase 20's store submission.
@@ -899,6 +899,15 @@ Contract §8.12, §11, §13.
 **Tests:** report and block rules (own conversations only, sending refused once blocked, unblock by admins only), the read-only admin view leaving read marks alone, report outcomes, admin-only access; the screens' main flows.
 
 **Done when** an agent blocks an abusive client, the client sees the conversation closed, and an admin handles the report.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
+- Migration `0019`: `chat_threads.blocked_at` and `blocked_by` (`client`, `agent` or `admin`: an admin closes one when handling a report), and `chat_reports`.
+- Closing: either side, from the conversation's menu, after a confirmation. Sending text or photos, and booking from a times card, are refused (409) in a closed conversation; it stays readable. The socket's new `blocked` event updates both sides at once. Only an admin opens it again.
+- Reporting: a reason (spam, abuse, scam, other) and an optional note; the other side is not told. Every active admin gets a notification that opens the conversation.
+- Admin: Chats (the reported ones first) under More in the app and in the web menu; the More tab shows how many reports are open. A conversation opens read-only (each message as its text or the card's one-line summary; reading marks nothing read), with its reports: dismiss, close the conversation, or suspend the client (Phase 22's suspension). A report is closed once.
+- Web menu: with nine pages, the labels show on very wide screens only; icons with tooltips otherwise.
+- Checked by hand on the web dashboard against the local API: a reported conversation listed, opened read-only, and the report dismissed.
+- Tests: API e2e `chat-safety.e2e-spec.ts` (7), mobile UI tests `report-block.test.tsx` (3) and `chats.test.tsx` (2); the route-access table has the new routes.
 
 ---
 

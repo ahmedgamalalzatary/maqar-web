@@ -45,6 +45,7 @@ export function connectChat(on: Handlers): () => void {
   s.on('read', on.read);
   s.on('typing', on.typing);
   s.on('updated', on.updated);
+  s.on('blocked', on.blocked);
   return () => {
     if (socket === s) disconnectChat();
   };

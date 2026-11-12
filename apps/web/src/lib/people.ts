@@ -1,6 +1,11 @@
 "use client";
 
 import type {
+  AdminChatDetail,
+  AdminChatsPage,
+  ChatPage,
+  ChatReport,
+  ReportOutcome,
   AdminAccount,
   AdminAccountBody,
   AdminAccountUpdate,
@@ -15,7 +20,7 @@ import type {
   SlotsResponse,
   ViewingWhen,
 } from "@maqar/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useKey, useRefresh } from "./admin";
 import { api } from "./client";
 
@@ -101,4 +106,41 @@ export function useUpdateAdminViewing(id: number) {
       void qc.invalidateQueries({ queryKey: ["slots"] });
     },
   });
+}
+
+// Phase 24: chats and reports.
+
+export function useAdminChats({ reported, page = 1 }: { reported: boolean; page?: number }) {
+  const key = useKey();
+  return useQuery({
+    queryKey: [...key, "chats", reported, page],
+    queryFn: ({ signal }) => api.request<AdminChatsPage>(`/admin/chats?limit=50&page=${page}${reported ? "&reported=true" : ""}`, { signal }),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useAdminChat(id: number | undefined) {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "chat", id], queryFn: ({ signal }) => api.request<AdminChatDetail>(`/admin/chats/${id}`, { signal }), enabled: id !== undefined });
+}
+
+/** Read-only: the latest page first, older pages on demand. Nothing is marked read. */
+export function useAdminChatMessages(id: number) {
+  const key = useKey();
+  return useInfiniteQuery({
+    queryKey: [...key, "chat", id, "messages"],
+    queryFn: ({ pageParam, signal }) => api.request<ChatPage>(`/admin/chats/${id}/messages${pageParam ? `?before=${pageParam}` : ""}`, { signal }),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (last) => (last.hasMore ? last.items[0]?.id : undefined),
+  });
+}
+
+export function useResolveReport() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: ({ id, outcome }: { id: number; outcome: ReportOutcome }) => api.request<ChatReport>(`/admin/reports/${id}`, { method: "PATCH", body: { outcome } }), onSuccess: refresh });
+}
+
+export function useUnblockChat(id: number) {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: () => api.request<AdminChatDetail>(`/admin/chats/${id}/unblock`, { method: "POST" }), onSuccess: refresh });
 }

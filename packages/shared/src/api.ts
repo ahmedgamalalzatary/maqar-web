@@ -368,7 +368,21 @@ export type ChatThread = {
   leadId: number | null;
   last: ChatMessage | null;
   unread: number;
+  /** Set once either side (or an admin) closed the conversation (phase 24): nobody can send any more. */
+  blocked: ChatBlock | null;
 };
+
+/** Who closed a conversation and when (phase 24). An admin closes one when handling a report. */
+export type ChatBlock = { at: string; by: ChatBlocker };
+export const CHAT_BLOCKERS = ['client', 'agent', 'admin'] as const;
+export type ChatBlocker = (typeof CHAT_BLOCKERS)[number];
+
+/** Why a conversation is reported (phase 24, store guideline 1.2). */
+export const CHAT_REPORT_REASONS = ['spam', 'abuse', 'scam', 'other'] as const;
+export type ChatReportReason = (typeof CHAT_REPORT_REASONS)[number];
+
+/** `POST /v1/chats/:id/report`. */
+export type ChatReportBody = { reason: ChatReportReason; note?: string };
 
 /** `GET /v1/chats/:id/messages?before=`: oldest first; `hasMore` when older ones are left. */
 export type ChatPage = { items: ChatMessage[]; hasMore: boolean };
@@ -393,4 +407,6 @@ export type ChatEvents = {
   typing: { threadId: number; sender: ChatSender };
   /** A slots card changed (the client picked a time). */
   updated: { message: ChatMessage };
+  /** The conversation was closed, or opened again by an admin (phase 24). */
+  blocked: { threadId: number; blocked: ChatBlock | null };
 };

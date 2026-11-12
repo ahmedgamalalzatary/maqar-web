@@ -1,9 +1,9 @@
-import type { ChatBody, ChatMessage, ChatSender, SendChatBody } from '@maqar/shared';
+import type { ChatBody, ChatMessage, ChatReportBody, ChatSender, SendChatBody } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useSession } from '@/features/auth/store/session.store';
 import { VIEWINGS_KEY } from '@/features/viewings/hooks/use-viewings';
-import { bookSlotRequest, getChats, getMessages, getThread, readRequest, sendImagesRequest, sendRequest, startChatRequest } from '../api/chat.api';
+import { blockChatRequest, bookSlotRequest, getChats, getMessages, getThread, readRequest, reportChatRequest, sendImagesRequest, sendRequest, startChatRequest } from '../api/chat.api';
 import { addMessage, chatsKey, type Messages, messagesKey, removeMessage, replaceMessage, threadKey } from '../chat-cache';
 import type { PhotoPart } from '../photos';
 
@@ -128,5 +128,23 @@ export function useBookSlot(threadId: number) {
         qc.invalidateQueries({ queryKey: ['slots'] }),
         qc.invalidateQueries({ queryKey: chatsKey(me?.id ?? null) }),
       ]),
+  });
+}
+
+/** Phase 24: report the conversation to the admins. */
+export function useReportChat(threadId: number) {
+  return useMutation({ mutationFn: (body: ChatReportBody) => reportChatRequest(threadId, body) });
+}
+
+/** Phase 24: close the conversation for both sides; the thread shows it at once. */
+export function useBlockChat(threadId: number) {
+  const me = useChatUser();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => blockChatRequest(threadId),
+    onSuccess: (t) => {
+      qc.setQueryData(threadKey(me?.id ?? null, threadId), t);
+      void qc.invalidateQueries({ queryKey: chatsKey(me?.id ?? null) });
+    },
   });
 }

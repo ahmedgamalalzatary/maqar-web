@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { addMessage, chatKey, chatsKey, markReadBy, replaceMessage } from '../chat-cache';
+import type { ChatThread } from '@maqar/shared';
+import { addMessage, chatKey, chatsKey, markReadBy, replaceMessage, threadKey } from '../chat-cache';
 import { useChatUser } from '../hooks/use-chat';
 import { connectChat, heardTyping, stoppedTyping } from '../socket';
 
@@ -29,6 +30,11 @@ export function ChatBridge() {
         if (sender !== side) heardTyping(threadId);
       },
       updated: ({ message }) => replaceMessage(qc, id, message),
+      // Closed (or opened again by an admin): the conversation's banner and composer follow at once.
+      blocked: ({ threadId, blocked }) => {
+        qc.setQueryData<ChatThread>(threadKey(id, threadId), (t) => (t ? { ...t, blocked } : t));
+        void qc.invalidateQueries({ queryKey: chatsKey(id) });
+      },
       // Back after a drop (the app in the background, the network gone): load what was missed.
       reconnected: () => void qc.invalidateQueries({ queryKey: chatKey(id) }),
     });

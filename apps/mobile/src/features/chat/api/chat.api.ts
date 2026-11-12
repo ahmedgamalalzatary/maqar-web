@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatPage, ChatThread, SendChatBody, ViewingItem } from '@maqar/shared';
+import type { ChatMessage, ChatPage, ChatReport, ChatReportBody, ChatThread, SendChatBody, ViewingItem } from '@maqar/shared';
 import { apiFetch } from '@/core/api/api';
 import type { PhotoPart } from '../photos';
 
@@ -25,3 +25,8 @@ export const readRequest = (id: number) => apiFetch<void>(`/chats/${id}/read`, {
 
 export const bookSlotRequest = (id: number, messageId: number, time: string) =>
   apiFetch<{ viewing: ViewingItem; card: ChatMessage }>(`/chats/${id}/messages/${messageId}/book`, { method: 'POST', body: { time } });
+
+/** Phase 24: report the conversation to the admins, or close it for both sides. */
+export const reportChatRequest = (id: number, body: ChatReportBody) => apiFetch<ChatReport>(`/chats/${id}/report`, { method: 'POST', body });
+
+export const blockChatRequest = (id: number) => apiFetch<ChatThread>(`/chats/${id}/block`, { method: 'POST' });

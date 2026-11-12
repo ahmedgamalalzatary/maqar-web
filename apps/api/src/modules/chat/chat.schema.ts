@@ -1,6 +1,6 @@
-import { CHAT_MESSAGE_KINDS, CHAT_SENDERS, type ChatBody } from '@maqar/shared';
+import { CHAT_BLOCKERS, CHAT_MESSAGE_KINDS, CHAT_REPORT_REASONS, CHAT_SENDERS, type ChatBody, REPORT_OUTCOMES } from '@maqar/shared';
 import { sql } from 'drizzle-orm';
-import { bigint, index, json, mysqlEnum, mysqlTable, timestamp, unique } from 'drizzle-orm/mysql-core';
+import { bigint, index, json, mysqlEnum, mysqlTable, timestamp, unique, varchar } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';
 import { leads } from '../leads/leads.schema.js';
 import { properties } from '../properties/properties.schema.js';
@@ -28,6 +28,9 @@ export const chatThreads = mysqlTable(
     createdAt: timestamp('created_at', { fsp: 3 })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP(3)`),
+    /** Phase 24: set while the conversation is closed; nobody can send in it. Only an admin opens it again. */
+    blockedAt: timestamp('blocked_at', { fsp: 3 }),
+    blockedBy: mysqlEnum('blocked_by', CHAT_BLOCKERS),
   },
   (t) => [unique('chat_threads_client_property_unique').on(t.clientId, t.propertyId), index('chat_threads_agent_idx').on(t.agentId, t.lastMessageAt)],
 );
@@ -54,3 +57,30 @@ export const chatMessages = mysqlTable(
 );
 
 export type ChatMessageRow = typeof chatMessages.$inferSelect;
+
+/**
+ * A report on a conversation (phase 24, contract §8.12): by its client or its agent. It is open
+ * until an admin closes it with an outcome.
+ */
+export const chatReports = mysqlTable(
+  'chat_reports',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    threadId: bigint('thread_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: 'cascade' }),
+    by: mysqlEnum('by', CHAT_SENDERS).notNull(),
+    reporterId: bigint('reporter_id', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+    reason: mysqlEnum('reason', CHAT_REPORT_REASONS).notNull(),
+    note: varchar('note', { length: 500 }),
+    createdAt: timestamp('created_at', { fsp: 3 })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP(3)`),
+    resolvedAt: timestamp('resolved_at', { fsp: 3 }),
+    resolvedBy: bigint('resolved_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+    outcome: mysqlEnum('outcome', REPORT_OUTCOMES),
+  },
+  (t) => [index('chat_reports_open_idx').on(t.resolvedAt, t.createdAt), index('chat_reports_thread_idx').on(t.threadId)],
+);
+
+export type ChatReportRow = typeof chatReports.$inferSelect;
