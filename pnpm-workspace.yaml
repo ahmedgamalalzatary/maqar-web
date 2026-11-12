@@ -2,6 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  # Dev-only ffmpeg/ffprobe for tests (Phase 26); the API image uses the system ffmpeg.
+  '@ffmpeg-installer/linux-x64': false
+  '@ffprobe-installer/linux-x64': false
   '@parcel/watcher': true
   '@scarf/scarf': false
   esbuild: true
