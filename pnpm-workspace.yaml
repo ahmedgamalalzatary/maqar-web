@@ -2,8 +2,19 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
-  # Dev-only ffmpeg/ffprobe for tests (Phase 26); the API image uses the system ffmpeg.
+  # Dev-only ffmpeg/ffprobe for tests (Phase 26): their install scripts are not needed on CI or in the
+  # API image (which uses the system ffmpeg), and an unapproved one stops pnpm install.
+  '@ffmpeg-installer/darwin-arm64': false
+  '@ffmpeg-installer/darwin-x64': false
+  '@ffmpeg-installer/linux-arm': false
+  '@ffmpeg-installer/linux-arm64': false
+  '@ffmpeg-installer/linux-ia32': false
   '@ffmpeg-installer/linux-x64': false
+  '@ffprobe-installer/darwin-arm64': false
+  '@ffprobe-installer/darwin-x64': false
+  '@ffprobe-installer/linux-arm': false
+  '@ffprobe-installer/linux-arm64': false
+  '@ffprobe-installer/linux-ia32': false
   '@ffprobe-installer/linux-x64': false
   '@parcel/watcher': true
   '@scarf/scarf': false
