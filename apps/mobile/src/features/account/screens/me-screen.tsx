@@ -2,7 +2,7 @@ import { ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, ChevronLeft, ChevronRight, FileText, Languages, Mail, Moon, ShieldCheck, SlidersHorizontal, UserPen } from 'lucide-react-native';
+import { Calculator, ChevronLeft, ChevronRight, FileText, Languages, Mail, MapPin, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -20,7 +20,7 @@ import { PushRow } from '@/features/notifications/components/push-row';
 import { DeleteAccountSheet } from '../components/delete-account-sheet';
 import { usePreferences } from '../hooks/use-account';
 
-/** The Me tab for every role (contract §8.14). */
+/** The Me tab for every role (contract §8.14); for admins it is More, with the pages to manage on top (phase 22). */
 export function MeScreen() {
   const t = useT();
   const lang = useLang();
@@ -33,7 +33,7 @@ export function MeScreen() {
   const selfDelete = user?.role === 'client';
 
   return (
-    <Screen title={t('حسابي', 'My account')}>
+    <Screen title={user?.role === 'admin' ? t('المزيد', 'More') : t('حسابي', 'My account')}>
       {user ? (
         <Card style={styles.profile}>
           <View style={[styles.avatar, { backgroundColor: colors.navy }]}>
@@ -67,6 +67,19 @@ export function MeScreen() {
           <Button label={t('إنشاء حساب', 'Create an account')} variant="secondary" onPress={() => router.push('/sign-up')} />
         </Card>
       )}
+
+      {user?.role === 'admin' ? (
+        <>
+          <Txt size={15} weight="semibold">
+            {t('إدارة', 'Manage')}
+          </Txt>
+          <Card style={styles.list}>
+            <LinkRow icon={<UsersRound size={20} color={colors.accentInk} />} label={t('حسابات العملاء', 'Client accounts')} onPress={() => router.push('/admin/clients')} />
+            <LinkRow icon={<MapPin size={20} color={colors.accentInk} />} label={t('المناطق', 'Areas')} onPress={() => router.push('/admin/areas')} />
+            <LinkRow icon={<ShieldUser size={20} color={colors.accentInk} />} label={t('حسابات الإدارة', 'Admin accounts')} onPress={() => router.push('/admin/admins')} />
+          </Card>
+        </>
+      ) : null}
 
       <Txt size={15} weight="semibold">
         {t('الإعدادات', 'Settings')}

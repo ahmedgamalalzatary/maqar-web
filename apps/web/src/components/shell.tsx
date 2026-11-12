@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, LogOut, MapPin, Moon, PlusSquare, Sun, UserCog, Users } from "lucide-react";
+import { Building2, LogOut, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -67,7 +67,9 @@ function Header({ name }: { name: string }) {
     { href: "/new/", label: t("أضف عقار", "Add a listing"), icon: PlusSquare, on: path.startsWith("/new") },
     { href: "/agents/", label: t("المسؤولين", "Agents"), icon: UserCog, on: path.startsWith("/agent") },
     { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
+    { href: "/clients/", label: t("حسابات العملاء", "Clients"), icon: UsersRound, on: path.startsWith("/client") },
     { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
+    { href: "/admins/", label: t("الإدارة", "Admins"), icon: ShieldUser, on: path.startsWith("/admins") },
   ];
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
@@ -82,11 +84,12 @@ function Header({ name }: { name: string }) {
               key={href}
               href={href}
               aria-label={label}
+              title={label}
               aria-current={on ? "page" : undefined}
-              className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
+              className={`inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
             >
               <Icon className="size-4" aria-hidden />
-              <span className="hidden sm:inline">{label}</span>
+              <span className="hidden xl:inline">{label}</span>
             </Link>
           ))}
         </nav>

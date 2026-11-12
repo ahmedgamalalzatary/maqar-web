@@ -20,9 +20,10 @@ import { CardSkeleton, ListingsError } from '@/features/listings/components/list
 import { uploadPhotoRequest } from '../api/admin.api';
 import { useAdminAreas, useDeleteArea, useSaveArea } from '../hooks/use-admin';
 
-/** The admin's Areas tab (phase 18): the areas clients browse by. */
+/** `/admin/areas` (phase 18; under More from phase 22): the areas clients browse by. */
 export function AreasScreen() {
   const t = useT();
+  const dir = useDir();
   const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
@@ -55,6 +56,7 @@ export function AreasScreen() {
       )}
       ListHeaderComponent={
         <View style={styles.header}>
+          <IconButton label={t('رجوع', 'Back')} icon={dir === 'rtl' ? <ArrowRight size={20} color={colors.ink} /> : <ArrowLeft size={20} color={colors.ink} />} onPress={() => (router.canGoBack() ? router.back() : router.replace('/admin/more'))} />
           <Txt accessibilityRole="header" size={24} weight="semibold" style={styles.flex}>
             {t('المناطق', 'Areas')}
           </Txt>

@@ -22,7 +22,10 @@ export const users = mysqlTable('users', {
     .onUpdateNow(),
   deletedAt: timestamp('deleted_at'),
   /** Set when the password or email changes: access tokens issued before it stop working at once. */
-  credentialsChangedAt: timestamp('credentials_changed_at'),
+  /** Milliseconds, compared with the access token's `iatMs` (the server's clock, as the token's). */
+  credentialsChangedAt: timestamp('credentials_changed_at', { fsp: 3 }),
+  /** Set while an admin has suspended the account (phase 22: clients and admins): refused everywhere at once. */
+  suspendedAt: timestamp('suspended_at'),
 });
 
 export type UserRow = typeof users.$inferSelect;

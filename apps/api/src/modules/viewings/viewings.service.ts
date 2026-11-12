@@ -154,6 +154,23 @@ export class ViewingsService {
     return item;
   }
 
+  /**
+   * Cancels a client's upcoming viewings when an admin suspends the account (phase 22), so the
+   * advisors' hours are free again. Only the advisors are told: the client is being signed out.
+   * Call it before the suspension, while the client's name can still be read. Returns how many.
+   */
+  async cancelUpcomingOf(clientId: number): Promise<number> {
+    const now = Date.now();
+    const upcoming = (await this.repo.list({ clientId })).filter((v) => (v.status === 'confirmed' || v.status === 'rescheduled') && v.startsAt.getTime() > now);
+    let cancelled = 0;
+    for (const v of upcoming) {
+      if (!(await this.repo.cancel(v.id))) continue;
+      cancelled++;
+      await this.tell(await this.item(v.id), 'cancelled', false);
+    }
+    return cancelled;
+  }
+
   /** Past confirmed/rescheduled viewings become completed, so the client can book the home again. */
   async completePastViewings(): Promise<number> {
     return this.repo.completePastViewings();
@@ -252,7 +269,7 @@ export class ViewingsService {
   }
 
   /** The client and the agent each hear about a booking, a new time and a cancellation (contract §8.7). */
-  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled'): Promise<void> {
+  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled', clientToo = true): Promise<void> {
     const row = (await this.repo.findById(v.id))!;
     const client = await this.users.findActiveById(row.clientId);
     const leadId = await this.repo.leadIdOf(row.clientId, row.agentId);
@@ -271,14 +288,16 @@ export class ViewingsService {
       cancelled: ['معاينة اتلغت', 'A viewing was cancelled'],
     }[what];
     await Promise.all([
-      this.notifications.notify(row.clientId, {
-        kind: 'booking',
-        titleAr: forClient[0]!,
-        titleEn: forClient[1]!,
-        bodyAr: forClient[2]!,
-        bodyEn: forClient[3]!,
-        href: '/viewings',
-      }),
+      clientToo
+        ? this.notifications.notify(row.clientId, {
+            kind: 'booking',
+            titleAr: forClient[0]!,
+            titleEn: forClient[1]!,
+            bodyAr: forClient[2]!,
+            bodyEn: forClient[3]!,
+            href: '/viewings',
+          })
+        : null,
       this.notifications.notify(row.agentId, {
         kind: 'lead',
         titleAr: forAgent[0]!,

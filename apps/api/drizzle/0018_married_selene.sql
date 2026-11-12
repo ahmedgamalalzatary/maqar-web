@@ -1,0 +1,1 @@
+ALTER TABLE `users` MODIFY COLUMN `credentials_changed_at` timestamp(3);

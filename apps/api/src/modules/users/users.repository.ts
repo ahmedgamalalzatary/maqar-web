@@ -18,18 +18,24 @@ import { clientPrefs, type NewUserRow, type UserRow, users } from './users.schem
 export class UsersRepository {
   constructor(@InjectDb() private readonly db: Db) {}
 
-  /** Not deleted, and not an agent an admin has turned off (phase 18): they lose access at once. */
+  /** Not deleted, not suspended (phase 22), and not an agent an admin has turned off (phase 18): they lose access at once. */
   private async findActive(where: SQL): Promise<UserRow | undefined> {
     const [row] = await this.db
       .select({ user: users })
       .from(users)
       .leftJoin(agents, eq(agents.userId, users.id))
-      .where(and(where, isNull(users.deletedAt), or(ne(users.role, 'agent'), eq(agents.active, true))));
+      .where(and(where, isNull(users.deletedAt), isNull(users.suspendedAt), or(ne(users.role, 'agent'), eq(agents.active, true))));
     return row?.user;
   }
 
   findActiveById(id: number): Promise<UserRow | undefined> {
     return this.findActive(eq(users.id, id));
+  }
+
+  /** Whether any account holds this address, including suspended and turned-off ones (deleted ones release it). */
+  async emailInUse(email: string): Promise<boolean> {
+    const [row] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, email));
+    return row !== undefined;
   }
 
   findActiveByEmail(email: string): Promise<UserRow | undefined> {

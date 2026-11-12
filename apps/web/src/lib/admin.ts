@@ -27,7 +27,7 @@ import { api, useSession } from "./client";
 export type ListingsQuery = { status?: PropertyStatus; q?: string; page?: number };
 
 /** Keys the cache by the signed-in admin, so another account never sees it. */
-const useKey = () => ["admin", useSession()?.user.id ?? null] as const;
+export const useKey = () => ["admin", useSession()?.user.id ?? null] as const;
 
 /** The id from the address, or undefined when it is not a positive whole number. */
 export function readId(raw: string | null): number | undefined {
@@ -133,7 +133,7 @@ export function uploadPanorama(pano: Blob): Promise<UploadResponse> {
 // ---- Admin tools (phase 18) ----
 
 /** After a change to agents, leads or areas, everything the admin sees refetches. */
-function useRefresh() {
+export function useRefresh() {
   const key = useKey();
   const qc = useQueryClient();
   return () => {

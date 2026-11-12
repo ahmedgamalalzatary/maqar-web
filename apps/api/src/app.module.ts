@@ -14,6 +14,7 @@ import { InsightsModule } from './modules/insights/insights.module.js';
 import { ListingsModule } from './modules/listings/listings.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { PeopleModule } from './modules/people/people.module.js';
 import { PricesModule } from './modules/prices/prices.module.js';
 import { PropertiesModule } from './modules/properties/properties.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
@@ -63,6 +64,7 @@ import { UsersModule } from './modules/users/users.module.js';
     UploadsModule,
     ListingsModule,
     AgentsModule,
+    PeopleModule,
   ],
 })
 export class AppModule {}

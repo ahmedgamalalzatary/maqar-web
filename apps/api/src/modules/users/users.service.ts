@@ -93,12 +93,20 @@ export class UsersService {
       throw new ForbiddenException('Staff accounts are removed by an admin');
     }
     if (!(await verifyPassword(user.passwordHash, password))) throw new UnauthorizedException('Wrong password');
+    await this.removeClient(id);
+    await onDeleted();
+  }
+
+  /**
+   * Deletes a client's account and what is personal to it (contract §8.14). The client's own
+   * delete and an admin's (phase 22) both end here; the caller ends the sessions.
+   */
+  async removeClient(id: number): Promise<void> {
     const threads = await this.users.softDelete(id);
     // Their chat photos are served from the uploads folder; they go with the conversations. The
     // account is already deleted, so a folder that will not go is logged, not reported as a failure.
     const uploads = path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'chat');
     const removed = await Promise.allSettled(threads.map((t) => rm(path.join(uploads, String(t)), { recursive: true, force: true })));
     for (const r of removed) if (r.status === 'rejected') this.log.error(`Chat photos not removed: ${String(r.reason)}`);
-    await onDeleted();
   }
 }

@@ -15,3 +15,4 @@ export * from './listing-form.js';
 export * from './admin-tools.js';
 export * from './insights.js';
 export * from './site.js';
+export * from './admin-people.js';
