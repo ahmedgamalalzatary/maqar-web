@@ -133,6 +133,34 @@ export function FilterSheet({
                 maxLabel={t('أكبر مساحة', 'Maximum size')}
                 valueText={(v) => `${fmtNum(v, lang)} ${t('م²', 'm²')}`}
               />
+              {/* Typed like the price (2026-11-12): the slider follows these. */}
+              <View style={styles.boxes}>
+                <NumberBox
+                  label={t('من (م²)', 'Min (m²)')}
+                  a11yLabel={t('أقل مساحة بالمتر', 'Minimum size in m²')}
+                  value={draft.minSize}
+                  emptyText={fmtNum(SIZE_SCALE.min, lang)}
+                  onCommit={(n) =>
+                    set({
+                      minSize: n && n > SIZE_SCALE.min ? Math.min(n, (draft.maxSize ?? SIZE_SCALE.max) - SIZE_SCALE.step) : undefined,
+                    })
+                  }
+                />
+                <NumberBox
+                  label={t('إلى (م²)', 'Max (m²)')}
+                  a11yLabel={t('أكبر مساحة بالمتر', 'Maximum size in m²')}
+                  value={draft.maxSize}
+                  emptyText={t('أي مساحة', 'Any')}
+                  onCommit={(n) =>
+                    set({
+                      maxSize:
+                        n === undefined || n >= SIZE_SCALE.max
+                          ? undefined
+                          : Math.max(n, (draft.minSize ?? SIZE_SCALE.min) + SIZE_SCALE.step),
+                    })
+                  }
+                />
+              </View>
             </Section>
 
             <Section title={t('نوع الوحدة', 'Unit type')} hint={t('اختار أكتر من نوع', 'Pick any')}>
@@ -278,11 +306,14 @@ function Chips({ children }: { children: ReactNode }) {
  */
 function NumberBox({
   label,
+  a11yLabel,
   value,
   emptyText,
   onCommit,
 }: {
   label: string;
+  /** When the visible label is not enough on its own (two "from" boxes in one sheet). */
+  a11yLabel?: string;
   value: number | undefined;
   emptyText: string;
   onCommit: (n: number | undefined) => void;
@@ -300,7 +331,7 @@ function NumberBox({
         {label}
       </Txt>
       <TextInput
-        accessibilityLabel={label}
+        accessibilityLabel={a11yLabel ?? label}
         keyboardType="number-pad"
         returnKeyType="done"
         value={typing ?? (value === undefined ? emptyText : fmtNum(value, lang))}

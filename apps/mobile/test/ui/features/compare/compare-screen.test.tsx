@@ -74,8 +74,8 @@ describe('The compare screen', () => {
     expect(screen.getByLabelText('Size A: 200 m², better')).toBeTruthy();
     expect(screen.getByLabelText('Maintenance A: 8%, better')).toBeTruthy();
     expect(screen.getByLabelText('Delivery B: Ready, better')).toBeTruthy();
-    // Views are shown, but neither side wins.
-    expect(screen.getByLabelText('Views A: 100')).toBeTruthy();
+    // Views are not compared (removed 2026-11-12).
+    expect(screen.queryByLabelText('Views A: 100')).toBeNull();
     expect(screen.getByLabelText('Pool A: yes')).toBeTruthy();
     expect(screen.getByLabelText('Pool B: no')).toBeTruthy();
     expect(screen.getByLabelText('360° tour A: yes')).toBeTruthy();

@@ -28,6 +28,12 @@ export class SignUpDto implements SignUpBody {
   @Matches(/(?=.*[A-Za-z])(?=.*\d)/, { message: 'password needs a letter and a digit' })
   password: string;
 
+  /** Optional at sign-up (App Store 5.1.1: browsing needs no number). */
+  @ApiPropertyOptional({ example: '+201001234567' })
+  @IsOptional()
+  @Matches(/^\+?\d{8,15}$/, { message: 'phone must be 8–15 digits, optionally starting with +' })
+  phone?: string;
+
   /** Optional: every sign-up is a client. Older apps still send it. */
   @ApiPropertyOptional({ enum: SIGN_UP_ROLES, default: 'client' }) @IsOptional() @IsIn(SIGN_UP_ROLES)
   role?: SignUpRole;

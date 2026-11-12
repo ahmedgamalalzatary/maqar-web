@@ -2,7 +2,7 @@ import { fmtNum, ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Languages, Mail, MapPin, MessagesSquare, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
+import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Languages, MapPin, MessagesSquare, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -157,11 +157,6 @@ export function MeScreen() {
           label={t('الشروط والأحكام', 'Terms of use')}
           onPress={() => openPage(SITE_PAGES.terms)}
         />
-        <LinkRow
-          icon={<Mail size={20} color={colors.accentInk} />}
-          label={t('كلّم الدعم', 'Contact support')}
-          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openPage(SITE_PAGES.support))}
-        />
       </Card>
 
       {user ? (
@@ -178,12 +173,34 @@ export function MeScreen() {
         <Txt size={11} color="ink3" align="center">
           {t('الإصدار', 'Version')} {Constants.expoConfig?.version ?? '1.0.0'}
         </Txt>
+        {/* Support has no row of its own (2026-11-12), but Apple 1.2 and 1.5 want a contact inside the app. */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={SUPPORT_EMAIL}
+          hitSlop={8}
+          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openPage(SITE_PAGES.support))}
+        >
+          <Txt size={12} color="ink2" align="center">
+            {t('الدعم:', 'Support:')} {SUPPORT_EMAIL}
+          </Txt>
+        </Pressable>
+        <Txt size={12} color="ink3" align="center" style={styles.credit}>
+          Powered by Bit Tech
+        </Txt>
+        <Pressable accessibilityRole="link" accessibilityLabel={DEV_PHONE} hitSlop={8} onPress={() => void Linking.openURL(`tel:${DEV_PHONE}`).catch(() => {})}>
+          <Txt size={13} weight="medium" color="accentInk" align="center">
+            {DEV_PHONE}
+          </Txt>
+        </Pressable>
       </View>
 
       {user ? <DeleteAccountSheet open={deleting} onClose={() => setDeleting(false)} /> : null}
     </Screen>
   );
 }
+
+/** The developer's credit at the foot of the page (owner's request, 2026-11-12). */
+const DEV_PHONE = '01501053600';
 
 /** A public page on the API's host, in the in-app browser. With no email app, support falls back to its page. */
 function openPage(path: string) {
@@ -224,5 +241,6 @@ const styles = StyleSheet.create({
   segBtn: { height: 32, paddingHorizontal: 12, borderRadius: 10, justifyContent: 'center' },
   actions: { gap: 8 },
   footer: { alignItems: 'center', gap: 6, paddingTop: 16 },
+  credit: { marginTop: 8 },
   flex: { flex: 1 },
 });

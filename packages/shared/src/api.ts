@@ -78,8 +78,11 @@ export type AuthResponse = {
   expiresIn: number;
 };
 
-/** `role` may be left out: every sign-up is a client. */
-export type SignUpBody = { name: string; email: string; password: string; role?: SignUpRole; lang?: Lang };
+/**
+ * `role` may be left out: every sign-up is a client. `phone` is optional at sign-up (App Store
+ * 5.1.1: browsing needs no number); booking a viewing asks for it.
+ */
+export type SignUpBody = { name: string; email: string; password: string; phone?: string; role?: SignUpRole; lang?: Lang };
 export type SignInBody = { email: string; password: string };
 export type RefreshBody = { refreshToken: string };
 export type UpdateMeBody = Partial<Pick<Me, 'name' | 'phone' | 'lang' | 'theme' | 'pushEnabled'>>;

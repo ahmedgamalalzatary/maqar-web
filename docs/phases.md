@@ -978,3 +978,21 @@ Contract §11, §13, §14.
 - App: More → Reports; presets instead of free dates; tables as cards, 25 at a time; CSV through the share sheet.
 - Checked by hand on the web dashboard against the local API: the hub, advisors, viewings (with the heat map), at 360, 390, 768, 1024, 1280 and 1536 px; no sideways scroll.
 - Tests: API e2e `admin-analytics.e2e-spec.ts` (4: access and validation, the shape of all eleven, every report's numbers after real actions, filters and the previous period), unit `reports/chat-times.spec.ts` (3), shared `reports.test.ts` (7), mobile `reports.test.tsx` (3).
+
+## Phase 28: Owner's client-app changes (2026-11-12)
+
+Contract §8.1, §8.2, §8.5, §8.7, §8.9, §15.
+
+The owner's list after using the app in the browser, checked against the store rules first.
+
+- **Phone at sign-up:** an optional field on the sign-up form (`SignUpBody.phone`, the same 8–15 digits as `PATCH /me`; Arabic digits and separators are read with `readMobile`). It is optional because App Store guideline 5.1.1 lets an app require only what its core use needs, and browsing homes does not. It can be added or changed later in the profile. Store forms: "Phone number, optional, app functionality" (already in `store-readiness.md` §2.4).
+- **Calculator:** the payment period is typed (1 to 10 years), not picked from chips. A listing's own plan may run longer, and then that is the limit. A wrong number keeps the last good one and is put back when typing ends.
+- **Map:** the web preview embeds an OpenStreetMap map with the pin, as the demo does (`osmEmbedUrl`). Phones keep the native map (Apple Maps on iOS; Google Maps on Android only with `GOOGLE_MAPS_API_KEY`, still not set). OSM's free tiles are for light use, so they are not used in the store apps.
+- **Compare:** the "Demand" (views) group is removed.
+- **My account:** the "Contact support" row is removed; the support address moves to the footer, because Apple 1.2 (apps with chat) and 1.5 want a contact inside the app. The footer adds "Powered by Bit Tech" and 01501053600 (tap to call).
+- **Filters:** the size range takes typed "from" and "to" numbers like the price; the slider follows them; the range stays in order and a maximum past 500 m² means no maximum.
+- **Home:** "What you're looking for" shows a client's answers from after sign-up (purpose, budget, areas, types, bedrooms, must-haves) with Edit; a client who skipped them is asked to answer; guests and staff see nothing.
+
+**Tests:** API e2e (sign-up keeps a valid phone, refuses a bad one); shared unit (`readMobile`); mobile unit (`parseYears`, `osmEmbedUrl`); mobile UI (sign-up phone, typed years, compare without views, the footer, the typed size range, the Home preferences section).
+
+**Status (2026-11-12): built, not deployed.** Needs an API deploy for the sign-up phone, and a new app build for the rest on phones.

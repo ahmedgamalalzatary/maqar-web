@@ -1,4 +1,4 @@
-import { LISTING_STEPS, emptyListingForm, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
+import { LISTING_STEPS, emptyListingForm, readMobile, readPhone, type ListingForm, listingBodyOf, listingFormOf, listingStepErrors, readWholeNumber } from '../../src/listing-form.js';
 import { type AdminListing, fmtDuration, panoramaProblem, videoProblem } from '../../src/listings.js';
 
 const filled = (over: Partial<ListingForm> = {}): ListingForm => ({
@@ -38,6 +38,15 @@ describe('readPhone (the owner’s phone)', () => {
     expect(readPhone('010+1234567')).toBeUndefined();
     expect(readPhone('12345')).toBeUndefined();
     expect(readPhone('1'.repeat(21))).toBeUndefined();
+  });
+});
+
+describe('readMobile (a client account’s number)', () => {
+  it('is a readable phone of 8 to 15 digits, the range the API takes', () => {
+    expect(readMobile('٠١٠ ١٢٣٤ ٥٦٧٨')).toBe('01012345678');
+    expect(readMobile('+20 100 123 4567')).toBe('+201001234567');
+    expect(readMobile('1234567')).toBeUndefined();
+    expect(readMobile('1'.repeat(16))).toBeUndefined();
   });
 });
 

@@ -31,6 +31,19 @@ describe('Accounts and sign-in (e2e)', () => {
       .send({ name: 'No Role', email: 'no-role@test.maqar', password: 'Secret123' })
       .expect(201);
     expect(res.body.user.role).toBe('client');
+    expect(res.body.user.phone).toBeNull();
+  });
+
+  it('keeps a mobile number given at sign-up, and refuses one that is not a number', async () => {
+    const res = await http()
+      .post('/v1/auth/sign-up')
+      .send({ name: 'With Phone', email: 'with-phone@test.maqar', password: 'Secret123', phone: '+201001234567' })
+      .expect(201);
+    expect(res.body.user.phone).toBe('+201001234567');
+    await http()
+      .post('/v1/auth/sign-up')
+      .send({ name: 'Bad Phone', email: 'bad-phone@test.maqar', password: 'Secret123', phone: '0100-abc' })
+      .expect(400);
   });
 
   it('a wrong password and an unknown email get the same 401', async () => {

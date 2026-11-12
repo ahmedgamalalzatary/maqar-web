@@ -25,14 +25,14 @@ describe('The installment calculator', () => {
     expect(screen.getByText(fmtMoney(plan.down, 'ar'))).toBeOnTheScreen();
     expect(screen.getByText(fmtNum(plan.count, 'ar'))).toBeOnTheScreen();
     expect(screen.getByText(fmtMoney(plan.total, 'ar'))).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: '٥ سنين', checked: true })).toBeOnTheScreen();
+    expect(screen.getByLabelText('مدة التقسيط (بالسنين)').props.value).toBe('٥');
     expect(screen.getByRole('radio', { name: 'خطة المطوّر (بدون فوايد)', checked: true })).toBeOnTheScreen();
   });
 
   it('changes with the years and the down payment', async () => {
     await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
 
-    await pick('radio', '١٠ سنين');
+    await fireEvent.changeText(screen.getByLabelText('مدة التقسيط (بالسنين)'), '١٠');
     expect(screen.getByText(money(installment(PRICE, 20, 10).payment))).toBeOnTheScreen();
 
     await slide('المقدم', 'increment');
@@ -82,9 +82,22 @@ describe('The installment calculator', () => {
     expect(screen.getByText(money(installment(PRICE, 20, 5, 40).payment))).toBeOnTheScreen();
   });
 
-  it('offers a plan’s own years even when they are not a usual choice', async () => {
-    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={9} />);
-    expect(screen.getByRole('radio', { name: '٩ سنين', checked: true })).toBeOnTheScreen();
+  it('takes typed years from 1 to 10, keeps the last good number while the field is wrong, and fixes it once typing ends', async () => {
+    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+    const field = () => screen.getByLabelText('مدة التقسيط (بالسنين)');
+    await fireEvent.changeText(field(), '7');
+    expect(screen.getByText(money(installment(PRICE, 20, 7).payment))).toBeOnTheScreen();
+    await fireEvent.changeText(field(), '11');
+    expect(screen.getByText('من ١ لـ ١٠ سنين')).toBeOnTheScreen();
+    expect(screen.getByText(money(installment(PRICE, 20, 7).payment))).toBeOnTheScreen();
+    await fireEvent(field(), 'endEditing');
+    expect(field().props.value).toBe('٧');
+  });
+
+  it('allows a listing’s own plan to run longer than 10 years', async () => {
+    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={12} />);
+    expect(screen.getByLabelText('مدة التقسيط (بالسنين)').props.value).toBe('١٢');
+    expect(screen.getByText('من ١ لـ ١٢ سنين')).toBeOnTheScreen();
   });
 
   it('lets the price change only when asked to', async () => {
@@ -100,7 +113,7 @@ describe('The installment calculator', () => {
   it('works in English', async () => {
     await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />, { lang: 'en' });
     expect(screen.getByText('Monthly installment')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: '5 years', checked: true })).toBeOnTheScreen();
+    expect(screen.getByLabelText('Payment period (years)').props.value).toBe('5');
     expect(screen.getByText(fmtMoney(Math.round(installment(PRICE, 20, 5).payment), 'en', false))).toBeOnTheScreen();
   });
 });
