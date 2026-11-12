@@ -203,7 +203,8 @@ export class ReportsRepository {
   async waiting() {
     const human = sql.raw(`coalesce(m.body->>'$.auto', '') <> 'true'`);
     const last = sql<string>`(select m.sender from ${chatMessages} m where m.thread_id = ${chatThreads.id} and ${human} order by m.created_at desc, m.id desc limit 1)`;
-    const lastAt = sql<Date>`(select m.created_at from ${chatMessages} m where m.thread_id = ${chatThreads.id} and ${human} order by m.created_at desc, m.id desc limit 1)`;
+    // Decoded like the column itself (UTC), not as local time.
+    const lastAt = sql`(select m.created_at from ${chatMessages} m where m.thread_id = ${chatThreads.id} and ${human} order by m.created_at desc, m.id desc limit 1)`.mapWith(chatMessages.createdAt);
     const rows = await this.db
       .select({
         id: chatThreads.id,
@@ -220,7 +221,7 @@ export class ReportsRepository {
       .where(and(isNotNull(chatThreads.lastMessageAt), isNull(chatThreads.blockedAt), isNull(users.deletedAt)));
     return rows
       .filter((r) => r.last === 'client')
-      .map(({ last: _l, lastHumanAt, ...r }) => ({ ...r, lastMessageAt: lastHumanAt ? new Date(lastHumanAt) : r.lastMessageAt! }));
+      .map(({ last: _l, lastHumanAt, ...r }) => ({ ...r, lastMessageAt: lastHumanAt ?? r.lastMessageAt! }));
   }
 
   chatReports(since: Date) {
