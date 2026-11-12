@@ -63,6 +63,13 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 18 | Admin tools | 🟨 | ~~6~~ decided |
 | 19 | Listing insights (for admins) | ✅ | decided |
 | 20 | Release | 🟨 | ~~14~~ out of scope |
+| 21 | Admin: 360° tours | ⬜ | decided |
+| 22 | Admin: clients and admins | ⬜ | decided |
+| 23 | Admin: viewings | ⬜ | decided |
+| 24 | Admin: chats, report and block | ⬜ | decided |
+| 25 | Admin: overview | ⬜ | decided |
+
+Phases 21–25 were added on 2026-11-12 after a review of the admin tools; they are built before Phase 20's store submission.
 
 ---
 
@@ -795,3 +802,89 @@ Contract §15.
 - **Full regression:** every phase's "done when" is run again.
 
 **Done when** production builds are installed from the stores, or as internal builds, and work against the production API.
+
+---
+
+## Phase 21: Admin: 360° tours
+
+Contract §8.6, §11.
+
+**API**
+- `POST /uploads/panoramas`: one panorama in `pano`, checked (JPEG, 2:1 within 1%, at least 4096×2048, at most 30 MB; wider ones scaled to 8192×4096), stored under `/uploads/tours/`.
+- `PATCH /admin/listings/:id` takes `tour`: the rooms in order (up to 12), each with both names and a panorama uploaded here. It replaces the tour in the same write as the rest of the edit; an empty list removes it. Panoramas no room uses any more are deleted from the disk.
+- `GET /admin/listings/:id` returns the rooms.
+
+**Admin UI:** a "360° tour" step on the listing form, in the app and on the web: add a room (pick the panorama, name it), rename, reorder, remove, and a preview.
+
+**Tests:** the panorama checks, the tour replaced in order with the edit, panoramas from elsewhere refused, removed files deleted, admin-only access; the form's main flow on both.
+
+**Done when** an admin adds a tour to a listing and a client opens it on a phone.
+
+---
+
+## Phase 22: Admin: clients and admins
+
+Contract §11, §12, §13.
+
+**Database:** `users.suspended_at`.
+
+**API**
+- `GET /admin/clients` (search by name, email or phone; active or suspended; paged), `GET /admin/clients/:id` (profile, preferences, counts, latest viewings, conversations and leads), `PATCH /admin/clients/:id` (`password`, `suspended`), `DELETE /admin/clients/:id`.
+- `GET/POST /admin/admins`, `PATCH /admin/admins/:id` (name, email, phone, `password`, `suspended`).
+- A suspended account is treated like a turned-off agent: refused on every request at once, cannot sign in or refresh, socket dropped. Suspending a client cancels their upcoming viewings and tells the advisors.
+
+**Admin UI:** the app's admin tabs become Listings, Agents, Leads, More (Clients, Areas, Admins, account settings); the web menu gains Clients and Admins.
+
+**Tests:** suspension (tokens refused, sign-in refused, viewings cancelled), password reset signing out, delete matching the client's own, the self and last-admin rules, admin-only access; the screens' main flows.
+
+**Done when** an admin suspends a client and that client's phone is signed out at once.
+
+---
+
+## Phase 23: Admin: viewings
+
+Contract §8.7, §11.
+
+**API**
+- `GET /admin/viewings` (status, advisor, Cairo day range, client name or phone; paged; upcoming first).
+- `PATCH /admin/viewings/:id`: reschedule to a free time of the same advisor (the booking rules apply) or cancel, with an optional reason. Client and advisor are notified; the client's reminders follow the new time.
+- `GET /properties/:id/slots` gains an admin view for a viewing being moved (the viewing's own hour counts as free).
+
+**Admin UI:** a Viewings page (app: under More; web: the menu), and the viewing on a client's page.
+
+**Tests:** filters, reschedule onto a taken or closed time refused, cancel freeing the hour, notifications, admin-only access; the page's main flow.
+
+**Done when** an admin moves a client's viewing and both the client and the advisor see the new time.
+
+---
+
+## Phase 24: Admin: chats, report and block
+
+Contract §8.12, §11, §13.
+
+**Database:** `chat_threads.blocked_at`, `blocked_by`; `chat_reports`.
+
+**API**
+- `POST /chats/:id/report`, `POST /chats/:id/block` (client or agent, own conversations). Sending in a blocked conversation is refused (409); the socket tells both sides.
+- `GET /admin/chats`, `GET /admin/chats/:id`, `GET /admin/chats/:id/messages`: read-only, marks nothing read. `POST /admin/chats/:id/unblock`.
+- `GET /admin/reports`, `PATCH /admin/reports/:id` (`dismissed`, `blocked`, `suspended`; the last uses Phase 22's suspension). A new report notifies the admins.
+
+**App:** report and block in the conversation's menu, for clients and agents; a closed banner instead of the composer. **Admin UI:** Chats with a reports filter and badge, a read-only conversation, and the report actions.
+
+**Tests:** report and block rules (own conversations only, sending refused once blocked, unblock by admins only), the read-only admin view leaving read marks alone, report outcomes, admin-only access; the screens' main flows.
+
+**Done when** an agent blocks an abusive client, the client sees the conversation closed, and an admin handles the report.
+
+---
+
+## Phase 25: Admin: overview
+
+Contract §11, §12.
+
+**API:** `GET /admin/overview?days=7|30|90`: the counts and the per-advisor table in §11, and a daily series of new clients, leads and viewings (Cairo days).
+
+**Admin UI:** the overview is the admin's first page, in the app (a new first tab) and on the web (the dashboard's home; Listings moves to `/listings/`).
+
+**Tests:** each count and its date range on seeded data, Cairo day buckets, won leads this month against the target, admin-only access; the page's main flow.
+
+**Done when** the overview's numbers match what happened in the app over the chosen range.
