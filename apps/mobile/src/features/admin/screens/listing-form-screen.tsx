@@ -150,7 +150,7 @@ function Form({ saved }: { saved?: AdminListing }) {
   const errors = showErrors ? (current === 'review' ? listingFormErrors(s) : listingStepErrors(current, s)) : [];
   const err = (f: ListingField) => (errors.includes(f) && ERROR[f] ? t(ERROR[f]) : undefined);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
-  const leave = () => (router.canGoBack() ? router.back() : router.replace('/admin'));
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/admin/listings'));
 
   const go = (to: number) => {
     setStep(to);

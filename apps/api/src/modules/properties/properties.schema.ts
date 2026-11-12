@@ -61,6 +61,8 @@ export const properties = mysqlTable(
     lng: decimal('lng', { precision: 9, scale: 6, mode: 'number' }),
     views: int('views', { unsigned: true }).notNull().default(0),
     publishedAt: timestamp('published_at'),
+    /** When it was last closed as sold or rented (phase 25's overview); cleared when published again. */
+    closedAt: timestamp('closed_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [

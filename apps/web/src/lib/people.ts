@@ -1,6 +1,8 @@
 "use client";
 
 import type {
+  AdminOverview,
+  OverviewRange,
   AdminChatDetail,
   AdminChatsPage,
   ChatPage,
@@ -143,4 +145,11 @@ export function useResolveReport() {
 export function useUnblockChat(id: number) {
   const refresh = useRefresh();
   return useMutation({ mutationFn: () => api.request<AdminChatDetail>(`/admin/chats/${id}/unblock`, { method: "POST" }), onSuccess: refresh });
+}
+
+// Phase 25: the overview.
+
+export function useOverview(days: OverviewRange) {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "overview", days], queryFn: ({ signal }) => api.request<AdminOverview>(`/admin/overview?days=${days}`, { signal }), placeholderData: (prev) => prev });
 }

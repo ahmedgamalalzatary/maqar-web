@@ -55,6 +55,7 @@ const EXPECTED: Record<string, string> = {
   'POST /admin/chats/:id/unblock': 'admin',
   'GET /admin/reports': 'admin',
   'PATCH /admin/reports/:id': 'admin',
+  'GET /admin/overview': 'admin',
 
   'GET /agent/today': 'agent',
   'GET /agent/leads': 'agent',

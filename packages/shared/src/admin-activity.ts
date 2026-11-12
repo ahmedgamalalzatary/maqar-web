@@ -1,5 +1,5 @@
 import type { ChatBlock, ChatMessage, ChatReportReason, Page } from './api.js';
-import type { ChatSender, ViewingStatus } from './enums.js';
+import type { ChatSender, LeadStage, PropertyStatus, ViewingStatus } from './enums.js';
 import type { AdminHomeRef } from './admin-people.js';
 import type { AdminAgent } from './listings.js';
 
@@ -72,3 +72,30 @@ export type AdminReportItem = ChatReport & { chat: AdminChatItem };
 
 /** `PATCH /admin/reports/:id`: dismiss it, close the conversation, or suspend the client (phase 22's suspension). */
 export type ReportResolveBody = { outcome: ReportOutcome };
+
+// ---- Admin: overview (phase 25) ----
+
+/** The ranges the overview offers, in days. */
+export const OVERVIEW_RANGES = [7, 30, 90] as const;
+export type OverviewRange = (typeof OVERVIEW_RANGES)[number];
+
+/** One advisor's row: live listings and open leads now, viewings in the range, leads won this Cairo month. */
+export type OverviewAgent = AdminAgent & { live: number; openLeads: number; viewings: number; wonThisMonth: number; monthlyTarget: number };
+
+/**
+ * `GET /admin/overview?days=`: the business at a glance. Counts "in the range" cover the last
+ * `days` Cairo days, today included (`from` to `to`); the rest are as they stand now.
+ */
+export type AdminOverview = {
+  days: OverviewRange;
+  from: string;
+  to: string;
+  listings: { byStatus: Record<PropertyStatus, number>; published: number; closed: number };
+  clients: { total: number; new: number };
+  leads: { new: number; byStage: Record<LeadStage, number>; won: number };
+  viewings: { booked: number; completed: number; cancelled: number; next7Days: number };
+  chats: { new: number; messages: number; openReports: number };
+  agents: OverviewAgent[];
+  /** Per Cairo day in the range, oldest first: new clients, new leads and viewings booked. */
+  daily: { date: string; clients: number; leads: number; viewings: number }[];
+};

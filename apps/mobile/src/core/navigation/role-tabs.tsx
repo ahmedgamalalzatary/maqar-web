@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   Heart,
   Home,
+  LayoutDashboard,
   LayoutGrid,
   type LucideIcon,
   MessagesSquare,
@@ -46,7 +47,9 @@ export const TABS: Record<TabRole, Tab[]> = {
   ],
   // Admins list every home for owners (2026-11-09: there are no owner accounts).
   admin: [
-    { name: 'index', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
+    // Phase 25: the overview opens first; Listings is the second tab.
+    { name: 'index', label: { ar: 'نظرة عامة', en: 'Overview' }, icon: LayoutDashboard },
+    { name: 'listings', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
     { name: 'agents', label: { ar: 'المسؤولين', en: 'Agents' }, icon: UserCog },
     { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
     // Phase 22: clients, areas, admins and the account settings live under More.
