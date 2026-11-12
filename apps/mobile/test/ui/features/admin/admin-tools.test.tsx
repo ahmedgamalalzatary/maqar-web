@@ -54,13 +54,18 @@ const LEAD: AdminLeadItem = {
   agent: { id: 3, nameAr: 'عمر حسن', nameEn: 'Omar Hassan', colour: '#b38959' },
 };
 
-/** A fake API for the admin tools. `fail` answers a write with that status. Returns the writes. */
-function serve(opts: { fail?: Record<string, number> } = {}) {
+/** A fake API for the admin tools. `fail` answers a write with that status (and message) once. Returns the writes. */
+function serve(opts: { fail?: Record<string, number | [number, string]> } = {}) {
   const fetchMock = mockFetch().mockImplementation(async (url: string, init: RequestInit = {}) => {
     const path = url.replace(/^.*\/v1/, '').split('?')[0]!;
     const method = init.method ?? 'GET';
     const key = `${method} ${path}`;
-    if (opts.fail?.[key]) return jsonResponse(opts.fail[key]!, { statusCode: opts.fail[key], message: 'No' });
+    const fail = opts.fail?.[key];
+    if (fail) {
+      delete opts.fail![key];
+      const [status, message] = Array.isArray(fail) ? fail : [fail, 'No'];
+      return jsonResponse(status, { statusCode: status, message });
+    }
     if (key === 'GET /admin/agents') return jsonResponse(200, [OMAR, MARIAM]);
     if (key === 'GET /admin/agents/3') return jsonResponse(200, detail());
     if (key === 'PATCH /admin/agents/3') return jsonResponse(200, detail(JSON.parse(init.body as string)));
@@ -145,6 +150,18 @@ describe('Agent page', () => {
     await renderWithProviders(withToasts(<AgentScreen id={3} />));
     await fireEvent(await screen.findByRole('switch', { name: 'شغال (يقدر يدخل ويتحطله عقارات)' }), 'valueChange', false);
     expect(await screen.findByText('انقل عقاراته المنشورة لمسؤول تاني الأول')).toBeOnTheScreen();
+  });
+
+  it('hands the open work of an advisor to another before turning them off', async () => {
+    const message = 'This advisor still has 2 upcoming viewing(s), 1 conversation(s) and 3 open lead(s). Pass reassignTo to hand them over.';
+    const writes = serve({ fail: { 'PATCH /admin/agents/3': [409, message] } });
+    await renderWithProviders(withToasts(<AgentScreen id={3} />));
+    await fireEvent(await screen.findByRole('switch', { name: 'شغال (يقدر يدخل ويتحطله عقارات)' }), 'valueChange', false);
+    expect(await screen.findByText('مين ياخد شغله؟')).toBeOnTheScreen();
+    await fireEvent.press(await screen.findByRole('button', { name: 'مريم عادل' }));
+    await waitFor(() => expect(writes()).toHaveLength(2));
+    expect(writes()[1]).toEqual(['PATCH /admin/agents/3', { active: false, reassignTo: 4 }]);
+    expect(await screen.findByText('المسؤول اتوقف واتعمله خروج')).toBeOnTheScreen();
   });
 });
 

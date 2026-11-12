@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
+import { Sheet } from '@/components/sheet';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
@@ -14,7 +15,7 @@ import { initialsOf, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { draftOf } from '../components/week-editor';
-import { useAgent, useRemoveDayOff, useSaveAgent } from '../hooks/use-admin';
+import { useAdminAgents, useAgent, useRemoveDayOff, useSaveAgent } from '../hooks/use-admin';
 import { DaysOffSheet, HoursSheet } from './agents-screen';
 
 /** Saturday first, as the week runs in Egypt. */
@@ -57,20 +58,28 @@ function Body({ a }: { a: AdminAgentDetail }) {
   const insets = useSafeAreaInsets();
   const save = useSaveAgent(a.id);
   const removeDay = useRemoveDayOff(a.id);
-  const [sheet, setSheet] = useState<'hours' | 'off' | null>(null);
+  // 'handover' opens when the server refuses to turn off an advisor who still has open work.
+  const [sheet, setSheet] = useState<'hours' | 'off' | 'handover' | null>(null);
+  const others = (useAdminAgents(sheet === 'handover').data ?? []).filter((x) => x.id !== a.id);
   const name = lang === 'ar' ? a.nameAr : a.nameEn;
   const byDay = new Map(a.hours.map((h) => [h.weekday, h]));
 
-  const setActive = (active: boolean) =>
+  const setActive = (active: boolean, reassignTo?: number) =>
     save.mutate(
-      { active },
+      { active, ...(reassignTo === undefined ? {} : { reassignTo }) },
       {
-        onSuccess: () => toast.show({ title: active ? t('المسؤول رجع يشتغل', 'The agent is on again') : t('المسؤول اتوقف واتعمله خروج', 'The agent is turned off and signed out'), tone: 'sage' }),
-        onError: (e) =>
+        onSuccess: () => {
+          setSheet(null);
+          toast.show({ title: active ? t('المسؤول رجع يشتغل', 'The agent is on again') : t('المسؤول اتوقف واتعمله خروج', 'The agent is turned off and signed out'), tone: 'sage' });
+        },
+        onError: (e) => {
+          // Upcoming viewings, chats or open leads: the admin picks who takes them over.
+          if (!active && e instanceof ApiError && e.status === 409 && /reassignTo/.test(e.message)) return setSheet('handover');
           toast.show({
             title: e instanceof ApiError && e.status === 409 ? t('انقل عقاراته المنشورة لمسؤول تاني الأول', 'Move their live listings to someone else first') : t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'),
             tone: 'danger',
-          }),
+          });
+        },
       },
     );
 
@@ -183,6 +192,28 @@ function Body({ a }: { a: AdminAgentDetail }) {
 
       <HoursSheet open={sheet === 'hours'} agentIds={[a.id]} start={draftOf(a.hours)} onClose={() => setSheet(null)} onDone={() => setSheet(null)} />
       <DaysOffSheet open={sheet === 'off'} agentIds={[a.id]} onClose={() => setSheet(null)} onDone={() => setSheet(null)} />
+      <Sheet open={sheet === 'handover'} onClose={() => setSheet(null)} title={t('مين ياخد شغله؟', 'Who takes their work?')} scroll>
+        <Txt size={13} color="ink2">
+          {t('عنده معاينات جاية أو شاتات أو عملاء مفتوحين. اختار مين ياخدهم، وبعدها يتوقف.', 'They still have upcoming viewings, chats or open leads. Pick who takes them over, then they are turned off.')}
+        </Txt>
+        {others.map((x) => (
+          <Pressable
+            key={x.id}
+            accessibilityRole="button"
+            accessibilityLabel={lang === 'ar' ? x.nameAr : x.nameEn}
+            disabled={save.isPending}
+            onPress={() => setActive(false, x.id)}
+            style={({ pressed }) => [styles.offRow, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <Txt weight="medium" style={styles.flex}>
+              {lang === 'ar' ? x.nameAr : x.nameEn}
+            </Txt>
+            <Txt size={12} color="ink2">
+              {t(`${fmtNum(x.live, 'ar')} عقار منشور`, `${x.live} live listings`)}
+            </Txt>
+          </Pressable>
+        ))}
+      </Sheet>
     </ScrollView>
   );
 }
