@@ -21,20 +21,22 @@ import {
   listingFormErrors,
   listingFormOf,
   type ListingFormPhoto,
+  type ListingFormRoom,
   listingStepErrors,
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
   readWholeNumber,
+  TOUR_ROOMS_MAX,
 } from "@maqar/shared";
-import { ImagePlus, Loader2, MoveLeft, MoveRight, RotateCcw, Star, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, MoveLeft, MoveRight, Rotate3d, RotateCcw, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type Dispatch, useEffect, type SetStateAction, useRef, useState } from "react";
-import { uploadPhoto, useAction, useAreas, useListing, useSave, readId } from "@/lib/admin";
+import { uploadPanorama, uploadPhoto, useAction, useAreas, useListing, useSave, readId } from "@/lib/admin";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { mediaUrl } from "@/lib/client";
 import { type T, useLang, useT } from "@/lib/i18n";
-import { shrinkPhoto } from "@/lib/photos";
+import { preparePanorama, shrinkPhoto } from "@/lib/photos";
 import { useNotice } from "./shell";
 import { Button, Card, Chip, ChipGroup, Field, TextArea, useErrorText } from "./ui";
 
@@ -43,6 +45,7 @@ const STEP_LABEL: Record<(typeof LISTING_STEPS)[number], Bi> = {
   location: { ar: "المكان", en: "Location" },
   details: { ar: "التفاصيل", en: "Details" },
   photos: { ar: "الصور", en: "Photos" },
+  tour: { ar: "جولة ٣٦٠°", en: "360° tour" },
   review: { ar: "المراجعة", en: "Review" },
 };
 
@@ -58,6 +61,7 @@ const ERROR: Partial<Record<ListingField, Bi>> = {
   planYears: { ar: "من ١ لـ ٣٠ سنة", en: "1 to 30 years" },
   ownerPhone: { ar: "رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨", en: "A phone number in digits, e.g. 01012345678" },
   photos: { ar: "ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع", en: "Add at least one photo, and wait for the uploads" },
+  tour: { ar: "كل غرفة محتاجة اسمها بالعربي والإنجليزي، واستنى لحد ما الصور تترفع", en: "Each room needs its Arabic and English name, and wait for the uploads" },
 };
 
 const thisYear = new Date().getFullYear();
@@ -85,7 +89,7 @@ export function EditListing() {
   return <ListingForm key={id} saved={listing.data} />;
 }
 
-/** `/new/` and editing: the listing form in five steps (contract §9.2). */
+/** `/new/` and editing: the listing form in steps (contract §9.2). */
 export function ListingForm({ saved }: { saved?: AdminListing }) {
   const t = useT();
   const lang = useLang();
@@ -190,6 +194,7 @@ export function ListingForm({ saved }: { saved?: AdminListing }) {
         {current === "location" ? <LocationStep s={s} set={set} err={err} /> : null}
         {current === "details" ? <DetailsStep s={s} set={set} err={err} /> : null}
         {current === "photos" ? <PhotosStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
+        {current === "tour" ? <TourStep s={s} setS={setS} blobs={blobs} setBlobs={setBlobs} err={err} /> : null}
         {current === "review" ? <ReviewStep s={s} errors={errors} onEdit={go} /> : null}
       </Card>
 
@@ -473,6 +478,141 @@ function PhotosStep({
   );
 }
 
+/** The 360° tour (phase 21): one panorama per room, both names, in the order the tour opens them. Optional. */
+function TourStep({
+  s,
+  setS,
+  blobs,
+  setBlobs,
+  err,
+}: {
+  s: FormState;
+  setS: Dispatch<SetStateAction<FormState>>;
+  blobs: Record<string, Blob>;
+  setBlobs: Dispatch<SetStateAction<Record<string, Blob>>>;
+  err: StepProps["err"];
+}) {
+  const t = useT();
+  const lang = useLang();
+  const notice = useNotice();
+  const input = useRef<HTMLInputElement>(null);
+  const patch = (key: string, p: Partial<ListingFormRoom>) => setS((cur) => ({ ...cur, tour: cur.tour.map((x) => (x.key === key ? { ...x, ...p } : x)) }));
+
+  const upload = async (key: string, blob: Blob) => {
+    patch(key, { failed: false });
+    try {
+      patch(key, { url: (await uploadPanorama(blob)).url });
+    } catch {
+      patch(key, { failed: true });
+    }
+  };
+  const add = async (file: File | undefined) => {
+    if (!file) return;
+    const prepared = await preparePanorama(file);
+    if (typeof prepared === "string") {
+      const text = {
+        ratio: t("الصورة دي مش ٣٦٠°: لازم عرضها ضعف طولها (٢:١)", "That is not a 360° photo: it must be twice as wide as it is high (2:1)"),
+        small: t("الصورة صغيرة: لازم ٤٠٩٦×٢٠٤٨ على الأقل", "That photo is too small: it must be at least 4096×2048"),
+        unreadable: t("المتصفح مقدرش يفتح الصورة دي، جرّب JPEG", "The browser could not open that photo; try a JPEG"),
+      }[prepared];
+      return notice({ text, tone: "bad" });
+    }
+    const room: ListingFormRoom = { key: `t${++photoKey}`, local: URL.createObjectURL(prepared), nameAr: "", nameEn: "" };
+    setS((cur) => ({ ...cur, tour: [...cur.tour, room] }));
+    setBlobs((cur) => ({ ...cur, [room.key]: prepared }));
+    await upload(room.key, prepared);
+  };
+  const move = (from: number, to: number) =>
+    setS((cur) => {
+      const tour = [...cur.tour];
+      const [r] = tour.splice(from, 1);
+      tour.splice(to, 0, r!);
+      return { ...cur, tour };
+    });
+  const remove = (key: string) => {
+    setS((cur) => ({ ...cur, tour: cur.tour.filter((r) => r.key !== key) }));
+    setBlobs((cur) => {
+      if (!(key in cur)) return cur;
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+  };
+  const Earlier = lang === "ar" ? MoveRight : MoveLeft;
+  const Later = lang === "ar" ? MoveLeft : MoveRight;
+
+  return (
+    <>
+      <p className="text-sm text-ink-2">
+        {t(
+          "اختياري. صورة ٣٦٠° لكل غرفة (عرضها ضعف طولها، ٤٠٩٦×٢٠٤٨ على الأقل). الجولة بتفتح على أول غرفة.",
+          "Optional. One 360° photo per room (twice as wide as high, at least 4096×2048). The tour opens on the first room.",
+        )}
+      </p>
+      {s.tour.length < TOUR_ROOMS_MAX ? (
+        <>
+          <input ref={input} type="file" accept="image/jpeg" hidden onChange={(e) => void add(e.target.files?.[0]).finally(() => (e.target.value = ""))} />
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              void add(e.dataTransfer.files[0]);
+            }}
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-accent-soft text-accent-ink hover:bg-accent/20"
+          >
+            <Rotate3d className="size-6" aria-hidden />
+            <span className="font-medium">{t(`ضيف غرفة أو اسحب صورتها هنا (لحد ${fmtNum(TOUR_ROOMS_MAX, "ar")})`, `Add a room or drop its photo here (up to ${TOUR_ROOMS_MAX})`)}</span>
+          </button>
+        </>
+      ) : null}
+      {err("tour") ? <p className="text-sm text-danger">{err("tour")}</p> : null}
+      <ul className="flex flex-col gap-4">
+        {s.tour.map((r, i) => (
+          <li key={r.key} className="grid gap-3 rounded-2xl border border-line p-3 sm:grid-cols-[280px_1fr]">
+            <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-surface-2">
+              {/* eslint-disable-next-line @next/next/no-img-element -- local previews and panoramas on the API host */}
+              <img src={r.url ? mediaUrl(r.url) : r.local} alt={t(`الغرفة ${fmtNum(i + 1, "ar")}`, `Room ${i + 1}`)} className="size-full object-cover" />
+              {!r.url ? (
+                <div className="absolute inset-0 grid place-items-center bg-navy/50">
+                  {r.failed && blobs[r.key] ? (
+                    <Button variant="secondary" onClick={() => void upload(r.key, blobs[r.key]!)}>
+                      <RotateCcw className="size-4" aria-hidden />
+                      {t("حاول تاني", "Retry")}
+                    </Button>
+                  ) : (
+                    <Loader2 className="size-6 animate-spin text-white" aria-label={t("بترفع", "Uploading")} />
+                  )}
+                </div>
+              ) : null}
+              <div className="absolute bottom-2 end-2 flex gap-1.5">
+                {i > 0 ? (
+                  <IconAction label={t(`قدّم الغرفة ${fmtNum(i + 1, "ar")}`, `Move room ${i + 1} earlier`)} onClick={() => move(i, i - 1)}>
+                    <Earlier className="size-4" aria-hidden />
+                  </IconAction>
+                ) : null}
+                {i < s.tour.length - 1 ? (
+                  <IconAction label={t(`أخّر الغرفة ${fmtNum(i + 1, "ar")}`, `Move room ${i + 1} later`)} onClick={() => move(i, i + 1)}>
+                    <Later className="size-4" aria-hidden />
+                  </IconAction>
+                ) : null}
+                <IconAction label={t(`امسح الغرفة ${fmtNum(i + 1, "ar")}`, `Remove room ${i + 1}`)} onClick={() => remove(r.key)} danger>
+                  <Trash2 className="size-4" aria-hidden />
+                </IconAction>
+              </div>
+            </div>
+            <div className="grid content-start gap-3">
+              <Field label={t(`اسم الغرفة ${fmtNum(i + 1, "ar")} (عربي)`, `Room ${i + 1} name (Arabic)`)} value={r.nameAr} maxLength={80} onChange={(e) => patch(r.key, { nameAr: e.target.value })} />
+              <Field label={t(`اسم الغرفة ${fmtNum(i + 1, "ar")} (إنجليزي)`, `Room ${i + 1} name (English)`)} value={r.nameEn} maxLength={80} dir="ltr" onChange={(e) => patch(r.key, { nameEn: e.target.value })} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 function IconAction({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   return (
     <button type="button" aria-label={label} title={label} onClick={onClick} className={`grid size-8 place-items-center rounded-full bg-surface shadow-card hover:bg-surface-2 ${danger ? "text-danger" : "text-ink"}`}>
@@ -499,6 +639,7 @@ function ReviewStep({ s, errors, onEdit }: { s: FormState; errors: ListingField[
     [2, t("التشطيب", "Finishing"), s.finishing ? t(FINISHING_LABEL[s.finishing]) : "—"],
     [2, t("المميزات", "Amenities"), s.features.map((f) => t(FEATURE_LABEL[f])).join("، ") || "—"],
     [3, t("الصور", "Photos"), t(`${fmtNum(uploaded, "ar")} صورة`, `${uploaded} photos`)],
+    [4, t("جولة ٣٦٠°", "360° tour"), s.tour.length ? t(`${fmtNum(s.tour.length, "ar")} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? "room" : "rooms"}`) : t("مفيش", "None")],
   ];
   return (
     <>

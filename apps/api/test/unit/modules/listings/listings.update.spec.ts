@@ -43,11 +43,13 @@ const deps = (over: Record<string, unknown> = {}) => {
     images: vi.fn(async () => new Map()),
     imagesUsedElsewhere: vi.fn(async () => new Set<string>()),
     withTour: vi.fn(async () => new Set()),
+    tour: vi.fn(async () => []),
+    panosUsedElsewhere: vi.fn(async () => new Set<string>()),
     features: vi.fn(async () => []),
     ...Object.fromEntries(Object.entries(over).filter(([k]) => k !== 'update')),
   };
   const prices = { changePrice: vi.fn(async () => ({})), announce: vi.fn(async () => undefined) };
-  const uploads = { assertListingFiles: vi.fn(async () => undefined), removeListingFiles: vi.fn(async () => undefined) };
+  const uploads = { assertListingFiles: vi.fn(async () => undefined), removeListingFiles: vi.fn(async () => undefined), assertTourFiles: vi.fn(async () => undefined), removeTourFiles: vi.fn(async () => undefined) };
   const service = new ListingsService(repo as never, prices as never, uploads as never, { notifyMatches: vi.fn(async () => 0) } as never);
   return { service, repo, prices, uploads };
 };

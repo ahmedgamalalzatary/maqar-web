@@ -103,10 +103,10 @@ export class ListingsService {
   async get(id: number): Promise<AdminListing> {
     const row = await this.repo.find(id);
     if (!row) throw new NotFoundException('Listing not found');
-    const [images, tours, features] = await Promise.all([this.repo.images([id]), this.repo.withTour([id]), this.repo.features(id)]);
+    const [images, tourRooms, features] = await Promise.all([this.repo.images([id]), this.repo.tour(id), this.repo.features(id)]);
     const { p } = row;
     return {
-      ...toItem(row, images.get(id) ?? [], tours.has(id)),
+      ...toItem(row, images.get(id) ?? [], tourRooms.length > 0),
       developerAr: p.developerAr,
       developerEn: p.developerEn,
       floor: p.floor,
@@ -116,12 +116,14 @@ export class ListingsService {
       features,
       images: images.get(id) ?? [],
       location: p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null,
+      tourRooms,
     };
   }
 
   /** A new listing, as a draft with no advisor yet. An empty title becomes the default one. */
   async create(body: ListingBody): Promise<AdminListing> {
     await this.uploads.assertListingFiles(body.images);
+    if (body.tour) await this.uploads.assertTourFiles(body.tour.map((r) => r.pano));
     const area = await this.areaOf(body.areaId);
     const title = defaultTitle(body, area);
     const id = await this.repo.insert(
@@ -145,6 +147,7 @@ export class ListingsService {
       },
       body.images,
       body.features,
+      body.tour,
     );
     return this.get(id);
   }
@@ -181,13 +184,23 @@ export class ListingsService {
     const priceChange =
       body.price !== undefined && body.price !== cur.price ? { next: body.price, by, reset: categoryChanged } : undefined;
     if (body.images !== undefined) await this.uploads.assertListingFiles(body.images);
-    const change = await this.repo.update(id, set, body.images, body.features, priceChange);
+    if (body.tour !== undefined) await this.uploads.assertTourFiles(body.tour.map((r) => r.pano));
+    const change = await this.repo.update(id, set, body.images, body.features, priceChange, body.tour);
     // The edit committed: photos it dropped are collected, unless another listing still shows them.
     if (body.images !== undefined) {
       const removed = cur.images.filter((url) => !body.images!.includes(url));
       if (removed.length) {
         const usedElsewhere = await this.repo.imagesUsedElsewhere(removed, id);
         await this.uploads.removeListingFiles(removed.filter((url) => !usedElsewhere.has(url)));
+      }
+    }
+    // Panoramas the new tour dropped go the same way.
+    if (body.tour !== undefined) {
+      const kept = new Set(body.tour.map((r) => r.pano));
+      const removed = [...new Set(cur.tourRooms.map((r) => r.pano))].filter((url) => !kept.has(url));
+      if (removed.length) {
+        const usedElsewhere = await this.repo.panosUsedElsewhere(removed, id);
+        await this.uploads.removeTourFiles(removed.filter((url) => !usedElsewhere.has(url)));
       }
     }
     if (change) await this.prices.announce(id, change);

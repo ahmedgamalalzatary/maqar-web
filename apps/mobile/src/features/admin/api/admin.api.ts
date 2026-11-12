@@ -60,6 +60,13 @@ export function uploadPhotoRequest(photo: PhotoPart) {
   return apiFetch<UploadResponse>('/uploads', { method: 'POST', body: form });
 }
 
+/** One 360° panorama, already scaled on the phone, to the tours folder (phase 21). */
+export function uploadPanoramaRequest(pano: PhotoPart) {
+  const form = new FormData();
+  form.append('pano', pano as unknown as Blob);
+  return apiFetch<UploadResponse>('/uploads/panoramas', { method: 'POST', body: form });
+}
+
 // ---- Admin tools (phase 18) ----
 
 export const getAgents = (signal?: AbortSignal) => apiFetch<AdminAgentItem[]>('/admin/agents', { signal });

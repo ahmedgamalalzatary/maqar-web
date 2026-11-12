@@ -13,9 +13,12 @@ import {
   type PropertyStatus,
   type PropertyType,
   type PublishBody,
+  TOUR_ROOMS_MAX,
+  type TourRoomBody,
 } from '@maqar/shared';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
@@ -29,6 +32,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
@@ -38,6 +42,8 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
 const notProvided = (_target: unknown, value: unknown) => value !== undefined;
 /** Only photos uploaded to this server (or the seed's): never another site, never a path that climbs out. */
 const UPLOADED = /^\/uploads\/(listings|seed)\/[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/;
+/** Only panoramas uploaded with POST /uploads/panoramas (or the seed's). */
+const PANO = /^\/uploads\/(tours|seed\/pano)\/[A-Za-z0-9_-]+\.jpe?g$/;
 /** Admin lists are longer than the public ones. */
 const ADMIN_PAGE_MAX = 100;
 const AREA_ID = /^[a-z0-9-]{1,40}$/;
@@ -59,6 +65,18 @@ export class LocationDto {
 
   @ApiProperty() @IsNumber() @Min(-180) @Max(180)
   lng: number;
+}
+
+/** One room of a 360° tour (phase 21). */
+export class TourRoomDto implements TourRoomBody {
+  @ApiProperty() @Transform(trim) @IsString() @MinLength(1) @MaxLength(80)
+  nameAr: string;
+
+  @ApiProperty() @Transform(trim) @IsString() @MinLength(1) @MaxLength(80)
+  nameEn: string;
+
+  @ApiProperty({ example: '/uploads/tours/….jpg' }) @Matches(PANO, { message: 'Panoramas must be uploaded with POST /uploads/panoramas' })
+  pano: string;
 }
 
 /** `POST /admin/listings`: the five steps of the listing form (contract §9.2). */
@@ -143,6 +161,10 @@ export class ListingDto implements ListingBody {
 
   @ApiPropertyOptional({ nullable: true, example: '+201001234567' }) @IsOptional() @Transform(trim) @Matches(PHONE)
   ownerPhone?: string | null;
+
+  @ApiPropertyOptional({ type: TourRoomDto, isArray: true, description: 'The 360° tour in order; empty removes it (phase 21)' })
+  @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(TOUR_ROOMS_MAX) @ValidateNested({ each: true }) @Type(() => TourRoomDto)
+  tour?: TourRoomDto[];
 }
 
 /**
@@ -208,6 +230,9 @@ export class UpdateListingDto extends PartialType(ListingDto) {
 
   @ApiPropertyOptional({ description: 'Shown first on Home (phase 18)' }) @ValidateIf(notProvided) @IsBoolean()
   declare featured?: boolean;
+
+  @ValidateIf(notProvided) @IsArray() @ArrayMaxSize(TOUR_ROOMS_MAX) @ValidateNested({ each: true }) @Type(() => TourRoomDto)
+  declare tour?: TourRoomDto[];
 
   @ApiPropertyOptional({ description: 'Move the listing to another active advisor (phase 18)' }) @IsOptional() @IsInt() @Min(1)
   agentId?: number;

@@ -63,7 +63,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 18 | Admin tools | 🟨 | ~~6~~ decided |
 | 19 | Listing insights (for admins) | ✅ | decided |
 | 20 | Release | 🟨 | ~~14~~ out of scope |
-| 21 | Admin: 360° tours | ⬜ | decided |
+| 21 | Admin: 360° tours | 🟨 | decided |
 | 22 | Admin: clients and admins | ⬜ | decided |
 | 23 | Admin: viewings | ⬜ | decided |
 | 24 | Admin: chats, report and block | ⬜ | decided |
@@ -810,8 +810,8 @@ Contract §15.
 Contract §8.6, §11.
 
 **API**
-- `POST /uploads/panoramas`: one panorama in `pano`, checked (JPEG, 2:1 within 1%, at least 4096×2048, at most 30 MB; wider ones scaled to 8192×4096), stored under `/uploads/tours/`.
-- `PATCH /admin/listings/:id` takes `tour`: the rooms in order (up to 12), each with both names and a panorama uploaded here. It replaces the tour in the same write as the rest of the edit; an empty list removes it. Panoramas no room uses any more are deleted from the disk.
+- `POST /uploads/panoramas`: one panorama in `pano`, checked (JPEG, 2:1 within 1%, at least 4096×2048, at most 30 MB), stored at 4096×2048 under `/uploads/tours/`.
+- `POST /admin/listings` and `PATCH /admin/listings/:id` take `tour`: the rooms in order (up to 12), each with both names and a panorama uploaded here. It replaces the tour in the same write as the rest of the edit; an empty list removes it. Panoramas no room uses any more are deleted from the disk.
 - `GET /admin/listings/:id` returns the rooms.
 
 **Admin UI:** a "360° tour" step on the listing form, in the app and on the web: add a room (pick the panorama, name it), rename, reorder, remove, and a preview.
@@ -819,6 +819,13 @@ Contract §8.6, §11.
 **Tests:** the panorama checks, the tour replaced in order with the edit, panoramas from elsewhere refused, removed files deleted, admin-only access; the form's main flow on both.
 
 **Done when** an admin adds a tour to a listing and a client opens it on a phone.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
+- Panoramas are stored at exactly 4096×2048, not sharper: that is the size the seed tours prove on phones, and a bigger texture can be more than an older phone's GPU loads. The app and the web check the size before uploading and scale the photo themselves, so a large camera file uploads quickly; the server checks again and re-encodes, which drops the camera's metadata (such as where it was taken).
+- The tour step sits between Photos and Review, so the form now has six steps. Rooms can be renamed, reordered and removed; an edit sends the whole tour, so removing every room removes it.
+- nginx: `/v1/uploads/panoramas` takes 32 MB (`deploy/nginx-maqar.conf`); `deploy.sh` checks it with `nginx -t` before reloading.
+- Checked by hand on the web dashboard against the local API: a normal photo is refused with the 2:1 message, a 4096×2048 panorama uploads, and the saved room shows in the public listing.
+- Tests: API e2e `admin-tours.e2e-spec.ts` (8), shared unit tests (the tour step, the body, `panoramaProblem`), mobile UI test for the tour step; the route-access table has the new route.
 
 ---
 

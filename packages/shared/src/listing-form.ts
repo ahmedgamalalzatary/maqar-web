@@ -3,12 +3,15 @@ import type { AdminListing, ListingBody } from './listings.js';
 
 // The listing form's rules (phase 17), shared by the app's admin screens and the web dashboard.
 
-/** The five steps of the listing form (contract §9.2). */
-export const LISTING_STEPS = ['type', 'location', 'details', 'photos', 'review'] as const;
+/** The steps of the listing form (contract §9.2); the 360° tour (phase 21) may stay empty. */
+export const LISTING_STEPS = ['type', 'location', 'details', 'photos', 'tour', 'review'] as const;
 export type ListingStep = (typeof LISTING_STEPS)[number];
 
 /** A photo on the form: picked on the phone (`local`) until it is uploaded (`url`). */
 export type ListingFormPhoto = { key: string; url?: string; local?: string; failed?: boolean };
+
+/** A room of the 360° tour on the form: its names and its panorama, uploaded like a photo. */
+export type ListingFormRoom = ListingFormPhoto & { nameAr: string; nameEn: string };
 
 /** What the form holds. Numbers stay text while typed, as the fields show them. */
 export type ListingForm = {
@@ -37,6 +40,7 @@ export type ListingForm = {
   ownerName: string;
   ownerPhone: string;
   photos: ListingFormPhoto[];
+  tour: ListingFormRoom[];
 };
 
 export type ListingField = keyof ListingForm;
@@ -67,6 +71,7 @@ export const emptyListingForm = (): ListingForm => ({
   ownerName: '',
   ownerPhone: '',
   photos: [],
+  tour: [],
 });
 
 /** A whole number typed in Arabic or Latin digits, with or without separators. */
@@ -112,6 +117,7 @@ export function listingStepErrors(step: ListingStep, s: ListingForm): ListingFie
     }
   }
   if (step === 'photos' && (!s.photos.length || s.photos.some((p) => !p.url))) bad.push('photos');
+  if (step === 'tour' && s.tour.some((r) => !r.url || !r.nameAr.trim() || !r.nameEn.trim())) bad.push('tour');
   return bad;
 }
 
@@ -148,6 +154,8 @@ export function listingBodyOf(s: ListingForm): ListingBody {
     images: s.photos.flatMap((p) => (p.url ? [p.url] : [])),
     ownerName: orNull(s.ownerName),
     ownerPhone: s.ownerPhone.trim() ? (readPhone(s.ownerPhone) ?? s.ownerPhone.trim()) : null,
+    // Always sent, so removing every room on an edit removes the tour.
+    tour: s.tour.flatMap((r) => (r.url ? [{ nameAr: r.nameAr.trim(), nameEn: r.nameEn.trim(), pano: r.url }] : [])),
   };
 }
 
@@ -179,5 +187,6 @@ export function listingFormOf(l: AdminListing): ListingForm {
     ownerName: l.ownerName ?? '',
     ownerPhone: l.ownerPhone ?? '',
     photos: l.images.map((url) => ({ key: url, url })),
+    tour: (l.tourRooms ?? []).map((r) => ({ key: `${r.id}`, url: r.pano, nameAr: r.nameAr, nameEn: r.nameEn })),
   };
 }
