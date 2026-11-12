@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { ReminderOffset } from '@maqar/shared';
-import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
-import { agentDaysOff, agentHours } from '../agents/agents.schema.js';
+import { agentDaysOff, agentHours, agents } from '../agents/agents.schema.js';
+import { properties } from '../properties/properties.schema.js';
 import { leads } from '../leads/leads.schema.js';
 import { clientPrefs, users } from '../users/users.schema.js';
 import { alreadyDue, LONGEST_REMINDER_MS, type PendingReminder } from './reminders.js';
@@ -201,6 +202,67 @@ export class ViewingsRepository {
   }
 
   /** A client's viewings, or an agent's, soonest first. */
+  /**
+   * Every viewing for the admin (phase 23): upcoming soonest first or past latest first, by status,
+   * advisor, a Cairo day range (as UTC instants) and words in the client or the home.
+   */
+  async adminList(q: { when: 'upcoming' | 'past'; status?: ViewingRow['status']; agentId?: number; from?: Date; to?: Date; q?: string; page: number; limit: number }) {
+    const now = new Date();
+    const words = q.q ? `%${q.q.replace(/[%_\\]/g, (c) => `\\${c}`)}%` : undefined;
+    const where = and(
+      q.when === 'upcoming' ? gt(viewings.startsAt, now) : lte(viewings.startsAt, now),
+      q.status ? eq(viewings.status, q.status) : undefined,
+      q.agentId ? eq(viewings.agentId, q.agentId) : undefined,
+      q.from ? gte(viewings.startsAt, q.from) : undefined,
+      q.to ? lt(viewings.startsAt, q.to) : undefined,
+      words ? or(like(users.name, words), like(users.phone, words), like(users.email, words), like(properties.titleAr, words), like(properties.titleEn, words)) : undefined,
+    );
+    const base = () =>
+      this.db
+        .select({
+          v: viewings,
+          property: { id: properties.id, titleAr: properties.titleAr, titleEn: properties.titleEn },
+          agent: { id: agents.userId, nameAr: agents.nameAr, nameEn: agents.nameEn, colour: agents.colour },
+          client: { id: users.id, name: users.name, phone: users.phone, email: users.email, deletedAt: users.deletedAt },
+        })
+        .from(viewings)
+        .innerJoin(properties, eq(properties.id, viewings.propertyId))
+        .innerJoin(agents, eq(agents.userId, viewings.agentId))
+        .innerJoin(users, eq(users.id, viewings.clientId));
+    const order = q.when === 'upcoming' ? [asc(viewings.startsAt), asc(viewings.id)] : [desc(viewings.startsAt), desc(viewings.id)];
+    const [rows, [{ total }]] = await Promise.all([
+      base()
+        .where(where)
+        .orderBy(...order)
+        .limit(q.limit)
+        .offset((q.page - 1) * q.limit),
+      this.db
+        .select({ total: count() })
+        .from(viewings)
+        .innerJoin(properties, eq(properties.id, viewings.propertyId))
+        .innerJoin(users, eq(users.id, viewings.clientId))
+        .where(where),
+    ]);
+    return { rows, total: Number(total) };
+  }
+
+  /** One viewing as the admin list shows it. */
+  async adminOne(id: number) {
+    const [row] = await this.db
+      .select({
+        v: viewings,
+        property: { id: properties.id, titleAr: properties.titleAr, titleEn: properties.titleEn },
+        agent: { id: agents.userId, nameAr: agents.nameAr, nameEn: agents.nameEn, colour: agents.colour },
+        client: { id: users.id, name: users.name, phone: users.phone, email: users.email, deletedAt: users.deletedAt },
+      })
+      .from(viewings)
+      .innerJoin(properties, eq(properties.id, viewings.propertyId))
+      .innerJoin(agents, eq(agents.userId, viewings.agentId))
+      .innerJoin(users, eq(users.id, viewings.clientId))
+      .where(eq(viewings.id, id));
+    return row;
+  }
+
   list(by: { clientId: number } | { agentId: number }): Promise<ViewingRow[]> {
     const where = 'clientId' in by ? eq(viewings.clientId, by.clientId) : eq(viewings.agentId, by.agentId);
     return this.db.select().from(viewings).where(where).orderBy(asc(viewings.startsAt), asc(viewings.id));

@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, LogOut, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
+import { Building2, CalendarCheck, LogOut, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -68,6 +68,7 @@ function Header({ name }: { name: string }) {
     { href: "/agents/", label: t("المسؤولين", "Agents"), icon: UserCog, on: path.startsWith("/agent") },
     { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
     { href: "/clients/", label: t("حسابات العملاء", "Clients"), icon: UsersRound, on: path.startsWith("/client") },
+    { href: "/viewings/", label: t("المعاينات", "Viewings"), icon: CalendarCheck, on: path.startsWith("/viewings") },
     { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
     { href: "/admins/", label: t("الإدارة", "Admins"), icon: ShieldUser, on: path.startsWith("/admins") },
   ];

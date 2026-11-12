@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
+  type AdminViewingItem,
+  type AdminViewingsPage,
   BOOKING_DAYS,
   type BookViewingBody,
   fmtDate,
@@ -20,6 +22,7 @@ import { dueBatches } from './reminders.js';
 import { buildSlotDays, cairoClock, cairoInstant, defaultDate, slotKey, slotStateOf } from './slots.js';
 import { isDuplicate, ViewingsRepository } from './viewings.repository.js';
 import type { ViewingRow } from './viewings.schema.js';
+import type { AdminViewingsQueryDto, AdminViewingUpdateDto } from './dto/viewings.dto.js';
 
 const DAY_MS = 86_400_000;
 const TAKEN = 'That time was just booked. Please pick another.';
@@ -129,28 +132,54 @@ export class ViewingsService {
   }
 
   async update(user: AuthUser, id: number, body: UpdateViewingBody): Promise<ViewingItem> {
-    const v = await this.ownViewing(user, id);
+    return this.change(await this.ownViewing(user, id), body);
+  }
+
+  /**
+   * Every viewing for the admin (phase 23), with the client, the home and the advisor. `from` and
+   * `to` are Cairo days, both included.
+   */
+  async adminList(q: AdminViewingsQueryDto): Promise<AdminViewingsPage> {
+    const { rows, total } = await this.repo.adminList({
+      ...q,
+      from: q.from ? cairoInstant(q.from, '00:00') : undefined,
+      to: q.to ? new Date(cairoInstant(q.to, '00:00').getTime() + DAY_MS) : undefined,
+    });
+    return { items: rows.map(adminItem), page: q.page, limit: q.limit, total };
+  }
+
+  /** The admin moves a viewing to a free hour of the same advisor, or cancels it; the reason is told to both sides. */
+  async adminUpdate(id: number, body: AdminViewingUpdateDto): Promise<AdminViewingItem> {
+    const v = await this.repo.findById(id);
+    if (!v) throw new NotFoundException('Viewing not found');
+    await this.change(v, body.action === 'cancel' ? { action: 'cancel' } : { action: 'reschedule', date: body.date!, time: body.time! }, body.reason);
+    return adminItem((await this.repo.adminOne(id))!);
+  }
+
+  /** Cancel or reschedule one active, future viewing; `note` (an admin's reason) goes in the notices. */
+  private async change(v: ViewingRow, body: UpdateViewingBody, note?: string): Promise<ViewingItem> {
+    const id = v.id;
     if (v.status !== 'confirmed' && v.status !== 'rescheduled') throw new ConflictException('This viewing is not active any more');
     if (v.startsAt.getTime() <= Date.now()) throw new ConflictException('This viewing has already started');
     if (body.action === 'cancel') {
       // The write itself carries the expected state, so a cancel racing a reschedule has one winner.
       if (!(await this.repo.cancel(id))) throw new ConflictException('This viewing is not active any more');
       const item = await this.item(id);
-      await this.tell(item, 'cancelled');
+      await this.tell(item, 'cancelled', true, note);
       return item;
     }
     const at = cairoInstant(body.date, body.time);
     if (at.getTime() === v.startsAt.getTime()) throw new BadRequestException('That is the time it already has');
     await this.assertFree(v.agentId, body.date, body.time, id);
     try {
-      if (!(await this.repo.reschedule(id, v.startsAt, at, body.reminders))) throw new ConflictException('This viewing is not active any more');
+      if (!(await this.repo.reschedule(id, v.startsAt, at, 'reminders' in body ? body.reminders : undefined))) throw new ConflictException('This viewing is not active any more');
     } catch (err) {
       if (err instanceof ConflictException) throw err;
       if (isDuplicate(err)) throw new ConflictException(TAKEN);
       throw err;
     }
     const item = await this.item(id);
-    await this.tell(item, 'rescheduled');
+    await this.tell(item, 'rescheduled', true, note);
     return item;
   }
 
@@ -269,7 +298,7 @@ export class ViewingsService {
   }
 
   /** The client and the agent each hear about a booking, a new time and a cancellation (contract §8.7). */
-  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled', clientToo = true): Promise<void> {
+  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled', clientToo = true, note?: string): Promise<void> {
     const row = (await this.repo.findById(v.id))!;
     const client = await this.users.findActiveById(row.clientId);
     const leadId = await this.repo.leadIdOf(row.clientId, row.agentId);
@@ -287,6 +316,11 @@ export class ViewingsService {
       rescheduled: ['معاينة اتغير ميعادها', 'A viewing was moved'],
       cancelled: ['معاينة اتلغت', 'A viewing was cancelled'],
     }[what];
+    // An admin's reason, under the usual line.
+    const withNote = (text: string, lang: Lang) => (note ? `${text}
+${lang === 'ar' ? 'من مقر' : 'From Maqar'}: ${note}` : text);
+    forClient[2] = withNote(forClient[2]!, 'ar');
+    forClient[3] = withNote(forClient[3]!, 'en');
     await Promise.all([
       clientToo
         ? this.notifications.notify(row.clientId, {
@@ -302,8 +336,8 @@ export class ViewingsService {
         kind: 'lead',
         titleAr: forAgent[0]!,
         titleEn: forAgent[1]!,
-        bodyAr: `${who} | ${home('ar')} | ${when('ar')}`,
-        bodyEn: `${who} | ${home('en')} | ${when('en')}`,
+        bodyAr: withNote(`${who} | ${home('ar')} | ${when('ar')}`, 'ar'),
+        bodyEn: withNote(`${who} | ${home('en')} | ${when('en')}`, 'en'),
         // The lead page: it shows the viewing, the client and "New from app".
         href: leadId ? `/agent/lead/${leadId}` : '/agent',
       }),
@@ -312,6 +346,25 @@ export class ViewingsService {
 }
 
 const hourText = (h: number) => `${String(h).padStart(2, '0')}:00`;
+
+type AdminRow = NonNullable<Awaited<ReturnType<ViewingsRepository['adminOne']>>>;
+
+function adminItem({ v, property, agent, client }: AdminRow): AdminViewingItem {
+  const at = cairoClock(v.startsAt);
+  const was = v.rescheduledFrom ? cairoClock(v.rescheduledFrom) : null;
+  return {
+    id: v.id,
+    status: v.status,
+    date: at.date,
+    time: hourText(at.hour),
+    startsAt: v.startsAt.toISOString(),
+    rescheduledFrom: was ? { date: was.date, time: hourText(was.hour) } : null,
+    property,
+    agent,
+    client: client.deletedAt ? null : { id: client.id, name: client.name, phone: client.phone, email: client.email },
+    createdAt: v.createdAt.toISOString(),
+  };
+}
 
 /** Commas, semicolons, backslashes and line breaks are escaped in iCalendar text. */
 const icsText = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');

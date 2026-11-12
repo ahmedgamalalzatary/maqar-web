@@ -1,7 +1,21 @@
 "use client";
 
-import type { AdminAccount, AdminAccountBody, AdminAccountUpdate, AdminClientDetail, AdminClientsPage, ClientStatus, ClientUpdateBody, ClientUpdateResult } from "@maqar/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import type {
+  AdminAccount,
+  AdminAccountBody,
+  AdminAccountUpdate,
+  AdminClientDetail,
+  AdminClientsPage,
+  AdminViewingItem,
+  AdminViewingsPage,
+  AdminViewingUpdate,
+  ClientStatus,
+  ClientUpdateBody,
+  ClientUpdateResult,
+  SlotsResponse,
+  ViewingWhen,
+} from "@maqar/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useKey, useRefresh } from "./admin";
 import { api } from "./client";
 
@@ -52,3 +66,39 @@ export function useSaveAdmin(id?: number) {
 
 /** A password the server takes: 8 or more, with a letter and a digit. */
 export const passwordOk = (p: string) => p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
+
+// Phase 23: viewings.
+
+export function useAdminViewings({ when, q, page = 1 }: { when: ViewingWhen; q?: string; page?: number }) {
+  const key = useKey();
+  return useQuery({
+    queryKey: [...key, "viewings", when, q?.trim() ?? "", page],
+    queryFn: ({ signal }) => {
+      const qs = new URLSearchParams({ when, limit: "50", page: String(page) });
+      if (q?.trim()) qs.set("q", q.trim());
+      return api.request<AdminViewingsPage>(`/admin/viewings?${qs}`, { signal });
+    },
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** The advisor's free hours for moving this viewing (its own hour counts as free). */
+export function useSlots(propertyId: number, viewingId: number) {
+  return useQuery({
+    queryKey: ["slots", propertyId, viewingId],
+    queryFn: ({ signal }) => api.request<SlotsResponse>(`/properties/${propertyId}/slots?reschedule=${viewingId}`, { signal }),
+    staleTime: 0,
+  });
+}
+
+export function useUpdateAdminViewing(id: number) {
+  const refresh = useRefresh();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AdminViewingUpdate) => api.request<AdminViewingItem>(`/admin/viewings/${id}`, { method: "PATCH", body }),
+    onSuccess: () => {
+      refresh();
+      void qc.invalidateQueries({ queryKey: ["slots"] });
+    },
+  });
+}

@@ -1,4 +1,8 @@
 import type {
+  AdminViewingItem,
+  AdminViewingsPage,
+  AdminViewingUpdate,
+  ViewingWhen,
   AdminAccount,
   AdminAccountBody,
   AdminAccountUpdate,
@@ -127,3 +131,13 @@ export const getAdmins = (signal?: AbortSignal) => apiFetch<AdminAccount[]>('/ad
 export const createAdminRequest = (body: AdminAccountBody) => apiFetch<AdminAccount>('/admin/admins', { method: 'POST', body });
 
 export const updateAdminRequest = (id: number, body: AdminAccountUpdate) => apiFetch<AdminAccount>(`/admin/admins/${id}`, { method: 'PATCH', body });
+
+// ---- Viewings (phase 23) ----
+
+export function getAdminViewings({ when, q, page = 1 }: { when: ViewingWhen; q?: string; page?: number }, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ when, limit: '50', page: String(page) });
+  if (q?.trim()) qs.set('q', q.trim());
+  return apiFetch<AdminViewingsPage>(`/admin/viewings?${qs}`, { signal });
+}
+
+export const updateAdminViewingRequest = (id: number, body: AdminViewingUpdate) => apiFetch<AdminViewingItem>(`/admin/viewings/${id}`, { method: 'PATCH', body });

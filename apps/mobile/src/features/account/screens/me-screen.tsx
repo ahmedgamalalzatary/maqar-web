@@ -2,7 +2,7 @@ import { ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, ChevronLeft, ChevronRight, FileText, Languages, Mail, MapPin, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
+import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileText, Languages, Mail, MapPin, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -75,6 +75,7 @@ export function MeScreen() {
           </Txt>
           <Card style={styles.list}>
             <LinkRow icon={<UsersRound size={20} color={colors.accentInk} />} label={t('حسابات العملاء', 'Client accounts')} onPress={() => router.push('/admin/clients')} />
+            <LinkRow icon={<CalendarCheck size={20} color={colors.accentInk} />} label={t('المعاينات', 'Viewings')} onPress={() => router.push('/admin/viewings')} />
             <LinkRow icon={<MapPin size={20} color={colors.accentInk} />} label={t('المناطق', 'Areas')} onPress={() => router.push('/admin/areas')} />
             <LinkRow icon={<ShieldUser size={20} color={colors.accentInk} />} label={t('حسابات الإدارة', 'Admin accounts')} onPress={() => router.push('/admin/admins')} />
           </Card>
