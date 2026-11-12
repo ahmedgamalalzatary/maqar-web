@@ -5,7 +5,11 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { ConfigService } from '@nestjs/config';
 import {
   CHAT_PAGE,
+  type ChatBlock,
+  type ChatBlocker,
   type ChatBody,
+  type ChatReport,
+  type ChatReportBody,
   type ChatMessage,
   type ChatPage,
   type ChatSender,
@@ -27,7 +31,7 @@ import { ViewingsService } from '../viewings/viewings.service.js';
 import { isWorkingTime, needsAwayReply } from './away.js';
 import { ChatRealtime } from './chat.realtime.js';
 import { ChatRepository } from './chat.repository.js';
-import type { ChatMessageRow, ChatThreadRow } from './chat.schema.js';
+import type { ChatMessageRow, ChatReportRow, ChatThreadRow } from './chat.schema.js';
 
 /** The out-of-hours reply (contract §16.1 #12), in the client's language. */
 const AWAY = {
@@ -38,7 +42,7 @@ const AWAY = {
 /** Photos are resized to this on their longest side. */
 const PHOTO_MAX_PX = 1600;
 
-const toMessage = (r: ChatMessageRow): ChatMessage => ({
+export const toMessage = (r: ChatMessageRow): ChatMessage => ({
   id: r.id,
   threadId: r.threadId,
   sender: r.sender,
@@ -89,7 +93,7 @@ export class ChatService {
 
   /** Clients send text; agents also send cards about the conversation's home. */
   async send(user: AuthUser, id: number, body: SendChatBody): Promise<ChatMessage> {
-    const thread = await this.own(user, id);
+    const thread = openOnly(await this.own(user, id));
     const side = sideOf(user);
     if (side === 'client' && body.kind !== 'text') throw new ForbiddenException('Clients send text and photos');
     return this.post(thread, side, await this.cardFor(thread, body));
@@ -97,7 +101,7 @@ export class ChatService {
 
   /** Photos (JPEG, PNG, WebP or HEIC), resized and stored as JPEG, then sent as one message. */
   async sendImages(user: AuthUser, id: number, files: { buffer: Buffer; mimetype: string }[]): Promise<ChatMessage> {
-    const thread = await this.own(user, id);
+    const thread = openOnly(await this.own(user, id));
     if (!files.length) throw new BadRequestException('Add at least one photo');
     const dir = path.resolve(this.config.get('UPLOADS_DIR', { infer: true }), 'chat', String(thread.id));
     await mkdir(dir, { recursive: true });
@@ -133,7 +137,7 @@ export class ChatService {
    * marks the card with its time instead of booking again.
    */
   async book(user: AuthUser, id: number, messageId: number, time: string): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
-    const thread = await this.own(user, id);
+    const thread = openOnly(await this.own(user, id));
     if (sideOf(user) !== 'client') throw new ForbiddenException('Only the client books');
     const msg = await this.repo.findMessage(messageId);
     if (!msg || msg.threadId !== thread.id || msg.body.kind !== 'slots') throw new NotFoundException('Times card not found');
@@ -150,6 +154,68 @@ export class ChatService {
     // The confirmation comes from the advisor's side, already seen by the client who just booked.
     if (!existing) await this.post(thread, 'agent', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time }, new Date());
     return { viewing, card: picked };
+  }
+
+  /**
+   * Reports the conversation to the admins (phase 24): its client or its agent, with a reason and
+   * an optional note. Every active admin is told.
+   */
+  async report(user: AuthUser, id: number, body: ChatReportBody): Promise<ChatReport> {
+    const thread = await this.own(user, id);
+    const side = sideOf(user);
+    const reportId = await this.repo.addReport({ threadId: thread.id, by: side, reporterId: user.id, reason: body.reason, note: body.note?.trim() || null });
+    const admins = await this.repo.activeAdminIds();
+    await Promise.all(
+      admins.map((a) =>
+        this.notifications.notify(a, {
+          kind: 'system',
+          titleAr: 'في بلاغ على شات',
+          titleEn: 'A chat was reported',
+          bodyAr: side === 'agent' ? 'المسؤول بلّغ عن العميل.' : 'العميل بلّغ عن المحادثة.',
+          bodyEn: side === 'agent' ? 'The advisor reported the client.' : 'The client reported the conversation.',
+          href: `/admin/chat/${thread.id}`,
+        }),
+      ),
+    );
+    return (await this.reportItems([(await this.repo.findReport(reportId))!]))[0]!;
+  }
+
+  /** Closes the conversation for both sides (phase 24). Only an admin opens it again. */
+  async block(user: AuthUser, id: number): Promise<ChatThread> {
+    const thread = await this.own(user, id);
+    await this.close(thread, sideOf(user));
+    return this.get(user, id);
+  }
+
+  /** Closes a conversation and tells both sides live. 409 when it was already closed. */
+  async close(thread: ChatThreadRow, by: ChatBlocker): Promise<void> {
+    if (!(await this.repo.block(thread.id, by))) throw new ConflictException('This conversation is already closed');
+    const fresh = (await this.repo.findThread(thread.id))!;
+    this.realtime.emit([thread.clientId, thread.agentId], 'blocked', { threadId: thread.id, blocked: blockOf(fresh) });
+  }
+
+  /** Opens a closed conversation again (admins only, phase 24). */
+  async reopen(thread: ChatThreadRow): Promise<void> {
+    await this.repo.unblock(thread.id);
+    this.realtime.emit([thread.clientId, thread.agentId], 'blocked', { threadId: thread.id, blocked: null });
+  }
+
+  /** Reports with their reporter's and resolver's names. */
+  async reportItems(rows: ChatReportRow[]): Promise<ChatReport[]> {
+    const names = await this.repo.names(rows.flatMap((r) => [r.reporterId, r.resolvedBy].filter((x): x is number => x !== null)));
+    const person = (id: number | null) => (id !== null && names.has(id) ? { id, name: names.get(id)! } : null);
+    return rows.map((r) => ({
+      id: r.id,
+      threadId: r.threadId,
+      by: r.by,
+      reporter: person(r.reporterId),
+      reason: r.reason,
+      note: r.note,
+      createdAt: r.createdAt.toISOString(),
+      resolvedAt: r.resolvedAt?.toISOString() ?? null,
+      outcome: r.outcome,
+      resolvedBy: person(r.resolvedBy),
+    }));
   }
 
   /** The conversation, only for its client or its agent. Anyone else gets 404. */
@@ -245,9 +311,18 @@ export class ChatService {
         leadId: side === 'agent' ? r.leadId : null,
         last: lastRow ? toMessage(lastRow) : null,
         unread: unread.get(r.id) ?? 0,
+        blocked: blockOf(r),
       };
     });
   }
+}
+
+export const blockOf = (r: ChatThreadRow): ChatBlock | null => (r.blockedAt && r.blockedBy ? { at: r.blockedAt.toISOString(), by: r.blockedBy } : null);
+
+/** Nobody sends in a closed conversation (phase 24). */
+function openOnly(thread: ChatThreadRow): ChatThreadRow {
+  if (thread.blockedAt) throw new ConflictException('This conversation is closed');
+  return thread;
 }
 
 const sideOf = (user: AuthUser): ChatSender => (user.role === 'agent' ? 'agent' : 'client');

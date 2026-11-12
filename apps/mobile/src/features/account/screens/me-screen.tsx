@@ -1,8 +1,8 @@
-import { ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
+import { fmtNum, ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileText, Languages, Mail, MapPin, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
+import { Calculator, CalendarCheck, ChevronLeft, MessagesSquare, ChevronRight, FileText, Languages, Mail, MapPin, Moon, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -17,6 +17,7 @@ import { radius, useTheme } from '@/core/theme';
 import { useSignOut } from '@/features/auth/hooks/use-auth';
 import { useSession } from '@/features/auth/store/session.store';
 import { PushRow } from '@/features/notifications/components/push-row';
+import { useOpenReports } from '@/features/admin/hooks/use-people';
 import { DeleteAccountSheet } from '../components/delete-account-sheet';
 import { usePreferences } from '../hooks/use-account';
 
@@ -31,6 +32,7 @@ export function MeScreen() {
   const prefs = usePreferences();
   const [deleting, setDeleting] = useState(false);
   const selfDelete = user?.role === 'client';
+  const reports = useOpenReports(user?.role === 'admin').data?.length ?? 0;
 
   return (
     <Screen title={user?.role === 'admin' ? t('المزيد', 'More') : t('حسابي', 'My account')}>
@@ -76,6 +78,11 @@ export function MeScreen() {
           <Card style={styles.list}>
             <LinkRow icon={<UsersRound size={20} color={colors.accentInk} />} label={t('حسابات العملاء', 'Client accounts')} onPress={() => router.push('/admin/clients')} />
             <LinkRow icon={<CalendarCheck size={20} color={colors.accentInk} />} label={t('المعاينات', 'Viewings')} onPress={() => router.push('/admin/viewings')} />
+            <LinkRow
+              icon={<MessagesSquare size={20} color={colors.accentInk} />}
+              label={reports ? t(`الشاتات (${fmtNum(reports, 'ar')} بلاغ)`, `Chats (${reports} reports)`) : t('الشاتات', 'Chats')}
+              onPress={() => router.push('/admin/chats')}
+            />
             <LinkRow icon={<MapPin size={20} color={colors.accentInk} />} label={t('المناطق', 'Areas')} onPress={() => router.push('/admin/areas')} />
             <LinkRow icon={<ShieldUser size={20} color={colors.accentInk} />} label={t('حسابات الإدارة', 'Admin accounts')} onPress={() => router.push('/admin/admins')} />
           </Card>

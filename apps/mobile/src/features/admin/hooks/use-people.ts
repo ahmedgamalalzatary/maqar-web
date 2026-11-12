@@ -1,9 +1,15 @@
-import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, ViewingWhen } from '@maqar/shared';
+import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, ReportOutcome, ViewingWhen } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAdminRequest,
   deleteClientRequest,
+  getAdminChat,
+  getAdminChatMessages,
+  getAdminChats,
   getAdmins,
+  getOpenReports,
+  resolveReportRequest,
+  unblockChatRequest,
   getAdminViewings,
   getClient,
   getClients,
@@ -77,4 +83,49 @@ export function useUpdateAdminViewing(id: number) {
       void qc.invalidateQueries({ queryKey: ['slots'] });
     },
   });
+}
+
+/** Phase 24: every conversation, or those with open reports. */
+export function useAdminChats(reported: boolean) {
+  const adminId = useAdminId();
+  return useInfiniteQuery({
+    queryKey: [...adminKey(adminId), 'chats', reported],
+    queryFn: ({ pageParam, signal }) => getAdminChats({ reported, page: pageParam }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, lastPage) => (lastPage * last.limit < last.total ? lastPage + 1 : undefined),
+    enabled: adminId !== null,
+  });
+}
+
+export function useAdminChat(id: number) {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'chat', id], queryFn: ({ signal }) => getAdminChat(id, signal), enabled: adminId !== null });
+}
+
+/** The conversation's messages, read-only: the latest page first, older ones on demand. */
+export function useAdminChatMessages(id: number) {
+  const adminId = useAdminId();
+  return useInfiniteQuery({
+    queryKey: [...adminKey(adminId), 'chat', id, 'messages'],
+    queryFn: ({ pageParam, signal }) => getAdminChatMessages(id, pageParam, signal),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (last) => (last.hasMore ? last.items[0]?.id : undefined),
+    enabled: adminId !== null,
+  });
+}
+
+/** Open reports: the More tab's badge. */
+export function useOpenReports(enabled = true) {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'reports', 'open'], queryFn: ({ signal }) => getOpenReports(signal), enabled: enabled && adminId !== null });
+}
+
+export function useResolveReport() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: ({ id, outcome }: { id: number; outcome: ReportOutcome }) => resolveReportRequest(id, outcome), onSuccess: refresh });
+}
+
+export function useUnblockChat(id: number) {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: () => unblockChatRequest(id), onSuccess: refresh });
 }

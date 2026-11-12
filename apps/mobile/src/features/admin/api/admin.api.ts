@@ -1,4 +1,10 @@
 import type {
+  AdminChatDetail,
+  AdminChatsPage,
+  AdminReportItem,
+  ChatPage,
+  ChatReport,
+  ReportOutcome,
   AdminViewingItem,
   AdminViewingsPage,
   AdminViewingUpdate,
@@ -141,3 +147,22 @@ export function getAdminViewings({ when, q, page = 1 }: { when: ViewingWhen; q?:
 }
 
 export const updateAdminViewingRequest = (id: number, body: AdminViewingUpdate) => apiFetch<AdminViewingItem>(`/admin/viewings/${id}`, { method: 'PATCH', body });
+
+// ---- Chats and reports (phase 24) ----
+
+export function getAdminChats({ reported, page = 1 }: { reported: boolean; page?: number }, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ limit: '50', page: String(page) });
+  if (reported) qs.set('reported', 'true');
+  return apiFetch<AdminChatsPage>(`/admin/chats?${qs}`, { signal });
+}
+
+export const getAdminChat = (id: number, signal?: AbortSignal) => apiFetch<AdminChatDetail>(`/admin/chats/${id}`, { signal });
+
+export const getAdminChatMessages = (id: number, before?: number, signal?: AbortSignal) =>
+  apiFetch<ChatPage>(`/admin/chats/${id}/messages${before ? `?before=${before}` : ''}`, { signal });
+
+export const unblockChatRequest = (id: number) => apiFetch<AdminChatDetail>(`/admin/chats/${id}/unblock`, { method: 'POST' });
+
+export const getOpenReports = (signal?: AbortSignal) => apiFetch<AdminReportItem[]>('/admin/reports?open=true', { signal });
+
+export const resolveReportRequest = (id: number, outcome: ReportOutcome) => apiFetch<ChatReport>(`/admin/reports/${id}`, { method: 'PATCH', body: { outcome } });

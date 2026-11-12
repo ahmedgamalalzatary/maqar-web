@@ -1,16 +1,17 @@
-import { CHAT_IMAGES_MAX, CHAT_TEXT_MAX, type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, type SendChatBody } from '@maqar/shared';
+import { CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, type SendChatBody } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ArrowLeft, ArrowRight, BadgeCheck, Calculator, CalendarClock, Home, ImagePlus, Phone, Rotate3d, SendHorizontal, ShieldCheck, X } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, BadgeCheck, Ban, Calculator, CalendarClock, Flag, Home, ImagePlus, Lock, MoreVertical, Phone, Rotate3d, SendHorizontal, ShieldCheck, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
+import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
 import { isActive, useAppActive } from '@/core/app-active';
@@ -20,7 +21,7 @@ import { useSlots } from '@/features/viewings/hooks/use-viewings';
 import { newestFirst } from '../chat-cache';
 import { Bubble } from '../components/bubble';
 import { preparePhotos } from '../photos';
-import { useBookSlot, useMarkRead, useMessages, useSend, useSendImages, useThread } from '../hooks/use-chat';
+import { useBlockChat, useBookSlot, useMarkRead, useMessages, useReportChat, useSend, useSendImages, useThread } from '../hooks/use-chat';
 import { sendTyping, setOpenThread, useTyping } from '../socket';
 
 const dayOf = (iso: string) => new Date(iso).toDateString();
@@ -84,6 +85,8 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   const [draft, setDraft] = useState('');
   const [viewer, setViewer] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [menu, setMenu] = useState<'options' | 'report' | null>(null);
+  const block = useBlockChat(thread.id);
   const [booking, setBooking] = useState<{ messageId: number; time: string } | null>(null);
   const typedAt = useTyping((s) => s[thread.id] ?? 0);
   // The store clears it 4 seconds after the last keystroke.
@@ -208,6 +211,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           </Txt>
         </View>
         {phone ? <IconButton label={t('اتصال', 'Call')} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${phone}`)} /> : null}
+        <IconButton label={t('خيارات المحادثة', 'Conversation options')} icon={<MoreVertical size={18} color={colors.ink} />} onPress={() => setMenu('options')} />
       </View>
 
       <Pressable
@@ -272,59 +276,111 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         }
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipRow} keyboardShouldPersistTaps="handled">
-        {side === 'client'
-          ? quick.map((q) => (
-              <Pressable key={q} accessibilityRole="button" onPress={() => sendText(q)} style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
-                <Txt size={12.5} weight="medium" color="accentInk">
-                  {q}
-                </Txt>
-              </Pressable>
-            ))
-          : actions.map((a) => (
-              <Pressable key={a.label} accessibilityRole="button" onPress={a.onPress} style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
-                <a.icon size={15} color={colors.accentInk} />
-                <Txt size={12.5} weight="medium" color="accentInk">
-                  {a.label}
-                </Txt>
-              </Pressable>
-            ))}
-      </ScrollView>
+      {thread.blocked ? (
+        <View style={[styles.closed, { backgroundColor: colors.surface2, borderColor: colors.line, paddingBottom: insets.bottom + 14 }]}>
+          <Lock size={16} color={colors.ink2} />
+          <Txt size={13} color="ink2" style={styles.flex}>
+            {thread.blocked.by === side
+              ? t('انت قفلت المحادثة دي. محدش يقدر يبعت فيها تاني.', 'You closed this conversation. Nobody can send in it any more.')
+              : thread.blocked.by === 'admin'
+                ? t('فريق مقر قفل المحادثة دي.', 'The Maqar team closed this conversation.')
+                : side === 'client'
+                  ? t('المسؤول قفل المحادثة دي. لو محتاج حاجة كلّم مقر.', 'The advisor closed this conversation. Contact Maqar if you need anything.')
+                  : t('العميل قفل المحادثة دي.', 'The client closed this conversation.')}
+          </Txt>
+        </View>
+      ) : (
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipRow} keyboardShouldPersistTaps="handled">
+            {side === 'client'
+              ? quick.map((q) => (
+                  <Pressable key={q} accessibilityRole="button" onPress={() => sendText(q)} style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
+                    <Txt size={12.5} weight="medium" color="accentInk">
+                      {q}
+                    </Txt>
+                  </Pressable>
+                ))
+              : actions.map((a) => (
+                  <Pressable key={a.label} accessibilityRole="button" onPress={a.onPress} style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
+                    <a.icon size={15} color={colors.accentInk} />
+                    <Txt size={12.5} weight="medium" color="accentInk">
+                      {a.label}
+                    </Txt>
+                  </Pressable>
+                ))}
+          </ScrollView>
 
-      <View style={[styles.composer, { backgroundColor: colors.surface, borderColor: colors.line, paddingBottom: insets.bottom + 10 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('ابعت صور', 'Send photos')}
-          disabled={sendImages.isPending}
-          onPress={() => void attach()}
-          style={styles.attach}
-        >
-          {sendImages.isPending ? <ActivityIndicator color={colors.accent} /> : <ImagePlus size={22} color={colors.ink2} />}
-        </Pressable>
-        <TextInput
-          accessibilityLabel={t('اكتب رسالة', 'Write a message')}
-          value={draft}
-          onChangeText={(v) => {
-            setDraft(v);
-            if (v.trim()) sendTyping(thread.id);
-          }}
-          placeholder={t('اكتب رسالة…', 'Write a message…')}
-          placeholderTextColor={colors.ink3}
-          maxLength={CHAT_TEXT_MAX}
-          multiline
-          style={[styles.input, { color: colors.ink, backgroundColor: colors.surface2, textAlign: dir === 'rtl' ? 'right' : 'left' }]}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('ابعت', 'Send')}
-          accessibilityState={{ disabled: !draft.trim() }}
-          disabled={!draft.trim()}
-          onPress={() => sendText(draft)}
-          style={[styles.send, { backgroundColor: colors.accent, opacity: draft.trim() ? 1 : 0.45 }]}
-        >
-          <SendHorizontal size={20} color={colors.navy} style={dir === 'rtl' ? styles.flip : undefined} />
-        </Pressable>
-      </View>
+          <View style={[styles.composer, { backgroundColor: colors.surface, borderColor: colors.line, paddingBottom: insets.bottom + 10 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('ابعت صور', 'Send photos')}
+              disabled={sendImages.isPending}
+              onPress={() => void attach()}
+              style={styles.attach}
+            >
+              {sendImages.isPending ? <ActivityIndicator color={colors.accent} /> : <ImagePlus size={22} color={colors.ink2} />}
+            </Pressable>
+            <TextInput
+              accessibilityLabel={t('اكتب رسالة', 'Write a message')}
+              value={draft}
+              onChangeText={(v) => {
+                setDraft(v);
+                if (v.trim()) sendTyping(thread.id);
+              }}
+              placeholder={t('اكتب رسالة…', 'Write a message…')}
+              placeholderTextColor={colors.ink3}
+              maxLength={CHAT_TEXT_MAX}
+              multiline
+              style={[styles.input, { color: colors.ink, backgroundColor: colors.surface2, textAlign: dir === 'rtl' ? 'right' : 'left' }]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('ابعت', 'Send')}
+              accessibilityState={{ disabled: !draft.trim() }}
+              disabled={!draft.trim()}
+              onPress={() => sendText(draft)}
+              style={[styles.send, { backgroundColor: colors.accent, opacity: draft.trim() ? 1 : 0.45 }]}
+            >
+              <SendHorizontal size={20} color={colors.navy} style={dir === 'rtl' ? styles.flip : undefined} />
+            </Pressable>
+          </View>
+        </>
+      )}
+
+      <Sheet open={menu === 'options'} onClose={() => setMenu(null)} title={t('خيارات المحادثة', 'Conversation options')}>
+        <View style={styles.menu}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('بلّغ عن المحادثة', 'Report the conversation')} onPress={() => setMenu('report')} style={styles.menuRow}>
+            <Flag size={18} color={colors.ink} />
+            <Txt>{t('بلّغ عن المحادثة', 'Report the conversation')}</Txt>
+          </Pressable>
+          {thread.blocked ? null : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('اقفل المحادثة', 'Close the conversation')}
+              onPress={() => {
+                setMenu(null);
+                Alert.alert(
+                  t('تقفل المحادثة؟', 'Close the conversation?'),
+                  t('محدش هيقدر يبعت فيها تاني، وفريق مقر بس اللي يقدر يفتحها.', 'Nobody can send in it any more; only the Maqar team can open it again.'),
+                  [
+                    { text: t('لأ', 'No'), style: 'cancel' },
+                    {
+                      text: t('اقفل', 'Close'),
+                      style: 'destructive',
+                      onPress: () => block.mutate(undefined, { onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }) }),
+                    },
+                  ],
+                );
+              }}
+              style={styles.menuRow}
+            >
+              <Ban size={18} color={colors.danger} />
+              <Txt color="danger">{t('اقفل المحادثة', 'Close the conversation')}</Txt>
+            </Pressable>
+          )}
+        </View>
+      </Sheet>
+      <ReportSheet threadId={thread.id} open={menu === 'report'} onClose={() => setMenu(null)} />
 
       {side === 'agent' ? <DayPicker propertyId={p.id} open={picking} onClose={() => setPicking(false)} onPick={(date) => post({ kind: 'slots', date })} /> : null}
 
@@ -337,6 +393,63 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         </View>
       </Modal>
     </KeyboardAvoiding>
+  );
+}
+
+const REASON_LABEL: Record<ChatReportReason, { ar: string; en: string }> = {
+  spam: { ar: 'إزعاج أو سبام', en: 'Spam or nuisance' },
+  abuse: { ar: 'إساءة أو كلام مش لائق', en: 'Abuse or offensive language' },
+  scam: { ar: 'نصب أو طلب فلوس', en: 'Scam or asking for money' },
+  other: { ar: 'حاجة تانية', en: 'Something else' },
+};
+
+/** Report the conversation to the Maqar team (phase 24): a reason and an optional note. */
+function ReportSheet({ threadId, open, onClose }: { threadId: number; open: boolean; onClose: () => void }) {
+  const t = useT();
+  const { colors } = useTheme();
+  const report = useReportChat(threadId);
+  const [reason, setReason] = useState<ChatReportReason | null>(null);
+  const [note, setNote] = useState('');
+  return (
+    <Sheet open={open} onClose={onClose} title={t('بلّغ عن المحادثة', 'Report the conversation')}>
+      <View style={styles.menu}>
+        <Txt size={13} color="ink2">
+          {t('البلاغ بيوصل لفريق مقر بس، والطرف التاني مش هيعرف.', 'The report goes to the Maqar team only; the other side is not told.')}
+        </Txt>
+        {CHAT_REPORT_REASONS.map((r) => (
+          <Pressable
+            key={r}
+            accessibilityRole="radio"
+            accessibilityLabel={t(REASON_LABEL[r])}
+            accessibilityState={{ checked: reason === r }}
+            onPress={() => setReason(r)}
+            style={[styles.reason, { borderColor: reason === r ? colors.accent : colors.line, backgroundColor: colors.surface }]}
+          >
+            <Txt>{t(REASON_LABEL[r])}</Txt>
+          </Pressable>
+        ))}
+        <TextField label={t('تفاصيل (اختياري)', 'Details (optional)')} value={note} onChangeText={setNote} maxLength={500} multiline />
+        <Button
+          label={t('ابعت البلاغ', 'Send the report')}
+          disabled={!reason}
+          loading={report.isPending}
+          onPress={() =>
+            report.mutate(
+              { reason: reason!, ...(note.trim() ? { note: note.trim() } : {}) },
+              {
+                onSuccess: () => {
+                  toast.show({ title: t('البلاغ وصل لفريق مقر', 'The Maqar team got your report'), tone: 'sage' });
+                  setReason(null);
+                  setNote('');
+                  onClose();
+                },
+                onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }),
+              },
+            )
+          }
+        />
+      </View>
+    </Sheet>
   );
 }
 
@@ -426,6 +539,10 @@ function errorText(err: unknown, t: ReturnType<typeof useT>): string {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  closed: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
+  menu: { gap: 10 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
+  reason: { borderRadius: radius.md, borderWidth: 1.5, padding: 12 },
   topBack: { paddingHorizontal: 16 },
   loading: { marginTop: 48 },
   failed: { padding: 24, gap: 12 },

@@ -49,6 +49,12 @@ const EXPECTED: Record<string, string> = {
   'PATCH /admin/admins/:id': 'admin',
   'GET /admin/viewings': 'admin',
   'PATCH /admin/viewings/:id': 'admin',
+  'GET /admin/chats': 'admin',
+  'GET /admin/chats/:id': 'admin',
+  'GET /admin/chats/:id/messages': 'admin',
+  'POST /admin/chats/:id/unblock': 'admin',
+  'GET /admin/reports': 'admin',
+  'PATCH /admin/reports/:id': 'admin',
 
   'GET /agent/today': 'agent',
   'GET /agent/leads': 'agent',
@@ -75,6 +81,8 @@ const EXPECTED: Record<string, string> = {
   'POST /chats/:id/messages': 'agent,client',
   'POST /chats/:id/images': 'agent,client',
   'POST /chats/:id/read': 'agent,client',
+  'POST /chats/:id/report': 'agent,client',
+  'POST /chats/:id/block': 'agent,client',
   'GET /viewings': 'agent,client',
   'GET /viewings/:id/ics': 'agent,client',
 

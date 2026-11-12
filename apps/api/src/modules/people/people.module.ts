@@ -10,5 +10,6 @@ import { PeopleService } from './people.service.js';
   imports: [UsersModule, ViewingsModule],
   controllers: [AdminClientsController, AdminAdminsController],
   providers: [PeopleRepository, PeopleService],
+  exports: [PeopleService],
 })
 export class PeopleModule {}

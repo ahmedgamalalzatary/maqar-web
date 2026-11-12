@@ -172,7 +172,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 2. ✅ Done (Phase 20): Write a clear motion permission text in Arabic and English (the `expo-sensors` plugin), and add the Arabic photo text.
 3. ✅ Done (Phase 20): Set `ios.config.usesNonExemptEncryption: false`.
 4. ✅ Done (Phase 20): Add privacy policy, terms and support / contact rows to the Me screen. They open the public pages in `expo-web-browser`, which is already installed.
-5. Planned in Phase 24 (1.2 insurance): clients and agents can report or block a conversation, and admins handle the reports.
+5. Built in Phase 24 (1.2 insurance): clients and agents can report or close a conversation, and admins handle the reports. Not deployed yet.
 
 **Web: one static page set:**
 6. ✅ Done (Phase 20): A privacy policy (AR/EN): what we collect (§2.4), why, who handles it (Expo push, Google/Apple push, Google Maps), what deletion removes and what it keeps, that chat photos are public by link, and a contact.

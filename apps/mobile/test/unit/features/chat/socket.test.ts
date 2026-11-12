@@ -31,7 +31,7 @@ class FakeSocket {
 let mockSocket: FakeSocket;
 jest.mock('socket.io-client', () => ({ io: () => mockSocket }));
 
-const handlers = () => ({ message: jest.fn(), read: jest.fn(), typing: jest.fn(), updated: jest.fn(), reconnected: jest.fn() });
+const handlers = () => ({ message: jest.fn(), read: jest.fn(), typing: jest.fn(), updated: jest.fn(), blocked: jest.fn(), reconnected: jest.fn() });
 
 beforeEach(() => {
   mockSocket = new FakeSocket();

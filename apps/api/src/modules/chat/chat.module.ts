@@ -3,8 +3,10 @@ import { AuthModule } from '../auth/auth.module.js';
 import { InsightsModule } from '../insights/insights.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PropertiesModule } from '../properties/properties.module.js';
+import { PeopleModule } from '../people/people.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { ViewingsModule } from '../viewings/viewings.module.js';
+import { AdminChatsController, AdminReportsController, ChatAdminService } from './chat.admin.js';
 import { ChatController } from './chat.controller.js';
 import { ChatGateway } from './chat.gateway.js';
 import { ChatRealtime } from './chat.realtime.js';
@@ -13,9 +15,9 @@ import { ChatService } from './chat.service.js';
 
 /** Live chat (contract §8.12, §10.3): HTTP for sending and history, a socket for live events. */
 @Module({
-  imports: [AuthModule, PropertiesModule, ViewingsModule, NotificationsModule, UsersModule, InsightsModule],
-  controllers: [ChatController],
-  providers: [ChatRepository, ChatService, ChatRealtime, ChatGateway],
+  imports: [AuthModule, PropertiesModule, ViewingsModule, NotificationsModule, UsersModule, InsightsModule, PeopleModule],
+  controllers: [ChatController, AdminChatsController, AdminReportsController],
+  providers: [ChatRepository, ChatService, ChatRealtime, ChatGateway, ChatAdminService],
   exports: [ChatRepository],
 })
 export class ChatModule {}

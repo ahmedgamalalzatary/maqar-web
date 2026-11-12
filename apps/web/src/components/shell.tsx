@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, CalendarCheck, LogOut, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
+import { Building2, CalendarCheck, LogOut, MessagesSquare, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -69,6 +69,7 @@ function Header({ name }: { name: string }) {
     { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
     { href: "/clients/", label: t("حسابات العملاء", "Clients"), icon: UsersRound, on: path.startsWith("/client") },
     { href: "/viewings/", label: t("المعاينات", "Viewings"), icon: CalendarCheck, on: path.startsWith("/viewings") },
+    { href: "/chats/", label: t("الشاتات", "Chats"), icon: MessagesSquare, on: path.startsWith("/chat") },
     { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
     { href: "/admins/", label: t("الإدارة", "Admins"), icon: ShieldUser, on: path.startsWith("/admins") },
   ];
@@ -90,7 +91,7 @@ function Header({ name }: { name: string }) {
               className={`inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
             >
               <Icon className="size-4" aria-hidden />
-              <span className="hidden xl:inline">{label}</span>
+              <span className="hidden 2xl:inline">{label}</span>
             </Link>
           ))}
         </nav>

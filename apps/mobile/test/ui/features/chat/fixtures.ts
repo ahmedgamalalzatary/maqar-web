@@ -36,5 +36,6 @@ export const thread = (over: Partial<ChatThread> = {}): ChatThread => ({
   leadId: null,
   last: null,
   unread: 0,
+  blocked: null,
   ...over,
 });
