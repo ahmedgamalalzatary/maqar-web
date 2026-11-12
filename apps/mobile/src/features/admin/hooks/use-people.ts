@@ -1,4 +1,4 @@
-import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, OverviewRange, ReportOutcome, ViewingWhen } from '@maqar/shared';
+import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, OverviewRange, ReportId, ReportOutcome, ReportQuery, ViewingWhen } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAdminRequest,
@@ -14,6 +14,7 @@ import {
   getOverview,
   getClient,
   getClients,
+  getReport,
   updateAdminRequest,
   updateAdminViewingRequest,
   updateClientRequest,
@@ -135,4 +136,15 @@ export function useUnblockChat(id: number) {
 export function useOverview(days: OverviewRange) {
   const adminId = useAdminId();
   return useQuery({ queryKey: [...adminKey(adminId), 'overview', days], queryFn: ({ signal }) => getOverview(days, signal), enabled: adminId !== null, placeholderData: (prev) => prev });
+}
+
+/** One report (phase 27); the previous answer stays up while the next range or filter loads. */
+export function useReport(id: ReportId, q: ReportQuery) {
+  const adminId = useAdminId();
+  return useQuery({
+    queryKey: [...adminKey(adminId), 'report', id, q.from ?? '', q.to ?? '', q.agentId ?? '', q.areaId ?? '', q.category ?? ''],
+    queryFn: ({ signal }) => getReport(id, q, signal),
+    enabled: adminId !== null,
+    placeholderData: (prev) => (prev?.id === id ? prev : undefined),
+  });
 }

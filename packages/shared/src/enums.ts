@@ -65,6 +65,10 @@ export const VIEWING_MODES = ['visit', 'video'] as const;
 export type ViewingMode = (typeof VIEWING_MODES)[number];
 
 export const VIEWING_STATUSES = ['confirmed', 'rescheduled', 'cancelled', 'completed'] as const;
+
+/** Who cancelled a viewing (phase 27); a suspension's cancels count as the admin's. */
+export const VIEWING_CANCELLERS = ['client', 'agent', 'admin'] as const;
+export type ViewingCanceller = (typeof VIEWING_CANCELLERS)[number];
 export type ViewingStatus = (typeof VIEWING_STATUSES)[number];
 
 export const REMINDER_OFFSETS = ['1d', '2h', '30m'] as const;

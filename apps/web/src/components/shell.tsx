@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, CalendarCheck, LayoutDashboard, LogOut, MessagesSquare, MapPin, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
+import { Building2, CalendarCheck, FileBarChart, LayoutDashboard, LogOut, MapPin, MessagesSquare, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -71,17 +71,19 @@ function Header({ name }: { name: string }) {
     { href: "/clients/", label: t("حسابات العملاء", "Clients"), icon: UsersRound, on: path.startsWith("/client") },
     { href: "/viewings/", label: t("المعاينات", "Viewings"), icon: CalendarCheck, on: path.startsWith("/viewings") },
     { href: "/chats/", label: t("الشاتات", "Chats"), icon: MessagesSquare, on: path.startsWith("/chat") },
+    { href: "/reports/", label: t("التقارير", "Reports"), icon: FileBarChart, on: path.startsWith("/report") },
     { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
     { href: "/admins/", label: t("الإدارة", "Admins"), icon: ShieldUser, on: path.startsWith("/admins") },
   ];
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 2xl:max-w-none">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur print:hidden">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6 2xl:max-w-none">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "Maqar admin")}>
           <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
           <span className="hidden text-sm font-semibold sm:inline">{t("لوحة الإدارة", "Admin")}</span>
         </Link>
-        <nav className="flex flex-1 items-center gap-1">
+        {/* Eleven pages: on a narrow screen the menu scrolls sideways inside itself, never the page. */}
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]">
           {nav.map(({ href, label, icon: Icon, on }) => (
             <Link
               key={href}
@@ -89,21 +91,21 @@ function Header({ name }: { name: string }) {
               aria-label={label}
               title={label}
               aria-current={on ? "page" : undefined}
-              className={`inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
+              className={`inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
             >
               <Icon className="size-4" aria-hidden />
               <span className="hidden 2xl:inline">{label}</span>
             </Link>
           ))}
         </nav>
-        <button type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="min-h-10 rounded-lg px-3 text-sm font-medium text-ink-2 hover:bg-surface-2">
+        <button type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="min-h-10 shrink-0 rounded-lg px-3 text-sm font-medium text-ink-2 hover:bg-surface-2">
           {lang === "ar" ? "English" : "العربية"}
         </button>
-        <button type="button" onClick={toggleTheme} aria-label={t("الوضع الداكن", "Dark mode")} aria-pressed={dark} className="grid size-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
+        <button type="button" onClick={toggleTheme} aria-label={t("الوضع الداكن", "Dark mode")} aria-pressed={dark} className="grid size-10 shrink-0 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
           {dark ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
         </button>
         <span className="hidden text-sm text-ink-2 md:inline">{name}</span>
-        <button type="button" onClick={() => void api.signOut()} aria-label={t("خروج", "Sign out")} className="grid size-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
+        <button type="button" onClick={() => void api.signOut()} aria-label={t("خروج", "Sign out")} className="grid size-10 shrink-0 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
           <LogOut className="size-4 rtl:-scale-x-100" aria-hidden />
         </button>
       </div>

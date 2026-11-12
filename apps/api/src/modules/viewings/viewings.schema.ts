@@ -1,4 +1,4 @@
-import { REMINDER_OFFSETS, VIEWING_MODES, VIEWING_STATUSES } from '@maqar/shared';
+import { REMINDER_OFFSETS, VIEWING_CANCELLERS, VIEWING_MODES, VIEWING_STATUSES } from '@maqar/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, datetime, index, mysqlEnum, mysqlTable, primaryKey, timestamp, tinyint, unique, varchar } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';
@@ -30,6 +30,8 @@ export const viewings = mysqlTable(
     mode: mysqlEnum('mode', VIEWING_MODES).notNull().default('visit'),
     status: mysqlEnum('status', VIEWING_STATUSES).notNull().default('confirmed'),
     rescheduledFrom: datetime('rescheduled_from'),
+    /** Who cancelled it (phase 27's reports); viewings cancelled before then have none. */
+    cancelledBy: mysqlEnum('cancelled_by', VIEWING_CANCELLERS),
     videoUrl: varchar('video_url', { length: 500 }),
     active: tinyint('active').generatedAlwaysAs(sql`(if(\`status\` in ('confirmed','rescheduled'), 1, NULL))`, { mode: 'stored' }),
     createdAt: timestamp('created_at', { fsp: 3 })

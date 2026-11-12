@@ -28,7 +28,7 @@ const STATUS_LABEL: Record<ClientStatus, { ar: string; en: string }> = {
 const passwordOk = (p: string) => p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
 
 /** The back arrow at the top of a page opened from More. */
-export function BackBar({ fallback }: { fallback: '/admin/more' | '/admin/clients' | '/admin/chats' }) {
+export function BackBar({ fallback }: { fallback: '/admin/more' | '/admin/clients' | '/admin/chats' | '/admin/reports' }) {
   const t = useT();
   const dir = useDir();
   const router = useRouter();
