@@ -1,6 +1,16 @@
-import type { AdminAccountBody, AdminAccountUpdate, ClientStatus, ClientUpdateBody } from '@maqar/shared';
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import { createAdminRequest, deleteClientRequest, getAdmins, getClient, getClients, updateAdminRequest, updateClientRequest } from '../api/admin.api';
+import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, ViewingWhen } from '@maqar/shared';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  createAdminRequest,
+  deleteClientRequest,
+  getAdmins,
+  getAdminViewings,
+  getClient,
+  getClients,
+  updateAdminRequest,
+  updateAdminViewingRequest,
+  updateClientRequest,
+} from '../api/admin.api';
 import { adminKey, useAdminId, useRefresh } from './use-admin';
 
 /** Phase 22: client accounts, newest first, by status and search words. */
@@ -41,5 +51,30 @@ export function useSaveAdmin(id?: number) {
   return useMutation({
     mutationFn: (body: AdminAccountUpdate) => (id ? updateAdminRequest(id, body) : createAdminRequest(body as AdminAccountBody)),
     onSuccess: refresh,
+  });
+}
+
+/** Phase 23: every viewing, upcoming soonest first or past latest first. */
+export function useAdminViewings(q: { when: ViewingWhen; q?: string }) {
+  const adminId = useAdminId();
+  return useInfiniteQuery({
+    queryKey: [...adminKey(adminId), 'viewings', q.when, q.q?.trim() ?? ''],
+    queryFn: ({ pageParam, signal }) => getAdminViewings({ ...q, page: pageParam }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, lastPage) => (lastPage * last.limit < last.total ? lastPage + 1 : undefined),
+    enabled: adminId !== null,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useUpdateAdminViewing(id: number) {
+  const refresh = useRefresh();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AdminViewingUpdate) => updateAdminViewingRequest(id, body),
+    onSuccess: () => {
+      refresh();
+      void qc.invalidateQueries({ queryKey: ['slots'] });
+    },
   });
 }

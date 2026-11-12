@@ -47,6 +47,8 @@ const EXPECTED: Record<string, string> = {
   'GET /admin/admins': 'admin',
   'POST /admin/admins': 'admin',
   'PATCH /admin/admins/:id': 'admin',
+  'GET /admin/viewings': 'admin',
+  'PATCH /admin/viewings/:id': 'admin',
 
   'GET /agent/today': 'agent',
   'GET /agent/leads': 'agent',

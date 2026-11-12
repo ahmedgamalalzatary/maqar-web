@@ -65,7 +65,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
 | 20 | Release | 🟨 | ~~14~~ out of scope |
 | 21 | Admin: 360° tours | 🟨 | decided |
 | 22 | Admin: clients and admins | 🟨 | decided |
-| 23 | Admin: viewings | ⬜ | decided |
+| 23 | Admin: viewings | 🟨 | decided |
 | 24 | Admin: chats, report and block | ⬜ | decided |
 | 25 | Admin: overview | ⬜ | decided |
 
@@ -864,15 +864,22 @@ Contract §11, §12, §13.
 Contract §8.7, §11.
 
 **API**
-- `GET /admin/viewings` (status, advisor, Cairo day range, client name or phone; paged; upcoming first).
+- `GET /admin/viewings` (`when` upcoming or past, status, advisor, Cairo day range, words in the client or the home; paged; upcoming soonest first, past latest first).
 - `PATCH /admin/viewings/:id`: reschedule to a free time of the same advisor (the booking rules apply) or cancel, with an optional reason. Client and advisor are notified; the client's reminders follow the new time.
-- `GET /properties/:id/slots` gains an admin view for a viewing being moved (the viewing's own hour counts as free).
+- The free hours come from the existing `GET /properties/:id/slots?reschedule=:viewingId` (the viewing's own advisor, its own hour counted as free); no new route was needed.
 
 **Admin UI:** a Viewings page (app: under More; web: the menu), and the viewing on a client's page.
 
 **Tests:** filters, reschedule onto a taken or closed time refused, cancel freeing the hour, notifications, admin-only access; the page's main flow.
 
 **Done when** an admin moves a client's viewing and both the client and the advisor see the new time.
+
+**Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
+- The admin's move and cancel run through the same step as the client's (`ViewingsService.change`): only active, future viewings; the booking rules for the new hour; the write carries the expected state, so it races safely with the client. Reminders the client chose follow the new time.
+- The reason, when given, is added under the usual notice to both the client and the advisor ("From Maqar: …").
+- App: Viewings under More (Upcoming and Past, search; an upcoming one opens a sheet to move it with a day and time picker, or cancel it). Web: Viewings in the menu, with the same actions in the row.
+- Checked by hand on the web dashboard against the local API: a demo client's viewing moved to another day and hour, and shows as rescheduled.
+- Tests: API e2e `admin-viewings.e2e-spec.ts` (5), mobile UI tests `viewings.test.tsx` (2); the route-access table has the new routes.
 
 ---
 
