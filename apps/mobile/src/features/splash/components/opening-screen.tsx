@@ -1,4 +1,4 @@
-import { SPLASH_IMAGE_SECONDS, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings } from '@maqar/shared';
+import { DEVELOPER, SPLASH_IMAGE_SECONDS, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
@@ -8,6 +8,7 @@ import { Logo } from '@/components/logo';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useAppConfig } from '@/core/app-config/store';
+import { useBooted } from '@/core/providers/booted';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
@@ -23,15 +24,28 @@ export const hasOpening = (s: SplashSettings) => (s.kind !== 'none' && !!s.media
 /**
  * Shows the opening screen once per start, over the app (phase 29). It uses the settings saved
  * by the last start, then fetches the latest for the next one, so nothing changes mid-way.
+ * The phone's own launch screen is blank (2026-11-14), so while the app is still starting this
+ * covers it: the admin's opening screen until both it and start-up are done, or else the logo.
  */
 export function OpeningHost() {
   const [splash] = useState(() => useAppConfig.getState().config.splash);
   const [done, setDone] = useState(false);
+  const booted = useBooted();
   useEffect(() => {
     void useAppConfig.getState().refresh();
   }, []);
-  if (done || !hasOpening(splash)) return null;
-  return <OpeningScreen splash={splash} onDone={() => setDone(true)} />;
+  if (hasOpening(splash) && (!done || !booted)) return <OpeningScreen splash={splash} onDone={() => setDone(true)} />;
+  return booted ? null : <StartCover />;
+}
+
+/** The logo on navy, like the launch screen used to be, while the app starts. */
+function StartCover() {
+  const { colors } = useTheme();
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: colors.navy }]} accessibilityViewIsModal>
+      <Logo width={150} onDark />
+    </View>
+  );
 }
 
 /**
@@ -69,13 +83,24 @@ export function OpeningScreen({ splash, onDone }: { splash: SplashSettings; onDo
       {isImage ? <Image testID="opening-image" source={{ uri: mediaUrl(splash.media)! }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="disk" /> : null}
       {isVideo ? <OpeningVideo url={splash.media!} poster={splash.poster} onEnd={() => finish.current()} /> : null}
       {!isImage && !isVideo ? <Logo width={150} onDark /> : null}
-      {text ? (
-        <View style={[styles.text, { bottom: insets.bottom + 56 }]}>
+      <View style={[styles.foot, { bottom: insets.bottom + 24 }]}>
+        {text ? (
           <Txt size={20} weight="semibold" align="center" style={[styles.shadow, { color: colors.cream }]}>
             {text}
           </Txt>
-        </View>
-      ) : null}
+        ) : null}
+        {/* The developer's credit, on every picture and video (owner, 2026-11-14). */}
+        {isImage || isVideo ? (
+          <View style={styles.credit}>
+            <Txt size={12} align="center" style={[styles.shadow, { color: colors.cream }]}>
+              {DEVELOPER.credit}
+            </Txt>
+            <Txt size={13} weight="medium" align="center" style={[styles.shadow, { color: colors.cream }]}>
+              {DEVELOPER.phone}
+            </Txt>
+          </View>
+        ) : null}
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('تخطي', 'Skip')}
@@ -116,7 +141,8 @@ function OpeningVideo({ url, poster, onEnd }: { url: string; poster: string | nu
 
 const styles = StyleSheet.create({
   wrap: { zIndex: 100, elevation: 100, alignItems: 'center', justifyContent: 'center' },
-  text: { position: 'absolute', left: 24, right: 24 },
+  foot: { position: 'absolute', left: 24, right: 24, gap: 20 },
+  credit: { gap: 2 },
   shadow: { textShadowColor: 'rgba(0,0,0,0.65)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 },
   skip: {
     position: 'absolute',

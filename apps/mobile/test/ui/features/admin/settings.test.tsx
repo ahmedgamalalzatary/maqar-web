@@ -73,6 +73,26 @@ describe('App settings (admin)', () => {
     expect(await screen.findByText('اتحفظ، وهيظهر في التطبيق مع أول فتح')).toBeOnTheScreen();
   });
 
+  it('sets the Contact us details; one filled in wrong is named before anything is sent (2026-11-14)', async () => {
+    const puts = serve();
+    await renderWithProviders(ui);
+    expect((await screen.findByLabelText('الإيميل')).props.value).toBe('maqarcompany@gmail.com');
+    await fireEvent.changeText(screen.getByLabelText('واتساب'), '٠١٠١٢٣٤٥٦٧٨');
+    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'facebook.com/maqar');
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ بيانات التواصل' }));
+    expect(screen.getByText('رابط فيسبوك لازم يكون كامل ويبدأ بـ https://')).toBeOnTheScreen();
+    expect(puts).toEqual([]);
+
+    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'https://facebook.com/maqar');
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ بيانات التواصل' }));
+    await waitFor(() =>
+      expect(puts).toEqual([
+        { contact: { email: 'maqarcompany@gmail.com', phone: '', whatsapp: '01012345678', facebook: 'https://facebook.com/maqar', instagram: '', tiktok: '' } },
+      ]),
+    );
+    expect(await screen.findByText('اتحفظ، وهيظهر في التطبيق مع أول فتح')).toBeOnTheScreen();
+  });
+
   it('moves a Home section up or down, then saves the order', async () => {
     const puts = serve();
     await renderWithProviders(ui);

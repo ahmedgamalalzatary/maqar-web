@@ -1,4 +1,5 @@
 import type { Bi } from './labels.js';
+import { SUPPORT_EMAIL } from './site.js';
 
 // ---- App settings an admin controls (phase 29, contract §11) ----
 // The opening screen, the calculator's limits and the order of the Home sections. Everyone reads
@@ -53,23 +54,43 @@ export const HOME_SECTION_LABEL: Record<HomeSection, Bi> = {
   launches: { ar: 'مشروعات جديدة بالتقسيط', en: 'New launches on installments' },
 };
 
+/**
+ * What the client's Contact us screen shows (owner, 2026-11-14). An empty field is not shown.
+ * Phone numbers as the admin types them; the social pages as full web links.
+ */
+export type ContactSettings = {
+  email: string;
+  phone: string;
+  whatsapp: string;
+  facebook: string;
+  instagram: string;
+  tiktok: string;
+};
+
+export const CONTACT_FIELDS = ['email', 'phone', 'whatsapp', 'facebook', 'instagram', 'tiktok'] as const satisfies readonly (keyof ContactSettings)[];
+export type ContactField = (typeof CONTACT_FIELDS)[number];
+export const CONTACT_MAX = 200;
+
 export type AppSettings = {
   splash: SplashSettings;
   calculator: CalculatorSettings;
   home: { sections: HomeSection[] };
+  contact: ContactSettings;
 };
 
-/** `PUT /admin/settings`: any of the three parts. A video's poster comes from the server. */
+/** `PUT /admin/settings`: any of the parts. A video's poster comes from the server. */
 export type AppSettingsBody = {
   splash?: Omit<SplashSettings, 'poster'>;
   calculator?: CalculatorSettings;
   home?: { sections: HomeSection[] };
+  contact?: ContactSettings;
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   splash: { kind: 'none', media: null, poster: null, textAr: '', textEn: '' },
   calculator: { minDownPct: 0, minYears: 1, maxYears: 10 },
   home: { sections: [...HOME_SECTIONS] },
+  contact: { email: SUPPORT_EMAIL, phone: '', whatsapp: '', facebook: '', instagram: '', tiktok: '' },
 };
 
 /** The saved order first (unknown names and repeats dropped), then any section it leaves out. */
@@ -100,4 +121,37 @@ export function splashProblem(s: Omit<SplashSettings, 'poster'>): 'media' | 'tex
   if (s.kind !== 'none' && !s.media) return 'media';
   if (s.textAr.trim().length > SPLASH_TEXT_MAX || s.textEn.trim().length > SPLASH_TEXT_MAX) return 'text';
   return null;
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** The digits of a phone number typed with spaces, dashes or brackets, keeping a leading +. */
+const phoneDigits = (s: string) => s.replace(/[\s\-()]/g, '');
+const PHONE = /^\+?\d{7,15}$/;
+/** A full web address: http(s), a host with a dot, then any path. */
+const WEB_LINK = /^https?:\/\/[^\s/?#@]+\.[^\s/?#@]+([/?#]\S*)?$/i;
+const isWebLink = (s: string) => WEB_LINK.test(s);
+
+/** The first contact field that is filled in wrong, or null. Empty fields are fine. */
+export function contactProblem(c: ContactSettings): ContactField | null {
+  for (const f of CONTACT_FIELDS) {
+    const v = c[f].trim();
+    if (!v) continue;
+    if (v.length > CONTACT_MAX) return f;
+    if (f === 'email' ? !EMAIL.test(v) : f === 'phone' || f === 'whatsapp' ? !PHONE.test(phoneDigits(v)) : !isWebLink(v)) return f;
+  }
+  return null;
+}
+
+/** What each filled field opens: mail, a call, a WhatsApp chat or the page; null when it is empty. */
+export function contactLinks(c: ContactSettings): Record<ContactField, string | null> {
+  const wa = phoneDigits(c.whatsapp.trim()).replace(/^\+/, '');
+  return {
+    email: c.email.trim() ? `mailto:${c.email.trim()}` : null,
+    phone: c.phone.trim() ? `tel:${phoneDigits(c.phone.trim())}` : null,
+    // WhatsApp wants the country code; an Egyptian number written from 0 gets 20.
+    whatsapp: wa ? `https://wa.me/${wa.startsWith('0') ? `20${wa.slice(1)}` : wa}` : null,
+    facebook: c.facebook.trim() || null,
+    instagram: c.instagram.trim() || null,
+    tiktok: c.tiktok.trim() || null,
+  };
 }

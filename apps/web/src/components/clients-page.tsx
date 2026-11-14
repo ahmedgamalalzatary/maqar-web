@@ -18,6 +18,7 @@ const VIEWING_STATUS = {
   rescheduled: { ar: "اتغير ميعادها", en: "Rescheduled" },
   cancelled: { ar: "اتلغت", en: "Cancelled" },
   completed: { ar: "خلصت", en: "Completed" },
+  pending: { ar: "مستنية التأكيد", en: "Awaiting confirmation" },
 } as const;
 
 /** `/clients/` (phase 22): every client account, newest first, with search and status. */

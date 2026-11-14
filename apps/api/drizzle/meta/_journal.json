@@ -169,6 +169,13 @@
       "when": 1794598346498,
       "tag": "0023_owner_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1794661704760,
+      "tag": "0024_chat_booking_requests",
+      "breakpoints": true
     }
   ]
 }

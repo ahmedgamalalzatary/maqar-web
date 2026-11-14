@@ -16,6 +16,7 @@ import { ToastHost } from '@/components/toast';
 import { useDir } from '@/core/i18n';
 import { queryClient } from '@/core/api/query';
 import { useStoresReady } from '@/core/storage/ready';
+import { BootedContext } from './booted';
 import { useTheme } from '@/core/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -46,7 +47,9 @@ export function AppProviders({ children, boot, overlay }: { children: ReactNode;
   });
   const settingsReady = useStoresReady();
   const booted = useBoot(boot);
-  const ready = (fontsLoaded || !!fontError) && settingsReady && booted;
+  // The phone's launch screen is blank navy (2026-11-14). It hides once the app can draw its own
+  // opening screen (the logo, or the admin's picture or video), which covers the rest of start-up.
+  const ready = (fontsLoaded || !!fontError) && settingsReady;
   const { scheme, colors } = useTheme();
   const dir = useDir();
 
@@ -68,10 +71,10 @@ export function AppProviders({ children, boot, overlay }: { children: ReactNode;
         >
           {/* Layout direction is set here instead of I18nManager, so switching language needs no restart. */}
           <View style={[styles.root, { direction: dir, backgroundColor: colors.bg }]}>
-            {children}
+            {booted ? children : null}
             <ToastHost />
             {/* Over everything: the opening screen (the root layout passes it, so core does not depend on a feature). */}
-            {overlay}
+            <BootedContext.Provider value={booted}>{overlay}</BootedContext.Provider>
           </View>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>

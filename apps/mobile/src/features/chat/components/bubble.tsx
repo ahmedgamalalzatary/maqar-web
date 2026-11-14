@@ -1,7 +1,7 @@
 import { type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Bot, Calculator, CalendarCheck, CalendarClock, Check, CheckCheck, Clock, Rotate3d } from 'lucide-react-native';
+import { Bot, Calculator, CalendarCheck, CalendarClock, CalendarX, Check, CheckCheck, Clock, Hourglass, Rotate3d } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
@@ -23,6 +23,9 @@ type Props = {
   /** A time being booked from this card. */
   booking: string | null;
   onImage: (url: string) => void;
+  /** The advisor's answer to a booking request (2026-11-14); `answering` while one is on its way. */
+  onAnswer?: (messageId: number, action: 'accept' | 'decline' | 'reschedule') => void;
+  answering?: boolean;
 };
 
 /** `#rrggbb` at an opacity. */
@@ -32,7 +35,7 @@ function tint(hex: string, alpha: number): string {
 }
 
 /** One message (contract §8.12): text, photos, or a card about the conversation's home. */
-export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Props) {
+export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnswer, answering = false }: Props) {
   const t = useT();
   const lang = useLang();
   const router = useRouter();
@@ -235,7 +238,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
           </View>
           {canPick ? (
             <Txt size={11} style={{ color: soft }}>
-              {t('دوس على ميعاد وهيتحجز على طول', 'Tap a time to book it instantly')}
+              {t('دوس على ميعاد، والمسؤول هيأكده', 'Tap a time; the advisor confirms it')}
             </Txt>
           ) : b.chosen && side === 'agent' ? (
             <Txt size={11} color="success">
@@ -247,23 +250,89 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
       );
     }
 
-    case 'booking':
+    case 'booking': {
+      // A request from the chat waits for the advisor (2026-11-14); a card without a state was confirmed at once.
+      const state = b.state ?? 'accepted';
+      const look = {
+        pending: { Icon: Hourglass, bg: colors.accent, title: t('معاينة مستنية التأكيد', 'Viewing awaiting confirmation') },
+        accepted: { Icon: CalendarCheck, bg: colors.success, title: t('المعاينة اتأكدت', 'Viewing confirmed') },
+        moved: { Icon: CalendarClock, bg: colors.success, title: t('الميعاد اتغير', 'New time confirmed') },
+        declined: { Icon: CalendarX, bg: colors.danger, title: t('المسؤول اعتذر عن المعاينة', 'The advisor declined the viewing') },
+        cancelled: { Icon: CalendarX, bg: colors.danger, title: t('المعاينة اتلغت', 'Viewing cancelled') },
+      }[state];
+      // The client's request keeps its headline once answered, with where it stands under it; the
+      // advisor's answer follows as its own card.
+      const request = m.sender === 'client';
+      const booked = side === 'client' ? t('حجزت معاينة', 'You booked a viewing') : t('العميل حجز معاينة', 'The client booked a viewing');
+      const outcome = {
+        pending: side === 'client' ? t('مستنية تأكيد المسؤول', 'Waiting for the advisor to confirm') : null,
+        accepted: t('اتأكدت', 'Confirmed'),
+        moved: t('اتنقلت لميعاد تاني', 'Moved to another time'),
+        declined: t('اتعتذر عنها', 'Declined'),
+        cancelled: t('اتلغت', 'Cancelled'),
+      }[state];
+      const asks = state === 'pending' && side === 'agent' && !!onAnswer;
       return (
         <View style={[shell, styles.pad, styles.slots]}>
           <View style={styles.inline}>
-            <View style={[styles.done, { backgroundColor: colors.success }]}>
-              <CalendarCheck size={18} color="#fff" />
+            <View style={[styles.done, { backgroundColor: request ? colors.accent : look.bg }]}>
+              {request ? <Hourglass size={18} color="#fff" /> : <look.Icon size={18} color="#fff" />}
             </View>
             <View>
               <Txt size={13.5} weight="semibold" style={{ color: fg }}>
-                {t('المعاينة اتأكدت', 'Viewing confirmed')}
+                {request ? booked : look.title}
               </Txt>
-              <Txt size={12} style={{ color: soft }}>
-                {fmtDate(b.date, lang, 'long')} | {fmtTime(b.time, lang)}
-              </Txt>
+              {request || (state !== 'declined' && state !== 'cancelled') ? (
+                <Txt size={12} style={{ color: soft }}>
+                  {fmtDate(b.date, lang, 'long')} | {fmtTime(b.time, lang)}
+                </Txt>
+              ) : null}
             </View>
           </View>
-          {side === 'client' ? (
+          {request && outcome ? (
+            <Txt size={11.5} style={{ color: soft }}>
+              {outcome}
+            </Txt>
+          ) : null}
+          {asks ? (
+            <View style={styles.answers}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: answering }}
+                disabled={answering}
+                onPress={() => onAnswer(m.id, 'accept')}
+                style={[styles.cardAction, styles.flat, { backgroundColor: colors.success }]}
+              >
+                <Txt size={12.5} weight="semibold" style={{ color: '#fff' }}>
+                  {t('أكّد المعاينة', 'Confirm')}
+                </Txt>
+              </Pressable>
+              <View style={styles.answerRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: answering }}
+                  disabled={answering}
+                  onPress={() => onAnswer(m.id, 'reschedule')}
+                  style={[styles.cardAction, styles.flat, styles.flex, { backgroundColor: chip }]}
+                >
+                  <Txt size={12.5} weight="medium" style={{ color: fg }}>
+                    {t('غيّر الميعاد', 'Change the time')}
+                  </Txt>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: answering }}
+                  disabled={answering}
+                  onPress={() => onAnswer(m.id, 'decline')}
+                  style={[styles.cardAction, styles.flat, styles.flex, { backgroundColor: chip }]}
+                >
+                  <Txt size={12.5} weight="medium" color="danger">
+                    {t('اعتذر', 'Decline')}
+                  </Txt>
+                </Pressable>
+              </View>
+            </View>
+          ) : state === 'pending' && side === 'agent' ? null : side === 'client' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/viewings')} style={[styles.cardAction, styles.flat, { backgroundColor: chip }]}>
               <Txt size={12.5} weight="medium" style={{ color: fg }}>
                 {t('معايناتي', 'My viewings')}
@@ -279,11 +348,14 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage }: Prop
           {meta}
         </View>
       );
+    }
   }
 }
 
 const styles = StyleSheet.create({
   shell: { maxWidth: '82%', borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+  answers: { gap: 6, marginTop: 6 },
+  answerRow: { flexDirection: 'row', gap: 6 },
   tailMine: { borderBottomEndRadius: 6 },
   tailTheirs: { borderBottomStartRadius: 6 },
   pad: { paddingHorizontal: 14, paddingVertical: 8, gap: 2 },

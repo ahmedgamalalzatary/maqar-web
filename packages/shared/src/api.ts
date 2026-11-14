@@ -357,7 +357,18 @@ export type ChatBody =
   | { kind: 'plan'; price: number; downPct: number; years: number; monthly: number }
   | { kind: 'tour' }
   | { kind: 'slots'; date: string; times: string[]; chosen: string | null }
-  | { kind: 'booking'; viewingId: number; date: string; time: string };
+  | { kind: 'booking'; viewingId: number; date: string; time: string; state?: BookingCardState };
+
+/**
+ * Where a booking from a chat's times card stands (owner, 2026-11-14). The client's pick posts a
+ * `pending` card; the advisor's answer marks it and posts one of the others. A card without a
+ * state comes from before then: the viewing was confirmed at once.
+ */
+export const BOOKING_CARD_STATES = ['pending', 'accepted', 'declined', 'moved', 'cancelled'] as const;
+export type BookingCardState = (typeof BOOKING_CARD_STATES)[number];
+
+/** `POST /v1/chats/:id/messages/:messageId/answer`: the advisor's answer to a booking request. */
+export type AnswerBookingBody = { action: 'accept' } | { action: 'decline' } | { action: 'reschedule'; date: string; time: string };
 
 export type ChatMessage = {
   id: number;

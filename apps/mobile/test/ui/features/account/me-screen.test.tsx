@@ -45,6 +45,22 @@ describe('MeScreen', () => {
     expect(screen.queryByRole('button', { name: 'حاسبة التقسيط' })).toBeNull();
   });
 
+  it('guests and clients can open Contact us (2026-11-14); an agent has no row for it', async () => {
+    const { unmount } = await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'تواصل معنا' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/contact');
+    await unmount();
+
+    await useSession.getState().setSession(makeAuth({ role: 'client' }));
+    const client = await renderWithProviders(<MeScreen />);
+    expect(screen.getByRole('button', { name: 'تواصل معنا' })).toBeOnTheScreen();
+    await client.unmount();
+
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
+    await renderWithProviders(<MeScreen />);
+    expect(screen.queryByRole('button', { name: 'تواصل معنا' })).toBeNull();
+  });
+
   it('signing out ends the session on the server and returns to the client home', async () => {
     await useSession.getState().setSession(makeAuth({ name: 'Mona Adel' }));
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(204));
@@ -99,32 +115,21 @@ describe('MeScreen', () => {
 
   // Store rules (Apple 5.1.1, Google Play User Data): a privacy policy and a support contact,
   // reachable inside the app by everyone, guests included.
-  it('everyone can open the privacy policy and terms, and write to support', async () => {
-    const mail = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+  it('everyone can open the privacy policy and terms; the support address left the footer (2026-11-14)', async () => {
     const origin = new URL(process.env.EXPO_PUBLIC_API_URL!).origin;
     await renderWithProviders(<MeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'سياسة الخصوصية' }));
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/privacy`);
     await fireEvent.press(screen.getByRole('button', { name: 'الشروط والأحكام' }));
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/terms`);
-    // The support row left the list (2026-11-12); the address stays in the footer (Apple 1.2 and 1.5).
-    expect(screen.queryByRole('button', { name: 'كلّم الدعم' })).toBeNull();
-    await fireEvent.press(screen.getByRole('link', { name: 'maqarcompany@gmail.com' }));
-    expect(mail).toHaveBeenCalledWith('mailto:maqarcompany@gmail.com');
-  });
-
-  it('opens the support page when the phone has no email app', async () => {
-    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('No app handles mailto'));
-    const origin = new URL(process.env.EXPO_PUBLIC_API_URL!).origin;
-    await renderWithProviders(<MeScreen />);
-    await fireEvent.press(screen.getByRole('link', { name: 'maqarcompany@gmail.com' }));
-    await waitFor(() => expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/support`));
+    // Contact us carries it now (Apple 1.2 and 1.5).
+    expect(screen.queryByText(/maqarcompany@gmail.com/)).toBeNull();
   });
 
   it('ends with the developer credit, whose number can be called', async () => {
     const call = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     await renderWithProviders(<MeScreen />);
-    expect(screen.getByText('Powered by Bit Tech')).toBeOnTheScreen();
+    expect(screen.getByText('Powered by Bit Technologies')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('link', { name: '01501053600' }));
     expect(call).toHaveBeenCalledWith('tel:01501053600');
   });

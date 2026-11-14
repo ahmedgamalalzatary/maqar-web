@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminViewingItem, fmtDate, fmtNum, fmtTime, type SlotsResponse, VIEWING_WHENS, type ViewingWhen } from "@maqar/shared";
+import { type AdminViewingItem, fmtDate, fmtNum, isActiveViewing, fmtTime, type SlotsResponse, VIEWING_WHENS, type ViewingWhen } from "@maqar/shared";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
@@ -16,8 +16,9 @@ const STATUS_LABEL = {
   rescheduled: { ar: "اتغير ميعادها", en: "Rescheduled" },
   cancelled: { ar: "اتلغت", en: "Cancelled" },
   completed: { ar: "خلصت", en: "Completed" },
+  pending: { ar: "مستنية التأكيد", en: "Awaiting confirmation" },
 } as const;
-const isActive = (v: AdminViewingItem) => (v.status === "confirmed" || v.status === "rescheduled") && Date.parse(v.startsAt) > Date.now();
+const isActive = (v: AdminViewingItem) => isActiveViewing(v) && Date.parse(v.startsAt) > Date.now();
 
 /** `/viewings/` (phase 23): every viewing; an upcoming one can be moved or cancelled. */
 export function ViewingsPage() {

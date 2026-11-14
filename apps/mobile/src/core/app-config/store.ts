@@ -17,6 +17,7 @@ const complete = (v: Partial<AppSettings> | undefined): AppSettings => ({
   splash: { ...DEFAULT_APP_SETTINGS.splash, ...v?.splash },
   calculator: { ...DEFAULT_APP_SETTINGS.calculator, ...v?.calculator },
   home: { sections: homeSectionOrder(v?.home?.sections ?? []) },
+  contact: { ...DEFAULT_APP_SETTINGS.contact, ...v?.contact },
 });
 
 /**
@@ -48,3 +49,4 @@ export const useAppConfig = create<AppConfig>()(
 
 export const useCalculatorLimits = () => useAppConfig((s) => s.config.calculator);
 export const useHomeOrder = () => useAppConfig((s) => s.config.home.sections);
+export const useContact = () => useAppConfig((s) => s.config.contact);

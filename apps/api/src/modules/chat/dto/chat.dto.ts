@@ -44,6 +44,23 @@ export class BookSlotDto {
   time: string;
 }
 
+/** `POST /chats/:id/messages/:messageId/answer`: the advisor's answer to a booking request (2026-11-14). */
+export class AnswerBookingDto {
+  @ApiProperty({ enum: ['accept', 'decline', 'reschedule'] })
+  @IsIn(['accept', 'decline', 'reschedule'])
+  action: 'accept' | 'decline' | 'reschedule';
+
+  @ApiPropertyOptional({ example: '2026-11-16', description: 'For reschedule: a Cairo calendar day' })
+  @ValidateIf((o: AnswerBookingDto) => o.action === 'reschedule')
+  @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
+  date?: string;
+
+  @ApiPropertyOptional({ example: '17:00', description: 'For reschedule: a free hour of the advisor' })
+  @ValidateIf((o: AnswerBookingDto) => o.action === 'reschedule')
+  @Matches(HOUR, { message: 'time must be a whole hour, HH:00' })
+  time?: string;
+}
+
 /** `POST /chats/:id/report` (phase 24). */
 export class ReportChatDto implements ChatReportBody {
   @ApiProperty({ enum: CHAT_REPORT_REASONS }) @IsIn(CHAT_REPORT_REASONS)

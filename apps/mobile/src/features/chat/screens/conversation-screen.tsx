@@ -1,4 +1,4 @@
-import { CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, type SendChatBody } from '@maqar/shared';
+import { type AnswerBookingBody, CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, fmtTime, type SendChatBody } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ import { useSlots } from '@/features/viewings/hooks/use-viewings';
 import { newestFirst } from '../chat-cache';
 import { Bubble } from '../components/bubble';
 import { preparePhotos } from '../photos';
-import { useBlockChat, useBookSlot, useMarkRead, useMessages, useReportChat, useSend, useSendImages, useThread } from '../hooks/use-chat';
+import { useAnswerBooking, useBlockChat, useBookSlot, useMarkRead, useMessages, useReportChat, useSend, useSendImages, useThread } from '../hooks/use-chat';
 import { sendTyping, setOpenThread, useTyping } from '../socket';
 
 const dayOf = (iso: string) => new Date(iso).toDateString();
@@ -88,6 +88,9 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   const [menu, setMenu] = useState<'options' | 'report' | null>(null);
   const block = useBlockChat(thread.id);
   const [booking, setBooking] = useState<{ messageId: number; time: string } | null>(null);
+  const answerBooking = useAnswerBooking(thread.id);
+  // The request whose time the advisor is moving (2026-11-14).
+  const [moving, setMoving] = useState<{ messageId: number; viewingId: number } | null>(null);
   const typedAt = useTyping((s) => s[thread.id] ?? 0);
   // The store clears it 4 seconds after the last keystroke.
   const otherTyping = typedAt > 0;
@@ -143,11 +146,35 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
     book.mutate(
       { messageId, time },
       {
-        onSuccess: () => toast.show({ title: t('المعاينة اتحجزت', 'Viewing booked'), tone: 'sage' }),
+        onSuccess: () => toast.show({ title: t('طلبك وصل، مستنيين المسؤول يأكد الميعاد', 'Request sent: the advisor will confirm the time'), tone: 'sage' }),
         onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }),
         onSettled: () => setBooking(null),
       },
     );
+  };
+
+  /** The advisor answers a booking request: accept or decline at once, or pick another free hour first. */
+  const answer = (messageId: number, body: AnswerBookingBody) =>
+    answerBooking.mutate(
+      { messageId, body },
+      {
+        onSuccess: () =>
+          toast.show({
+            title:
+              body.action === 'accept'
+                ? t('المعاينة اتأكدت للعميل', 'Viewing confirmed to the client')
+                : body.action === 'decline'
+                  ? t('العميل عرف إنك اعتذرت', 'The client was told you declined')
+                  : t('الميعاد الجديد اتبعت للعميل', 'The new time was sent to the client'),
+            tone: 'sage',
+          }),
+        onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }),
+      },
+    );
+  const onAnswer = (messageId: number, action: 'accept' | 'decline' | 'reschedule') => {
+    if (action !== 'reschedule') return answer(messageId, { action });
+    const card = list.find((x) => x.id === messageId);
+    if (card?.body.kind === 'booking') setMoving({ messageId, viewingId: card.body.viewingId });
   };
 
   const quick = [
@@ -181,6 +208,8 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           onBook={onBook}
           booking={booking?.messageId === item.id ? booking.time : null}
           onImage={setViewer}
+          onAnswer={side === 'agent' ? onAnswer : undefined}
+          answering={answerBooking.isPending}
         />
       </View>
     );
@@ -383,6 +412,18 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
       <ReportSheet threadId={thread.id} open={menu === 'report'} onClose={() => setMenu(null)} />
 
       {side === 'agent' ? <DayPicker propertyId={p.id} open={picking} onClose={() => setPicking(false)} onPick={(date) => post({ kind: 'slots', date })} /> : null}
+      {side === 'agent' && moving ? (
+        <MovePicker
+          propertyId={p.id}
+          viewingId={moving.viewingId}
+          onClose={() => setMoving(null)}
+          onPick={(date, time) => {
+            const { messageId } = moving;
+            setMoving(null);
+            answer(messageId, { action: 'reschedule', date, time });
+          }}
+        />
+      ) : null}
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <View style={styles.viewer}>
@@ -482,6 +523,58 @@ function DayPicker({ propertyId, open, onClose, onPick }: { propertyId: number; 
               </Txt>
               <Txt size={11.5} color="ink2">
                 {t(`${fmtNum(d.free, 'ar')} ميعاد فاضي`, `${d.free} free`)}
+              </Txt>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <Txt color="ink2">{t('مفيش مواعيد فاضية في الأسبوعين الجايين.', 'No free times in the next two weeks.')}</Txt>
+      )}
+    </Sheet>
+  );
+}
+
+/**
+ * Another free hour for a booking request (2026-11-14): the request's own advisor's hours, with the
+ * request's hour shown free. A day first, then its hour.
+ */
+function MovePicker({ propertyId, viewingId, onClose, onPick }: { propertyId: number; viewingId: number; onClose: () => void; onPick: (date: string, time: string) => void }) {
+  const t = useT();
+  const lang = useLang();
+  const { colors } = useTheme();
+  const slots = useSlots(propertyId, viewingId);
+  const [day, setDay] = useState<string | null>(null);
+  const days = (slots.data?.days ?? []).map((d) => ({ date: d.date, free: d.slots.filter((s) => s.state === 'free').map((s) => s.time) })).filter((d) => d.free.length > 0);
+  const picked = days.find((d) => d.date === day);
+  return (
+    <Sheet open onClose={onClose} title={picked ? fmtDate(picked.date, lang, 'long') : t('اختار يوم الميعاد الجديد', 'Pick the new day')} scroll>
+      {slots.isPending ? (
+        <ActivityIndicator color={colors.accent} />
+      ) : picked ? (
+        <View style={styles.days}>
+          {picked.free.map((time) => (
+            <Pressable key={time} accessibilityRole="button" accessibilityLabel={fmtTime(time, lang)} onPress={() => onPick(picked.date, time)} style={[styles.day, { backgroundColor: colors.surface2 }]}>
+              <Txt size={13} weight="medium">
+                {fmtTime(time, lang)}
+              </Txt>
+            </Pressable>
+          ))}
+        </View>
+      ) : days.length ? (
+        <View style={styles.days}>
+          {days.map((d) => (
+            <Pressable
+              key={d.date}
+              accessibilityRole="button"
+              accessibilityLabel={`${fmtDate(d.date, lang, 'long')}، ${t(`${fmtNum(d.free.length, 'ar')} ميعاد`, `${d.free.length} free`)}`}
+              onPress={() => setDay(d.date)}
+              style={[styles.day, { backgroundColor: colors.surface2 }]}
+            >
+              <Txt size={13} weight="medium">
+                {fmtDate(d.date, lang, 'long')}
+              </Txt>
+              <Txt size={11.5} color="ink2">
+                {t(`${fmtNum(d.free.length, 'ar')} ميعاد فاضي`, `${d.free.length} free`)}
               </Txt>
             </Pressable>
           ))}

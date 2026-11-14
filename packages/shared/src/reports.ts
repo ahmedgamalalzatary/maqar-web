@@ -441,6 +441,7 @@ export const VIEWING_STATUS_LABEL: Record<ViewingStatus, Bi> = {
   rescheduled: { ar: 'اتغير ميعادها', en: 'Rescheduled' },
   cancelled: { ar: 'اتلغت', en: 'Cancelled' },
   completed: { ar: 'خلصت', en: 'Completed' },
+  pending: { ar: 'مستنية التأكيد', en: 'Awaiting confirmation' },
 };
 
 export const VIEWING_CANCELLER_LABEL: Record<ViewingCanceller | 'unknown', Bi> = {

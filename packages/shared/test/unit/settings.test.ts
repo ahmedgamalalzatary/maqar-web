@@ -1,4 +1,4 @@
-import { calculatorProblem, DEFAULT_APP_SETTINGS, HOME_SECTIONS, homeSectionOrder, splashProblem, yearsLimits } from '../../src/settings.js';
+import { calculatorProblem, contactLinks, contactProblem, DEFAULT_APP_SETTINGS, HOME_SECTIONS, homeSectionOrder, splashProblem, yearsLimits } from '../../src/settings.js';
 
 describe('app settings the admin controls (phase 29)', () => {
   it('orders the Home sections as saved, and never loses or repeats one', () => {
@@ -35,5 +35,50 @@ describe('app settings the admin controls (phase 29)', () => {
     expect(splashProblem({ kind: 'image', media: null, textAr: '', textEn: '' })).toBe('media');
     expect(splashProblem({ kind: 'video', media: '/uploads/videos/a.mp4', textAr: 'أهلا', textEn: 'Hi' })).toBeNull();
     expect(splashProblem({ kind: 'none', media: null, textAr: 'x'.repeat(81), textEn: '' })).toBe('text');
+  });
+});
+
+describe('the contact details an admin sets for Contact us (2026-11-14)', () => {
+  const empty = { email: '', phone: '', whatsapp: '', facebook: '', instagram: '', tiktok: '' };
+
+  it('starts with the support address and nothing else', () => {
+    expect(DEFAULT_APP_SETTINGS.contact).toEqual({ ...empty, email: 'maqarcompany@gmail.com' });
+    expect(contactProblem(DEFAULT_APP_SETTINGS.contact)).toBeNull();
+    expect(contactProblem(empty)).toBeNull();
+  });
+
+  it('takes an email, phone numbers and web links, and names the first field that is wrong', () => {
+    const good = {
+      email: 'info@maqar.app',
+      phone: '01012345678',
+      whatsapp: '+20 101 234 5678',
+      facebook: 'https://facebook.com/maqar',
+      instagram: 'https://www.instagram.com/maqar',
+      tiktok: 'https://www.tiktok.com/@maqar',
+    };
+    expect(contactProblem(good)).toBeNull();
+    expect(contactProblem({ ...good, email: 'not-an-email' })).toBe('email');
+    expect(contactProblem({ ...good, phone: '12' })).toBe('phone');
+    expect(contactProblem({ ...good, whatsapp: 'call me' })).toBe('whatsapp');
+    expect(contactProblem({ ...good, facebook: 'facebook.com/maqar' })).toBe('facebook');
+    expect(contactProblem({ ...good, instagram: 'javascript:alert(1)' })).toBe('instagram');
+    expect(contactProblem({ ...good, tiktok: 'https://' })).toBe('tiktok');
+  });
+
+  it('turns the details into the links the app opens', () => {
+    expect(contactLinks({ ...empty, email: 'info@maqar.app', phone: '010 1234 5678', whatsapp: '01012345678' })).toEqual({
+      email: 'mailto:info@maqar.app',
+      phone: 'tel:01012345678',
+      // WhatsApp wants the country code: an Egyptian 0… number becomes 20….
+      whatsapp: 'https://wa.me/201012345678',
+      facebook: null,
+      instagram: null,
+      tiktok: null,
+    });
+    expect(contactLinks({ ...empty, whatsapp: '+971 50 123 4567', instagram: 'https://instagram.com/maqar' })).toMatchObject({
+      email: null,
+      whatsapp: 'https://wa.me/971501234567',
+      instagram: 'https://instagram.com/maqar',
+    });
   });
 });

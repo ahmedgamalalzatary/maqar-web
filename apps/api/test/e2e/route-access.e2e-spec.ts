@@ -76,6 +76,7 @@ const EXPECTED: Record<string, string> = {
   'GET /properties/recommended': 'client',
   'PUT /me/prefs': 'client',
   'POST /chats': 'client',
+  'POST /chats/:id/messages/:messageId/answer': 'agent',
   'POST /chats/:id/messages/:messageId/book': 'client',
   'POST /viewings': 'client',
   'PATCH /viewings/:id': 'client',

@@ -1,4 +1,4 @@
-import { type AdminViewingItem, fmtDate, fmtTime, ltrPhone, VIEWING_WHENS, type ViewingWhen } from '@maqar/shared';
+import { type AdminViewingItem, fmtDate, isActiveViewing, fmtTime, ltrPhone, VIEWING_WHENS, type ViewingWhen } from '@maqar/shared';
 import { CalendarCheck, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -22,6 +22,7 @@ export const VIEWING_STATUS_LABEL = {
   rescheduled: { ar: 'اتغير ميعادها', en: 'Rescheduled' },
   cancelled: { ar: 'اتلغت', en: 'Cancelled' },
   completed: { ar: 'خلصت', en: 'Completed' },
+  pending: { ar: 'مستنية التأكيد', en: 'Awaiting confirmation' },
 } as const;
 
 /** `/admin/viewings` (phase 23): every viewing; an upcoming one can be moved or cancelled. */
@@ -110,7 +111,7 @@ export function AdminViewingsScreen() {
   );
 }
 
-const isActive = (v: AdminViewingItem) => (v.status === 'confirmed' || v.status === 'rescheduled') && Date.parse(v.startsAt) > Date.now();
+const isActive = (v: AdminViewingItem) => isActiveViewing(v) && Date.parse(v.startsAt) > Date.now();
 
 function Row({ v, onPress }: { v: AdminViewingItem; onPress: () => void }) {
   const t = useT();

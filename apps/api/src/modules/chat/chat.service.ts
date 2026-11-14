@@ -4,6 +4,8 @@ import path from 'node:path';
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  type AnswerBookingBody,
+  type BookingCardState,
   CHAT_PAGE,
   type ChatBlock,
   type ChatBlocker,
@@ -132,9 +134,10 @@ export class ChatService {
 
   /**
    * Books a time from an agent's slots card in one step (contract §8.12), with the same rules as
-   * the booking screen. The card shows the time picked, and a confirmation card follows. A retry
-   * (a crash after the booking committed, or a second tap) finds the client's live viewing and
-   * marks the card with its time instead of booking again.
+   * the booking screen. The card shows the time picked. The viewing waits for the advisor (owner,
+   * 2026-11-14): a request card from the client's side says what was booked, and the advisor
+   * answers it. A retry (a crash after the booking committed, or a second tap) finds the client's
+   * live viewing and marks the card with its time instead of booking again.
    */
   async book(user: AuthUser, id: number, messageId: number, time: string): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
     const thread = openOnly(await this.own(user, id));
@@ -142,18 +145,70 @@ export class ChatService {
     const msg = await this.repo.findMessage(messageId);
     if (!msg || msg.threadId !== thread.id || msg.body.kind !== 'slots') throw new NotFoundException('Times card not found');
     const card = msg.body;
-    if (card.chosen) throw new ConflictException('A time was already picked on this card');
     if (!card.times.includes(time)) throw new BadRequestException('That time is not on the card');
     const existing = await this.viewings.activeOf(user.id, thread.propertyId);
-    const viewing = existing ?? (await this.viewings.book(user, { propertyId: thread.propertyId, date: card.date, time, reminders: ['1d', '2h'] }, thread.agentId));
+    // A card already picked is spent, except for a retry of that same pick, which finishes its writes.
+    if (card.chosen && (time !== card.chosen || existing?.time !== card.chosen)) throw new ConflictException('A time was already picked on this card');
+    const viewing = existing ?? (await this.viewings.book(user, { propertyId: thread.propertyId, date: card.date, time, reminders: ['1d', '2h'] }, thread.agentId, true));
     // Two taps at once: the booking rules let one through, and the card takes one time. A lost
-    // pick is harmless when the booking came first (its confirmation follows anyway).
-    await this.repo.choose(msg.id, existing?.time ?? time);
+    // pick is harmless when the booking came first (its request card follows anyway).
+    if (!card.chosen) await this.repo.choose(msg.id, existing?.time ?? time);
     const picked = toMessage((await this.repo.findMessage(msg.id))!);
     this.realtime.emit([thread.clientId, thread.agentId], 'updated', { message: picked });
-    // The confirmation comes from the advisor's side, already seen by the client who just booked.
-    if (!existing) await this.post(thread, 'agent', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time }, new Date());
+    // The request card, unless an earlier try already wrote it.
+    if (viewing.status === 'pending' && !(await this.repo.hasBookingCard(thread.id, viewing.id, 'client'))) {
+      await this.post(thread, 'client', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time, state: 'pending' });
+    }
     return { viewing, card: picked };
+  }
+
+  /**
+   * The advisor answers a booking request from the chat (owner, 2026-11-14): accept, decline or
+   * move it. The request card is marked and an answer card follows; the client is told by the
+   * viewing's own notice. A request that stopped waiting (the client cancelled it) is marked so.
+   */
+  async answer(user: AuthUser, id: number, messageId: number, body: AnswerBookingBody): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
+    const thread = openOnly(await this.own(user, id));
+    if (sideOf(user) !== 'agent') throw new ForbiddenException('Only the advisor answers');
+    const msg = await this.repo.findMessage(messageId);
+    if (!msg || msg.threadId !== thread.id || msg.body.kind !== 'booking' || !msg.body.state) throw new NotFoundException('Booking request not found');
+    const request = msg.body;
+    if (request.state !== 'pending') throw new ConflictException('This request was already answered');
+    let viewing: ViewingItem;
+    try {
+      viewing = await this.viewings.answer(user, request.viewingId, body);
+    } catch (err) {
+      // The viewing moved on without this answer (another answer won, the client cancelled, or an
+      // earlier try stopped before its chat writes): the card is brought up to what really happened.
+      if (err instanceof ConflictException) await this.reconcile(thread, msg.id, request.viewingId);
+      throw err;
+    }
+    const state: BookingCardState = body.action === 'accept' ? 'accepted' : body.action === 'decline' ? 'declined' : 'moved';
+    return { viewing, card: await this.settle(thread, msg.id, viewing, state) };
+  }
+
+  /** The card of a request that is no longer waiting, from the viewing as it stands. */
+  private async reconcile(thread: ChatThreadRow, messageId: number, viewingId: number): Promise<void> {
+    const now = await this.viewings.current(viewingId);
+    if (!now || now.item.status === 'pending') return;
+    const { status } = now.item;
+    const state: BookingCardState = status === 'cancelled' ? (now.cancelledBy === 'agent' ? 'declined' : 'cancelled') : status === 'rescheduled' ? 'moved' : 'accepted';
+    await this.settle(thread, messageId, now.item, state);
+  }
+
+  /**
+   * Marks the request card and posts the answer card. Only the write that marks the card posts,
+   * so two answers, or an answer and its retry, leave one answer card. The client was told by the
+   * viewing's notice; a cancellation by the client needs no answer card.
+   */
+  private async settle(thread: ChatThreadRow, messageId: number, viewing: ViewingItem, state: BookingCardState): Promise<ChatMessage> {
+    const marked = await this.repo.markBooking(messageId, state);
+    const card = toMessage((await this.repo.findMessage(messageId))!);
+    this.realtime.emit([thread.clientId, thread.agentId], 'updated', { message: card });
+    if (marked && state !== 'cancelled') {
+      await this.post(thread, 'agent', { kind: 'booking', viewingId: viewing.id, date: viewing.date, time: viewing.time, state }, null, false);
+    }
+    return card;
   }
 
   /**
@@ -254,11 +309,11 @@ export class ChatService {
    * Stores a message and brings it to both sides at once. The other side gets a notification
    * unless they have the conversation open. A client writing out of hours gets the away reply.
    */
-  private async post(thread: ChatThreadRow, sender: ChatSender, body: ChatBody, readAt: Date | null = null): Promise<ChatMessage> {
+  private async post(thread: ChatThreadRow, sender: ChatSender, body: ChatBody, readAt: Date | null = null, notify = true): Promise<ChatMessage> {
     const message = toMessage(await this.repo.add(thread, sender, body, readAt));
     this.realtime.emit([thread.clientId, thread.agentId], 'message', { message });
     const to = sender === 'client' ? thread.agentId : thread.clientId;
-    if (!readAt && !this.realtime.isOpen(to, thread.id)) await this.notify(thread, sender, to, body);
+    if (notify && !readAt && !this.realtime.isOpen(to, thread.id)) await this.notify(thread, sender, to, body);
     if (sender === 'client') await this.awayReply(thread);
     return message;
   }

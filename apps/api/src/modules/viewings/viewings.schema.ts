@@ -7,7 +7,7 @@ import { users } from '../users/users.schema.js';
 
 /**
  * A booked viewing (contract §8.7, §13). `starts_at` is UTC. `active` is 1 while the viewing is
- * confirmed or rescheduled and NULL otherwise; MySQL lets many rows share NULL in a unique key, so
+ * confirmed, rescheduled or pending (waiting for the advisor, 2026-11-14) and NULL otherwise; MySQL lets many rows share NULL in a unique key, so
  * the key (agent, hour, active) lets an agent have only one live viewing per hour, and a cancelled
  * one frees the hour. The key (client, property, active) likewise keeps a client to one live
  * viewing per home — enforced by the database, so two simultaneous bookings cannot both commit.
@@ -33,7 +33,7 @@ export const viewings = mysqlTable(
     /** Who cancelled it (phase 27's reports); viewings cancelled before then have none. */
     cancelledBy: mysqlEnum('cancelled_by', VIEWING_CANCELLERS),
     videoUrl: varchar('video_url', { length: 500 }),
-    active: tinyint('active').generatedAlwaysAs(sql`(if(\`status\` in ('confirmed','rescheduled'), 1, NULL))`, { mode: 'stored' }),
+    active: tinyint('active').generatedAlwaysAs(sql`(if(\`status\` in ('confirmed','rescheduled','pending'), 1, NULL))`, { mode: 'stored' }),
     createdAt: timestamp('created_at', { fsp: 3 })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP(3)`),

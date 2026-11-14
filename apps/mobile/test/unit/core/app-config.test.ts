@@ -6,6 +6,7 @@ const saved: AppSettings = {
   splash: { kind: 'image', media: '/uploads/listings/a.jpg', poster: null, textAr: 'أهلا', textEn: 'Hello' },
   calculator: { minDownPct: 10, minYears: 2, maxYears: 8 },
   home: { sections: [...DEFAULT_APP_SETTINGS.home.sections].reverse() },
+  contact: { ...DEFAULT_APP_SETTINGS.contact, phone: '01012345678' },
 };
 
 beforeEach(() => useAppConfig.setState({ config: DEFAULT_APP_SETTINGS }));

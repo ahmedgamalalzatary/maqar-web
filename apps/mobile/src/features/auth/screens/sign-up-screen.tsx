@@ -40,7 +40,7 @@ export function SignUpScreen() {
         textContentType="emailAddress"
       />
       <TextField
-        label={t('رقم الموبايل (اختياري)', 'Mobile number (optional)')}
+        label={t('رقم الموبايل', 'Mobile number')}
         value={phone}
         onChangeText={setPhone}
         autoComplete="tel"

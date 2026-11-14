@@ -7,8 +7,8 @@ export const BOOKING_DAYS = 14;
 /** A viewing lasts this long (the calendar event too). */
 export const VIEWING_MINUTES = 45;
 
-/** Confirmed or rescheduled: it still takes the agent's hour. */
-export const isActiveViewing = (v: Pick<ViewingItem, 'status'>) => v.status === 'confirmed' || v.status === 'rescheduled';
+/** Confirmed, rescheduled or waiting for the advisor: it still takes the agent's hour. */
+export const isActiveViewing = (v: Pick<ViewingItem, 'status'>) => v.status === 'confirmed' || v.status === 'rescheduled' || v.status === 'pending';
 
 /** Upcoming until an hour after it started (as in the demo); everything else is past. */
 export function isUpcoming(v: Pick<ViewingItem, 'status' | 'startsAt'>, now = Date.now()): boolean {

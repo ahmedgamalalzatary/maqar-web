@@ -44,7 +44,21 @@ function serve(t: ChatThread, start: ChatMessage[], opts: { bookStatus?: number 
       const card = items.find((m) => m.body.kind === 'slots')!;
       const picked = { ...card, body: { ...card.body, chosen: time } } as ChatMessage;
       items = items.map((m) => (m.id === card.id ? picked : m));
-      return jsonResponse(201, { viewing: { id: 5 }, card: picked });
+      // The pick is a request the advisor answers (owner, 2026-11-14).
+      items = [...items, msg('client', { kind: 'booking', viewingId: 5, date: '2026-11-13', time, state: 'pending' }, { id: ++next })];
+      return jsonResponse(201, { viewing: { id: 5, status: 'pending' }, card: picked });
+    }
+    if (path.endsWith('/answer')) {
+      const body = JSON.parse(init.body as string) as { action: string; date?: string; time?: string };
+      const req = items.find((m) => m.body.kind === 'booking' && m.body.state === 'pending')!;
+      const state = body.action === 'accept' ? 'accepted' : body.action === 'decline' ? 'declined' : 'moved';
+      const marked = { ...req, body: { ...req.body, state } } as ChatMessage;
+      const when = req.body as { date: string; time: string };
+      items = [
+        ...items.map((m) => (m.id === req.id ? marked : m)),
+        msg('agent', { kind: 'booking', viewingId: 5, date: body.date ?? when.date, time: body.time ?? when.time, state } as ChatMessage['body'], { id: ++next }),
+      ];
+      return jsonResponse(201, { viewing: { id: 5 }, card: marked });
     }
     if (path.startsWith('/properties/4/slots')) return jsonResponse(200, SLOTS);
     return jsonResponse(200, { items: [], unread: 0 });
@@ -151,13 +165,17 @@ describe('Conversation (client)', () => {
     expect(await screen.findByLabelText('أنت: فيه خصم كاش؟، اتبعتت')).toBeOnTheScreen();
   });
 
-  it('books a time from the advisor’s card in one tap, and the card shows it', async () => {
+  it('books a time from the advisor’s card in one tap; it waits for the advisor to confirm (2026-11-14)', async () => {
     const card = msg('agent', { kind: 'slots', date: '2026-11-13', times: ['16:00', '17:00'], chosen: null });
     const writes = serve(thread(), [card]);
     await renderWithProviders(<Page />);
-    expect(await screen.findByText('دوس على ميعاد وهيتحجز على طول')).toBeOnTheScreen();
+    expect(await screen.findByText('دوس على ميعاد، والمسؤول هيأكده')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: '٥:٠٠ م' }));
-    expect(await screen.findByText('المعاينة اتحجزت')).toBeOnTheScreen();
+    expect(await screen.findByText('طلبك وصل، مستنيين المسؤول يأكد الميعاد')).toBeOnTheScreen();
+    // The request in the chat, with no answer buttons for the client.
+    expect(await screen.findByText('حجزت معاينة')).toBeOnTheScreen();
+    expect(screen.getByText('مستنية تأكيد المسؤول')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'أكّد المعاينة' })).toBeNull();
     expect(screen.getByRole('button', { name: '٥:٠٠ م، اتحجزت' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: '٤:٠٠ م' })).toBeDisabled();
     expect(writes()).toContainEqual([`/chats/1/messages/${card.id}/book`, { time: '17:00' }]);
@@ -250,6 +268,47 @@ describe('Conversation (agent)', () => {
       ]),
     );
     const card = await screen.findByText('الجمعة ١٣ نوفمبر', { exact: true });
-    expect(within(card.parent!.parent!).queryByText('دوس على ميعاد وهيتحجز على طول')).toBeNull();
+    expect(within(card.parent!.parent!).queryByText('دوس على ميعاد، والمسؤول هيأكده')).toBeNull();
+  });
+
+  // Owner, 2026-11-14: a time the client picked waits for the advisor, who accepts, declines or moves it.
+  describe('a booking request', () => {
+    const request = () => msg('client', { kind: 'booking', viewingId: 5, date: '2026-11-13', time: '16:00', state: 'pending' });
+    const agentThread = () => thread({ client: { name: 'كريم محمود', phone: '+201014124412' }, leadId: 3 });
+
+    it('shows what the client booked; accepting it confirms, and the buttons go', async () => {
+      const req = request();
+      const writes = serve(agentThread(), [req]);
+      await renderWithProviders(<Page side="agent" />);
+      expect(await screen.findByText('العميل حجز معاينة')).toBeOnTheScreen();
+      expect(screen.getByText('الجمعة ١٣ نوفمبر | ٤:٠٠ م')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: 'أكّد المعاينة' }));
+      await waitFor(() => expect(writes()).toContainEqual([`/chats/1/messages/${req.id}/answer`, { action: 'accept' }]));
+      expect(await screen.findByText('المعاينة اتأكدت للعميل')).toBeOnTheScreen();
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'أكّد المعاينة' })).toBeNull());
+      expect(screen.getAllByText('المعاينة اتأكدت').length).toBeGreaterThan(0);
+    });
+
+    it('declines it', async () => {
+      const req = request();
+      const writes = serve(agentThread(), [req]);
+      await renderWithProviders(<Page side="agent" />);
+      await fireEvent.press(await screen.findByRole('button', { name: 'اعتذر' }));
+      await waitFor(() => expect(writes()).toContainEqual([`/chats/1/messages/${req.id}/answer`, { action: 'decline' }]));
+      expect(await screen.findByText('المسؤول اعتذر عن المعاينة')).toBeOnTheScreen();
+    });
+
+    it('moves it to another free hour of the advisor', async () => {
+      const req = request();
+      const writes = serve(agentThread(), [req]);
+      await renderWithProviders(<Page side="agent" />);
+      await fireEvent.press(await screen.findByRole('button', { name: 'غيّر الميعاد' }));
+      await fireEvent.press(await screen.findByRole('button', { name: /^الجمعة ١٣ نوفمبر/ }));
+      await fireEvent.press(await screen.findByRole('button', { name: '٥:٠٠ م' }));
+      await waitFor(() =>
+        expect(writes()).toContainEqual([`/chats/1/messages/${req.id}/answer`, { action: 'reschedule', date: '2026-11-13', time: '17:00' }]),
+      );
+      expect(await screen.findByText('الميعاد اتغير')).toBeOnTheScreen();
+    });
   });
 });

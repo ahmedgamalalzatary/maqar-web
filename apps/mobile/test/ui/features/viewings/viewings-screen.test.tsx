@@ -98,6 +98,15 @@ describe('My viewings', () => {
     expect(screen.getAllByRole('button', { name: 'احجز ميعاد جديد' })).toHaveLength(2);
   });
 
+  // Owner, 2026-11-14: a time picked in the chat waits for the advisor; it is upcoming and can still be changed.
+  it('shows a viewing waiting for the advisor’s confirmation among the upcoming ones', async () => {
+    await useSession.getState().setSession(makeAuth());
+    serve([viewing({ id: 9, status: 'pending' })]);
+    await renderWithProviders(<ViewingsScreen />);
+    expect(await screen.findByText('مستنية التأكيد')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'إلغاء' })).toBeOnTheScreen();
+  });
+
   it('shows the advisor’s initial from the name in the app’s language', async () => {
     await useSession.getState().setSession(makeAuth());
     serve();

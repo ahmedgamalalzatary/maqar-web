@@ -64,7 +64,8 @@ export type LeadSource = (typeof LEAD_SOURCES)[number];
 export const VIEWING_MODES = ['visit', 'video'] as const;
 export type ViewingMode = (typeof VIEWING_MODES)[number];
 
-export const VIEWING_STATUSES = ['confirmed', 'rescheduled', 'cancelled', 'completed'] as const;
+/** `pending`: booked from a chat's times card, waiting for the advisor (owner, 2026-11-14). It holds the hour. */
+export const VIEWING_STATUSES = ['confirmed', 'rescheduled', 'cancelled', 'completed', 'pending'] as const;
 
 /** Who cancelled a viewing (phase 27); a suspension's cancels count as the admin's. */
 export const VIEWING_CANCELLERS = ['client', 'agent', 'admin'] as const;
