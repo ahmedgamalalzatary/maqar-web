@@ -6,6 +6,7 @@ import { agents } from '../agents/agents.schema.js';
 import { areas } from '../areas/areas.schema.js';
 import { type ChangedListing } from '../prices/prices.repository.js';
 import { priceHistory } from '../prices/prices.schema.js';
+import { appSettings } from '../settings/settings.schema.js';
 import { type NewPropertyRow, type PropertyRow, properties, propertyFeatures, propertyImages, propertyVideos, tourRooms } from '../properties/properties.schema.js';
 
 const areaColumns = { id: areas.id, nameAr: areas.nameAr, nameEn: areas.nameEn };
@@ -185,14 +186,23 @@ export class ListingsRepository {
       .orderBy(asc(propertyVideos.sort), asc(propertyVideos.id));
   }
 
-  /** Which of these videos another listing still uses, so a removed one is not deleted. */
+  /**
+   * Which of these videos another listing or the opening screen (phase 29) still uses, so a
+   * removed one is not deleted.
+   */
   async videosUsedElsewhere(urls: string[], exceptId: number): Promise<Set<string>> {
     if (!urls.length) return new Set();
-    const rows = await this.db
-      .select({ url: propertyVideos.url })
-      .from(propertyVideos)
-      .where(and(inArray(propertyVideos.url, urls), ne(propertyVideos.propertyId, exceptId)));
-    return new Set(rows.map((r) => r.url));
+    const [rows, [settings]] = await Promise.all([
+      this.db
+        .select({ url: propertyVideos.url })
+        .from(propertyVideos)
+        .where(and(inArray(propertyVideos.url, urls), ne(propertyVideos.propertyId, exceptId))),
+      this.db.select({ value: appSettings.value }).from(appSettings).where(eq(appSettings.id, 1)),
+    ]);
+    const used = new Set(rows.map((r) => r.url));
+    const opening = settings?.value.splash?.media;
+    if (opening && urls.includes(opening)) used.add(opening);
+    return used;
   }
 
   async withTour(ids: number[]): Promise<Set<number>> {

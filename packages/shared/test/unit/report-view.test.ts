@@ -1,4 +1,4 @@
-import { type ReportTable, REPORTS, tableFilters, viewRows } from '../../src/reports.js';
+import { nextSort, type ReportTable, REPORTS, tableFilters, tableToolsShown, viewRows } from '../../src/reports.js';
 
 const table: ReportTable = {
   key: 'deals',
@@ -18,6 +18,51 @@ const table: ReportTable = {
 const homes = (rows: ReportTable['rows']) => rows.map((r) => (r.cells.home as { en: string }).en);
 
 describe('searching, filtering and sorting a report table (phase 29)', () => {
+  // Phase 29 review.
+  it('keeps the filter of a repeating column with many values', () => {
+    const many: ReportTable = {
+      ...table,
+      columns: [{ key: 'advisor', label: { ar: 'المستشار', en: 'Advisor' }, format: 'text' }],
+      rows: Array.from({ length: 26 }, (_, i) => ({ cells: { advisor: `Advisor ${i % 13}` } })),
+    };
+    expect(tableFilters(many).find((f) => f.key === 'advisor')?.options).toHaveLength(13);
+  });
+
+  it('a header click goes through both directions, then back to as it is', () => {
+    const steps = (format: 'text' | 'money' | 'date') => {
+      const col = { key: 'c', format };
+      const out: (string | null)[] = [];
+      let sort = null as ReturnType<typeof nextSort>;
+      for (let i = 0; i < 3; i++) {
+        sort = nextSort(sort, col);
+        out.push(sort ? (sort.up ? 'up' : 'down') : null);
+      }
+      return out;
+    };
+    expect(steps('text')).toEqual(['up', 'down', null]);
+    expect(steps('money')).toEqual(['down', 'up', null]);
+    expect(steps('date')).toEqual(['down', 'up', null]);
+    // Another column starts again from its own first direction.
+    expect(nextSort({ key: 'other', up: false }, { key: 'c', format: 'text' })).toEqual({ key: 'c', up: true });
+  });
+
+  it('shows the search and filters for a table worth searching, and while a search applies', () => {
+    const one: ReportTable = { ...table, rows: table.rows.slice(0, 1) };
+    expect(tableToolsShown(table, {})).toBe(true);
+    expect(tableToolsShown(one, {})).toBe(false);
+    expect(tableToolsShown(one, { q: 'villa' })).toBe(true);
+    expect(tableToolsShown(one, { q: '  ' })).toBe(false);
+  });
+
+  it('drops a filter the table no longer offers, instead of hiding every row', () => {
+    const sale = tableFilters(table)[0]!.options.find((o) => o.label.en === 'Sale')!.value;
+    const onlyRent: ReportTable = { ...table, rows: table.rows.filter((r) => (r.cells.kind as { en: string }).en === 'Rent') };
+    // One row left: no filter is offered, so the picked one must not apply.
+    expect(homes(viewRows(onlyRent, { filters: { kind: sale } }, 'en'))).toEqual(['Zayed flat']);
+    // A value the column does not have any more is dropped too.
+    expect(homes(viewRows(table, { filters: { kind: 'gone' } }, 'en'))).toHaveLength(3);
+  });
+
   it('searches the text in both languages, whatever the case', () => {
     expect(homes(viewRows(table, { q: 'VILLA' }, 'ar'))).toEqual(['Maadi villa']);
     expect(homes(viewRows(table, { q: 'زايد' }, 'en'))).toEqual(['Zayed flat']);

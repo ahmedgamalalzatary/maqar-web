@@ -9,31 +9,16 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '@/components/toast';
 import { useDir } from '@/core/i18n';
 import { queryClient } from '@/core/api/query';
-import { useAppConfig } from '@/core/app-config/store';
-import { useSettings } from '@/core/settings/store';
+import { useStoresReady } from '@/core/storage/ready';
 import { useTheme } from '@/core/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-/** Waits for saved settings to load from storage. Subscribing first means a finish cannot be missed. */
-function useSettingsReady() {
-  const own = useSyncExternalStore(
-    (onChange) => useSettings.persist.onFinishHydration(onChange),
-    () => useSettings.persist.hasHydrated(),
-  );
-  // What an admin set for the app (phase 29): the opening screen is read from it at once.
-  const app = useSyncExternalStore(
-    (onChange) => useAppConfig.persist.onFinishHydration(onChange),
-    () => useAppConfig.persist.hasHydrated(),
-  );
-  return own && app;
-}
 
 /** Runs the app's start-up work (such as resuming the session) once, behind the splash. */
 function useBoot(boot?: () => Promise<void>) {
@@ -59,7 +44,7 @@ export function AppProviders({ children, boot, overlay }: { children: ReactNode;
     ReadexPro_600SemiBold,
     ReadexPro_700Bold,
   });
-  const settingsReady = useSettingsReady();
+  const settingsReady = useStoresReady();
   const booted = useBoot(boot);
   const ready = (fontsLoaded || !!fontError) && settingsReady && booted;
   const { scheme, colors } = useTheme();

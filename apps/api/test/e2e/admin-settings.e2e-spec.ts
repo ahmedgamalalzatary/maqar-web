@@ -139,6 +139,39 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
       // The video it replaced is deleted from the disk.
       await http().get(short.url).expect(404);
     }, 120_000);
+
+    // Phase 29 review: a short video can be both a listing's and the opening screen's.
+    it('keeps a video that a listing still plays when the opening screen drops it, and the other way round', async () => {
+      const text = { textAr: '', textEn: '' };
+      const setVideos = (videos: string[]) => http().patch(`/v1/admin/listings/${mariamHome.id}`).set(as()).send({ videos }).expect(200);
+
+      const shared = (await uploadVideo(await clip(2), false).expect(201)).body as VideoUploadResponse;
+      await setVideos([shared.url]);
+      await put({ splash: { kind: 'video', media: shared.url, ...text } }).expect(200);
+      await put({ splash: { kind: 'none', media: null, ...text } }).expect(200);
+      await http().get(shared.url).expect(200);
+      await http().get(shared.poster).expect(200);
+
+      const opening = (await uploadVideo(await clip(2), true).expect(201)).body as VideoUploadResponse;
+      await put({ splash: { kind: 'video', media: opening.url, ...text } }).expect(200);
+      await setVideos([opening.url]);
+      await setVideos([]);
+      await http().get(opening.url).expect(200);
+      expect((await settings()).splash.media).toBe(opening.url);
+      await put({ splash: { kind: 'none', media: null, ...text } }).expect(200);
+      await http().get(opening.url).expect(404);
+    }, 120_000);
+
+    it('loses neither part when the calculator and the Home order are saved at the same moment', async () => {
+      for (let i = 0; i < 8; i++) {
+        const maxYears = 10 + i;
+        const sections = i % 2 ? ['areas', 'launches'] : ['launches', 'areas'];
+        await Promise.all([put({ calculator: { minDownPct: 0, minYears: 1, maxYears } }).expect(200), put({ home: { sections } }).expect(200)]);
+        const now = await settings();
+        expect(now.calculator.maxYears).toBe(maxYears);
+        expect(now.home.sections.slice(0, 2)).toEqual(sections);
+      }
+    });
   });
 
   describe('areas', () => {

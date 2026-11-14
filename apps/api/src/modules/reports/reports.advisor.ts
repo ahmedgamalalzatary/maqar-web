@@ -71,7 +71,8 @@ export class AdvisorReport {
     const daysOn = (l: ListingFact) => (l.publishedAt && l.closedAt ? Math.max(0, daysBetween(l.publishedAt, l.closedAt)) : null);
     // The leads the numbers count: new, won or lost in the range, and every open one.
     const shownLeads = leads.filter((l) => within(l.createdAt, c.cur) || within(l.wonAt, c.cur) || within(l.lostAt, c.cur) || OPEN(l));
-    const shownViewings = viewings.filter((v) => within(v.createdAt, c.cur) || within(v.startsAt, c.cur));
+    // The viewings they count: booked, set or cancelled in the range.
+    const shownViewings = viewings.filter((v) => within(v.createdAt, c.cur) || within(v.startsAt, c.cur) || (v.status === 'cancelled' && within(v.updatedAt, c.cur)));
 
     return {
       kpis: [

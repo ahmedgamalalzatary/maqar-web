@@ -56,10 +56,13 @@ export function AppSettingsScreen() {
         ) : settings.isError ? (
           <ListingsError onRetry={() => void settings.refetch()} />
         ) : (
+          // Each part starts again from what the server holds whenever that changes (a save, or a
+          // refetch with another admin's change), so a draft never sends values the server dropped,
+          // such as a video it deleted.
           <>
-            <Splash saved={settings.data} />
-            <Calculator saved={settings.data} />
-            <HomeOrder saved={settings.data} />
+            <Splash key={JSON.stringify(settings.data.splash)} saved={settings.data} />
+            <Calculator key={JSON.stringify(settings.data.calculator)} saved={settings.data} />
+            <HomeOrder key={JSON.stringify(settings.data.home)} saved={settings.data} />
           </>
         )}
       </ScrollView>

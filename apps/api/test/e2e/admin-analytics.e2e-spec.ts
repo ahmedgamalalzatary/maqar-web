@@ -25,6 +25,7 @@ import { chatMessages, chatThreads } from '../../src/modules/chat/chat.schema.js
 import { seedProperties } from '../../src/modules/properties/properties.seed.js';
 import { seedDemoAccounts } from '../../src/modules/users/users.seed.js';
 import { cairoClock } from '../../src/modules/viewings/slots.js';
+import { viewings } from '../../src/modules/viewings/viewings.schema.js';
 import { createTestApp } from '../utils/app.js';
 import { bearer, signInSeeded, signUp } from '../utils/auth.js';
 import { resetDb } from '../utils/db.js';
@@ -230,5 +231,27 @@ describe('Admin reports (e2e)', () => {
     expect(kpi(day, 'deals')).toBeGreaterThan(0);
     expect(day.kpis.find((k) => k.key === 'deals')!.previous).toBe(0);
     expect(day.previous!.to < today).toBe(true);
+  });
+
+  it('lists in one advisor’s viewings a viewing cancelled in the range, even if booked and set for other days', async () => {
+    const today = cairoClock(new Date()).date;
+    const c = await signUp(app);
+    const home = omarHomes[omarHomes.length - 1]!;
+    const dayMs = 86_400_000;
+    // Booked 60 days ago for 40 days from now, and cancelled today.
+    await db.insert(viewings).values({
+      propertyId: home.id,
+      clientId: c.user.id,
+      agentId: omarId,
+      startsAt: new Date(Date.now() + 40 * dayMs),
+      status: 'cancelled',
+      cancelledBy: 'client',
+      createdAt: new Date(Date.now() - 60 * dayMs),
+    });
+    const r = await report('advisor', { from: today, to: today });
+    const cancelled = table(r, 'viewings').rows.filter((x) => (x.cells.status as { en: string } | null)?.en === 'Cancelled');
+    expect(cancelled.some((x) => x.link?.id === home.id)).toBe(true);
+    // Every cancellation the number counts has its row.
+    expect(cancelled.length).toBeGreaterThanOrEqual(kpi(r, 'cancelled'));
   });
 });

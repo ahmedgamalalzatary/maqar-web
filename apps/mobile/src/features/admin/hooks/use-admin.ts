@@ -1,4 +1,4 @@
-import type { AdminListing, AgentBody, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
+import type { AdminListing, AgentBody, AppSettings, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppConfig } from '@/core/app-config/store';
 import { useSession } from '@/features/auth/store/session.store';
@@ -217,15 +217,21 @@ export function useAppSettings() {
   return useQuery({ queryKey: [...adminKey(adminId), 'app-settings'], queryFn: ({ signal }) => getAppSettings(signal), enabled: adminId !== null });
 }
 
-/** Saves a part of the settings; this phone's own copy follows at once. */
+/**
+ * Saves a part of the settings; this phone's own copy follows at once. Only the parts sent are
+ * taken from the answer: a slower answer to an earlier save would otherwise bring back the old
+ * values of a part saved since.
+ */
 export function useSaveAppSettings() {
   const adminId = useAdminId();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: saveAppSettingsRequest,
-    onSuccess: (saved) => {
-      qc.setQueryData([...adminKey(adminId), 'app-settings'], saved);
-      useAppConfig.setState({ config: saved });
+    onSuccess: (saved, body) => {
+      const sent = (Object.keys(body) as (keyof AppSettings)[]).filter((k) => body[k] !== undefined);
+      const take = (cur: AppSettings): AppSettings => ({ ...cur, ...Object.fromEntries(sent.map((k) => [k, saved[k]])) });
+      qc.setQueryData<AppSettings>([...adminKey(adminId), 'app-settings'], (cur) => (cur ? take(cur) : saved));
+      useAppConfig.setState((s) => ({ config: take(s.config) }));
     },
   });
 }

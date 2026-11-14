@@ -175,6 +175,27 @@ describe('inside a table', () => {
     expect(names()).toEqual(['عمر حسن', 'مريم عادل', 'نادين سمير']);
   });
 
+  // Phase 29 review: a range with one row left must not hide the search that is still applied.
+  it('keeps the search while it is applied, even when the new range has one row', async () => {
+    const lastMonth = reportPresetRange('lastMonth', cairoToday()).from;
+    routeFetch({
+      '/admin/analytics/advisors': (q: URLSearchParams) => {
+        const r = advisors('advisors')(q);
+        if (q.get('from') !== lastMonth) return r;
+        return { ...r, tables: r.tables.map((tb) => ({ ...tb, rows: tb.rows.slice(0, 1) })) };
+      },
+      '/admin/agents': () => AGENTS,
+      '/areas': () => AREAS,
+    });
+    await renderWithProviders(<ReportScreen id="advisors" />);
+    await screen.findAllByTestId('report-row');
+    await fireEvent.changeText(screen.getByLabelText('ابحث في المسؤولين'), 'mariam');
+    await fireEvent.press(screen.getByRole('radio', { name: 'الشهر اللي فات' }));
+    expect(await screen.findByText('مفيش حاجة مطابقة للبحث والفلاتر')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'امسح البحث' }));
+    expect(names()).toEqual(['عمر حسن']);
+  });
+
   it('an advisor’s row opens that advisor’s own report, which asks for them by id and is named after them', async () => {
     const fetchMock = serve();
     const { unmount } = await renderWithProviders(<ReportScreen id="advisors" />);

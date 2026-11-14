@@ -3,6 +3,7 @@ import { type AppSettings, DEFAULT_APP_SETTINGS, homeSectionOrder } from '@maqar
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { apiFetch } from '@/core/api/api';
+import { trackLoad } from '@/core/storage/loaded';
 
 type AppConfig = {
   /** What an admin set for the app, as of the last time the server answered. */
@@ -37,6 +38,7 @@ export const useAppConfig = create<AppConfig>()(
     }),
     {
       name: 'maqar.app-config',
+      onRehydrateStorage: trackLoad('maqar.app-config'),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ config }) => ({ config }),
       merge: (stored, current) => ({ ...current, config: complete((stored as { config?: Partial<AppSettings> } | undefined)?.config) }),

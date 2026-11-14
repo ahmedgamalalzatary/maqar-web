@@ -1,5 +1,5 @@
 import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, installment } from '@maqar/shared';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useAppConfig } from '@/core/app-config/store';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { CalculatorScreen } from '@/features/calculator/screens/calculator-screen';
@@ -180,6 +180,14 @@ describe('The /calculator screen', () => {
       expect(years().props.value).toBe('١٢');
       expect(screen.getByText('من ٣ لـ ١٢ سنين')).toBeOnTheScreen();
       expect(screen.getByText(money(installment(PRICE, 5, 12).payment))).toBeOnTheScreen();
+    });
+
+    // Phase 29 review: the start-up refresh can bring new limits while the calculator is open.
+    it('follows limits that change while it is open', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      expect(screen.getByText(money(installment(PRICE, 20, 5).payment))).toBeOnTheScreen();
+      await act(async () => useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, calculator: { minDownPct: 25, minYears: 1, maxYears: 3 } } }));
+      expect(screen.getByText(money(installment(PRICE, 25, 3).payment))).toBeOnTheScreen();
     });
   });
 });
