@@ -1,8 +1,8 @@
-import { BadRequestException, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiPayloadTooLargeResponse, ApiTags } from '@nestjs/swagger';
 import { tmpdir } from 'node:os';
-import { type UploadResponse, VIDEO_MAX_BYTES, type VideoUploadResponse } from '@maqar/shared';
+import { SPLASH_VIDEO_MAX_SECONDS, type UploadResponse, VIDEO_MAX_BYTES, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@maqar/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';
 import { UploadsService } from './uploads.service.js';
@@ -57,7 +57,8 @@ export class UploadsController {
   /**
    * One listing video in the `video` field (phase 26): an MP4 or MOV of at most 150 MB and 3 minutes.
    * It is stored as an H.264 MP4 with a poster frame; converting one can take a few minutes.
-   * The file goes to a temp folder, never into memory.
+   * The file goes to a temp folder, never into memory. With `?splash=true` it is the opening
+   * screen's video (phase 29): at most 3 seconds.
    */
   @Post('videos')
   @ApiConsumes('multipart/form-data')
@@ -70,8 +71,8 @@ export class UploadsController {
       fileFilter: (_req, file, done) => done(null, /^video\//.test(file.mimetype)),
     }),
   )
-  uploadVideo(@UploadedFile() file?: { path: string }): Promise<VideoUploadResponse> {
+  uploadVideo(@UploadedFile() file?: { path: string }, @Query('splash') splash?: string): Promise<VideoUploadResponse> {
     if (!file) throw new BadRequestException('Add a video (MP4 or MOV) in the video field');
-    return this.uploads.saveVideo(file.path);
+    return this.uploads.saveVideo(file.path, splash === 'true' ? SPLASH_VIDEO_MAX_SECONDS : VIDEO_MAX_SECONDS);
   }
 }

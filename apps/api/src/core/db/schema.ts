@@ -11,3 +11,4 @@ export * from '../../modules/viewings/viewings.schema.js';
 export * from '../../modules/leads/leads.schema.js';
 export * from '../../modules/chat/chat.schema.js';
 export * from '../../modules/insights/insights.schema.js';
+export * from '../../modules/settings/settings.schema.js';

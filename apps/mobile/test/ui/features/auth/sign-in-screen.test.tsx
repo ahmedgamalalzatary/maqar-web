@@ -46,4 +46,12 @@ describe('SignInScreen', () => {
     expect(mockRouter.replace).not.toHaveBeenCalled();
     expect(useSession.getState().user).toBeNull();
   });
+
+  // The owner's choice (2026-11-13): guests can still browse (App Store 5.1.1), but the way in is a quiet link.
+  it('offers browsing as a guest as a small link under the buttons', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(screen.queryByRole('button', { name: 'كمّل كضيف' })).toBeNull();
+    await fireEvent.press(screen.getByRole('link', { name: 'كمّل كضيف' }));
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
 });

@@ -1,17 +1,19 @@
-import { fmtMoney, fmtNum, fmtPct, installment, localDigits } from '@maqar/shared';
+import { fmtMoney, fmtNum, fmtPct, installment, localDigits, minDownOf, yearsLimits } from '@maqar/shared';
 import { Info } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
+import { useCalculatorLimits } from '@/core/app-config/store';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { BudgetSlider } from '@/features/prefs/components/budget-slider';
-import { MAX_YEARS, parseRate, parseYears } from '../rate';
+import { parseRate, parseYears } from '../rate';
 
 const PRICE_SCALE = { min: 1_000_000, max: 40_000_000, step: 100_000 };
-const DOWN_SCALE = { min: 0, max: 60, step: 5 };
+const DOWN_MAX = 60;
+const DOWN_STEP = 5;
 const DEFAULT_RATE = 18;
 
 type Mode = 'dev' | 'bank';
@@ -19,29 +21,37 @@ type Frequency = 'monthly' | 'quarterly';
 
 /**
  * The calculator (contract §8.11), on its own screen and on the property page.
- * Nothing here is saved: the numbers are estimates to try out.
+ * Nothing here is saved: the numbers are estimates to try out. An admin sets the least down
+ * payment and the years it takes (phase 29); with `ownPlan` the defaults are the listing's own
+ * plan, which is always allowed.
  */
 export function InstallmentCalculator({
   price: initialPrice,
   defaultDown,
   defaultYears,
+  ownPlan = false,
   editablePrice = false,
 }: {
   price: number;
   defaultDown: number;
   defaultYears: number;
+  ownPlan?: boolean;
   editablePrice?: boolean;
 }) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
   const [typedPrice, setTypedPrice] = useState(initialPrice);
-  const [down, setDown] = useState(defaultDown);
-  // Typed, not picked (2026-11-12): 1 to 10 years, or longer when the listing's own plan is.
-  const maxYears = Math.max(MAX_YEARS, defaultYears);
-  const [yearsText, setYearsText] = useState(localDigits(String(defaultYears), lang));
-  const typedYears = parseYears(yearsText, maxYears);
-  const [lastYears, setLastYears] = useState(defaultYears);
+  const limits = useCalculatorLimits();
+  const downScale = { min: minDownOf(limits, ownPlan ? defaultDown : undefined), max: DOWN_MAX, step: DOWN_STEP };
+  const [pickedDown, setDown] = useState(defaultDown);
+  const down = Math.max(downScale.min, pickedDown);
+  // Typed, not picked (2026-11-12), inside the admin's range, or the listing's own plan.
+  const { min: minYears, max: maxYears } = yearsLimits(limits, ownPlan ? defaultYears : undefined);
+  const inRange = (n: number) => Math.min(maxYears, Math.max(minYears, n));
+  const [yearsText, setYearsText] = useState(localDigits(String(inRange(defaultYears)), lang));
+  const typedYears = parseYears(yearsText, maxYears, minYears);
+  const [lastYears, setLastYears] = useState(inRange(defaultYears));
   const years = typedYears ?? lastYears;
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [mode, setMode] = useState<Mode>('dev');
@@ -53,9 +63,9 @@ export function InstallmentCalculator({
   const downShare = plan.total > 0 ? (plan.down / plan.total) * 100 : 0;
   const changeYears = (text: string) => {
     setYearsText(text);
-    // Any whole number counts, capped at the limit: "15" must not leave the "1" typed on the way.
+    // Any whole number counts, brought inside the range: "15" must not leave the "1" typed on the way.
     const n = parseYears(text, 99);
-    if (n !== undefined) setLastYears(Math.min(n, maxYears));
+    if (n !== undefined) setLastYears(inRange(n));
   };
   const cream = { color: colors.cream };
   const faded = { color: colors.cream, opacity: 0.7 };
@@ -118,7 +128,7 @@ export function InstallmentCalculator({
           </Txt>
         </View>
         <BudgetSlider
-          scale={DOWN_SCALE}
+          scale={downScale}
           value={down}
           onChange={setDown}
           label={t('المقدم', 'Down payment')}
@@ -136,7 +146,7 @@ export function InstallmentCalculator({
           maxLength={2}
         />
         <Txt size={12} color={typedYears === undefined ? 'danger' : 'ink3'}>
-          {t(`من ١ لـ ${fmtNum(maxYears, 'ar')} سنين`, `1 to ${maxYears} years`)}
+          {t(`من ${fmtNum(minYears, 'ar')} لـ ${fmtNum(maxYears, 'ar')} سنين`, `${minYears} to ${maxYears} years`)}
         </Txt>
       </View>
 

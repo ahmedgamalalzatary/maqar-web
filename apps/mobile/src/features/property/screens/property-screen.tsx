@@ -276,7 +276,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
                     )
                   : t('جرّب مقدم ومدة تناسبك.', 'Try a down payment and period that suit you.')}
               </Txt>
-              <InstallmentCalculator price={p.price} defaultDown={p.plan?.downPct ?? 20} defaultYears={p.plan?.years ?? 5} />
+              <InstallmentCalculator price={p.price} defaultDown={p.plan?.downPct ?? 20} defaultYears={p.plan?.years ?? 5} ownPlan={!!p.plan} />
             </Section>
           ) : null}
 

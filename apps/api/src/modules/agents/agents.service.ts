@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { type AdminAgentDetail, type AdminAgentItem, daysBetween, type DaysOffResult, weekProblem } from '@maqar/shared';
+import { type AdminAgentDetail, type AdminAgentItem, type AgentListingOption, daysBetween, type DaysOffResult, weekProblem } from '@maqar/shared';
 import { hashPassword } from '../auth/password.js';
 import { cairoClock, cairoInstant, DEFAULT_HOURS } from '../viewings/slots.js';
 import type { CreateAgentDto, DaysOffDto, HoursDto, UpdateAgentDto } from './dto/agents.dto.js';
@@ -44,7 +44,7 @@ export class AgentsService {
   async get(id: number): Promise<AdminAgentDetail> {
     const a = await this.repo.find(id);
     if (!a) throw new NotFoundException('Agent not found');
-    const [hours, daysOff] = await Promise.all([this.repo.hours(id), this.repo.daysOffFrom(id, cairoClock(new Date()).date)]);
+    const [hours, daysOff, listingIds] = await Promise.all([this.repo.hours(id), this.repo.daysOffFrom(id, cairoClock(new Date()).date), this.repo.listingIds(id)]);
     return {
       ...toItem(a),
       languagesAr: a.languagesAr,
@@ -53,14 +53,26 @@ export class AgentsService {
       hours: hours.length ? hours : [...DEFAULT_HOURS].map(([weekday, h]) => ({ weekday, from: h.from, to: h.to })),
       defaultHours: hours.length === 0,
       daysOff,
+      listingIds,
     };
+  }
+
+  listingOptions(): Promise<AgentListingOption[]> {
+    return this.repo.listingOptions();
+  }
+
+  /** The listings picked in the agent's form must all exist. */
+  private async assertListings(ids: number[] | undefined): Promise<void> {
+    if (ids?.length && (await this.repo.countListings(ids)) !== ids.length) throw new BadRequestException('One of those listings does not exist');
   }
 
   /** A new agent with the default week, who signs in with the starting password the admin passes on. */
   async create(body: CreateAgentDto): Promise<AdminAgentDetail> {
     if (await this.repo.emailTaken(body.email)) throw new ConflictException('That email already has an account');
-    const { password, email, ...profile } = body;
+    const { password, email, listingIds, ...profile } = body;
+    await this.assertListings(listingIds);
     const id = await this.repo.create({ role: 'agent', name: body.nameAr, email, phone: body.phone, passwordHash: await hashPassword(password) }, { ...profile, years: profile.years ?? 0 });
+    if (listingIds?.length) await this.repo.giveListings(id, listingIds);
     return this.get(id);
   }
 
@@ -68,12 +80,15 @@ export class AgentsService {
    * Changes what is sent. Turning an agent off signs them out at once; it is refused while they
    * are the advisor of a live listing, which must move to someone else first, and while they have
    * upcoming viewings, conversations or open leads — unless `reassignTo` names the advisor who
-   * takes them over (or there is nothing to move).
+   * takes them over (or there is nothing to move). `listingIds` makes them the advisor of those
+   * listings too (phase 29); only an agent who is on can take listings.
    */
   async update(id: number, body: UpdateAgentDto): Promise<AdminAgentDetail> {
     const cur = await this.repo.find(id);
     if (!cur) throw new NotFoundException('Agent not found');
-    const { password, email, active, reassignTo, ...profile } = body;
+    const { password, email, active, reassignTo, listingIds, ...profile } = body;
+    if (listingIds?.length && !(active ?? cur.active)) throw new BadRequestException('Only an active sales advisor can take listings');
+    await this.assertListings(listingIds);
     const emailChanged = email !== undefined && email !== cur.email;
     if (emailChanged && (await this.repo.emailTaken(email))) throw new ConflictException('That email already has an account');
     if (active === false && cur.active && cur.live > 0) {
@@ -102,6 +117,7 @@ export class AgentsService {
       },
       { ...profile, ...(active === undefined ? {} : { active }) },
     );
+    if (listingIds?.length) await this.repo.giveListings(id, listingIds);
     if (password || emailChanged || active === false) await this.repo.endSessions(id);
     if (password || emailChanged) await this.repo.touchCredentials(id);
     return this.get(id);

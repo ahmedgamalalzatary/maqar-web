@@ -1,5 +1,6 @@
-import { fmtMoney, fmtNum, installment } from '@maqar/shared';
+import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, installment } from '@maqar/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
+import { useAppConfig } from '@/core/app-config/store';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { CalculatorScreen } from '@/features/calculator/screens/calculator-screen';
 import { renderWithProviders } from '../../../utils/render';
@@ -13,7 +14,10 @@ const pick = (role: 'radio', name: string) => fireEvent.press(screen.getByRole(r
 const slide = (name: string, actionName: 'increment' | 'decrement') =>
   fireEvent(screen.getByRole('adjustable', { name }), 'accessibilityAction', { nativeEvent: { actionName } });
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  useAppConfig.setState({ config: DEFAULT_APP_SETTINGS });
+});
 
 describe('The installment calculator', () => {
   it('starts from the given plan, with all four results', async () => {
@@ -106,7 +110,7 @@ describe('The installment calculator', () => {
   });
 
   it('allows a listing’s own plan to run longer than 10 years', async () => {
-    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={12} />);
+    await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={12} ownPlan />);
     expect(screen.getByLabelText('مدة التقسيط (بالسنين)').props.value).toBe('١٢');
     expect(screen.getByText('من ١ لـ ١٢ سنين')).toBeOnTheScreen();
   });
@@ -142,5 +146,40 @@ describe('The /calculator screen', () => {
     await renderWithProviders(<CalculatorScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'رجوع' }));
     expect(mockRouter.back).toHaveBeenCalled();
+  });
+
+  // Phase 29: an admin sets the least down payment and the years the calculator takes.
+  describe('with the admin’s limits', () => {
+    beforeEach(() => useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, calculator: { minDownPct: 15, minYears: 3, maxYears: 8 } } }));
+    const years = () => screen.getByLabelText('مدة التقسيط (بالسنين)');
+
+    it('starts inside them, and says which years it takes', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={10} defaultYears={2} />);
+      expect(screen.getByText('من ٣ لـ ٨ سنين')).toBeOnTheScreen();
+      expect(years().props.value).toBe('٣');
+      expect(screen.getByText(money(installment(PRICE, 15, 3).payment))).toBeOnTheScreen();
+    });
+
+    it('does not let the down payment go under the least, or the years outside the range', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      await slide('المقدم', 'decrement');
+      await slide('المقدم', 'decrement');
+      expect(screen.getByText(money(installment(PRICE, 15, 5).payment))).toBeOnTheScreen();
+      expect(screen.getByRole('adjustable', { name: 'المقدم' }).props.accessibilityValue).toMatchObject({ min: 15 });
+
+      await fireEvent.changeText(years(), '12');
+      expect(screen.getByText(money(installment(PRICE, 15, 8).payment))).toBeOnTheScreen();
+      await fireEvent.changeText(years(), '2');
+      await fireEvent(years(), 'endEditing');
+      expect(years().props.value).toBe('٣');
+      expect(screen.getByText(money(installment(PRICE, 15, 3).payment))).toBeOnTheScreen();
+    });
+
+    it('keeps a listing’s own plan, even outside them', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={5} defaultYears={12} ownPlan />);
+      expect(years().props.value).toBe('١٢');
+      expect(screen.getByText('من ٣ لـ ١٢ سنين')).toBeOnTheScreen();
+      expect(screen.getByText(money(installment(PRICE, 5, 12).payment))).toBeOnTheScreen();
+    });
   });
 });

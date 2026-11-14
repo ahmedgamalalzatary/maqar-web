@@ -4,13 +4,14 @@ import { useKey } from "./admin";
 import { api } from "./client";
 
 /** One report (phase 27) for a range and filters; the previous answer stays up while the next loads. */
-export function useReport(id: ReportId, q: ReportQuery) {
+export function useReport(id: ReportId, q: ReportQuery, enabled = true) {
   const key = useKey();
   const params = new URLSearchParams(Object.entries(q).flatMap(([k, v]) => (v === undefined || v === "" ? [] : [[k, String(v)]])));
   return useQuery({
     queryKey: [...key, "report", id, params.toString()],
     queryFn: ({ signal }) => api.request<ReportResult>(`/admin/analytics/${id}?${params}`, { signal, timeoutMs: 60_000 }),
     placeholderData: (prev) => (prev?.id === id ? prev : undefined),
+    enabled,
   });
 }
 

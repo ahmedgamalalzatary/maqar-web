@@ -7,7 +7,8 @@ import { ReportScreen } from '@/features/admin/screens/reports-screen';
 
 export default function Route() {
   const t = useT();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, agentId } = useLocalSearchParams<{ id: string; agentId?: string }>();
+  const agent = Number(agentId);
   if (!(REPORT_IDS as readonly string[]).includes(id)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -15,5 +16,5 @@ export default function Route() {
       </View>
     );
   }
-  return <ReportScreen key={id} id={id as ReportId} />;
+  return <ReportScreen key={`${id}-${agentId ?? ''}`} id={id as ReportId} agentId={Number.isInteger(agent) && agent > 0 ? agent : undefined} />;
 }

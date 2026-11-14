@@ -40,7 +40,7 @@ export function ListingsPage() {
             </p>
           ) : null}
         </div>
-        <Link href="/new/" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-medium text-navy hover:bg-accent/90">
+        <Link href="/listing/new/" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-medium text-navy hover:bg-accent/90">
           <Plus className="size-4" aria-hidden />
           {t("أضف عقار", "Add a listing")}
         </Link>

@@ -1,11 +1,12 @@
 "use client";
 
-import { type AdminAgentDetail, type AgentBody, readPhone, readWholeNumber } from "@maqar/shared";
+import { type AdminAgentDetail, type AgentBody, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from "@maqar/shared";
+import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { ApiError } from "@/lib/api";
-import { useAgent, useSaveAgent, readId } from "@/lib/admin";
-import { useT } from "@/lib/i18n";
+import { useAgent, useAgentListingOptions, useAllAgents, useSaveAgent, readId } from "@/lib/admin";
+import { useLang, useT } from "@/lib/i18n";
 import { useNotice } from "./shell";
 import { Button, Card, Field } from "./ui";
 import Link from "next/link";
@@ -52,6 +53,8 @@ export function AgentForm({ saved }: { saved?: AdminAgentDetail }) {
     colour: saved?.colour ?? COLOURS[0]!,
   });
   const [showErrors, setShowErrors] = useState(false);
+  // Listings to give this agent on save (phase 29); the ones they already have stay ticked.
+  const [picked, setPicked] = useState<number[]>([]);
   const set = (k: Key, v: string) => setD((cur) => ({ ...cur, [k]: v }));
 
   const problems: Key[] = [];
@@ -81,6 +84,7 @@ export function AgentForm({ saved }: { saved?: AdminAgentDetail }) {
       monthlyTarget: readWholeNumber(d.monthlyTarget)!,
       colour: d.colour,
       ...(d.password ? { password: d.password } : {}),
+      ...(picked.length ? { listingIds: picked } : {}),
     };
     save.mutate(body, {
       onSuccess: (a) => {
@@ -132,6 +136,7 @@ export function AgentForm({ saved }: { saved?: AdminAgentDetail }) {
           </div>
         </fieldset>
       </Card>
+      <ListingsPicker agentId={saved?.id} off={saved ? !saved.active : false} picked={picked} onChange={setPicked} />
       <div className="flex justify-between gap-3">
         <Button variant="secondary" onClick={() => router.back()}>
           {t("إلغاء", "Cancel")}
@@ -141,5 +146,71 @@ export function AgentForm({ saved }: { saved?: AdminAgentDetail }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * The listings this agent is the advisor of (phase 29): tick more to give them on save. A listing
+ * always has an advisor, so one is taken away by giving it to someone else.
+ */
+function ListingsPicker({ agentId, off, picked, onChange }: { agentId?: number; off: boolean; picked: number[]; onChange: (ids: number[]) => void }) {
+  const t = useT();
+  const lang = useLang();
+  const options = useAgentListingOptions();
+  const agents = useAllAgents();
+  const [q, setQ] = useState("");
+  const nameOf = (id: number | null) => {
+    const a = agents.data?.find((x) => x.id === id);
+    return a ? (lang === "ar" ? a.nameAr : a.nameEn) : t("من غير مسؤول", "No advisor");
+  };
+  const words = q.trim().toLowerCase();
+  const all = options.data ?? [];
+  const shown = words ? all.filter((o) => `${o.titleAr} ${o.titleEn}`.toLowerCase().includes(words)) : all;
+  const mine = all.filter((o) => agentId !== undefined && o.agentId === agentId).length;
+  const toggle = (id: number) => onChange(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <div>
+        <h2 className="font-semibold">
+          {t("العقارات اللي معاه", "Their listings")} <span className="text-sm font-normal text-ink-3">({mine + picked.length})</span>
+        </h2>
+        <p className="text-sm text-ink-2">
+          {off
+            ? t("المسؤول موقوف: شغّله الأول عشان تديله عقارات.", "This agent is turned off: turn them on before giving them listings.")
+            : t("علّم على العقارات اللي عايز تديها له. عشان تشيل عقار منه، اديه لمسؤول تاني.", "Tick the listings to give them. To take one away, give it to another agent.")}
+        </p>
+      </div>
+      <label className="flex h-11 items-center gap-2 rounded-xl border border-line-2 bg-surface px-3">
+        <Search className="size-4 text-ink-3" aria-hidden />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("ابحث باسم العقار", "Search by listing title")} aria-label={t("ابحث باسم العقار", "Search by listing title")} className="min-w-0 flex-1 bg-transparent outline-none" />
+      </label>
+      {options.isPending ? (
+        <div className="h-32 animate-pulse rounded-xl bg-surface-2" />
+      ) : options.isError ? (
+        <p className="text-sm text-danger">{t("مقدرناش نجيب العقارات", "We couldn’t load the listings")}</p>
+      ) : !shown.length ? (
+        <p className="text-sm text-ink-3">{t("مفيش عقارات هنا", "No listings here")}</p>
+      ) : (
+        <ul className="max-h-80 divide-y divide-line overflow-y-auto rounded-xl border border-line">
+          {shown.map((o) => {
+            const theirs = agentId !== undefined && o.agentId === agentId;
+            return (
+              <li key={o.id}>
+                <label className={`flex min-h-12 items-center gap-3 px-3 py-2 text-sm ${theirs || off ? "" : "cursor-pointer hover:bg-surface-2/60"}`}>
+                  <input type="checkbox" className="size-4 shrink-0 accent-[var(--accent)]" checked={theirs || picked.includes(o.id)} disabled={theirs || off} onChange={() => toggle(o.id)} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{lang === "ar" ? o.titleAr : o.titleEn}</span>
+                    <span className="block truncate text-xs text-ink-3">
+                      {t(PROPERTY_STATUS_LABEL[o.status])} | {theirs ? t("معاه", "Theirs") : t(`مع ${nameOf(o.agentId)}`, `With ${nameOf(o.agentId)}`)}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
   );
 }

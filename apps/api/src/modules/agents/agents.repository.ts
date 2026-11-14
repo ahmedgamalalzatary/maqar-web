@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { DayHours } from '@maqar/shared';
+import type { AgentListingOption, DayHours } from '@maqar/shared';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, notInArray, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { refreshTokens } from '../auth/auth.schema.js';
@@ -60,6 +60,29 @@ export class AgentsRepository {
       if (Object.keys(user).length) await tx.update(users).set(user).where(eq(users.id, id));
       if (Object.keys(profile).length) await tx.update(agents).set(profile).where(eq(agents.userId, id));
     });
+  }
+
+  /** The listings this agent is the advisor of, in any status. */
+  async listingIds(agentId: number): Promise<number[]> {
+    const rows = await this.db.select({ id: properties.id }).from(properties).where(eq(properties.agentId, agentId)).orderBy(asc(properties.id));
+    return rows.map((r) => r.id);
+  }
+
+  listingOptions(): Promise<AgentListingOption[]> {
+    return this.db
+      .select({ id: properties.id, titleAr: properties.titleAr, titleEn: properties.titleEn, status: properties.status, agentId: properties.agentId })
+      .from(properties)
+      .orderBy(desc(properties.id));
+  }
+
+  async countListings(ids: number[]): Promise<number> {
+    const [row] = await this.db.select({ n: count() }).from(properties).where(inArray(properties.id, ids));
+    return row?.n ?? 0;
+  }
+
+  /** Makes this agent the advisor of these listings, whoever had them. */
+  async giveListings(agentId: number, ids: number[]): Promise<void> {
+    await this.db.update(properties).set({ agentId }).where(inArray(properties.id, ids));
   }
 
   /** Ends every session: a turned-off agent or a new password signs them out everywhere. */

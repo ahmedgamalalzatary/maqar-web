@@ -23,6 +23,33 @@ jest.mock('expo-file-system', () => ({
 
 const AGENTS = [{ id: 3, nameAr: 'عمر حسن', nameEn: 'Omar Hassan', colour: '#b38959', active: true }];
 
+/** The advisors report, and one advisor's own report (phase 29); the same shape serves both. */
+const advisors = (id: 'advisors' | 'advisor') => (q: URLSearchParams): ReportResult => ({
+  id,
+  generatedAt: '2026-11-12T10:00:00.000Z',
+  range: { from: q.get('from')!, to: q.get('to')!, days: 30 },
+  previous: { from: '2026-09-14', to: '2026-10-13' },
+  kpis: [{ key: 'won', label: { ar: 'اتقفلوا بيع', en: 'Won' }, format: 'int', value: q.get('agentId') === '4' ? 5 : 8, previous: 6, better: 'up' }],
+  charts: [],
+  tables: [
+    {
+      key: 'advisors',
+      title: { ar: 'المسؤولين', en: 'Advisors' },
+      columns: [
+        { key: 'advisor', label: { ar: 'المسؤول', en: 'Advisor' }, format: 'text' },
+        { key: 'team', label: { ar: 'الفريق', en: 'Team' }, format: 'text' },
+        { key: 'won', label: { ar: 'اتقفل بيع', en: 'Won' }, format: 'int' },
+      ],
+      rows: [
+        { cells: { advisor: { ar: 'عمر حسن', en: 'Omar Hassan' }, team: { ar: 'القاهرة', en: 'Cairo' }, won: 2 }, link: { kind: 'agent', id: 3 } },
+        { cells: { advisor: { ar: 'مريم عادل', en: 'Mariam Adel' }, team: { ar: 'القاهرة', en: 'Cairo' }, won: 5 }, link: { kind: 'agent', id: 4 } },
+        { cells: { advisor: { ar: 'نادين سمير', en: 'Nadine Samir' }, team: { ar: 'الساحل', en: 'Coast' }, won: 1 }, link: { kind: 'agent', id: 5 } },
+      ],
+    },
+  ],
+  notes: [],
+});
+
 /** A deals report as the API sends it; its numbers say which range was asked. */
 const deals = (q: URLSearchParams): ReportResult => ({
   id: 'deals',
@@ -49,7 +76,13 @@ const deals = (q: URLSearchParams): ReportResult => ({
 });
 
 function serve() {
-  return routeFetch({ '/admin/analytics/deals': deals, '/admin/agents': () => AGENTS, '/areas': () => AREAS });
+  return routeFetch({
+    '/admin/analytics/deals': deals,
+    '/admin/analytics/advisors': advisors('advisors'),
+    '/admin/analytics/advisor': advisors('advisor'),
+    '/admin/agents': () => AGENTS,
+    '/areas': () => AREAS,
+  });
 }
 const reportCalls = (fetchMock: jest.Mock) =>
   fetchMock.mock.calls.map(([url]: [string]) => url).filter((u) => u.includes('/admin/analytics/')).map((u) => Object.fromEntries(new URLSearchParams(u.split('?')[1])));
@@ -105,4 +138,59 @@ it('shows rows as cards that open the listing, 25 at a time, and shares a table 
   expect(opts).toMatchObject({ mimeType: 'text/csv' });
   expect(written[0]!.split('\r\n')[0]).toBe('﻿العقار,سعر العرض (ج.م)');
   expect(written[0]!.split('\r\n')).toHaveLength(31);
+});
+
+// Phase 29: every table can be searched, filtered and sorted; an advisor's row opens their own report.
+describe('inside a table', () => {
+  const names = () => screen.getAllByTestId('report-row').map((row) => within(row).getAllByText(/./)[0]!.props.children as string);
+
+  it('searches in either language', async () => {
+    serve();
+    await renderWithProviders(<ReportScreen id="advisors" />);
+    expect(await screen.findAllByTestId('report-row')).toHaveLength(3);
+    await fireEvent.changeText(screen.getByLabelText('ابحث في المسؤولين'), 'mariam');
+    expect(names()).toEqual(['مريم عادل']);
+    await fireEvent.changeText(screen.getByLabelText('ابحث في المسؤولين'), 'مفيش حد');
+    expect(screen.queryAllByTestId('report-row')).toHaveLength(0);
+    expect(screen.getByText('مفيش حاجة مطابقة للبحث والفلاتر')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'امسح البحث' }));
+    expect(names()).toHaveLength(3);
+  });
+
+  it('filters by a column whose values repeat, and sorts by any column', async () => {
+    serve();
+    await renderWithProviders(<ReportScreen id="advisors" />);
+    await screen.findAllByTestId('report-row');
+    await fireEvent.press(screen.getByRole('button', { name: 'الفريق: الكل' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الساحل' }));
+    expect(names()).toEqual(['نادين سمير']);
+    await fireEvent.press(screen.getByRole('button', { name: 'الفريق: الساحل' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'الكل' }));
+
+    await fireEvent.press(screen.getByRole('button', { name: 'الترتيب: زي ما هو' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'اتقفل بيع: الأكبر الأول' }));
+    expect(names()).toEqual(['مريم عادل', 'عمر حسن', 'نادين سمير']);
+    await fireEvent.press(screen.getByRole('button', { name: 'الترتيب: اتقفل بيع، الأكبر الأول' }));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'المسؤول: من الأول للآخر' }));
+    expect(names()).toEqual(['عمر حسن', 'مريم عادل', 'نادين سمير']);
+  });
+
+  it('an advisor’s row opens that advisor’s own report, which asks for them by id and is named after them', async () => {
+    const fetchMock = serve();
+    const { unmount } = await renderWithProviders(<ReportScreen id="advisors" />);
+    await fireEvent.press(await screen.findByRole('link', { name: 'مريم عادل' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/admin/report/advisor?agentId=4');
+    await unmount();
+
+    await renderWithProviders(<ReportScreen id="advisor" agentId={3} />);
+    expect(await screen.findByRole('header', { name: 'عمر حسن' })).toBeOnTheScreen();
+    await waitFor(() => expect(reportCalls(fetchMock).at(-1)).toMatchObject({ agentId: '3' }));
+  });
+
+  it('keeps one advisor’s report out of the list of reports', async () => {
+    serve();
+    await renderWithProviders(<ReportsScreen />);
+    expect(screen.getByRole('button', { name: 'أداء المسؤولين' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'مسؤول واحد' })).toBeNull();
+  });
 });

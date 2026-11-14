@@ -51,8 +51,9 @@ describe('report ranges (phase 27)', () => {
 });
 
 describe('the report catalogue', () => {
-  it('has eleven reports in four groups, each titled in both languages', () => {
-    expect(REPORT_IDS).toHaveLength(11);
+  it('has eleven listed reports (and one per advisor) in four groups, each titled in both languages', () => {
+    expect(REPORTS.filter((r) => !r.needsAgent)).toHaveLength(11);
+    expect(REPORT_IDS).toHaveLength(12);
     expect(REPORTS.map((r) => r.id)).toEqual([...REPORT_IDS]);
     expect(new Set(REPORTS.map((r) => r.group))).toEqual(new Set(['sales', 'listings', 'clients', 'operations']));
     for (const r of REPORTS) expect(r.title.ar && r.title.en && r.description.ar && r.description.en).toBeTruthy();

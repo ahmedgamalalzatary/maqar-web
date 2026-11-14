@@ -1,6 +1,6 @@
 import type { ChatReportReason } from './api.js';
 import type { ReportOutcome } from './admin-activity.js';
-import type { Category, Lang, ViewingCanceller } from './enums.js';
+import type { Category, Lang, ViewingCanceller, ViewingStatus } from './enums.js';
 import { fmtDate, fmtMoney, fmtNum, fmtPct, localDigits, pick } from './format.js';
 import type { Bi } from './labels.js';
 
@@ -8,7 +8,7 @@ import type { Bi } from './labels.js';
 // Every report answers with the same shape (totals, charts, tables), so the app and the web show
 // and export any of them the same way. Ranges are Cairo days, both ends included.
 
-export const REPORT_IDS = ['deals', 'advisors', 'leads', 'inventory', 'listings', 'prices', 'quality', 'clients', 'areas', 'viewings', 'chats'] as const;
+export const REPORT_IDS = ['deals', 'advisors', 'advisor', 'leads', 'inventory', 'listings', 'prices', 'quality', 'clients', 'areas', 'viewings', 'chats'] as const;
 export type ReportId = (typeof REPORT_IDS)[number];
 
 export const REPORT_GROUPS = ['sales', 'listings', 'clients', 'operations'] as const;
@@ -32,6 +32,8 @@ export type ReportSpec = {
   /** False for a snapshot of now (no range, no previous period). */
   ranged: boolean;
   filters: ReportFilter[];
+  /** A report about one advisor: it needs `agentId`, and is opened from the advisors report, not the list. */
+  needsAgent?: boolean;
 };
 
 const ALL: ReportFilter[] = ['agent', 'area', 'category'];
@@ -52,6 +54,15 @@ export const REPORTS: ReportSpec[] = [
     description: { ar: 'لكل مسؤول: العملاء والمعاينات والصفقات والتحويل والهدف وسرعة الرد', en: 'Per advisor: leads, viewings, wins, conversion, target and reply time' },
     ranged: true,
     filters: [],
+  },
+  {
+    id: 'advisor',
+    group: 'sales',
+    title: { ar: 'مسؤول واحد', en: 'One advisor' },
+    description: { ar: 'أرقام مسؤول واحد: عملاؤه وصفقاته ومعايناته وشاتاته وعقاراته', en: 'One advisor’s numbers: their leads, deals, viewings, chats and listings' },
+    ranged: true,
+    filters: [],
+    needsAgent: true,
   },
   {
     id: 'leads',
@@ -330,6 +341,66 @@ export function reportCsv(table: ReportTable, lang: Lang): string {
 export const reportFileName = (r: Pick<ReportResult, 'id' | 'range'>, table: string): string =>
   `maqar-${r.id}${table === r.id ? '' : `-${table}`}${r.range ? `-${r.range.from}-${r.range.to}` : ''}.csv`;
 
+// ---- Search, filters and sorting inside a table (phase 29) ----
+
+/** What a table shows: the words searched for, one value per filtered column, and the order. */
+export type TableView = { q?: string; filters?: Record<string, string>; sort?: { key: string; up: boolean } | null };
+
+export type TableFilter = { key: string; label: Bi; options: { value: string; label: Bi }[] };
+
+/** A cell's value as a filter value: the same in both languages. */
+const cellKey = (v: ReportCell | undefined): string => (v === null || v === undefined ? '' : isBi(v) ? v.en : String(v));
+
+/** The most different values a column can have and still get a filter. */
+const FILTER_MAX_VALUES = 12;
+
+/** A filter for each text column whose values repeat (a status, a type, an advisor), options in A to Z order. */
+export function tableFilters(table: ReportTable): TableFilter[] {
+  const out: TableFilter[] = [];
+  for (const col of table.columns) {
+    if (col.format !== 'text') continue;
+    const seen = new Map<string, Bi>();
+    for (const r of table.rows) {
+      const v = r.cells[col.key];
+      if (v === null || v === undefined || v === '' || typeof v === 'number') continue;
+      seen.set(cellKey(v), isBi(v) ? v : { ar: v, en: v });
+    }
+    if (seen.size < 2 || seen.size > FILTER_MAX_VALUES || seen.size >= table.rows.length) continue;
+    const options = [...seen].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.en.localeCompare(b.label.en, 'en'));
+    out.push({ key: col.key, label: col.label, options });
+  }
+  return out;
+}
+
+const sortValue = (v: ReportCell | undefined, lang: Lang): number | string => (v === null || v === undefined ? '' : isBi(v) ? pick(v, lang) : v);
+
+/** A table's rows after the search (text in either language, any case), the filters and the sort; empty cells sort last. */
+export function viewRows(table: ReportTable, view: TableView, lang: Lang): ReportRow[] {
+  const words = view.q?.trim().toLowerCase();
+  const filters = Object.entries(view.filters ?? {}).filter(([, v]) => v !== '');
+  let rows = table.rows;
+  if (words || filters.length) {
+    rows = rows.filter((r) => {
+      if (!filters.every(([key, value]) => cellKey(r.cells[key]) === value)) return false;
+      if (!words) return true;
+      return table.columns.some((c) => {
+        const v = r.cells[c.key];
+        if (v === null || v === undefined || typeof v === 'number') return false;
+        const text = isBi(v) ? `${v.ar} ${v.en}` : c.format === 'date' ? `${v} ${fmtCell(v, 'date', 'ar')} ${fmtCell(v, 'date', 'en')}` : v;
+        return text.toLowerCase().includes(words);
+      });
+    });
+  }
+  const sort = view.sort;
+  if (!sort) return rows;
+  return [...rows].sort((a, b) => {
+    const [x, y] = [sortValue(a.cells[sort.key], lang), sortValue(b.cells[sort.key], lang)];
+    if (x === '' || y === '') return x === y ? 0 : x === '' ? 1 : -1;
+    const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), lang);
+    return sort.up ? d : -d;
+  });
+}
+
 // ---- Labels the reports use ----
 
 export const CHAT_REPORT_REASON_LABEL: Record<ChatReportReason, Bi> = {
@@ -344,6 +415,13 @@ export const REPORT_OUTCOME_LABEL: Record<ReportOutcome | 'open', Bi> = {
   dismissed: { ar: 'اتقفل من غير إجراء', en: 'Dismissed' },
   blocked: { ar: 'المحادثة اتقفلت', en: 'Conversation closed' },
   suspended: { ar: 'حساب العميل اتوقف', en: 'Client suspended' },
+};
+
+export const VIEWING_STATUS_LABEL: Record<ViewingStatus, Bi> = {
+  confirmed: { ar: 'مؤكدة', en: 'Confirmed' },
+  rescheduled: { ar: 'اتغير ميعادها', en: 'Rescheduled' },
+  cancelled: { ar: 'اتلغت', en: 'Cancelled' },
+  completed: { ar: 'خلصت', en: 'Completed' },
 };
 
 export const VIEWING_CANCELLER_LABEL: Record<ViewingCanceller | 'unknown', Bi> = {

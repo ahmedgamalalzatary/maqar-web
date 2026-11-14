@@ -1,4 +1,5 @@
 import type { AreaItem, LeadCard } from './api.js';
+import type { PropertyStatus } from './enums.js';
 import type { AdminAgent } from './listings.js';
 
 // ---- Admin tools (phase 18): agents, their hours and days off, leads, areas ----
@@ -79,6 +80,8 @@ export type AdminAgentDetail = AdminAgentItem & {
   hours: DayHours[];
   defaultHours: boolean;
   daysOff: { date: string; reason: string | null }[];
+  /** The listings they are the advisor of, in any status. */
+  listingIds: number[];
 };
 
 /** `POST /admin/agents` (with a starting password) and `PATCH /admin/agents/:id` (any field). */
@@ -98,7 +101,12 @@ export type AgentBody = {
   active?: boolean;
   /** On deactivation: the advisor who takes the viewings, conversations and open leads. */
   reassignTo?: number;
+  /** Listings to make this agent the advisor of (phase 29). The ones they already have stay theirs. */
+  listingIds?: number[];
 };
+
+/** `GET /admin/agents/listing-options`: every listing with its advisor, for the picker in the agent's form. */
+export type AgentListingOption = { id: number; titleAr: string; titleEn: string; status: PropertyStatus; agentId: number | null };
 
 /** `PUT /admin/agents/hours`: the same week for one agent or several. */
 export type HoursBody = { agentIds: number[]; hours: DayHours[] };
@@ -119,4 +127,4 @@ export type AssignLeadBody = { agentId: number };
 export type AdminArea = AreaItem & { listings: number };
 
 /** `POST /admin/areas` (the id is made from the English name when left out) and `PATCH /admin/areas/:id`. */
-export type AreaBody = { id?: string; nameAr: string; nameEn: string; cityAr: string; cityEn: string; image: string };
+export type AreaBody = { id?: string; nameAr: string; nameEn: string; cityAr: string; cityEn: string; image?: string | null };

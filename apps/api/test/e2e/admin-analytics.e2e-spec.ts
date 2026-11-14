@@ -37,10 +37,12 @@ describe('Admin reports (e2e)', () => {
   let omar: string;
   let omarId: number;
   let omarHomes: PropertyDetail[];
+  let otherAgentId: number;
   const http = () => request(app.getHttpServer());
   const as = (token: string) => bearer(token);
+  // One advisor's report (phase 29) is always about someone: Omar, unless the test says otherwise.
   const report = async (id: ReportId, q: Record<string, string | number> = {}) =>
-    (await http().get(`/v1/admin/analytics/${id}`).query(q).set(as(admin)).expect(200)).body as ReportResult;
+    (await http().get(`/v1/admin/analytics/${id}`).query(id === 'advisor' ? { agentId: omarId, ...q } : q).set(as(admin)).expect(200)).body as ReportResult;
   const kpi = (r: ReportResult, key: string) => r.kpis.find((k) => k.key === key)!.value ?? 0;
   const table = (r: ReportResult, key: string) => r.tables.find((t) => t.key === key)!;
   const rowOf = (t: ReportTable, kind: string, id: number) => t.rows.find((x) => x.link?.kind === kind && x.link.id === id);
@@ -63,6 +65,7 @@ describe('Admin reports (e2e)', () => {
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');
     const details = await Promise.all(all.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
     omarHomes = details.filter((d) => d.agent.id === omarId);
+    otherAgentId = details.find((d) => d.agent.id !== omarId)!.agent.id;
   });
   afterAll(async () => {
     await app.close();
@@ -82,6 +85,9 @@ describe('Admin reports (e2e)', () => {
     expect((await bad('deals', { from: '2026-02-30', to: today })).message).toMatch(/real dates/);
     expect((await bad('advisors', { agentId: omarId })).message).toMatch(/advisor/);
     expect((await bad('chats', { category: 'sale' })).message).toMatch(/category/);
+    // One advisor's report needs the advisor, and a real one.
+    expect((await bad('advisor')).message).toMatch(/advisor/);
+    await http().get('/v1/admin/analytics/advisor').query({ agentId: 999_999 }).set(as(admin)).expect(404);
     await bad('deals', { category: 'castle' });
   });
 
@@ -155,6 +161,17 @@ describe('Admin reports (e2e)', () => {
     expect((omarAfter.booked as number) - (omarBefore.booked as number)).toBe(2);
     expect((omarAfter.cancelled as number) - (omarBefore.cancelled as number)).toBe(1);
     expect(omarAfter.reply).not.toBeNull();
+
+    // One advisor (phase 29): Omar's own report has his row's numbers, and his work only.
+    for (const key of ['leads', 'won', 'lost', 'booked', 'cancelled', 'open'] as const) expect(kpi(after.advisor, key)).toBe(omarAfter[key]);
+    expect(delta('advisor', 'leads')).toBe(2);
+    expect(table(after.advisor, 'leads').rows.map((r) => r.cells.client)).toEqual(expect.arrayContaining([a.user.name, b.user.name]));
+    expect(rowOf(table(after.advisor, 'viewings'), 'listing', omarHomes[0]!.id)).toBeDefined();
+    expect(rowOf(table(after.advisor, 'listings'), 'listing', made.id)).toBeDefined();
+    expect(rowOf(table(after.advisor, 'deals'), 'listing', closed.id)).toBeDefined();
+    const other = await report('advisor', { agentId: otherAgentId });
+    expect(table(other, 'leads').rows.map((r) => r.cells.client)).not.toContain(a.user.name);
+    expect(rowOf(table(other, 'listings'), 'listing', made.id)).toBeUndefined();
 
     // Leads: one per client and advisor, so two new (a booked and chatted, b chatted), one won, one lost.
     expect(delta('leads', 'leads')).toBe(2);

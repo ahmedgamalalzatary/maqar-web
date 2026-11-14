@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AdminAgentDetail, AdminAgentItem, DaysOffResult } from '@maqar/shared';
+import type { AdminAgentDetail, AdminAgentItem, AgentListingOption, DaysOffResult } from '@maqar/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { DatePipe } from './date.pipe.js';
 import { AgentsQueryDto, CreateAgentDto, DaysOffDto, HoursDto, ReassignDto, UpdateAgentDto } from './dto/agents.dto.js';
@@ -37,6 +37,12 @@ export class AdminAgentsController {
   @Post('days-off')
   addDaysOff(@Body() body: DaysOffDto): Promise<DaysOffResult> {
     return this.agents.addDaysOff(body);
+  }
+
+  /** Every listing with its advisor, for the picker in the agent's form (phase 29). Before `:id`. */
+  @Get('listing-options')
+  listingOptions(): Promise<AgentListingOption[]> {
+    return this.agents.listingOptions();
   }
 
   @Get(':id')

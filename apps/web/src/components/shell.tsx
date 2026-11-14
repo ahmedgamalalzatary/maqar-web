@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, CalendarCheck, FileBarChart, LayoutDashboard, LogOut, MapPin, MessagesSquare, Moon, PlusSquare, ShieldUser, Sun, UserCog, Users, UsersRound } from "lucide-react";
+import { Building2, CalendarCheck, FileBarChart, Languages, LayoutDashboard, LogOut, MapPin, Menu as MenuIcon, MessagesSquare, Moon, Settings, ShieldUser, Sun, UserCog, Users, UsersRound, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,66 +50,109 @@ function Gate({ children }: { children: ReactNode }) {
   if (!session) return <SignIn />;
   return (
     <>
-      <Header name={session.user.name} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">{children}</main>
+      <Menu name={session.user.name} />
+      {/* The menu is a column beside the page from 1024 px; under that it is a drawer over it. */}
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:ps-[calc(15rem+1.5rem)] lg:max-w-[calc(72rem+15rem)] print:p-0">{children}</main>
     </>
   );
 }
 
-function Header({ name }: { name: string }) {
+/**
+ * The menu (2026-11-13): a side column with every page named, instead of a row of icons. On a
+ * phone it is a drawer opened from the top bar; it closes on a choice, on Escape and on a tap outside.
+ */
+function Menu({ name }: { name: string }) {
   const t = useT();
   const lang = useLang();
   const path = usePathname();
   const dark = useDark();
-  const toggleTheme = () => setDark(!dark);
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    // The page behind the drawer does not scroll.
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const nav = [
     { href: "/", label: t("نظرة عامة", "Overview"), icon: LayoutDashboard, on: path === "/" },
     { href: "/listings/", label: t("العقارات", "Listings"), icon: Building2, on: path.startsWith("/listing") },
-    { href: "/new/", label: t("أضف عقار", "Add a listing"), icon: PlusSquare, on: path.startsWith("/new") },
     { href: "/agents/", label: t("المسؤولين", "Agents"), icon: UserCog, on: path.startsWith("/agent") },
     { href: "/leads/", label: t("العملاء", "Leads"), icon: Users, on: path.startsWith("/leads") },
-    { href: "/clients/", label: t("حسابات العملاء", "Clients"), icon: UsersRound, on: path.startsWith("/client") },
+    { href: "/clients/", label: t("حسابات العملاء", "Client accounts"), icon: UsersRound, on: path.startsWith("/client") },
     { href: "/viewings/", label: t("المعاينات", "Viewings"), icon: CalendarCheck, on: path.startsWith("/viewings") },
     { href: "/chats/", label: t("الشاتات", "Chats"), icon: MessagesSquare, on: path.startsWith("/chat") },
     { href: "/reports/", label: t("التقارير", "Reports"), icon: FileBarChart, on: path.startsWith("/report") },
     { href: "/areas/", label: t("المناطق", "Areas"), icon: MapPin, on: path.startsWith("/areas") },
     { href: "/admins/", label: t("الإدارة", "Admins"), icon: ShieldUser, on: path.startsWith("/admins") },
+    { href: "/settings/", label: t("إعدادات التطبيق", "App settings"), icon: Settings, on: path.startsWith("/settings") },
   ];
+  const current = nav.find((n) => n.on);
+  const tool = "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-ink-2 hover:bg-surface-2";
+
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur print:hidden">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6 2xl:max-w-none">
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "Maqar admin")}>
-          <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
-          <span className="hidden text-sm font-semibold sm:inline">{t("لوحة الإدارة", "Admin")}</span>
-        </Link>
-        {/* Eleven pages: on a narrow screen the menu scrolls sideways inside itself, never the page. */}
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+    <>
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-2 backdrop-blur lg:hidden print:hidden">
+        <button type="button" onClick={() => setOpen(true)} aria-label={t("افتح القائمة", "Open the menu")} aria-expanded={open} aria-controls="menu" className="grid size-11 place-items-center rounded-lg text-ink hover:bg-surface-2">
+          <MenuIcon className="size-5" aria-hidden />
+        </button>
+        <Image src="/admin/brand/icon.svg" alt="" width={28} height={28} />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{current?.label ?? t("لوحة الإدارة", "Admin")}</span>
+      </header>
+      {open ? <button type="button" aria-label={t("اقفل القائمة", "Close the menu")} onClick={close} className="fixed inset-0 z-40 bg-navy/50 lg:hidden" /> : null}
+      <aside
+        id="menu"
+        aria-label={t("القائمة", "Menu")}
+        className={`fixed inset-y-0 start-0 z-50 flex w-60 max-w-[85vw] flex-col border-e border-line bg-surface transition-transform duration-200 print:hidden lg:z-30 ${
+          open ? "translate-x-0 shadow-float" : "max-lg:invisible max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full"
+        }`}
+      >
+        <div className="flex h-16 shrink-0 items-center gap-2 px-4">
+          <Link href="/" onClick={close} className="flex min-w-0 flex-1 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "Maqar admin")}>
+            <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
+            <span className="truncate text-sm font-semibold">{t("لوحة الإدارة", "Admin")}</span>
+          </Link>
+          <button type="button" onClick={close} aria-label={t("اقفل القائمة", "Close the menu")} className="grid size-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 lg:hidden">
+            <X className="size-5" aria-hidden />
+          </button>
+        </div>
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-2">
           {nav.map(({ href, label, icon: Icon, on }) => (
             <Link
               key={href}
               href={href}
-              aria-label={label}
-              title={label}
+              onClick={close}
               aria-current={on ? "page" : undefined}
-              className={`inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2"}`}
+              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium ${on ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink"}`}
             >
-              <Icon className="size-4" aria-hidden />
-              <span className="hidden 2xl:inline">{label}</span>
+              <Icon className="size-[18px] shrink-0" aria-hidden />
+              <span className="truncate">{label}</span>
             </Link>
           ))}
         </nav>
-        <button type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="min-h-10 shrink-0 rounded-lg px-3 text-sm font-medium text-ink-2 hover:bg-surface-2">
-          {lang === "ar" ? "English" : "العربية"}
-        </button>
-        <button type="button" onClick={toggleTheme} aria-label={t("الوضع الداكن", "Dark mode")} aria-pressed={dark} className="grid size-10 shrink-0 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
-          {dark ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
-        </button>
-        <span className="hidden text-sm text-ink-2 md:inline">{name}</span>
-        <button type="button" onClick={() => void api.signOut()} aria-label={t("خروج", "Sign out")} className="grid size-10 shrink-0 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
-          <LogOut className="size-4 rtl:-scale-x-100" aria-hidden />
-        </button>
-      </div>
-    </header>
+        <div className="flex shrink-0 flex-col gap-0.5 border-t border-line p-2">
+          <p className="truncate px-3 py-1 text-xs text-ink-3">{name}</p>
+          <button type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className={tool}>
+            <Languages className="size-[18px] shrink-0" aria-hidden />
+            {lang === "ar" ? "English" : "العربية"}
+          </button>
+          <button type="button" onClick={() => setDark(!dark)} aria-pressed={dark} className={tool}>
+            {dark ? <Sun className="size-[18px] shrink-0" aria-hidden /> : <Moon className="size-[18px] shrink-0" aria-hidden />}
+            {dark ? t("الوضع الفاتح", "Light mode") : t("الوضع الداكن", "Dark mode")}
+          </button>
+          <button type="button" onClick={() => void api.signOut()} className={tool}>
+            <LogOut className="size-[18px] shrink-0 rtl:-scale-x-100" aria-hidden />
+            {t("خروج", "Sign out")}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
 

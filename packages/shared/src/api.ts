@@ -104,8 +104,8 @@ export type AreaItem = {
   nameEn: string;
   cityAr: string;
   cityEn: string;
-  /** Path under the API host, for example `/uploads/seed/p2.jpg`. */
-  image: string;
+  /** Path under the API host, for example `/uploads/seed/p2.jpg`; null when the area has no picture (phase 29). */
+  image: string | null;
 };
 
 /** A listing as the cards and lists show it (`GET /v1/properties`). */

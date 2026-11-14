@@ -30,6 +30,12 @@ const agent = (over: Partial<AdminAgentItem>): AdminAgentItem => ({
 });
 const OMAR = agent({});
 const MARIAM = agent({ id: 4, nameAr: 'مريم عادل', nameEn: 'Mariam Adel', email: 'mariam@maqar.app', colour: '#61766d', live: 3 });
+/** Listings for the picker in the agent's form (phase 29): Omar (3) has the villa; the flat is Mariam's. */
+const LISTING_OPTIONS = [
+  { id: 21, titleAr: 'شقة في زايد', titleEn: 'Flat in Zayed', status: 'approved', agentId: 4 },
+  { id: 22, titleAr: 'فيلا في التجمع', titleEn: 'Villa in New Cairo', status: 'approved', agentId: 3 },
+  { id: 23, titleAr: 'شاليه في الساحل', titleEn: 'Chalet on the coast', status: 'draft', agentId: null },
+];
 const detail = (over: Partial<AdminAgentDetail> = {}): AdminAgentDetail => ({
   ...OMAR,
   languagesAr: 'العربية',
@@ -38,6 +44,7 @@ const detail = (over: Partial<AdminAgentDetail> = {}): AdminAgentDetail => ({
   hours: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, from: weekday === 5 ? 14 : 10, to: 20 })),
   defaultHours: false,
   daysOff: [{ date: '2026-12-25', reason: 'عيد' }],
+  listingIds: [],
   ...over,
 });
 const LEAD: AdminLeadItem = {
@@ -67,6 +74,7 @@ function serve(opts: { fail?: Record<string, number | [number, string]> } = {}) 
       return jsonResponse(status, { statusCode: status, message });
     }
     if (key === 'GET /admin/agents') return jsonResponse(200, [OMAR, MARIAM]);
+    if (key === 'GET /admin/agents/listing-options') return jsonResponse(200, LISTING_OPTIONS);
     if (key === 'GET /admin/agents/3') return jsonResponse(200, detail());
     if (key === 'PATCH /admin/agents/3') return jsonResponse(200, detail(JSON.parse(init.body as string)));
     if (key === 'POST /admin/agents') return jsonResponse(201, detail({ id: 9 }));
@@ -182,6 +190,27 @@ describe('New agent', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'أضف المسؤول' }));
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/admin/agent/9'));
     expect(writes()[0]![1]).toMatchObject({ nameEn: 'Nadine Samir', email: 'nadine@maqar.app', password: 'Starting123', phone: '01005550101' });
+    expect(writes()[0]![1]).not.toHaveProperty('listingIds');
+  });
+});
+
+// Phase 29: the agent's form also gives them listings.
+describe('An agent’s listings, in their form', () => {
+  it('shows the ones they have as ticked, and gives them the ones ticked on save', async () => {
+    const writes = serve();
+    await renderWithProviders(withToasts(<AgentFormScreen id={3} />));
+    const theirs = await screen.findByRole('checkbox', { name: 'فيلا في التجمع، منشور، معاه' });
+    expect(theirs.props.accessibilityState).toMatchObject({ checked: true, disabled: true });
+    expect(screen.getByRole('checkbox', { name: 'شقة في زايد، منشور، مع مريم عادل' }).props.accessibilityState).toMatchObject({ checked: false });
+
+    await fireEvent.changeText(screen.getByLabelText('ابحث باسم العقار'), 'chalet');
+    expect(screen.queryByRole('checkbox', { name: 'شقة في زايد، منشور، مع مريم عادل' })).toBeNull();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'شاليه في الساحل، مسودة، من غير مسؤول' }));
+    await fireEvent.changeText(screen.getByLabelText('ابحث باسم العقار'), '');
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'شقة في زايد، منشور، مع مريم عادل' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ' }));
+    await waitFor(() => expect(writes().find(([w]) => w === 'PATCH /admin/agents/3')).toBeDefined());
+    expect(writes().find(([w]) => w === 'PATCH /admin/agents/3')![1].listingIds).toEqual([23, 21]);
   });
 });
 
@@ -205,7 +234,22 @@ describe('Leads tab', () => {
 });
 
 describe('New area', () => {
-  it('needs a photo and the names, then adds the area', async () => {
+  // The owner's change (2026-11-13): an area needs its names; the photo is optional.
+  it('needs the names but no photo', async () => {
+    const writes = serve();
+    await renderWithProviders(withToasts(<AreaFormScreen />));
+    await fireEvent.changeText(screen.getByLabelText('الاسم (عربي)'), 'رأس سدر');
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف المنطقة' }));
+    expect(writes()).toEqual([]);
+    await fireEvent.changeText(screen.getByLabelText('الاسم (إنجليزي)'), 'Ras Sedr');
+    await fireEvent.changeText(screen.getByLabelText('المدينة (عربي)'), 'جنوب سيناء');
+    await fireEvent.changeText(screen.getByLabelText('المدينة (إنجليزي)'), 'South Sinai');
+    await fireEvent.press(screen.getByRole('button', { name: 'أضف المنطقة' }));
+    expect(await screen.findByText('المنطقة اتضافت وبقت ظاهرة للعملاء')).toBeOnTheScreen();
+    expect(writes().find(([w]) => w === 'POST /admin/areas')![1]).toEqual({ nameAr: 'رأس سدر', nameEn: 'Ras Sedr', cityAr: 'جنوب سيناء', cityEn: 'South Sinai', image: null });
+  });
+
+  it('adds the area with a photo, which can be taken off again', async () => {
     const ImagePicker = jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock };
     jest.mock('expo-file-system', () => ({ File: jest.fn().mockImplementation(() => ({ bytes: async () => new Uint8Array([1]) })) }));
     const writes = serve();
@@ -214,11 +258,14 @@ describe('New area', () => {
     await fireEvent.changeText(screen.getByLabelText('الاسم (إنجليزي)'), 'New Alamein');
     await fireEvent.changeText(screen.getByLabelText('المدينة (عربي)'), 'مطروح');
     await fireEvent.changeText(screen.getByLabelText('المدينة (إنجليزي)'), 'Matrouh');
-    await fireEvent.press(screen.getByRole('button', { name: 'أضف المنطقة' }));
-    expect(writes()).toEqual([]);
 
     ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///a.jpg', width: 800, height: 600 }] });
-    await fireEvent.press(screen.getByRole('button', { name: 'ضيف صورة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف صورة (اختياري)' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'غيّر الصورة' })).toBeOnTheScreen());
+    await fireEvent.press(screen.getByRole('button', { name: 'شيل الصورة' }));
+    expect(screen.getByRole('button', { name: 'ضيف صورة (اختياري)' })).toBeOnTheScreen();
+    ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///a.jpg', width: 800, height: 600 }] });
+    await fireEvent.press(screen.getByRole('button', { name: 'ضيف صورة (اختياري)' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'غيّر الصورة' })).toBeOnTheScreen());
     await fireEvent.press(screen.getByRole('button', { name: 'أضف المنطقة' }));
     expect(await screen.findByText('المنطقة اتضافت وبقت ظاهرة للعملاء')).toBeOnTheScreen();

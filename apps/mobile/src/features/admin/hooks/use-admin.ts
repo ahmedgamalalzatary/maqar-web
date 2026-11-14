@@ -1,5 +1,6 @@
 import type { AdminListing, AgentBody, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppConfig } from '@/core/app-config/store';
 import { useSession } from '@/features/auth/store/session.store';
 import {
   addDaysOffRequest,
@@ -8,6 +9,9 @@ import {
   createAreaRequest,
   deleteAreaRequest,
   getAdminAreas,
+  getAgentListingOptions,
+  getAppSettings,
+  saveAppSettingsRequest,
   getAdminLeads,
   getAgent,
   getAgents,
@@ -198,4 +202,30 @@ export function useDeleteArea() {
 export function usePatchListing(id: number) {
   const settle = useSettle();
   return useMutation({ mutationFn: (body: { featured?: boolean; agentId?: number }) => updateListingRequest(id, body), onSuccess: settle });
+}
+
+/** Every listing with its advisor, for the picker in the agent's form (phase 29). */
+export function useAgentListingOptions() {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'agent-listing-options'], queryFn: ({ signal }) => getAgentListingOptions(signal), enabled: adminId !== null });
+}
+
+// ---- App settings (phase 29) ----
+
+export function useAppSettings() {
+  const adminId = useAdminId();
+  return useQuery({ queryKey: [...adminKey(adminId), 'app-settings'], queryFn: ({ signal }) => getAppSettings(signal), enabled: adminId !== null });
+}
+
+/** Saves a part of the settings; this phone's own copy follows at once. */
+export function useSaveAppSettings() {
+  const adminId = useAdminId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: saveAppSettingsRequest,
+    onSuccess: (saved) => {
+      qc.setQueryData([...adminKey(adminId), 'app-settings'], saved);
+      useAppConfig.setState({ config: saved });
+    },
+  });
 }

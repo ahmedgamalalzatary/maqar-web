@@ -44,7 +44,7 @@ export function AreasScreen() {
           style={({ pressed }) => [styles.row, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
         >
           <View style={[styles.thumb, { backgroundColor: colors.surface2 }]}>
-            <Image source={{ uri: mediaUrl(item.image)! }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            {item.image ? <Image source={{ uri: mediaUrl(item.image)! }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <MapPin size={22} color={colors.ink3} />}
           </View>
           <View style={styles.flex}>
             <Txt weight="medium">{lang === 'ar' ? item.nameAr : item.nameEn}</Txt>
@@ -118,7 +118,7 @@ function AreaForm({ saved }: { saved?: AdminArea }) {
   const remove = useDeleteArea();
   const set = (k: keyof Draft, v: string) => setD((cur) => ({ ...cur, [k]: v }));
   const short = (v: string) => v.trim().length < 2;
-  const bad = short(d.nameAr) || short(d.nameEn) || short(d.cityAr) || short(d.cityEn) || !d.image || (!saved && areaSlug(d.nameEn).length < 2);
+  const bad = short(d.nameAr) || short(d.nameEn) || short(d.cityAr) || short(d.cityEn) || (!saved && areaSlug(d.nameEn).length < 2);
   const err = (v: string) => (showErrors && short(v) ? t('اكتب حرفين على الأقل', 'At least 2 characters') : undefined);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const back = () => (router.canGoBack() ? router.back() : router.replace('/admin/areas'));
@@ -140,7 +140,7 @@ function AreaForm({ saved }: { saved?: AdminArea }) {
   const submit = () => {
     if (bad) return setShowErrors(true);
     save.mutate(
-      { nameAr: d.nameAr.trim(), nameEn: d.nameEn.trim(), cityAr: d.cityAr.trim(), cityEn: d.cityEn.trim(), image: d.image! },
+      { nameAr: d.nameAr.trim(), nameEn: d.nameEn.trim(), cityAr: d.cityAr.trim(), cityEn: d.cityEn.trim(), image: d.image },
       {
         onSuccess: () => {
           toast.show({ title: saved ? t('المنطقة اتحفظت', 'Area saved') : t('المنطقة اتضافت وبقت ظاهرة للعملاء', 'Area added: clients see it now'), tone: 'sage' });
@@ -182,9 +182,9 @@ function AreaForm({ saved }: { saved?: AdminArea }) {
       <ScrollView contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={d.image ? t('غيّر الصورة', 'Change the photo') : t('ضيف صورة', 'Add a photo')}
+          accessibilityLabel={d.image ? t('غيّر الصورة', 'Change the photo') : t('ضيف صورة (اختياري)', 'Add a photo (optional)')}
           onPress={() => void pick()}
-          style={[styles.photo, { backgroundColor: colors.accentSoft, borderColor: showErrors && !d.image ? colors.danger : colors.accent }]}
+          style={[styles.photo, { backgroundColor: colors.accentSoft, borderColor: colors.accent }]}
         >
           {d.image ? <Image source={{ uri: mediaUrl(d.image)! }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
           {uploading ? (
@@ -193,11 +193,12 @@ function AreaForm({ saved }: { saved?: AdminArea }) {
             <>
               <ImagePlus size={22} color={colors.accentInk} />
               <Txt weight="medium" style={{ color: colors.accentInk }}>
-                {t('ضيف صورة', 'Add a photo')}
+                {t('ضيف صورة (اختياري)', 'Add a photo (optional)')}
               </Txt>
             </>
           ) : null}
         </Pressable>
+        {d.image && !uploading ? <Button label={t('شيل الصورة', 'Remove the photo')} variant="ghost" onPress={() => setD((cur) => ({ ...cur, image: null }))} /> : null}
         <TextField label={t('الاسم (عربي)', 'Name (Arabic)')} value={d.nameAr} onChangeText={(v) => set('nameAr', v)} error={err(d.nameAr)} />
         <TextField label={t('الاسم (إنجليزي)', 'Name (English)')} value={d.nameEn} onChangeText={(v) => set('nameEn', v)} error={err(d.nameEn)} />
         <TextField label={t('المدينة (عربي)', 'City (Arabic)')} value={d.cityAr} onChangeText={(v) => set('cityAr', v)} error={err(d.cityAr)} />
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   gap: { height: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: radius.lg, borderWidth: 1 },
-  thumb: { width: 64, height: 64, borderRadius: radius.md, overflow: 'hidden' },
+  thumb: { width: 64, height: 64, borderRadius: radius.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 48 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: 1 },
   form: { padding: 16, gap: 14 },

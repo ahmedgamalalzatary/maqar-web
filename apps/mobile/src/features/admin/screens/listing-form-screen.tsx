@@ -293,8 +293,8 @@ function LocationStep({ s, set, err }: StepProps) {
       </Group>
       <TextField label={t('الكمبوند (عربي)', 'Compound (Arabic)')} value={s.compoundAr} onChangeText={(v) => set('compoundAr', v)} />
       <TextField label={t('الكمبوند (إنجليزي)', 'Compound (English)')} value={s.compoundEn} onChangeText={(v) => set('compoundEn', v)} />
-      <TextField label={t('المطور (عربي)', 'Developer (Arabic)')} value={s.developerAr} onChangeText={(v) => set('developerAr', v)} />
-      <TextField label={t('المطور (إنجليزي)', 'Developer (English)')} value={s.developerEn} onChangeText={(v) => set('developerEn', v)} />
+      <TextField label={t('المطور (عربي، اختياري)', 'Developer (Arabic, optional)')} value={s.developerAr} onChangeText={(v) => set('developerAr', v)} />
+      <TextField label={t('المطور (إنجليزي، اختياري)', 'Developer (English, optional)')} value={s.developerEn} onChangeText={(v) => set('developerEn', v)} />
       <TextField label={t('الدور', 'Floor')} value={s.floor} onChangeText={(v) => set('floor', v)} keyboardType="number-pad" />
       <TextField label={t('مصروف الصيانة (بالسنة)', 'Maintenance fee (a year)')} value={s.maintenanceFee} onChangeText={(v) => set('maintenanceFee', v)} keyboardType="number-pad" />
       <Txt size={12} color="ink3">

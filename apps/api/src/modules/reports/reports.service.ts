@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { daysOf, previousRange, rangeDays, type ReportFilter, type ReportId, type ReportResult, reportPresetRange, reportRangeProblem, reportSpec } from '@maqar/shared';
 import { cairoClock, cairoInstant } from '../viewings/slots.js';
+import { AdvisorReport } from './reports.advisor.js';
 import type { Built, Ctx } from './reports.context.js';
 import type { ReportQueryDto } from './reports.dto.js';
 import { ListingReports } from './reports.listings.js';
@@ -40,6 +41,7 @@ export class ReportsService {
     private readonly listings: ListingReports,
     private readonly people: PeopleReports,
     private readonly ops: OpsReports,
+    private readonly one: AdvisorReport,
   ) {}
 
   async get(id: ReportId, q: ReportQueryDto, now = new Date()): Promise<ReportResult> {
@@ -56,7 +58,9 @@ export class ReportsService {
       ['area', q.areaId],
       ['category', q.category],
     ];
+    if (spec.needsAgent && q.agentId === undefined) throw new BadRequestException('This report is about one advisor: send agentId');
     for (const [filter, value] of asked) {
+      if (filter === 'agent' && spec.needsAgent) continue;
       if (value !== undefined && !spec.filters.includes(filter)) throw new BadRequestException(`This report cannot be narrowed by ${FILTER_NAME[filter]}`);
     }
     const f: Filters = { agentId: q.agentId, areaId: q.areaId, category: q.category };
@@ -78,6 +82,8 @@ export class ReportsService {
         return this.sales.deals(c);
       case 'advisors':
         return this.sales.advisors(c);
+      case 'advisor':
+        return this.one.advisor(c);
       case 'leads':
         return this.sales.leads(c);
       case 'inventory':

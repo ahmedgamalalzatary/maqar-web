@@ -1,5 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
-import { fmtMoney, fmtNum } from '@maqar/shared';
+import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, homeSectionOrder } from '@maqar/shared';
+import { useAppConfig } from '@/core/app-config/store';
 import { useSettings } from '@/core/settings/store';
 import { useSession } from '@/features/auth/store/session.store';
 import { Home } from '@/features/home/screens/home-screen';
@@ -33,6 +34,7 @@ function api(drops = [dropped], top: typeof featured[] = []) {
 beforeEach(async () => {
   jest.clearAllMocks();
   await useSession.getState().clear();
+  useAppConfig.setState({ config: DEFAULT_APP_SETTINGS });
 });
 
 describe('Home', () => {
@@ -172,5 +174,27 @@ describe('Home', () => {
     await renderWithProviders(<Home />);
     await fireEvent.press(screen.getByRole('button', { name: 'الوضع الداكن' }));
     expect(useSettings.getState().theme).toBe('dark');
+  });
+
+  // Phase 29: an admin orders the sections; the headline and the search box stay on top.
+  it('shows the sections in the order the admin set', async () => {
+    api();
+    const names = () => screen.getAllByRole('header').map((h) => h.props.accessibilityLabel ?? h.props.children).filter((n) => typeof n === 'string');
+    const { unmount } = await renderWithProviders(<Home />);
+    await screen.findByRole('header', { name: 'السعر نزل' });
+    await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات');
+    const before = names();
+    expect(before.indexOf('تصفح حسب المنطقة')).toBeLessThan(before.indexOf('مشروعات جديدة بالتقسيط'));
+    expect(before.indexOf('السعر نزل')).toBeLessThan(before.indexOf('مشروعات جديدة بالتقسيط'));
+    await unmount();
+
+    useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, home: { sections: homeSectionOrder(['launches', 'drops', 'areas']) } } });
+    await renderWithProviders(<Home />);
+    await screen.findByRole('header', { name: 'السعر نزل' });
+    await screen.findByText('شقق بمقدم ١٠٪ وتقسيط ٨ سنوات');
+    const after = names();
+    expect(after[0]).toBe('لاقي بيتك،');
+    expect(after.indexOf('مشروعات جديدة بالتقسيط')).toBeLessThan(after.indexOf('السعر نزل'));
+    expect(after.indexOf('السعر نزل')).toBeLessThan(after.indexOf('تصفح حسب المنطقة'));
   });
 });
