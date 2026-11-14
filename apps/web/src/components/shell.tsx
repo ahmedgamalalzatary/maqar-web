@@ -5,7 +5,7 @@ import { Building2, CalendarCheck, FileBarChart, Languages, LayoutDashboard, Log
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, type FormEvent, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, type FormEvent, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { api, useSession } from "@/lib/client";
 import { setLang, useLang, useT } from "@/lib/i18n";
@@ -60,6 +60,8 @@ function Gate({ children }: { children: ReactNode }) {
 /**
  * The menu (2026-11-13): a side column with every page named, instead of a row of icons. On a
  * phone it is a drawer opened from the top bar; it closes on a choice, on Escape and on a tap outside.
+ * While it is open, focus is inside it and the page behind is inert, so the keyboard cannot reach
+ * what is covered; closing gives focus back to the menu button.
  */
 function Menu({ name }: { name: string }) {
   const t = useT();
@@ -68,15 +70,24 @@ function Menu({ name }: { name: string }) {
   const dark = useDark();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const closer = useRef<HTMLButtonElement>(null);
+  const bar = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);
-    // The page behind the drawer does not scroll.
+    // The page behind the drawer does not scroll, and the keyboard cannot reach it.
     document.body.style.overflow = "hidden";
+    const behind = [bar.current, document.querySelector("main")].filter((el): el is HTMLElement => !!el);
+    for (const el of behind) el.inert = true;
+    closer.current?.focus();
+    const button = opener.current;
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      for (const el of behind) el.inert = false;
+      button?.focus();
     };
   }, [open]);
 
@@ -98,14 +109,15 @@ function Menu({ name }: { name: string }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-2 backdrop-blur lg:hidden print:hidden">
-        <button type="button" onClick={() => setOpen(true)} aria-label={t("افتح القائمة", "Open the menu")} aria-expanded={open} aria-controls="menu" className="grid size-11 place-items-center rounded-lg text-ink hover:bg-surface-2">
+      <header ref={bar} className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-2 backdrop-blur lg:hidden print:hidden">
+        <button ref={opener} type="button" onClick={() => setOpen(true)} aria-label={t("افتح القائمة", "Open the menu")} aria-expanded={open} aria-controls="menu" className="grid size-11 place-items-center rounded-lg text-ink hover:bg-surface-2">
           <MenuIcon className="size-5" aria-hidden />
         </button>
         <Image src="/admin/brand/icon.svg" alt="" width={28} height={28} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{current?.label ?? t("لوحة الإدارة", "Admin")}</span>
       </header>
-      {open ? <button type="button" aria-label={t("اقفل القائمة", "Close the menu")} onClick={close} className="fixed inset-0 z-40 bg-navy/50 lg:hidden" /> : null}
+      {/* The backdrop closes on a tap; the keyboard uses Escape or the close button, so it is not a tab stop. */}
+      {open ? <button type="button" tabIndex={-1} aria-label={t("اقفل القائمة", "Close the menu")} onClick={close} className="fixed inset-0 z-40 bg-navy/50 lg:hidden" /> : null}
       <aside
         id="menu"
         aria-label={t("القائمة", "Menu")}
@@ -118,7 +130,7 @@ function Menu({ name }: { name: string }) {
             <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
             <span className="truncate text-sm font-semibold">{t("لوحة الإدارة", "Admin")}</span>
           </Link>
-          <button type="button" onClick={close} aria-label={t("اقفل القائمة", "Close the menu")} className="grid size-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 lg:hidden">
+          <button ref={closer} type="button" onClick={close} aria-label={t("اقفل القائمة", "Close the menu")} className="grid size-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 lg:hidden">
             <X className="size-5" aria-hidden />
           </button>
         </div>

@@ -3,7 +3,7 @@ import { type AdminAgentDetail, type AdminAgentItem, type AgentListingOption, da
 import { hashPassword } from '../auth/password.js';
 import { cairoClock, cairoInstant, DEFAULT_HOURS } from '../viewings/slots.js';
 import type { CreateAgentDto, DaysOffDto, HoursDto, UpdateAgentDto } from './dto/agents.dto.js';
-import { AgentsRepository } from './agents.repository.js';
+import { AgentsRepository, AgentStateError } from './agents.repository.js';
 import type { AgentRow } from './agents.schema.js';
 
 type Row = AgentRow & { email: string | null; live: number; openLeads: number };
@@ -71,8 +71,11 @@ export class AgentsService {
     if (await this.repo.emailTaken(body.email)) throw new ConflictException('That email already has an account');
     const { password, email, listingIds, ...profile } = body;
     await this.assertListings(listingIds);
-    const id = await this.repo.create({ role: 'agent', name: body.nameAr, email, phone: body.phone, passwordHash: await hashPassword(password) }, { ...profile, years: profile.years ?? 0 });
-    if (listingIds?.length) await this.repo.giveListings(id, listingIds);
+    const id = await this.repo.create(
+      { role: 'agent', name: body.nameAr, email, phone: body.phone, passwordHash: await hashPassword(password) },
+      { ...profile, years: profile.years ?? 0 },
+      listingIds,
+    );
     return this.get(id);
   }
 
@@ -107,19 +110,27 @@ export class AgentsService {
         await this.repo.reassign(id, reassignTo);
       }
     }
-    await this.repo.update(
-      id,
-      {
-        ...(email ? { email } : {}),
-        ...(profile.nameAr ? { name: profile.nameAr } : {}),
-        ...(profile.phone ? { phone: profile.phone } : {}),
-        ...(password ? { passwordHash: await hashPassword(password) } : {}),
-      },
-      { ...profile, ...(active === undefined ? {} : { active }) },
-    );
-    if (listingIds?.length) await this.repo.giveListings(id, listingIds);
-    if (password || emailChanged || active === false) await this.repo.endSessions(id);
-    if (password || emailChanged) await this.repo.touchCredentials(id);
+    // One transaction: the fields, the listings and the sign-out land together or not at all. The
+    // repository rechecks the agent's state under a row lock, since it may have changed since `cur`.
+    try {
+      await this.repo.update(
+        id,
+        {
+          ...(email ? { email } : {}),
+          ...(profile.nameAr ? { name: profile.nameAr } : {}),
+          ...(profile.phone ? { phone: profile.phone } : {}),
+          ...(password ? { passwordHash: await hashPassword(password) } : {}),
+        },
+        { ...profile, ...(active === undefined ? {} : { active }) },
+        { listingIds, endSessions: !!(password || emailChanged || active === false), touchCredentials: !!(password || emailChanged) },
+      );
+    } catch (e) {
+      if (e instanceof AgentStateError) {
+        if (e.reason === 'live') throw new ConflictException('Move this advisor’s live listings to someone else first');
+        throw new BadRequestException('Only an active sales advisor can take listings');
+      }
+      throw e;
+    }
     return this.get(id);
   }
 

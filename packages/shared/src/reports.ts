@@ -351,10 +351,10 @@ export type TableFilter = { key: string; label: Bi; options: { value: string; la
 /** A cell's value as a filter value: the same in both languages. */
 const cellKey = (v: ReportCell | undefined): string => (v === null || v === undefined ? '' : isBi(v) ? v.en : String(v));
 
-/** The most different values a column can have and still get a filter. */
-const FILTER_MAX_VALUES = 12;
-
-/** A filter for each text column whose values repeat (a status, a type, an advisor), options in A to Z order. */
+/**
+ * A filter for each text column whose values repeat (a status, a type, an advisor), options in A to
+ * Z order. However many values there are: the pickers scroll.
+ */
 export function tableFilters(table: ReportTable): TableFilter[] {
   const out: TableFilter[] = [];
   for (const col of table.columns) {
@@ -365,19 +365,38 @@ export function tableFilters(table: ReportTable): TableFilter[] {
       if (v === null || v === undefined || v === '' || typeof v === 'number') continue;
       seen.set(cellKey(v), isBi(v) ? v : { ar: v, en: v });
     }
-    if (seen.size < 2 || seen.size > FILTER_MAX_VALUES || seen.size >= table.rows.length) continue;
+    if (seen.size < 2 || seen.size >= table.rows.length) continue;
     const options = [...seen].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.en.localeCompare(b.label.en, 'en'));
     out.push({ key: col.key, label: col.label, options });
   }
   return out;
 }
 
+/**
+ * The order after a click on a column's header: text starts A to Z, numbers and dates biggest or
+ * latest first; a second click turns it round, a third goes back to as it is.
+ */
+export function nextSort(sort: TableView['sort'] | undefined, col: { key: string; format: string }): { key: string; up: boolean } | null {
+  const startsUp = col.format === 'text';
+  if (!sort || sort.key !== col.key) return { key: col.key, up: startsUp };
+  return sort.up === startsUp ? { key: col.key, up: !startsUp } : null;
+}
+
+/** Whether a table shows its search and filters: when it has rows to narrow, and while a search applies so it can be cleared. */
+export const tableToolsShown = (table: ReportTable, view: TableView): boolean => table.rows.length > 1 || !!view.q?.trim();
+
 const sortValue = (v: ReportCell | undefined, lang: Lang): number | string => (v === null || v === undefined ? '' : isBi(v) ? pick(v, lang) : v);
 
-/** A table's rows after the search (text in either language, any case), the filters and the sort; empty cells sort last. */
+/**
+ * A table's rows after the search (text in either language, any case), the filters and the sort;
+ * empty cells sort last. Only filters the table still offers apply: after the range changes, a
+ * picked value the rows no longer have (or a filter no longer shown) would hide every row with no
+ * way to clear it.
+ */
 export function viewRows(table: ReportTable, view: TableView, lang: Lang): ReportRow[] {
   const words = view.q?.trim().toLowerCase();
-  const filters = Object.entries(view.filters ?? {}).filter(([, v]) => v !== '');
+  const offered = Object.fromEntries(tableFilters(table).map((f) => [f.key, new Set(f.options.map((o) => o.value))]));
+  const filters = Object.entries(view.filters ?? {}).filter(([key, v]) => v !== '' && offered[key]?.has(v));
   let rows = table.rows;
   if (words || filters.length) {
     rows = rows.filter((r) => {

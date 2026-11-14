@@ -1,6 +1,8 @@
 import { type AppSettings, DEFAULT_APP_SETTINGS } from '@maqar/shared';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';
+import { useAppConfig } from '@/core/app-config/store';
 import { useSession } from '@/features/auth/store/session.store';
 import { AppSettingsScreen } from '@/features/admin/screens/app-settings-screen';
 import { jsonResponse, makeAuth, mockFetch } from '../../../utils/api';
@@ -27,10 +29,17 @@ function serve(saved: AppSettings = DEFAULT_APP_SETTINGS) {
   });
   return puts;
 }
+let client: QueryClient;
+/** Hands the test the screen's query client, to refetch as a later visit would. */
+function GrabClient() {
+  client = useQueryClient();
+  return null;
+}
 const ui = (
   <>
     <AppSettingsScreen />
     <ToastHost />
+    <GrabClient />
   </>
 );
 
@@ -111,5 +120,58 @@ describe('App settings (admin)', () => {
     await fireEvent.press(screen.getByRole('radio', { name: 'اللوجو بس' }));
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ شاشة الفتح' }));
     await waitFor(() => expect(puts).toEqual([{ splash: { kind: 'none', media: null, textAr: 'أهلا', textEn: 'Hi' } }]));
+  });
+
+  // Phase 29 review.
+  it('forgets a video the server deleted once the opening screen went back to the logo', async () => {
+    const puts = serve({ ...DEFAULT_APP_SETTINGS, splash: { kind: 'video', media: '/uploads/videos/old.mp4', poster: '/uploads/videos/old.jpg', textAr: '', textEn: '' } });
+    await renderWithProviders(ui);
+    await fireEvent.press(await screen.findByRole('radio', { name: 'اللوجو بس' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ شاشة الفتح' }));
+    await waitFor(() => expect(puts).toHaveLength(1));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'فيديو (٣ ثواني)' }));
+    expect(screen.getByRole('button', { name: 'ارفع فيديو' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ شاشة الفتح' }));
+    expect(screen.getByText('ارفع الفيديو الأول')).toBeOnTheScreen();
+    expect(puts).toHaveLength(1);
+  });
+
+  it('keeps the newer part when an older save answers last', async () => {
+    let now: AppSettings = DEFAULT_APP_SETTINGS;
+    let releaseCalculator!: () => void;
+    mockFetch().mockImplementation(async (url: string, init: RequestInit = {}) => {
+      const key = `${init.method ?? 'GET'} ${url.replace(/^.*\/v1/, '').split('?')[0]}`;
+      if (key === 'GET /settings') return jsonResponse(200, now);
+      const body = JSON.parse(init.body as string) as Partial<AppSettings>;
+      if (body.calculator) {
+        // The server saved the calculator before the order came in, but its answer is slow.
+        const answer = { ...now, calculator: body.calculator };
+        await new Promise<void>((r) => (releaseCalculator = r));
+        return jsonResponse(200, answer);
+      }
+      now = { ...now, ...body };
+      return jsonResponse(200, now);
+    });
+    await renderWithProviders(ui);
+    await fireEvent.press(await screen.findByRole('button', { name: 'زوّد أقل مقدم' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ الحاسبة' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'نزّل «المعاينة الجاية» لتحت' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ الترتيب' }));
+    await waitFor(() => expect(useAppConfig.getState().config.home.sections[1]).toBe('featured'));
+    await act(async () => releaseCalculator());
+    await waitFor(() => expect(useAppConfig.getState().config.calculator.minDownPct).toBe(5));
+    expect(useAppConfig.getState().config.home.sections[1]).toBe('featured');
+  });
+
+  it('shows what the server holds when the settings come back changed', async () => {
+    let now: AppSettings = DEFAULT_APP_SETTINGS;
+    mockFetch().mockImplementation(async () => jsonResponse(200, now));
+    await renderWithProviders(ui);
+    expect((await screen.findByLabelText('أكتر سنين')).props.value).toBe('١٠');
+    now = { ...now, calculator: { minDownPct: 0, minYears: 1, maxYears: 7 } };
+    await act(async () => {
+      await client.refetchQueries();
+    });
+    await waitFor(() => expect(screen.getByLabelText('أكتر سنين').props.value).toBe('٧'));
   });
 });

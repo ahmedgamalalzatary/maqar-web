@@ -52,7 +52,8 @@ export function InstallmentCalculator({
   const [yearsText, setYearsText] = useState(localDigits(String(inRange(defaultYears)), lang));
   const typedYears = parseYears(yearsText, maxYears, minYears);
   const [lastYears, setLastYears] = useState(inRange(defaultYears));
-  const years = typedYears ?? lastYears;
+  // Brought inside the limits as they are now: a refresh can change them while this is open.
+  const years = typedYears ?? inRange(lastYears);
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [mode, setMode] = useState<Mode>('dev');
   const [rateText, setRateText] = useState(localDigits(String(DEFAULT_RATE), lang));

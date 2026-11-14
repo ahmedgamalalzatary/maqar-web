@@ -12,6 +12,16 @@ import { type AgentRow, agentDaysOff, agentHours, agents } from './agents.schema
 
 type NewAgentRow = typeof agents.$inferInsert;
 
+/**
+ * An edit refused once the agent's row was locked: `live` when turning off an agent who now has a
+ * live listing, `inactive` when giving listings to an agent who is (or is being turned) off.
+ */
+export class AgentStateError extends Error {
+  constructor(readonly reason: 'live' | 'inactive') {
+    super(reason);
+  }
+}
+
 // Outer columns are written with their table, so the subqueries never read their own table's column.
 const outer = sql.raw('`agents`.`user_id`');
 const live = sql<number>`(select count(*) from ${properties} where ${properties.agentId} = ${outer} and ${properties.status} = 'approved')`;
@@ -46,19 +56,49 @@ export class AgentsRepository {
     return row !== undefined;
   }
 
-  /** The account and the profile together, so an agent never lacks one. */
-  async create(user: NewUserRow, profile: Omit<NewAgentRow, 'userId'>): Promise<number> {
+  /**
+   * The account, the profile and the listings picked in the form together, so an agent never
+   * lacks one, and a failed hand-off leaves no half-made account behind.
+   */
+  async create(user: NewUserRow, profile: Omit<NewAgentRow, 'userId'>, listingIds: number[] = []): Promise<number> {
     return this.db.transaction(async (tx) => {
       const [{ id }] = await tx.insert(users).values(user).$returningId();
       await tx.insert(agents).values({ ...profile, userId: id });
+      if (listingIds.length) await tx.update(properties).set({ agentId: id }).where(inArray(properties.id, listingIds));
       return id;
     });
   }
 
-  async update(id: number, user: Partial<NewUserRow>, profile: Partial<NewAgentRow>): Promise<void> {
+  /**
+   * One edit as one transaction: the account and profile, the listings handed to the agent and
+   * the sign-out a new password or email (or turning off) needs. The agent's row is locked, so
+   * turning them off and giving them listings cannot interleave: whichever comes second sees the
+   * other's result and is refused with an {@link AgentStateError}.
+   */
+  async update(
+    id: number,
+    user: Partial<NewUserRow>,
+    profile: Partial<NewAgentRow>,
+    opts: { listingIds?: number[]; endSessions?: boolean; touchCredentials?: boolean } = {},
+  ): Promise<void> {
     await this.db.transaction(async (tx) => {
+      const [locked] = await tx.select({ active: agents.active }).from(agents).where(eq(agents.userId, id)).for('update');
+      if (!locked) return;
+      if (profile.active === false && locked.active) {
+        const [{ n }] = await tx
+          .select({ n: count() })
+          .from(properties)
+          .where(and(eq(properties.agentId, id), eq(properties.status, 'approved')));
+        if (n > 0) throw new AgentStateError('live');
+      }
+      if (opts.listingIds?.length && !(profile.active ?? locked.active)) throw new AgentStateError('inactive');
       if (Object.keys(user).length) await tx.update(users).set(user).where(eq(users.id, id));
       if (Object.keys(profile).length) await tx.update(agents).set(profile).where(eq(agents.userId, id));
+      if (opts.listingIds?.length) await tx.update(properties).set({ agentId: id }).where(inArray(properties.id, opts.listingIds));
+      if (opts.endSessions) {
+        await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, id), isNull(refreshTokens.revokedAt)));
+      }
+      if (opts.touchCredentials) await tx.update(users).set({ credentialsChangedAt: new Date() }).where(eq(users.id, id));
     });
   }
 
@@ -78,21 +118,6 @@ export class AgentsRepository {
   async countListings(ids: number[]): Promise<number> {
     const [row] = await this.db.select({ n: count() }).from(properties).where(inArray(properties.id, ids));
     return row?.n ?? 0;
-  }
-
-  /** Makes this agent the advisor of these listings, whoever had them. */
-  async giveListings(agentId: number, ids: number[]): Promise<void> {
-    await this.db.update(properties).set({ agentId }).where(inArray(properties.id, ids));
-  }
-
-  /** Ends every session: a turned-off agent or a new password signs them out everywhere. */
-  async endSessions(userId: number): Promise<void> {
-    await this.db.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
-  }
-
-  /** Invalidates every access token issued so far, so a password change signs the agent out at once. */
-  async touchCredentials(userId: number): Promise<void> {
-    await this.db.update(users).set({ credentialsChangedAt: new Date() }).where(eq(users.id, userId));
   }
 
   /** How many of these ids are agents. */

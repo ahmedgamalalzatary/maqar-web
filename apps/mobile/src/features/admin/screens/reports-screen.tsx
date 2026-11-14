@@ -23,6 +23,7 @@ import {
   reportSpec,
   type ReportTable,
   tableFilters,
+  tableToolsShown,
   type TableView,
   viewRows,
   weekdayName,
@@ -421,6 +422,8 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const [first, ...rest] = table.columns;
   const rows = all ? found : found.slice(0, PAGE);
   const narrowed = found.length !== table.rows.length;
+  // A filter the table no longer offers is dropped by viewRows.
+  const tools = tableToolsShown(table, view);
   const any = t('الكل', 'All');
   // In the advisors report a row opens that advisor's own report.
   const linkOf = (l: ReportLink): Href => (r.id === 'advisors' && l.kind === 'agent' ? (`/admin/report/advisor?agentId=${l.id}` as Href) : hrefOf(l));
@@ -469,7 +472,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           </Pressable>
         ) : null}
       </View>
-      {table.rows.length > 1 ? (
+      {tools ? (
         <>
           <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <Search size={16} color={colors.ink3} />

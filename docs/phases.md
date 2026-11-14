@@ -1017,4 +1017,15 @@ Contract §8.1, §8.11, §11, §13.
 - **Guest option:** "Continue as a guest" is a small link, not a button. It stays: App Store 5.1.1 lets people browse without an account.
 - **Client accounts page kept (owner agreed):** the owner asked to remove it, but it is where an admin suspends or deletes an abusive client, which Apple 1.2 expects from an app with chat. Only the menu wording changed ("Client accounts").
 
+**CodeRabbit fixes (2026-11-14):**
+- *Agents:* creating an agent and giving it listings is one transaction. Editing is one transaction too: the fields, the listings, ending the sessions and invalidating old tokens. The agent's row is locked, so turning an agent off and giving them listings cannot interleave (`AgentStateError` → 409 or 400).
+- *Settings:* a save reads, merges and writes under a row lock, so two parts saved at once both stay. A video is deleted only when neither a listing nor the opening screen still plays it, in both directions.
+- *One advisor's report:* a viewing cancelled in the range is listed, matching its number.
+- *App:* a saved store that cannot be read no longer holds the app at the splash (`core/storage`). The settings screen restarts a part from what the server holds, and takes only the parts it sent from a save's answer. The calculator brings remembered years inside limits that change while it is open.
+- *Report tables:* filters have no 12-value cap, and a filter the table no longer offers is dropped. The search stays while it applies. A header click goes through both orders, then back.
+- *Web drawer:* focus moves into it, the page behind is inert, and focus goes back to the menu button.
+- Not changed: creating an agent who is off cannot happen (the create body has no `active`).
+
+**Deploy script (2026-11-14):** `deploy/server-deploy.sh` dumps the database to `/root/maqar-backups/pre-deploy-<commit>.sql.gz` before the migrations, and checks the dump. `deploy/deploy.sh` checks the live site through nginx at the end and deletes that backup only when every step is green. Everything it prints also goes to `.dev-logs/deploy.log`, and a failure ends with the step, what is still running, the kept backup and how to restore it.
+
 **Status (2026-11-14): built, not deployed.** Code and tests are green locally. Left: the deploy (migration `0023`) and a phone check with a new build.

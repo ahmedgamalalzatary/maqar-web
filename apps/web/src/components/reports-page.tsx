@@ -27,6 +27,8 @@ import {
   reportSpec,
   type ReportTable,
   tableFilters,
+  tableToolsShown,
+  nextSort,
   type TableView,
   viewRows,
   weekdayName,
@@ -483,7 +485,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           {t("نزّل CSV", "Download CSV")}
         </Button>
       </div>
-      {table.rows.length > 1 ? (
+      {tableToolsShown(table, view) ? (
         <div className="flex flex-wrap items-end gap-3 px-5 print:hidden">
           <label className="flex h-10 min-w-0 flex-1 basis-56 items-center gap-2 rounded-xl border border-line-2 bg-surface px-3">
             <Search className="size-4 shrink-0 text-ink-3" aria-hidden />
@@ -538,7 +540,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
                     <th key={col.key} scope="col" aria-sort={on ? (sort.up ? "ascending" : "descending") : "none"} className={`whitespace-nowrap px-3 py-2 font-medium text-ink-2 first:ps-5 last:pe-5 ${numeric(col.format) ? "text-end" : "text-start"}`}>
                       <button
                         type="button"
-                        onClick={() => setView((v) => ({ ...v, sort: on && !sort.up ? null : { key: col.key, up: on ? true : !numeric(col.format) } }))}
+                        onClick={() => setView((v) => ({ ...v, sort: nextSort(v.sort, col) }))}
                         className="inline-flex items-center gap-1 hover:text-ink"
                       >
                         {t(col.label)}
