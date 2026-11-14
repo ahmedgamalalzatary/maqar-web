@@ -39,7 +39,7 @@ export class SettingsService {
     const parts: Partial<AppSettings> = {};
     if (body.calculator) {
       const problem = calculatorProblem(body.calculator);
-      if (problem === 'down') throw new BadRequestException('The least down payment is 0 to 50 percent, in steps of 5');
+      if (problem === 'down') throw new BadRequestException('The least down payment is a whole percent from 0 to 50');
       if (problem === 'years') throw new BadRequestException('The years go from 1 to 30, and the least cannot be more than the most');
       parts.calculator = { minDownPct: body.calculator.minDownPct, minYears: body.calculator.minYears, maxYears: body.calculator.maxYears };
     }

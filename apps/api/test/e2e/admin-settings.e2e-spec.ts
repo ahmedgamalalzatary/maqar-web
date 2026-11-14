@@ -101,12 +101,15 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
       expect([...ordered.home.sections].sort()).toEqual([...HOME_SECTIONS].sort());
       expect((await settings()).calculator.maxYears).toBe(8);
 
-      await put({ calculator: { minDownPct: 12, minYears: 1, maxYears: 10 } }).expect(400);
+      await put({ calculator: { minDownPct: 51, minYears: 1, maxYears: 10 } }).expect(400);
+      await put({ calculator: { minDownPct: 12.5, minYears: 1, maxYears: 10 } }).expect(400);
       await put({ calculator: { minDownPct: 10, minYears: 9, maxYears: 5 } }).expect(400);
       await put({ calculator: { minDownPct: 10, minYears: 1, maxYears: 40 } }).expect(400);
       await put({ home: { sections: ['launches', 'nope'] } }).expect(400);
       await put({ home: { sections: ['launches', 'launches'] } }).expect(400);
       expect((await settings()).calculator).toEqual({ minDownPct: 10, minYears: 2, maxYears: 8 });
+      // Any whole percent is fine, not only steps of 5.
+      expect(((await put({ calculator: { minDownPct: 11, minYears: 2, maxYears: 8 } }).expect(200)).body as AppSettings).calculator.minDownPct).toBe(11);
     });
 
     it('takes a picture or a video of at most 3 seconds for the opening screen, with text', async () => {

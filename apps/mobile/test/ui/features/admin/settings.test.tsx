@@ -54,9 +54,13 @@ describe('App settings (admin)', () => {
     const puts = serve();
     await renderWithProviders(ui);
     expect((await screen.findByLabelText('أقل سنين')).props.value).toBe('١');
-    await fireEvent.press(screen.getByRole('button', { name: 'زوّد أقل مقدم' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'زوّد أقل مقدم' }));
-    expect(screen.getByText('١٠٪')).toBeOnTheScreen();
+    // Typed by hand, any whole percent from 0 to 50 (owner, 2026-11-14).
+    expect(screen.getByLabelText('أقل مقدم (٪)').props.value).toBe('٠');
+    await fireEvent.changeText(screen.getByLabelText('أقل مقدم (٪)'), '55');
+    await fireEvent.press(screen.getByRole('button', { name: 'احفظ الحاسبة' }));
+    expect(screen.getByText('أقل مقدم من ٠ لـ ٥٠٪.')).toBeOnTheScreen();
+    expect(puts).toEqual([]);
+    await fireEvent.changeText(screen.getByLabelText('أقل مقدم (٪)'), '١١');
     await fireEvent.changeText(screen.getByLabelText('أقل سنين'), '9');
     await fireEvent.changeText(screen.getByLabelText('أكتر سنين'), '8');
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ الحاسبة' }));
@@ -65,7 +69,7 @@ describe('App settings (admin)', () => {
 
     await fireEvent.changeText(screen.getByLabelText('أقل سنين'), '٢');
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ الحاسبة' }));
-    await waitFor(() => expect(puts).toEqual([{ calculator: { minDownPct: 10, minYears: 2, maxYears: 8 } }]));
+    await waitFor(() => expect(puts).toEqual([{ calculator: { minDownPct: 11, minYears: 2, maxYears: 8 } }]));
     expect(await screen.findByText('اتحفظ، وهيظهر في التطبيق مع أول فتح')).toBeOnTheScreen();
   });
 
@@ -153,7 +157,7 @@ describe('App settings (admin)', () => {
       return jsonResponse(200, now);
     });
     await renderWithProviders(ui);
-    await fireEvent.press(await screen.findByRole('button', { name: 'زوّد أقل مقدم' }));
+    await fireEvent.changeText(await screen.findByLabelText('أقل مقدم (٪)'), '5');
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ الحاسبة' }));
     await fireEvent.press(screen.getByRole('button', { name: 'نزّل «المعاينة الجاية» لتحت' }));
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ الترتيب' }));

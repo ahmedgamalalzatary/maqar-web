@@ -31,8 +31,11 @@ export type CalculatorSettings = {
   maxYears: number;
 };
 
-/** What the limits themselves may be: the down-payment slider moves in steps of 5 and ends at 60%. */
-export const CALCULATOR_BOUNDS = { downStep: 5, downMax: 50, yearsMax: 30 } as const;
+/**
+ * What the limits themselves may be. The least down payment is any whole percent the admin types
+ * (owner, 2026-11-14); the client's slider starts there and then moves in steps of 5 up to 60%.
+ */
+export const CALCULATOR_BOUNDS = { downMax: 50, yearsMax: 30 } as const;
 
 /** The parts of Home an admin can reorder. The header, headline and search box stay on top. */
 export const HOME_SECTIONS = ['shortcuts', 'nextViewing', 'featured', 'prefs', 'picks', 'areas', 'calculator', 'drops', 'launches'] as const;
@@ -77,8 +80,8 @@ export function homeSectionOrder(saved: readonly string[]): HomeSection[] {
 
 /** What is wrong with the calculator's limits, or null. */
 export function calculatorProblem(c: CalculatorSettings): 'down' | 'years' | null {
-  const { downStep, downMax, yearsMax } = CALCULATOR_BOUNDS;
-  if (!Number.isInteger(c.minDownPct) || c.minDownPct < 0 || c.minDownPct > downMax || c.minDownPct % downStep !== 0) return 'down';
+  const { downMax, yearsMax } = CALCULATOR_BOUNDS;
+  if (!Number.isInteger(c.minDownPct) || c.minDownPct < 0 || c.minDownPct > downMax) return 'down';
   if (!Number.isInteger(c.minYears) || !Number.isInteger(c.maxYears) || c.minYears < 1 || c.maxYears > yearsMax || c.minYears > c.maxYears) return 'years';
   return null;
 }

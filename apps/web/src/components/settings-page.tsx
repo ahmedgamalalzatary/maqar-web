@@ -166,12 +166,11 @@ function Splash({ saved }: { saved: AppSettings }) {
 function Calculator({ saved }: { saved: AppSettings }) {
   const t = useT();
   const save = useSave();
-  const [down, setDown] = useState(saved.calculator.minDownPct);
+  const [down, setDown] = useState(String(saved.calculator.minDownPct));
   const [minYears, setMinYears] = useState(String(saved.calculator.minYears));
   const [maxYears, setMaxYears] = useState(String(saved.calculator.maxYears));
-  const value = { minDownPct: down, minYears: readWholeNumber(minYears) ?? 0, maxYears: readWholeNumber(maxYears) ?? 0 };
+  const value = { minDownPct: readWholeNumber(down) ?? -1, minYears: readWholeNumber(minYears) ?? 0, maxYears: readWholeNumber(maxYears) ?? 0 };
   const problem = calculatorProblem(value);
-  const downs = Array.from({ length: CALCULATOR_BOUNDS.downMax / CALCULATOR_BOUNDS.downStep + 1 }, (_, i) => i * CALCULATOR_BOUNDS.downStep);
   return (
     <Card className="flex flex-col gap-4">
       <div>
@@ -181,19 +180,12 @@ function Calculator({ saved }: { saved: AppSettings }) {
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-ink-2">{t("أقل مقدم", "Least down payment")}</span>
-          <select value={down} onChange={(e) => setDown(Number(e.target.value))} className="h-11 rounded-xl border border-line-2 bg-surface px-3 text-[15px]">
-            {downs.map((d) => (
-              <option key={d} value={d}>
-                {`${d}%`}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Any whole percent, typed (owner, 2026-11-14): 11, 12, 9… */}
+        <Field label={t("أقل مقدم (٪)", "Least down payment (%)")} value={down} onChange={(e) => setDown(e.target.value)} inputMode="numeric" dir="ltr" maxLength={2} />
         <Field label={t("أقل سنين", "Fewest years")} value={minYears} onChange={(e) => setMinYears(e.target.value)} inputMode="numeric" dir="ltr" maxLength={2} />
         <Field label={t("أكتر سنين", "Most years")} value={maxYears} onChange={(e) => setMaxYears(e.target.value)} inputMode="numeric" dir="ltr" maxLength={2} />
       </div>
+      {problem === "down" ? <p className="text-sm text-danger">{t(`أقل مقدم من ٠ لـ ${CALCULATOR_BOUNDS.downMax}٪.`, `The least down payment is 0 to ${CALCULATOR_BOUNDS.downMax}%.`)}</p> : null}
       {problem === "years" ? <p className="text-sm text-danger">{t("السنين من ١ لـ ٣٠، والأقل ميزيدش عن الأكتر.", "Years go from 1 to 30, and the fewest cannot be more than the most.")}</p> : null}
       <div>
         <Button variant="gold" loading={save.busy} disabled={!!problem} onClick={() => save.run({ calculator: value })}>

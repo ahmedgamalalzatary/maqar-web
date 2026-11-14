@@ -3,7 +3,6 @@ import {
   CALCULATOR_BOUNDS,
   calculatorProblem,
   fmtNum,
-  fmtPct,
   HOME_SECTION_LABEL,
   type HomeSection,
   localDigits,
@@ -15,7 +14,7 @@ import {
 } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { ArrowDown, ArrowUp, ImagePlus, Minus, Plus, Video } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, ImagePlus, Video } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -226,16 +225,13 @@ function Splash({ saved }: { saved: AppSettings }) {
 function Calculator({ saved }: { saved: AppSettings }) {
   const t = useT();
   const lang = useLang();
-  const { colors } = useTheme();
   const save = useSave();
-  const [down, setDown] = useState(saved.calculator.minDownPct);
+  const [down, setDown] = useState(localDigits(String(saved.calculator.minDownPct), lang));
   const [minYears, setMinYears] = useState(localDigits(String(saved.calculator.minYears), lang));
   const [maxYears, setMaxYears] = useState(localDigits(String(saved.calculator.maxYears), lang));
   const [showErrors, setShowErrors] = useState(false);
-  const value = { minDownPct: down, minYears: readWholeNumber(minYears) ?? 0, maxYears: readWholeNumber(maxYears) ?? 0 };
+  const value = { minDownPct: readWholeNumber(down) ?? -1, minYears: readWholeNumber(minYears) ?? 0, maxYears: readWholeNumber(maxYears) ?? 0 };
   const problem = calculatorProblem(value);
-  const { downStep, downMax } = CALCULATOR_BOUNDS;
-  const step = (by: number) => setDown((d) => Math.min(downMax, Math.max(0, d + by)));
   const submit = () => {
     if (problem) return setShowErrors(true);
     save.run({ calculator: value });
@@ -245,20 +241,13 @@ function Calculator({ saved }: { saved: AppSettings }) {
       title={t('حاسبة التقسيط', 'The installment calculator')}
       about={t('أقل مقدم وأقل وأكتر سنين العميل يقدر يختارهم. العقار اللي له خطة تقسيط خاصة بيتحسب بخطته.', 'The least down payment and the fewest and most years a client can pick. A listing with its own payment plan keeps its plan.')}
     >
-      <View style={styles.stepRow}>
-        <Txt size={13} weight="medium" color="ink2" style={styles.flex}>
-          {t('أقل مقدم', 'Least down payment')}
+      {/* Any whole percent, typed (owner, 2026-11-14): 11, 12, 9… */}
+      <TextField label={t('أقل مقدم (٪)', 'Least down payment (%)')} value={down} onChangeText={setDown} keyboardType="number-pad" maxLength={2} />
+      {showErrors && problem === 'down' ? (
+        <Txt size={12} color="danger">
+          {t(`أقل مقدم من ٠ لـ ${fmtNum(CALCULATOR_BOUNDS.downMax, 'ar')}٪.`, `The least down payment is 0 to ${CALCULATOR_BOUNDS.downMax}%.`)}
         </Txt>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('قلّل أقل مقدم', 'Lower the least down payment')} disabled={down <= 0} onPress={() => step(-downStep)} style={[styles.stepBtn, { borderColor: colors.line2, opacity: down <= 0 ? 0.4 : 1 }]}>
-          <Minus size={18} color={colors.ink} />
-        </Pressable>
-        <Txt size={16} weight="semibold" style={styles.stepValue} align="center">
-          {fmtPct(down, lang)}
-        </Txt>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('زوّد أقل مقدم', 'Raise the least down payment')} disabled={down >= downMax} onPress={() => step(downStep)} style={[styles.stepBtn, { borderColor: colors.line2, opacity: down >= downMax ? 0.4 : 1 }]}>
-          <Plus size={18} color={colors.ink} />
-        </Pressable>
-      </View>
+      ) : null}
       <TextField label={t('أقل سنين', 'Fewest years')} value={minYears} onChangeText={setMinYears} keyboardType="number-pad" maxLength={2} />
       <TextField label={t('أكتر سنين', 'Most years')} value={maxYears} onChangeText={setMaxYears} keyboardType="number-pad" maxLength={2} />
       {showErrors && problem === 'years' ? (
@@ -333,9 +322,6 @@ const styles = StyleSheet.create({
   preview: { width: 90, aspectRatio: 9 / 16, borderRadius: radius.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   mediaSide: { flex: 1, gap: 8 },
   upload: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 12 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepBtn: { width: 44, height: 44, borderRadius: radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  stepValue: { minWidth: 56 },
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 10 },
   orderNo: { width: 20 },
   orderBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
