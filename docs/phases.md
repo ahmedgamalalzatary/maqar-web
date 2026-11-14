@@ -1001,3 +1001,20 @@ Fixed after the phone check:
 - The calculator: typing "15" passed through "1" and showed a 1-year plan; a number above the limit now counts as the limit.
 - The compare bar hid the end of tab pages (the account footer): `Screen` keeps room under the page while it shows.
 - Reports: the automatic out-of-hours chat reply counted as the advisor answering (first-reply times looked instant, and the chat left "waiting for a reply"). It is skipped now. Two e2e tests failed after 21:00 Cairo for the same reason.
+
+## Phase 29: Owner's admin changes (2026-11-13)
+
+Contract §8.1, §8.11, §11, §13.
+
+- **App settings** (`app_settings`, migration `0023`; `GET /settings` for everyone, `PUT /admin/settings` for admins; web `/settings/`, app More → App settings):
+  - *Opening screen:* the logo only, a picture (2 s), or a video of at most 3 s (`POST /uploads/videos?splash=true`), with a line of text in each language, skippable. The app shows what the last start saved and fetches the latest for the next, so nothing changes mid-start.
+  - *Calculator:* the least down payment (0–50%, steps of 5) and the fewest/most years (1–30). A listing's own plan is always allowed, even outside them.
+  - *Home order:* the nine sections after the headline and search box. A section with nothing to show still renders nothing.
+- **Agent form:** a picker of listings to give the agent (`listingIds`; `GET /admin/agents/listing-options`); a listing always has an advisor, so one is taken away by giving it to someone else. The leads page and the listing form's advisor stay as they were.
+- **Areas:** the picture is optional (`areas.image` is nullable). **Listings:** the developer is optional (it already was in the API; only the labels changed).
+- **Web menu:** a side column (a drawer on phones) instead of the row of icons. "Add a listing" is now `/listing/new/`, reached from the Listings page.
+- **Reports:** every table has a search box, a filter for each text column whose values repeat, and sorting (shared `viewRows`, `tableFilters`). The advisors report's rows open that advisor's own report (`/admin/analytics/advisor?agentId=`, `/report/?id=advisor&agentId=`), which is not in the list of reports.
+- **Guest option:** "Continue as a guest" is a small link, not a button. It stays: App Store 5.1.1 lets people browse without an account.
+- **Client accounts page kept (owner agreed):** the owner asked to remove it, but it is where an admin suspends or deletes an abusive client, which Apple 1.2 expects from an app with chat. Only the menu wording changed ("Client accounts").
+
+**Status (2026-11-14): built, not deployed.** Code and tests are green locally. Left: the deploy (migration `0023`) and a phone check with a new build.

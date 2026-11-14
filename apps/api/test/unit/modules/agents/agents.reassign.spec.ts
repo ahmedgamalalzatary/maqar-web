@@ -14,6 +14,7 @@ const make = (over: Record<string, unknown> = {}) => {
     countExisting: vi.fn(async (ids: number[]) => ids.length),
     hours: vi.fn(async () => []),
     daysOffFrom: vi.fn(async () => []),
+    listingIds: vi.fn(async () => []),
     upcomingWork: vi.fn(async () => ({ viewings: 2, threads: 1, leads: 3 })),
     reassign: vi.fn(async () => ({ viewings: 2, threads: 1, leads: 3 })),
     ...over,

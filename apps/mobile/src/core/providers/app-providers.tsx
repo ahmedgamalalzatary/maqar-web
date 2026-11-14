@@ -15,6 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '@/components/toast';
 import { useDir } from '@/core/i18n';
 import { queryClient } from '@/core/api/query';
+import { useAppConfig } from '@/core/app-config/store';
 import { useSettings } from '@/core/settings/store';
 import { useTheme } from '@/core/theme';
 
@@ -22,10 +23,16 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Waits for saved settings to load from storage. Subscribing first means a finish cannot be missed. */
 function useSettingsReady() {
-  return useSyncExternalStore(
+  const own = useSyncExternalStore(
     (onChange) => useSettings.persist.onFinishHydration(onChange),
     () => useSettings.persist.hasHydrated(),
   );
+  // What an admin set for the app (phase 29): the opening screen is read from it at once.
+  const app = useSyncExternalStore(
+    (onChange) => useAppConfig.persist.onFinishHydration(onChange),
+    () => useAppConfig.persist.hasHydrated(),
+  );
+  return own && app;
 }
 
 /** Runs the app's start-up work (such as resuming the session) once, behind the splash. */
@@ -45,7 +52,7 @@ function useBoot(boot?: () => Promise<void>) {
 }
 
 /** Everything around the routes: fonts, splash, data fetching, theme, direction and toasts. */
-export function AppProviders({ children, boot }: { children: ReactNode; boot?: () => Promise<void> }) {
+export function AppProviders({ children, boot, overlay }: { children: ReactNode; boot?: () => Promise<void>; overlay?: ReactNode }) {
   const [fontsLoaded, fontError] = useFonts({
     ReadexPro_400Regular,
     ReadexPro_500Medium,
@@ -78,6 +85,8 @@ export function AppProviders({ children, boot }: { children: ReactNode; boot?: (
           <View style={[styles.root, { direction: dir, backgroundColor: colors.bg }]}>
             {children}
             <ToastHost />
+            {/* Over everything: the opening screen (the root layout passes it, so core does not depend on a feature). */}
+            {overlay}
           </View>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>

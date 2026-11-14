@@ -25,7 +25,7 @@ export class AdminAreasController {
     const id = body.id ?? areaSlug(body.nameEn);
     if (id.length < 2) throw new BadRequestException('Give the area an English name, or an id');
     if (await this.areas.find(id)) throw new ConflictException('There is already an area with that id');
-    await this.areas.create({ ...body, id });
+    await this.areas.create({ ...body, id, image: body.image ?? null });
     return this.one(id);
   }
 

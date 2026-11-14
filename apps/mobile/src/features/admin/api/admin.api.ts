@@ -27,6 +27,9 @@ import type {
   AdminListing,
   AdminListingsPage,
   AgentBody,
+  AgentListingOption,
+  AppSettings,
+  AppSettingsBody,
   AreaBody,
   DaysOffBody,
   DaysOffResult,
@@ -92,8 +95,9 @@ export function uploadPanoramaRequest(pano: PhotoPart) {
 }
 
 /** One listing video from the phone's disk (phase 26); the server converts it, which can take minutes. */
-export const uploadVideoRequest = (uri: string, type: string, onProgress?: (sent: number) => void) =>
-  apiUpload<VideoUploadResponse>('/uploads/videos', { uri, field: 'video', type }, onProgress);
+export const uploadVideoRequest = (uri: string, type: string, onProgress?: (sent: number) => void, splash = false) =>
+  // `splash`: the opening screen's video (phase 29), at most 3 seconds.
+  apiUpload<VideoUploadResponse>(`/uploads/videos${splash ? '?splash=true' : ''}`, { uri, field: 'video', type }, onProgress);
 
 // ---- Admin tools (phase 18) ----
 
@@ -104,6 +108,15 @@ export const getAgent = (id: number, signal?: AbortSignal) => apiFetch<AdminAgen
 export const createAgentRequest = (body: AgentBody) => apiFetch<AdminAgentDetail>('/admin/agents', { method: 'POST', body });
 
 export const updateAgentRequest = (id: number, body: Partial<AgentBody>) => apiFetch<AdminAgentDetail>(`/admin/agents/${id}`, { method: 'PATCH', body });
+
+/** Every listing with its advisor, for the picker in the agent's form (phase 29). */
+export const getAgentListingOptions = (signal?: AbortSignal) => apiFetch<AgentListingOption[]>('/admin/agents/listing-options', { signal });
+
+// ---- App settings (phase 29) ----
+
+export const getAppSettings = (signal?: AbortSignal) => apiFetch<AppSettings>('/settings', { signal });
+
+export const saveAppSettingsRequest = (body: AppSettingsBody) => apiFetch<AppSettings>('/admin/settings', { method: 'PUT', body });
 
 export const setHoursRequest = (body: HoursBody) => apiFetch<void>('/admin/agents/hours', { method: 'PUT', body });
 

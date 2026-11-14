@@ -24,8 +24,10 @@ export class AreaDto implements AreaBody {
   @ApiProperty() @Transform(trim) @IsString() @Length(2, 100)
   cityEn: string;
 
-  @ApiProperty({ description: 'A path from POST /uploads' }) @Matches(UPLOADED, { message: 'image must be uploaded with POST /uploads' })
-  image: string;
+  @ApiPropertyOptional({ nullable: true, description: 'A path from POST /uploads; left out or null: no picture' })
+  @IsOptional()
+  @Matches(UPLOADED, { message: 'image must be uploaded with POST /uploads' })
+  image?: string | null;
 }
 
 /** `PATCH /admin/areas/:id`: names, city or image. The id stays, as listings and links use it. */

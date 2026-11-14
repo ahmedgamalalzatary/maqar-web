@@ -22,17 +22,20 @@ import {
   REPORTS,
   reportSpec,
   type ReportTable,
+  tableFilters,
+  type TableView,
+  viewRows,
   weekdayName,
 } from '@maqar/shared';
 import { type Href, useRouter } from 'expo-router';
-import { ArrowDownRight, ArrowUpRight, ChevronDown, FileBarChart, Share2 } from 'lucide-react-native';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ArrowDownRight, ArrowUpRight, ChevronDown, FileBarChart, Search, Share2, X } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { useLang, useT } from '@/core/i18n';
-import { radius, useTheme } from '@/core/theme';
+import { fonts, radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { useAreas } from '@/features/listings/hooks/use-listings';
 import { useAgents } from '../hooks/use-admin';
@@ -60,7 +63,7 @@ export function ReportsScreen() {
             <Txt size={13} weight="semibold" color="ink3">
               {t(REPORT_GROUP_LABEL[g])}
             </Txt>
-            {REPORTS.filter((r) => r.group === g).map((r) => (
+            {REPORTS.filter((r) => r.group === g && !r.needsAgent).map((r) => (
               <Pressable
                 key={r.id}
                 accessibilityRole="button"
@@ -87,16 +90,22 @@ export function ReportsScreen() {
 
 type Filters = { agentId?: number; areaId?: string; category?: Category };
 
-/** `/admin/report/:id`: one report with its range, filters, totals, charts and tables. */
-export function ReportScreen({ id }: { id: ReportId }) {
+/**
+ * `/admin/report/:id`: one report with its range, filters, totals, charts and tables. One advisor's
+ * own report (phase 29) opens with `agentId`, from their row in the advisors report.
+ */
+export function ReportScreen({ id, agentId }: { id: ReportId; agentId?: number }) {
   const t = useT();
+  const lang = useLang();
   const { colors } = useTheme();
   const spec = reportSpec(id);
   const today = cairoToday();
   const [preset, setPreset] = useState<ReportPreset>('30d');
-  const [f, setF] = useState<Filters>({});
+  const [f, setF] = useState<Filters>(spec.needsAgent ? { agentId } : {});
   const range = reportPresetRange(preset, today);
-  const report = useReport(id, { ...(spec.ranged ? range : {}), ...f });
+  const agents = useAgents();
+  const advisor = spec.needsAgent ? agents.data?.find((a) => a.id === f.agentId) : undefined;
+  const report = useReport(id, { ...(spec.ranged ? range : {}), ...f }, !spec.needsAgent || f.agentId !== undefined);
   const r = report.data;
 
   return (
@@ -108,7 +117,7 @@ export function ReportScreen({ id }: { id: ReportId }) {
       >
         <View style={styles.head}>
           <Txt accessibilityRole="header" size={22} weight="semibold">
-            {t(spec.title)}
+            {advisor ? (lang === 'ar' ? advisor.nameAr : advisor.nameEn) : t(spec.title)}
           </Txt>
           <Txt size={13} color="ink2">
             {t(spec.description)}
@@ -145,7 +154,11 @@ export function ReportScreen({ id }: { id: ReportId }) {
             )}
           </Txt>
         ) : null}
-        {report.isPending ? (
+        {spec.needsAgent && f.agentId === undefined ? (
+          <Txt size={13} color="ink2">
+            {t('اختار المسؤول من فوق.', 'Pick the advisor above.')}
+          </Txt>
+        ) : report.isPending ? (
           <ActivityIndicator color={colors.accent} style={styles.loading} />
         ) : report.isError || !r ? (
           <ListingsError onRetry={() => void report.refetch()} />
@@ -182,7 +195,8 @@ function FilterBar({ id, f, setF }: { id: ReportId; f: Filters; setF: (f: Filter
   const agents = useAgents();
   const areas = useAreas();
   const [open, setOpen] = useState<'agent' | 'area' | 'category' | null>(null);
-  if (!spec.filters.length) return null;
+  const shown: ('agent' | 'area' | 'category')[] = spec.needsAgent ? ['agent'] : spec.filters;
+  if (!shown.length) return null;
   const all = t('الكل', 'All');
   const name = (x: { nameAr: string; nameEn: string }) => (lang === 'ar' ? x.nameAr : x.nameEn);
   const lists: Record<'agent' | 'area' | 'category', { label: string; options: { key: string; label: string }[]; value: string | undefined; set: (v?: string) => void }> = {
@@ -204,15 +218,15 @@ function FilterBar({ id, f, setF }: { id: ReportId; f: Filters; setF: (f: Filter
   return (
     <>
       <View style={styles.chips}>
-        {spec.filters.map((k) => {
+        {shown.map((k) => {
           const l = lists[k];
           const picked = l.options.find((o) => o.key === l.value)?.label;
-          return <Pill key={k} label={`${l.label}: ${picked ?? all}`} on={!!picked} onPress={() => setOpen(k)} />;
+          return <Pill key={k} label={`${l.label}: ${picked ?? (spec.needsAgent ? t('اختار', 'Pick one') : all)}`} on={!!picked} onPress={() => setOpen(k)} />;
         })}
       </View>
       <Sheet open={current !== null} onClose={() => setOpen(null)} title={current?.label ?? ''} scroll>
         {current
-          ? [{ key: '', label: all }, ...current.options].map((o) => (
+          ? [...(spec.needsAgent ? [] : [{ key: '', label: all }]), ...current.options].map((o) => (
               <Option
                 key={o.key || 'all'}
                 label={o.label}
@@ -388,7 +402,11 @@ function Chart({ c }: { c: ReportChart }) {
 
 const hrefOf = (l: ReportLink): Href => ({ listing: `/admin/listing/${l.id}`, agent: `/admin/agent/${l.id}`, client: `/admin/client/${l.id}`, chat: `/admin/chat/${l.id}` })[l.kind] as Href;
 
-/** A table as cards: the first column is the card's title (a link where it leads somewhere), the rest are label and value. */
+/**
+ * A table as cards: the first column is the card's title (a link where it leads somewhere), the
+ * rest are label and value. Above it: a search box, a filter for each column whose values repeat,
+ * and the order (phase 29).
+ */
 function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const t = useT();
   const lang = useLang();
@@ -396,25 +414,53 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const { colors } = useTheme();
   const [all, setAll] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [view, setView] = useState<TableView>({});
+  const [open, setOpen] = useState<string | null>(null);
+  const filters = useMemo(() => tableFilters(table), [table]);
+  const found = useMemo(() => viewRows(table, view, lang), [table, view, lang]);
   const [first, ...rest] = table.columns;
-  const rows = all ? table.rows : table.rows.slice(0, PAGE);
+  const rows = all ? found : found.slice(0, PAGE);
+  const narrowed = found.length !== table.rows.length;
+  const any = t('الكل', 'All');
+  // In the advisors report a row opens that advisor's own report.
+  const linkOf = (l: ReportLink): Href => (r.id === 'advisors' && l.kind === 'agent' ? (`/admin/report/advisor?agentId=${l.id}` as Href) : hrefOf(l));
   const share = async () => {
     setSharing(true);
     try {
-      await shareCsv(r, table, lang);
+      await shareCsv(r, { ...table, rows: found }, lang);
     } catch {
       toast.show({ title: t('مقدرناش نجهز الملف', 'We couldn’t make the file'), tone: 'danger' });
     } finally {
       setSharing(false);
     }
   };
+
+  // Sorting: numbers and dates start from the biggest or latest, text from A.
+  const numeric = (f: string) => f !== 'text' && f !== 'date';
+  const sortName = (col: (typeof table.columns)[number], up: boolean) =>
+    col.format === 'text'
+      ? up
+        ? t('من الأول للآخر', 'A to Z')
+        : t('من الآخر للأول', 'Z to A')
+      : col.format === 'date'
+        ? up
+          ? t('الأقدم الأول', 'oldest first')
+          : t('الأحدث الأول', 'newest first')
+        : up
+          ? t('الأصغر الأول', 'smallest first')
+          : t('الأكبر الأول', 'biggest first');
+  const sortOptions = table.columns.flatMap((col) => (numeric(col.format) || col.format === 'date' ? [false, true] : [true, false]).map((up) => ({ col, up })));
+  const sortCol = view.sort ? table.columns.find((c) => c.key === view.sort!.key) : undefined;
+  const sortLabel = `${t('الترتيب', 'Order')}: ${sortCol ? `${t(sortCol.label)}${t('،', ',')} ${sortName(sortCol, view.sort!.up)}` : t('زي ما هو', 'as it is')}`;
+  const filter = filters.find((f) => f.key === open);
+
   return (
     <View style={styles.tableBlock}>
       <View style={styles.line}>
         <Txt weight="semibold" style={styles.flex}>
-          {`${t(table.title)} (${fmtNum(table.rows.length, lang)})`}
+          {`${t(table.title)} (${narrowed ? t(`${fmtNum(found.length, 'ar')} من ${fmtNum(table.rows.length, 'ar')}`, `${found.length} of ${table.rows.length}`) : fmtNum(table.rows.length, lang)})`}
         </Txt>
-        {table.rows.length ? (
+        {found.length ? (
           <Pressable accessibilityRole="button" accessibilityLabel={t(`شارك ${t(table.title)} كملف CSV`, `Share ${table.title.en} as CSV`)} disabled={sharing} onPress={() => void share()} style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             {sharing ? <ActivityIndicator size="small" color={colors.accent} /> : <Share2 size={14} color={colors.ink} />}
             <Txt size={12} weight="medium">
@@ -423,9 +469,38 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           </Pressable>
         ) : null}
       </View>
-      {!table.rows.length ? (
+      {table.rows.length > 1 ? (
+        <>
+          <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <Search size={16} color={colors.ink3} />
+            <TextInput
+              accessibilityLabel={t(`ابحث في ${table.title.ar}`, `Search ${table.title.en}`)}
+              value={view.q ?? ''}
+              onChangeText={(q) => setView((v) => ({ ...v, q }))}
+              placeholder={t('ابحث في الجدول', 'Search this table')}
+              placeholderTextColor={colors.ink3}
+              autoCorrect={false}
+              autoCapitalize="none"
+              style={[styles.input, { color: colors.ink }]}
+            />
+            {view.q ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={t('امسح البحث', 'Clear search')} onPress={() => setView((v) => ({ ...v, q: '' }))} hitSlop={8}>
+                <X size={16} color={colors.ink3} />
+              </Pressable>
+            ) : null}
+          </View>
+          <View style={styles.chips}>
+            {filters.map((f) => {
+              const picked = f.options.find((o) => o.value === view.filters?.[f.key]);
+              return <Pill key={f.key} label={`${t(f.label)}: ${picked ? t(picked.label) : any}`} on={!!picked} onPress={() => setOpen(f.key)} />;
+            })}
+            <Pill label={sortLabel} on={!!view.sort} onPress={() => setOpen('sort')} />
+          </View>
+        </>
+      ) : null}
+      {!found.length ? (
         <Txt size={12} color="ink3">
-          {t('مفيش حاجة هنا', 'Nothing here')}
+          {table.rows.length ? t('مفيش حاجة مطابقة للبحث والفلاتر', 'Nothing matches the search and filters') : t('مفيش حاجة هنا', 'Nothing here')}
         </Txt>
       ) : null}
       {rows.map((row, i) => {
@@ -451,7 +526,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
         );
         const style = [styles.card, { backgroundColor: colors.surface, borderColor: colors.line }];
         return row.link ? (
-          <Pressable key={`${row.link.kind}-${row.link.id}-${i}`} testID="report-row" accessibilityRole="link" accessibilityLabel={title} onPress={() => router.push(hrefOf(row.link!))} style={style}>
+          <Pressable key={`${row.link.kind}-${row.link.id}-${i}`} testID="report-row" accessibilityRole="link" accessibilityLabel={title} onPress={() => router.push(linkOf(row.link!))} style={style}>
             {body}
           </Pressable>
         ) : (
@@ -460,13 +535,55 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           </View>
         );
       })}
-      {!all && table.rows.length > PAGE ? (
+      {!all && found.length > PAGE ? (
         <Pressable accessibilityRole="button" onPress={() => setAll(true)} style={[styles.more, { borderColor: colors.line }]}>
           <Txt size={13} weight="medium" color="accentInk">
-            {t(`اعرض الكل (${fmtNum(table.rows.length, 'ar')})`, `Show all (${table.rows.length})`)}
+            {t(`اعرض الكل (${fmtNum(found.length, 'ar')})`, `Show all (${found.length})`)}
           </Txt>
         </Pressable>
       ) : null}
+      {table.note ? (
+        <Txt size={12} color="ink3">
+          {t(table.note)}
+        </Txt>
+      ) : null}
+      <Sheet open={open !== null} onClose={() => setOpen(null)} title={open === 'sort' ? t('الترتيب', 'Order') : filter ? t(filter.label) : ''} scroll>
+        {open === 'sort' ? (
+          <>
+            <Option
+              label={t('زي ما هو', 'As it is')}
+              on={!view.sort}
+              onPress={() => {
+                setView((v) => ({ ...v, sort: null }));
+                setOpen(null);
+              }}
+            />
+            {sortOptions.map(({ col, up }) => (
+              <Option
+                key={`${col.key}-${up}`}
+                label={`${t(col.label)}: ${sortName(col, up)}`}
+                on={view.sort?.key === col.key && view.sort.up === up}
+                onPress={() => {
+                  setView((v) => ({ ...v, sort: { key: col.key, up } }));
+                  setOpen(null);
+                }}
+              />
+            ))}
+          </>
+        ) : filter ? (
+          [{ value: '', label: { ar: any, en: any } }, ...filter.options].map((o) => (
+            <Option
+              key={o.value || 'all'}
+              label={t(o.label)}
+              on={(view.filters?.[filter.key] ?? '') === o.value}
+              onPress={() => {
+                setView((v) => ({ ...v, filters: { ...v.filters, [filter.key]: o.value } }));
+                setOpen(null);
+              }}
+            />
+          ))
+        ) : null}
+      </Sheet>
     </View>
   );
 }
@@ -504,4 +621,6 @@ const styles = StyleSheet.create({
   cells: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8, columnGap: 16 },
   cell: { minWidth: '40%', flexGrow: 1, flexBasis: '40%' },
   more: { borderWidth: 1, borderRadius: radius.md, paddingVertical: 12, alignItems: 'center' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: 12 },
+  input: { flex: 1, fontFamily: fonts.regular, fontSize: 14, paddingVertical: 0 },
 });

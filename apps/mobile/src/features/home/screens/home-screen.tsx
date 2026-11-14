@@ -1,7 +1,8 @@
-import { type Category, fmtMoney, fmtPct } from '@maqar/shared';
+import { type Category, fmtMoney, fmtPct, type HomeSection } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Award, Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
+import { Fragment, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
@@ -9,6 +10,7 @@ import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
+import { useHomeOrder } from '@/core/app-config/store';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { usePreferences } from '@/features/account/hooks/use-account';
@@ -32,6 +34,7 @@ const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string 
 /**
  * Client home (contract §8.2): headline, search entry, category shortcuts, picks for a signed-in
  * client (phase 6), the next viewing (phase 13), areas, price drops (phase 12) and new launches.
+ * The headline and the search entry stay on top; an admin orders the rest (phase 29).
  */
 export function Home() {
   const t = useT();
@@ -44,6 +47,101 @@ export function Home() {
   const areas = useAreas();
   const launches = useProperties({ category: 'project', limit: 10 });
   const cardWidth = Math.round(width * 0.72);
+  const order = useHomeOrder();
+
+  // Phase 29: an admin sets the order of these; a section with nothing to show renders nothing.
+  const sections: Record<HomeSection, ReactNode> = {
+    shortcuts: (
+      <View style={styles.shortcuts}>
+        {SHORTCUTS.map(({ category, icon: Icon, ar, en }) => (
+          <Pressable
+            key={category}
+            accessibilityRole="button"
+            accessibilityLabel={t(ar, en)}
+            onPress={() => router.push({ pathname: '/explore', params: { category } })}
+            style={({ pressed }) => [
+              styles.shortcut,
+              { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <View style={[styles.shortcutIcon, { backgroundColor: colors.accentSoft }]}>
+              <Icon size={20} color={colors.accentInk} strokeWidth={1.8} />
+            </View>
+            <Txt size={12} weight="medium" align="center">
+              {t(ar, en)}
+            </Txt>
+          </Pressable>
+        ))}
+      </View>
+    ),
+    nextViewing: <NextViewingCard />,
+    featured: <Featured cardWidth={cardWidth} />,
+    prefs: <MyPrefs />,
+    picks: <Picks cardWidth={cardWidth} />,
+    areas: (
+      <Section title={t('تصفح حسب المنطقة', 'Browse by area')}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          {(areas.data ?? []).map((a) => {
+            const name = lang === 'ar' ? a.nameAr : a.nameEn;
+            const img = mediaUrl(a.image);
+            return (
+              <Pressable
+                key={a.id}
+                accessibilityRole="button"
+                accessibilityLabel={name}
+                onPress={() => router.push({ pathname: '/explore', params: { area: a.id } })}
+                style={[styles.area, { backgroundColor: colors.surface, borderColor: colors.line }]}
+              >
+                <View style={[styles.areaImg, { backgroundColor: colors.surface2 }]}>
+                  {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+                </View>
+                <Txt size={13} weight="medium">
+                  {name}
+                </Txt>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </Section>
+    ),
+    calculator: (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('احسب قسطك الشهري', 'Work out your monthly installment')}
+        onPress={() => router.push('/calculator')}
+        style={({ pressed }) => [styles.calculator, { backgroundColor: colors.navy, opacity: pressed ? 0.9 : 1 }]}
+      >
+        <View style={[styles.calculatorIcon, { backgroundColor: colors.gold }]}>
+          <Calculator size={24} color={colors.navy} />
+        </View>
+        <View style={styles.flex}>
+          <Txt size={15} weight="semibold" style={{ color: colors.cream }}>
+            {t('احسب قسطك الشهري', 'Work out your monthly installment')}
+          </Txt>
+          <Txt size={12.5} style={{ color: colors.cream, opacity: 0.7 }}>
+            {t('المقدم + عدد السنين = القسط في ثانية', 'Down payment + years = installment, instantly')}
+          </Txt>
+        </View>
+      </Pressable>
+    ),
+    drops: <PriceDrops />,
+    launches: (
+      <Section
+        title={t('مشروعات جديدة بالتقسيط', 'New launches on installments')}
+        action={{ label: t('الكل', 'See all'), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
+      >
+        {launches.isError ? (
+          <ListingsError onRetry={() => launches.refetch()} />
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+            {launches.isPending
+              ? [0, 1].map((i) => <CardSkeleton key={i} width={cardWidth} />)
+              : launches.data.items.map((c) => <PropertyCardView key={c.id} card={c} width={cardWidth} />)}
+          </ScrollView>
+        )}
+      </Section>
+    ),
+  };
 
   return (
     <Screen>
@@ -85,96 +183,9 @@ export function Home() {
         </Txt>
       </Pressable>
 
-      <View style={styles.shortcuts}>
-        {SHORTCUTS.map(({ category, icon: Icon, ar, en }) => (
-          <Pressable
-            key={category}
-            accessibilityRole="button"
-            accessibilityLabel={t(ar, en)}
-            onPress={() => router.push({ pathname: '/explore', params: { category } })}
-            style={({ pressed }) => [
-              styles.shortcut,
-              { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <View style={[styles.shortcutIcon, { backgroundColor: colors.accentSoft }]}>
-              <Icon size={20} color={colors.accentInk} strokeWidth={1.8} />
-            </View>
-            <Txt size={12} weight="medium" align="center">
-              {t(ar, en)}
-            </Txt>
-          </Pressable>
-        ))}
-      </View>
-
-      <NextViewingCard />
-
-      <Featured cardWidth={cardWidth} />
-
-      <MyPrefs />
-
-      <Picks cardWidth={cardWidth} />
-
-      <Section title={t('تصفح حسب المنطقة', 'Browse by area')}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {(areas.data ?? []).map((a) => {
-            const name = lang === 'ar' ? a.nameAr : a.nameEn;
-            const img = mediaUrl(a.image);
-            return (
-              <Pressable
-                key={a.id}
-                accessibilityRole="button"
-                accessibilityLabel={name}
-                onPress={() => router.push({ pathname: '/explore', params: { area: a.id } })}
-                style={[styles.area, { backgroundColor: colors.surface, borderColor: colors.line }]}
-              >
-                <View style={[styles.areaImg, { backgroundColor: colors.surface2 }]}>
-                  {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
-                </View>
-                <Txt size={13} weight="medium">
-                  {name}
-                </Txt>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </Section>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('احسب قسطك الشهري', 'Work out your monthly installment')}
-        onPress={() => router.push('/calculator')}
-        style={({ pressed }) => [styles.calculator, { backgroundColor: colors.navy, opacity: pressed ? 0.9 : 1 }]}
-      >
-        <View style={[styles.calculatorIcon, { backgroundColor: colors.gold }]}>
-          <Calculator size={24} color={colors.navy} />
-        </View>
-        <View style={styles.flex}>
-          <Txt size={15} weight="semibold" style={{ color: colors.cream }}>
-            {t('احسب قسطك الشهري', 'Work out your monthly installment')}
-          </Txt>
-          <Txt size={12.5} style={{ color: colors.cream, opacity: 0.7 }}>
-            {t('المقدم + عدد السنين = القسط في ثانية', 'Down payment + years = installment, instantly')}
-          </Txt>
-        </View>
-      </Pressable>
-
-      <PriceDrops />
-
-      <Section
-        title={t('مشروعات جديدة بالتقسيط', 'New launches on installments')}
-        action={{ label: t('الكل', 'See all'), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
-      >
-        {launches.isError ? (
-          <ListingsError onRetry={() => launches.refetch()} />
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
-            {launches.isPending
-              ? [0, 1].map((i) => <CardSkeleton key={i} width={cardWidth} />)
-              : launches.data.items.map((c) => <PropertyCardView key={c.id} card={c} width={cardWidth} />)}
-          </ScrollView>
-        )}
-      </Section>
+      {order.map((name) => (
+        <Fragment key={name}>{sections[name]}</Fragment>
+      ))}
     </Screen>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { type AdminArea, areaSlug, fmtNum } from "@maqar/shared";
-import { ImagePlus, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { uploadPhoto, useAdminAreas, useDeleteArea, useSaveArea } from "@/lib/admin";
@@ -39,8 +39,14 @@ export function AreasPage() {
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {areas.data.map((a) => (
             <li key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
-              {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the API host */}
-              <img src={mediaUrl(a.image)} alt="" className="h-32 w-full object-cover" loading="lazy" />
+              {a.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- photos come from the API host
+                <img src={mediaUrl(a.image)} alt="" className="h-32 w-full object-cover" loading="lazy" />
+              ) : (
+                <div className="grid h-32 place-items-center bg-surface-2 text-ink-3">
+                  <MapPin className="size-7" aria-hidden />
+                </div>
+              )}
               <div className="flex items-center gap-2 p-3">
                 <div className="flex-1">
                   <p className="font-medium">{lang === "ar" ? a.nameAr : a.nameEn}</p>
@@ -81,7 +87,7 @@ function AreaForm({ saved, onDone }: { saved?: AdminArea; onDone: () => void }) 
   const [showErrors, setShowErrors] = useState(false);
   const set = (k: keyof typeof d, v: string) => setD((cur) => ({ ...cur, [k]: v }));
   const short = (v: string) => v.trim().length < 2;
-  const bad = short(d.nameAr) || short(d.nameEn) || short(d.cityAr) || short(d.cityEn) || !d.image || (!saved && areaSlug(d.nameEn).length < 2);
+  const bad = short(d.nameAr) || short(d.nameEn) || short(d.cityAr) || short(d.cityEn) || (!saved && areaSlug(d.nameEn).length < 2);
   const err = (v: string) => (showErrors && short(v) ? t("اكتب حرفين على الأقل", "At least 2 characters") : undefined);
 
   const pick = async (file: File | undefined) => {
@@ -99,7 +105,7 @@ function AreaForm({ saved, onDone }: { saved?: AdminArea; onDone: () => void }) 
     e.preventDefault();
     if (bad) return setShowErrors(true);
     save.mutate(
-      { nameAr: d.nameAr.trim(), nameEn: d.nameEn.trim(), cityAr: d.cityAr.trim(), cityEn: d.cityEn.trim(), image: d.image },
+      { nameAr: d.nameAr.trim(), nameEn: d.nameEn.trim(), cityAr: d.cityAr.trim(), cityEn: d.cityEn.trim(), image: d.image || null },
       {
         onSuccess: () => {
           notice({ text: saved ? t("المنطقة اتحفظت", "Area saved") : t("المنطقة اتضافت وبقت ظاهرة للعملاء", "Area added: clients see it now"), tone: "ok" });
@@ -117,7 +123,7 @@ function AreaForm({ saved, onDone }: { saved?: AdminArea; onDone: () => void }) 
         <button
           type="button"
           onClick={() => input.current?.click()}
-          className={`relative grid h-40 place-items-center overflow-hidden rounded-xl border-2 border-dashed bg-accent-soft text-accent-ink ${showErrors && !d.image ? "border-danger" : "border-accent"}`}
+          className="relative grid h-40 place-items-center overflow-hidden rounded-xl border-2 border-dashed border-accent bg-accent-soft text-accent-ink"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the API host */}
           {d.image ? <img src={mediaUrl(d.image)} alt="" className="absolute inset-0 size-full object-cover" /> : null}
@@ -126,7 +132,7 @@ function AreaForm({ saved, onDone }: { saved?: AdminArea; onDone: () => void }) 
           ) : (
             <span className="relative flex items-center gap-2 rounded-full bg-surface/90 px-3 py-1 text-sm font-medium">
               <ImagePlus className="size-4" aria-hidden />
-              {d.image ? t("غيّر الصورة", "Change the photo") : t("ضيف صورة", "Add a photo")}
+              {d.image ? t("غيّر الصورة", "Change the photo") : t("ضيف صورة (اختياري)", "Add a photo (optional)")}
             </span>
           )}
         </button>
@@ -149,6 +155,11 @@ function AreaForm({ saved, onDone }: { saved?: AdminArea; onDone: () => void }) 
             <Button variant="ghost" onClick={onDone}>
               {t("إلغاء", "Cancel")}
             </Button>
+            {d.image ? (
+              <Button variant="ghost" onClick={() => set("image", "")} disabled={uploading}>
+                {t("شيل الصورة", "Remove the photo")}
+              </Button>
+            ) : null}
           </div>
         </div>
       </form>

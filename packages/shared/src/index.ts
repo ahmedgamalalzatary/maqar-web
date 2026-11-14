@@ -18,3 +18,4 @@ export * from './site.js';
 export * from './admin-people.js';
 export * from './admin-activity.js';
 export * from './reports.js';
+export * from './settings.js';

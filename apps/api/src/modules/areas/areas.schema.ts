@@ -7,8 +7,8 @@ export const areas = mysqlTable('areas', {
   nameEn: varchar('name_en', { length: 100 }).notNull(),
   cityAr: varchar('city_ar', { length: 100 }).notNull(),
   cityEn: varchar('city_en', { length: 100 }).notNull(),
-  /** Path under the API host, for example `/uploads/seed/p2.jpg`. */
-  image: varchar('image', { length: 255 }).notNull(),
+  /** Path under the API host, for example `/uploads/seed/p2.jpg`; null when there is no picture (phase 29). */
+  image: varchar('image', { length: 255 }),
 });
 
 export type AreaRow = typeof areas.$inferSelect;

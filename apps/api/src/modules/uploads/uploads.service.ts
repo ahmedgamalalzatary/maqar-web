@@ -164,8 +164,8 @@ export class UploadsService {
    * A listing video (phase 26), from the temp file the upload went to (deleted afterwards). At most
    * 3 minutes. Stored as an H.264 MP4 without metadata, with a JPEG poster of the same name.
    */
-  async saveVideo(input: string): Promise<VideoUploadResponse> {
-    const job = this.videoQueue.then(() => this.convertVideo(input));
+  async saveVideo(input: string, maxSeconds: number = VIDEO_MAX_SECONDS): Promise<VideoUploadResponse> {
+    const job = this.videoQueue.then(() => this.convertVideo(input, maxSeconds));
     this.videoQueue = job.catch(() => undefined);
     try {
       return await job;
@@ -174,10 +174,12 @@ export class UploadsService {
     }
   }
 
-  private async convertVideo(input: string): Promise<VideoUploadResponse> {
+  private async convertVideo(input: string, maxSeconds: number): Promise<VideoUploadResponse> {
     const p = await probe(this.ff.ffprobe, input);
     if (!p) throw new BadRequestException('That file is not a video we can read');
-    if (Math.round(p.durationS) > VIDEO_MAX_SECONDS) throw new BadRequestException('A video can be at most 3 minutes long');
+    if (Math.round(p.durationS) > maxSeconds) {
+      throw new BadRequestException(maxSeconds < 60 ? `This video can be at most ${maxSeconds} seconds long` : `A video can be at most ${maxSeconds / 60} minutes long`);
+    }
     const dir = this.videosDir();
     await mkdir(dir, { recursive: true });
     const name = randomUUID();
@@ -207,9 +209,10 @@ export class UploadsService {
 
   /**
    * The saved form of each listing video, in order: every path must be a video this server
-   * converted, with its poster. Its length and size are read from the file itself.
+   * converted, with its poster. Its length and size are read from the file itself. `maxSeconds`
+   * refuses a longer one (the opening screen's video).
    */
-  async videoDetails(urls: string[]): Promise<ListingVideo[]> {
+  async videoDetails(urls: string[], maxSeconds?: number): Promise<ListingVideo[]> {
     const dir = this.videosDir();
     const out: ListingVideo[] = [];
     for (const url of urls) {
@@ -223,6 +226,7 @@ export class UploadsService {
       }
       const p = await probe(this.ff.ffprobe, path.join(dir, name));
       if (!p) throw new BadRequestException(`A video is missing from the server's disk: ${name}`);
+      if (maxSeconds !== undefined && p.durationS > maxSeconds) throw new BadRequestException(`This video can be at most ${Math.floor(maxSeconds)} seconds long`);
       out.push({ url, poster: `/uploads/videos/${posterName}`, durationS: Math.max(1, Math.round(p.durationS)), width: p.shown.width, height: p.shown.height });
     }
     return out;

@@ -96,7 +96,7 @@ export function EditListing() {
   return <ListingForm key={id} saved={listing.data} />;
 }
 
-/** `/new/` and editing: the listing form in steps (contract §9.2). */
+/** `/listing/new/` and editing: the listing form in steps (contract §9.2). */
 export function ListingForm({ saved }: { saved?: AdminListing }) {
   const t = useT();
   const lang = useLang();
@@ -274,8 +274,8 @@ function LocationStep({ s, set, err }: StepProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("الكمبوند (عربي)", "Compound (Arabic)")} value={s.compoundAr} onChange={(e) => set("compoundAr", e.target.value)} dir="rtl" maxLength={150} />
         <Field label={t("الكمبوند (إنجليزي)", "Compound (English)")} value={s.compoundEn} onChange={(e) => set("compoundEn", e.target.value)} dir="ltr" maxLength={150} />
-        <Field label={t("المطور (عربي)", "Developer (Arabic)")} value={s.developerAr} onChange={(e) => set("developerAr", e.target.value)} dir="rtl" maxLength={150} />
-        <Field label={t("المطور (إنجليزي)", "Developer (English)")} value={s.developerEn} onChange={(e) => set("developerEn", e.target.value)} dir="ltr" maxLength={150} />
+        <Field label={t("المطور (عربي، اختياري)", "Developer (Arabic, optional)")} value={s.developerAr} onChange={(e) => set("developerAr", e.target.value)} dir="rtl" maxLength={150} />
+        <Field label={t("المطور (إنجليزي، اختياري)", "Developer (English, optional)")} value={s.developerEn} onChange={(e) => set("developerEn", e.target.value)} dir="ltr" maxLength={150} />
         <Field label={t("الدور", "Floor")} value={s.floor} onChange={(e) => set("floor", e.target.value)} inputMode="numeric" />
         <Field label={t("مصروف الصيانة (بالسنة)", "Maintenance fee (a year)")} value={s.maintenanceFee} onChange={(e) => set("maintenanceFee", e.target.value)} inputMode="numeric" />
         <Field

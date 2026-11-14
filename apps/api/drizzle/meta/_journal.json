@@ -162,6 +162,13 @@
       "when": 1794491291096,
       "tag": "0022_condemned_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1794598346498,
+      "tag": "0023_owner_settings",
+      "breakpoints": true
     }
   ]
 }

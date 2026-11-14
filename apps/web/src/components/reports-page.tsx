@@ -26,9 +26,12 @@ import {
   REPORTS,
   reportSpec,
   type ReportTable,
+  tableFilters,
+  type TableView,
+  viewRows,
   weekdayName,
 } from "@maqar/shared";
-import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileBarChart, Printer } from "lucide-react";
+import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileBarChart, Printer, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -54,7 +57,7 @@ export function ReportsPage() {
             {t(REPORT_GROUP_LABEL[g])}
           </h2>
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {REPORTS.filter((r) => r.group === g).map((r) => (
+            {REPORTS.filter((r) => r.group === g && !r.needsAgent).map((r) => (
               <li key={r.id}>
                 <Link href={`/report/?id=${r.id}`} className="flex h-full gap-3 rounded-2xl border border-line bg-surface p-4 hover:bg-surface-2/60">
                   <FileBarChart className="mt-0.5 size-5 shrink-0 text-accent-ink" aria-hidden />
@@ -112,7 +115,9 @@ function Report({ id, preset, q }: { id: ReportId; preset?: ReportPreset; q: Rep
   // No dates: the preset, or the last 30 days.
   const range = q.from && q.to ? { from: q.from, to: q.to } : reportPresetRange(preset ?? "30d", today);
   const query: ReportQuery = { ...(spec.ranged ? range : {}), agentId: q.agentId, areaId: q.areaId, category: q.category };
-  const report = useReport(id, query);
+  const agents = useAllAgents();
+  const advisor = spec.needsAgent ? agents.data?.find((a) => a.id === q.agentId) : undefined;
+  const report = useReport(id, query, !spec.needsAgent || q.agentId !== undefined);
   const Back = lang === "ar" ? ChevronRight : ChevronLeft;
 
   const go = (next: Record<string, string | number | undefined>) => {
@@ -126,12 +131,22 @@ function Report({ id, preset, q }: { id: ReportId; preset?: ReportPreset; q: Rep
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-start gap-3">
         <div className="flex-1">
-          <Link href="/reports/" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:underline print:hidden">
+          <Link href={spec.needsAgent ? "/report/?id=advisors" : "/reports/"} className="inline-flex items-center gap-1 text-sm text-ink-2 hover:underline print:hidden">
             <Back className="size-4" aria-hidden />
-            {t("التقارير", "Reports")}
+            {spec.needsAgent ? t("أداء المسؤولين", "Advisor performance") : t("التقارير", "Reports")}
           </Link>
-          <h1 className="text-2xl font-semibold">{t(spec.title)}</h1>
-          <p className="text-sm text-ink-2">{t(spec.description)}</p>
+          <h1 className="text-2xl font-semibold">{advisor ? (lang === "ar" ? advisor.nameAr : advisor.nameEn) : t(spec.title)}</h1>
+          <p className="text-sm text-ink-2">
+            {t(spec.description)}
+            {advisor ? (
+              <>
+                {" "}
+                <Link href={`/agent/?id=${advisor.id}`} className="text-accent-ink hover:underline print:hidden">
+                  {t("صفحة المسؤول", "The advisor’s page")}
+                </Link>
+              </>
+            ) : null}
+          </p>
           {report.data ? (
             <p className="mt-1 text-sm text-ink-3">
               {report.data.range
@@ -151,7 +166,9 @@ function Report({ id, preset, q }: { id: ReportId; preset?: ReportPreset; q: Rep
 
       <Controls id={id} preset={q.from && q.to ? undefined : (preset ?? "30d")} range={range} q={q} today={today} go={go} />
 
-      {report.isPending ? (
+      {spec.needsAgent && q.agentId === undefined ? (
+        <Card>{t("اختار المسؤول من فوق.", "Pick the advisor above.")}</Card>
+      ) : report.isPending ? (
         <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />
       ) : report.isError || !report.data ? (
         <Card className="flex flex-wrap items-center gap-3">
@@ -241,13 +258,13 @@ function Controls({
       ) : (
         <p className="text-sm text-ink-2">{t("التقرير ده صورة للوضع دلوقتي، من غير مدة.", "This report is a snapshot of now, with no range.")}</p>
       )}
-      {spec.filters.length ? (
+      {spec.filters.length || spec.needsAgent ? (
         <div className="flex flex-wrap gap-3">
-          {spec.filters.includes("agent") ? (
+          {spec.filters.includes("agent") || spec.needsAgent ? (
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium text-ink-2">{t("المسؤول", "Advisor")}</span>
               <select value={q.agentId ?? ""} onChange={(e) => go({ agentId: e.target.value || undefined })} className={SELECT}>
-                <option value="">{t("الكل", "All")}</option>
+                {spec.needsAgent ? q.agentId === undefined ? <option value="">{t("اختار", "Pick one")}</option> : null : <option value="">{t("الكل", "All")}</option>}
                 {(agents.data ?? []).map((a) => (
                   <option key={a.id} value={a.id}>
                     {lang === "ar" ? a.nameAr : a.nameEn}
@@ -432,41 +449,85 @@ function Chart({ c }: { c: ReportChart }) {
 
 const href = (l: ReportLink) => ({ listing: `/listing/?id=${l.id}`, agent: `/agent/?id=${l.id}`, client: `/client/?id=${l.id}`, chat: `/chat/?id=${l.id}` })[l.kind];
 
-/** Sorting reads raw values: numbers by size, dates by date, text in the language. */
-function sortValue(v: unknown, lang: "ar" | "en"): number | string {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "object") return (v as Record<string, string>)[lang] ?? "";
-  return v as number | string;
-}
-
+/** A table with its search box, a filter for each column whose values repeat, and sorting by any column (phase 29). */
 function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const t = useT();
   const lang = useLang();
-  const [sort, setSort] = useState<{ key: string; up: boolean } | null>(null);
-  const rows = useMemo(() => {
-    if (!sort) return table.rows;
-    return [...table.rows].sort((a, b) => {
-      const [x, y] = [sortValue(a.cells[sort.key], lang), sortValue(b.cells[sort.key], lang)];
-      if (x === "" && y !== "") return 1;
-      if (y === "" && x !== "") return -1;
-      const d = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), lang);
-      return sort.up ? d : -d;
-    });
-  }, [sort, table.rows, lang]);
+  const params = useSearchParams();
+  const [view, setView] = useState<TableView>({});
+  const filters = useMemo(() => tableFilters(table), [table]);
+  const rows = useMemo(() => viewRows(table, view, lang), [table, view, lang]);
+  const sort = view.sort ?? null;
   const numeric = (f: string) => f !== "text" && f !== "date";
+  const narrowed = rows.length !== table.rows.length;
+  // In the advisors report a row opens that advisor's own report, over the same range.
+  const linkOf = (l: ReportLink) => {
+    if (r.id !== "advisors" || l.kind !== "agent") return href(l);
+    const p = new URLSearchParams(params);
+    p.set("id", "advisor");
+    p.set("agentId", String(l.id));
+    return `/report/?${p}`;
+  };
 
   return (
     <Card className="flex flex-col gap-3 p-0">
       <div className="flex flex-wrap items-center gap-3 px-5 pt-5">
         <h2 className="flex-1 font-semibold">
-          {t(table.title)} <span className="text-sm font-normal text-ink-3">({fmtNum(table.rows.length, lang)})</span>
+          {t(table.title)}{" "}
+          <span className="text-sm font-normal text-ink-3">
+            ({narrowed ? t(`${fmtNum(rows.length, "ar")} من ${fmtNum(table.rows.length, "ar")}`, `${rows.length} of ${table.rows.length}`) : fmtNum(table.rows.length, lang)})
+          </span>
         </h2>
-        <Button variant="secondary" onClick={() => downloadCsv(r, table, lang)} disabled={!table.rows.length} className="print:hidden">
+        <Button variant="secondary" onClick={() => downloadCsv(r, { ...table, rows }, lang)} disabled={!rows.length} className="print:hidden">
           <Download className="size-4" aria-hidden />
           {t("نزّل CSV", "Download CSV")}
         </Button>
       </div>
-      {table.rows.length ? (
+      {table.rows.length > 1 ? (
+        <div className="flex flex-wrap items-end gap-3 px-5 print:hidden">
+          <label className="flex h-10 min-w-0 flex-1 basis-56 items-center gap-2 rounded-xl border border-line-2 bg-surface px-3">
+            <Search className="size-4 shrink-0 text-ink-3" aria-hidden />
+            <input
+              value={view.q ?? ""}
+              onChange={(e) => setView((v) => ({ ...v, q: e.target.value }))}
+              placeholder={t("ابحث في الجدول", "Search this table")}
+              aria-label={t(`ابحث في ${table.title.ar}`, `Search ${table.title.en}`)}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
+          </label>
+          {filters.map((f) => (
+            <label key={f.key} className="flex min-w-0 max-w-full flex-col gap-1 text-xs">
+              <span className="font-medium text-ink-2">{t(f.label)}</span>
+              <select value={view.filters?.[f.key] ?? ""} onChange={(e) => setView((v) => ({ ...v, filters: { ...v.filters, [f.key]: e.target.value } }))} className={`${SELECT} max-w-full`}>
+                <option value="">{t("الكل", "All")}</option>
+                {f.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(o.label)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <label className="flex flex-col gap-1 text-xs sm:hidden">
+            <span className="font-medium text-ink-2">{t("الترتيب", "Sort by")}</span>
+            <select
+              value={sort ? `${sort.key}:${sort.up ? "up" : "down"}` : ""}
+              onChange={(e) => {
+                const [key, dir] = e.target.value.split(":");
+                setView((v) => ({ ...v, sort: key ? { key, up: dir === "up" } : null }));
+              }}
+              className={SELECT}
+            >
+              <option value="">{t("زي ما هو", "As it is")}</option>
+              {table.columns.flatMap((col) => [
+                <option key={`${col.key}:down`} value={`${col.key}:down`}>{`${t(col.label)} ↓`}</option>,
+                <option key={`${col.key}:up`} value={`${col.key}:up`}>{`${t(col.label)} ↑`}</option>,
+              ])}
+            </select>
+          </label>
+        </div>
+      ) : null}
+      {rows.length ? (
         <div className="max-h-[36rem] overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-surface">
@@ -475,9 +536,13 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
                   const on = sort?.key === col.key;
                   return (
                     <th key={col.key} scope="col" aria-sort={on ? (sort.up ? "ascending" : "descending") : "none"} className={`whitespace-nowrap px-3 py-2 font-medium text-ink-2 first:ps-5 last:pe-5 ${numeric(col.format) ? "text-end" : "text-start"}`}>
-                      <button type="button" onClick={() => setSort(on && !sort.up ? null : { key: col.key, up: on ? true : !numeric(col.format) })} className="inline-flex items-center gap-1 hover:text-ink">
+                      <button
+                        type="button"
+                        onClick={() => setView((v) => ({ ...v, sort: on && !sort.up ? null : { key: col.key, up: on ? true : !numeric(col.format) } }))}
+                        className="inline-flex items-center gap-1 hover:text-ink"
+                      >
                         {t(col.label)}
-                        {on ? sort.up ? <ArrowUp className="size-3.5" aria-hidden /> : <ArrowDown className="size-3.5" aria-hidden /> : null}
+                        {on ? sort.up ? <ArrowUp className="size-3.5" aria-hidden /> : <ArrowDown className="size-3.5" aria-hidden /> : <ArrowUpDown className="size-3.5 opacity-40 print:hidden" aria-hidden />}
                       </button>
                     </th>
                   );
@@ -492,7 +557,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
                     return (
                       <td key={col.key} className={`px-3 py-2 first:ps-5 last:pe-5 ${numeric(col.format) ? "text-end tabular" : ""} ${col.format === "text" ? "min-w-32" : "whitespace-nowrap"}`}>
                         {j === 0 && row.link ? (
-                          <Link href={href(row.link)} className="font-medium text-accent-ink hover:underline">
+                          <Link href={linkOf(row.link)} className="font-medium text-accent-ink hover:underline">
                             {text}
                           </Link>
                         ) : (
@@ -507,10 +572,9 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           </table>
         </div>
       ) : (
-        <p className="px-5 pb-5 text-sm text-ink-3">{t("مفيش حاجة هنا", "Nothing here")}</p>
+        <p className="px-5 pb-5 text-sm text-ink-3">{table.rows.length ? t("مفيش حاجة مطابقة للبحث والفلاتر", "Nothing matches the search and filters") : t("مفيش حاجة هنا", "Nothing here")}</p>
       )}
       {table.note ? <p className="px-5 pb-5 text-sm text-ink-3">{t(table.note)}</p> : null}
     </Card>
   );
 }
-

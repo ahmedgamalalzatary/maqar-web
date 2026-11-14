@@ -139,12 +139,12 @@ export function useOverview(days: OverviewRange) {
 }
 
 /** One report (phase 27); the previous answer stays up while the next range or filter loads. */
-export function useReport(id: ReportId, q: ReportQuery) {
+export function useReport(id: ReportId, q: ReportQuery, enabled = true) {
   const adminId = useAdminId();
   return useQuery({
     queryKey: [...adminKey(adminId), 'report', id, q.from ?? '', q.to ?? '', q.agentId ?? '', q.areaId ?? '', q.category ?? ''],
     queryFn: ({ signal }) => getReport(id, q, signal),
-    enabled: adminId !== null,
+    enabled: adminId !== null && enabled,
     placeholderData: (prev) => (prev?.id === id ? prev : undefined),
   });
 }

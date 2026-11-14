@@ -9,6 +9,9 @@ import type {
   AdminListing,
   AdminListingsPage,
   AgentBody,
+  AgentListingOption,
+  AppSettings,
+  AppSettingsBody,
   AreaBody,
   AreaItem,
   DaysOffBody,
@@ -132,10 +135,11 @@ export function uploadPanorama(pano: Blob): Promise<UploadResponse> {
 }
 
 /** One listing video (phase 26), with how much has been sent; the server then converts it, which can take minutes. */
-export function uploadVideo(file: File, onProgress?: (sent: number) => void): Promise<VideoUploadResponse> {
+export function uploadVideo(file: File, onProgress?: (sent: number) => void, splash = false): Promise<VideoUploadResponse> {
   const form = new FormData();
   form.append("video", file, file.name);
-  return api.upload<VideoUploadResponse>("/uploads/videos", form, onProgress);
+  // `splash`: the opening screen's video (phase 29), at most 3 seconds.
+  return api.upload<VideoUploadResponse>(`/uploads/videos${splash ? "?splash=true" : ""}`, form, onProgress);
 }
 
 /** A video file's length in seconds as the browser reads it, or undefined when it cannot (the server checks it anyway). */
@@ -186,6 +190,28 @@ export function useSaveAgent(id?: number) {
     mutationFn: (body: Partial<AgentBody>) =>
       id ? api.request<AdminAgentDetail>(`/admin/agents/${id}`, { method: "PATCH", body }) : api.request<AdminAgentDetail>("/admin/agents", { method: "POST", body }),
     onSuccess: refresh,
+  });
+}
+
+/** Every listing with its advisor, for the picker in the agent's form (phase 29). */
+export function useAgentListingOptions() {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "agent-listing-options"], queryFn: ({ signal }) => api.request<AgentListingOption[]>("/admin/agents/listing-options", { signal }) });
+}
+
+// ---- App settings (phase 29) ----
+
+export function useSettings() {
+  const key = useKey();
+  return useQuery({ queryKey: [...key, "settings"], queryFn: ({ signal }) => api.request<AppSettings>("/settings", { signal }) });
+}
+
+export function useSaveSettings() {
+  const key = useKey();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AppSettingsBody) => api.request<AppSettings>("/admin/settings", { method: "PUT", body }),
+    onSuccess: (saved) => qc.setQueryData([...key, "settings"], saved),
   });
 }
 

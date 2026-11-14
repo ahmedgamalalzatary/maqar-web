@@ -5,6 +5,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
+  IsArray,
   IsBoolean,
   IsEmail,
   IsInt,
@@ -66,6 +67,15 @@ export class CreateAgentDto implements AgentBody {
 
   @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) @Max(60)
   years?: number;
+
+  @ApiPropertyOptional({ type: [Number], description: 'Listings to make this agent the advisor of (phase 29); the ones they have stay theirs' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  listingIds?: number[];
 }
 
 /** `PATCH /admin/agents/:id`: any field; a new password ends the agent's sessions; `active: false` turns them off. */
