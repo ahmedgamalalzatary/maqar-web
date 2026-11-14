@@ -1,12 +1,12 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConflictResponse, ApiConsumes, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import { CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatReport, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
+import { type AnswerBookingBody, CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatReport, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';
 import { ChatService } from './chat.service.js';
-import { BookSlotDto, PageQueryDto, ReportChatDto, SendMessageDto, StartChatDto } from './dto/chat.dto.js';
+import { AnswerBookingDto, BookSlotDto, PageQueryDto, ReportChatDto, SendMessageDto, StartChatDto } from './dto/chat.dto.js';
 
 /** Photos up to 8 MB each, before resizing. */
 const PHOTO_BYTES = 8 * 1024 * 1024;
@@ -99,5 +99,18 @@ export class ChatController {
     @Body() body: BookSlotDto,
   ): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
     return this.chat.book(user, id, messageId, body.time);
+  }
+
+  /** The advisor accepts, declines or moves a booking request from the chat (2026-11-14). */
+  @Post(':id/messages/:messageId/answer')
+  @Roles('agent')
+  @ApiConflictResponse({ description: 'Already answered, or the time was just taken' })
+  answer(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Body() body: AnswerBookingDto,
+  ): Promise<{ viewing: ViewingItem; card: ChatMessage }> {
+    return this.chat.answer(user, id, messageId, body as AnswerBookingBody);
   }
 }

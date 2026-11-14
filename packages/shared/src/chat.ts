@@ -18,7 +18,20 @@ export function chatPreview(body: ChatBody, lang: Lang): string {
       return ar ? '🔄 جولة ٣٦٠°' : '🔄 360° tour';
     case 'slots':
       return ar ? `🗓️ مواعيد معاينة ${fmtDate(body.date, 'ar')}` : `🗓️ Viewing times, ${fmtDate(body.date, 'en')}`;
-    case 'booking':
-      return ar ? `✅ المعاينة اتأكدت: ${fmtDate(body.date, 'ar')} ${fmtTime(body.time, 'ar')}` : `✅ Viewing confirmed: ${fmtDate(body.date, 'en')} ${fmtTime(body.time, 'en')}`;
+    case 'booking': {
+      const when = `${fmtDate(body.date, lang)} ${fmtTime(body.time, lang)}`;
+      switch (body.state) {
+        case 'pending':
+          return ar ? `🗓️ العميل حجز معاينة: ${when}، مستنية التأكيد` : `🗓️ Viewing booked: ${when}, awaiting confirmation`;
+        case 'moved':
+          return ar ? `🔁 المعاينة اتنقلت لـ ${when}` : `🔁 Viewing moved to ${when}`;
+        case 'declined':
+          return ar ? '❌ المسؤول اعتذر عن المعاينة' : '❌ The advisor declined the viewing';
+        case 'cancelled':
+          return ar ? '❌ المعاينة اتلغت' : '❌ Viewing cancelled';
+        default:
+          return ar ? `✅ المعاينة اتأكدت: ${when}` : `✅ Viewing confirmed: ${when}`;
+      }
+    }
   }
 }

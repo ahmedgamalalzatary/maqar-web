@@ -34,16 +34,17 @@ describe('SignUpScreen', () => {
     expect(requestOf(fetchMock).body).not.toHaveProperty('phone');
   });
 
-  it('takes an optional mobile number, read from Arabic digits, and stops on one that is not a number', async () => {
+  it('takes an optional mobile number (its label no longer says so, 2026-11-14), read from Arabic digits, and stops on one that is not a number', async () => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client' })));
     await renderWithProviders(<SignUpScreen />);
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
     await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
-    await fireEvent.changeText(screen.getByLabelText('رقم الموبايل (اختياري)'), '٠١٠');
+    expect(screen.queryByText(/اختياري/)).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText('رقم الموبايل'), '٠١٠');
     expect(screen.getByText('اكتب رقم موبايل صحيح')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'إنشاء حساب' })).toBeDisabled();
-    await fireEvent.changeText(screen.getByLabelText('رقم الموبايل (اختياري)'), '٠١٠ ١٢٣٤ ٥٦٧٨');
+    await fireEvent.changeText(screen.getByLabelText('رقم الموبايل'), '٠١٠ ١٢٣٤ ٥٦٧٨');
     await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
     expect(requestOf(fetchMock).body).toMatchObject({ phone: '01012345678' });
   });

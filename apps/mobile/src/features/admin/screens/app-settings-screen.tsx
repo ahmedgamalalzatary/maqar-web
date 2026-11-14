@@ -2,6 +2,10 @@ import {
   type AppSettings,
   CALCULATOR_BOUNDS,
   calculatorProblem,
+  CONTACT_MAX,
+  type ContactField,
+  contactProblem,
+  type ContactSettings,
   fmtNum,
   HOME_SECTION_LABEL,
   type HomeSection,
@@ -32,7 +36,7 @@ import { uploadPhotoRequest, uploadVideoRequest } from '../api/admin.api';
 import { useAppSettings, useSaveAppSettings } from '../hooks/use-admin';
 import { BackBar } from './clients-screen';
 
-/** `/admin/settings` (phase 29): the opening screen, the calculator's limits and the Home order. */
+/** `/admin/settings` (phase 29): the opening screen, the calculator's limits, the Home order and Contact us. */
 export function AppSettingsScreen() {
   const t = useT();
   const { colors } = useTheme();
@@ -62,6 +66,7 @@ export function AppSettingsScreen() {
             <Splash key={JSON.stringify(settings.data.splash)} saved={settings.data} />
             <Calculator key={JSON.stringify(settings.data.calculator)} saved={settings.data} />
             <HomeOrder key={JSON.stringify(settings.data.home)} saved={settings.data} />
+            <Contact key={JSON.stringify(settings.data.contact)} saved={settings.data} />
           </>
         )}
       </ScrollView>
@@ -256,6 +261,78 @@ function Calculator({ saved }: { saved: AppSettings }) {
         </Txt>
       ) : null}
       <Button label={t('احفظ الحاسبة', 'Save the calculator')} loading={save.busy} onPress={submit} />
+    </Block>
+  );
+}
+
+const CONTACT_LABEL: Record<ContactField, [string, string]> = {
+  email: ['الإيميل', 'Email'],
+  phone: ['رقم التليفون', 'Phone number'],
+  whatsapp: ['واتساب', 'WhatsApp'],
+  facebook: ['فيسبوك (رابط)', 'Facebook (link)'],
+  instagram: ['إنستجرام (رابط)', 'Instagram (link)'],
+  tiktok: ['تيك توك (رابط)', 'TikTok (link)'],
+};
+const CONTACT_PROBLEM: Record<ContactField, [string, string]> = {
+  email: ['اكتب إيميل صحيح.', 'Type a valid email address.'],
+  phone: ['اكتب رقم تليفون صحيح.', 'Type a valid phone number.'],
+  whatsapp: ['اكتب رقم واتساب صحيح.', 'Type a valid WhatsApp number.'],
+  facebook: ['رابط فيسبوك لازم يكون كامل ويبدأ بـ https://', 'The Facebook link must be a full address starting with https://'],
+  instagram: ['رابط إنستجرام لازم يكون كامل ويبدأ بـ https://', 'The Instagram link must be a full address starting with https://'],
+  tiktok: ['رابط تيك توك لازم يكون كامل ويبدأ بـ https://', 'The TikTok link must be a full address starting with https://'],
+};
+/** Numbers typed in Arabic digits are kept in Latin ones, which every phone and WhatsApp reads. */
+const latinDigits = (s: string) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+
+/** What the client's Contact us screen shows (owner, 2026-11-14); an empty field is not shown. */
+function Contact({ saved }: { saved: AppSettings }) {
+  const t = useT();
+  const save = useSave();
+  const [draft, setDraft] = useState<ContactSettings>(saved.contact);
+  const [showErrors, setShowErrors] = useState(false);
+  const value: ContactSettings = {
+    ...draft,
+    email: draft.email.trim(),
+    phone: latinDigits(draft.phone.trim()),
+    whatsapp: latinDigits(draft.whatsapp.trim()),
+    facebook: draft.facebook.trim(),
+    instagram: draft.instagram.trim(),
+    tiktok: draft.tiktok.trim(),
+  };
+  const problem = contactProblem(value);
+  const submit = () => {
+    if (problem) return setShowErrors(true);
+    save.run({ contact: value });
+  };
+  const field = (f: ContactField, keyboard: 'email-address' | 'phone-pad' | 'url') => (
+    <TextField
+      key={f}
+      label={t(...CONTACT_LABEL[f])}
+      value={draft[f]}
+      onChangeText={(v) => setDraft((d) => ({ ...d, [f]: v }))}
+      keyboardType={keyboard}
+      autoCapitalize="none"
+      autoCorrect={false}
+      maxLength={CONTACT_MAX}
+    />
+  );
+  return (
+    <Block
+      title={t('تواصل معنا', 'Contact us')}
+      about={t('اللي بتكتبه هنا بيظهر للعميل في «تواصل معنا». الخانة الفاضية مش بتظهر.', 'What you type here shows to clients under Contact us. An empty field does not show.')}
+    >
+      {field('email', 'email-address')}
+      {field('phone', 'phone-pad')}
+      {field('whatsapp', 'phone-pad')}
+      {field('facebook', 'url')}
+      {field('instagram', 'url')}
+      {field('tiktok', 'url')}
+      {showErrors && problem ? (
+        <Txt size={12} color="danger">
+          {t(...CONTACT_PROBLEM[problem])}
+        </Txt>
+      ) : null}
+      <Button label={t('احفظ بيانات التواصل', 'Save the contact details')} loading={save.busy} onPress={submit} />
     </Block>
   );
 }

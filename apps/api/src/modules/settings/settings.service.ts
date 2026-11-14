@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { type AppSettings, calculatorProblem, DEFAULT_APP_SETTINGS, homeSectionOrder, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings, splashProblem } from '@maqar/shared';
+import { type AppSettings, calculatorProblem, contactProblem, DEFAULT_APP_SETTINGS, homeSectionOrder, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings, splashProblem } from '@maqar/shared';
 import { eq, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { propertyVideos } from '../properties/properties.schema.js';
@@ -28,6 +28,7 @@ export class SettingsService {
       splash: { ...DEFAULT_APP_SETTINGS.splash, ...v?.splash },
       calculator: { ...DEFAULT_APP_SETTINGS.calculator, ...v?.calculator },
       home: { sections: homeSectionOrder(v?.home?.sections ?? []) },
+      contact: { ...DEFAULT_APP_SETTINGS.contact, ...v?.contact },
     };
   }
 
@@ -44,6 +45,15 @@ export class SettingsService {
       parts.calculator = { minDownPct: body.calculator.minDownPct, minYears: body.calculator.minYears, maxYears: body.calculator.maxYears };
     }
     if (body.home) parts.home = { sections: homeSectionOrder(body.home.sections) };
+    if (body.contact) {
+      const { email, phone, whatsapp, facebook, instagram, tiktok } = body.contact;
+      const contact = { email, phone, whatsapp, facebook, instagram, tiktok };
+      const problem = contactProblem(contact);
+      if (problem === 'email') throw new BadRequestException('The email address is not valid');
+      if (problem === 'phone' || problem === 'whatsapp') throw new BadRequestException(`The ${problem === 'phone' ? 'phone' : 'WhatsApp'} number is not valid`);
+      if (problem) throw new BadRequestException(`The ${problem} link must be a full web address (https://…)`);
+      parts.contact = contact;
+    }
     if (body.splash) parts.splash = await this.splash(body.splash);
 
     const { cur, next } = await this.db.transaction(async (tx) => {

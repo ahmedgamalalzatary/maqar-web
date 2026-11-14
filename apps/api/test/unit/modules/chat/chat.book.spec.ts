@@ -12,11 +12,12 @@ const make = (over: { choose?: (id: number, time: string) => Promise<boolean>; a
     findThread: vi.fn(async () => thread),
     findMessage: vi.fn(async () => ({ ...slotsMsg, createdAt: new Date() })),
     choose: vi.fn(over.choose ?? (async () => true)),
+    hasBookingCard: vi.fn(async () => false),
     add: vi.fn(async () => ({ id: 56, threadId: 5, sender: 'agent', body: { kind: 'booking' }, readAt: null, createdAt: new Date() })),
   };
   const viewings = {
     activeOf: vi.fn(over.activeOf ?? (async () => undefined)),
-    book: vi.fn(over.book ?? (async () => existingItem)),
+    book: vi.fn(over.book ?? (async () => ({ ...existingItem, status: 'pending' }))),
   };
   const service = new ChatService(
     repo as never,
@@ -24,10 +25,13 @@ const make = (over: { choose?: (id: number, time: string) => Promise<boolean>; a
     viewings as never,
     {} as never,
     {} as never,
-    { emit: vi.fn() } as never,
+    // The client has the conversation open, so nobody is notified here.
+    { emit: vi.fn(), isOpen: vi.fn(() => true) } as never,
     {} as never,
     {} as never,
   );
+  // The out-of-hours reply has its own tests.
+  vi.spyOn(service as unknown as { awayReply: () => Promise<void> }, 'awayReply').mockResolvedValue();
   return { service, repo, viewings };
 };
 
@@ -44,5 +48,13 @@ describe('booking a chat times card', () => {
     const { service, repo } = make({ choose: async () => false });
     await service.book(user, 5, 55, '13:00');
     expect(repo.choose).toHaveBeenCalledWith(55, '13:00');
+  });
+
+  // Owner, 2026-11-14: the booking waits for the advisor, and the chat says what the client booked.
+  it('books a request and posts it from the client’s side', async () => {
+    const { service, repo, viewings } = make();
+    await service.book(user, 5, 55, '13:00');
+    expect(viewings.book).toHaveBeenCalledWith(user, expect.objectContaining({ time: '13:00' }), 3, true);
+    expect(repo.add).toHaveBeenCalledWith(thread, 'client', { kind: 'booking', viewingId: 91, date: '2030-01-01', time: '12:00', state: 'pending' }, null);
   });
 });

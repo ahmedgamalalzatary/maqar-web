@@ -1,8 +1,8 @@
-import { fmtNum, ROLE_LABEL, SITE_PAGES, SUPPORT_EMAIL } from '@maqar/shared';
+import { DEVELOPER, fmtNum, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Languages, MapPin, MessagesSquare, Moon, Settings, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
+import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Headset, Languages, MapPin, MessagesSquare, Moon, Settings, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -158,6 +158,10 @@ export function MeScreen() {
           label={t('الشروط والأحكام', 'Terms of use')}
           onPress={() => openPage(SITE_PAGES.terms)}
         />
+        {/* The admin fills it in (2026-11-14); it is also the contact Apple 1.2 and 1.5 want inside the app. */}
+        {!user || user.role === 'client' ? (
+          <LinkRow icon={<Headset size={20} color={colors.accentInk} />} label={t('تواصل معنا', 'Contact us')} onPress={() => router.push('/contact')} />
+        ) : null}
       </Card>
 
       {user ? (
@@ -174,19 +178,8 @@ export function MeScreen() {
         <Txt size={11} color="ink3" align="center">
           {t('الإصدار', 'Version')} {Constants.expoConfig?.version ?? '1.0.0'}
         </Txt>
-        {/* Support has no row of its own (2026-11-12), but Apple 1.2 and 1.5 want a contact inside the app. */}
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={SUPPORT_EMAIL}
-          hitSlop={8}
-          onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openPage(SITE_PAGES.support))}
-        >
-          <Txt size={12} color="ink2" align="center">
-            {t('الدعم:', 'Support:')} {SUPPORT_EMAIL}
-          </Txt>
-        </Pressable>
         <Txt size={12} color="ink3" align="center" style={styles.credit}>
-          Powered by Bit Tech
+          {DEVELOPER.credit}
         </Txt>
         <Pressable accessibilityRole="link" accessibilityLabel={DEV_PHONE} hitSlop={8} onPress={() => void Linking.openURL(`tel:${DEV_PHONE}`).catch(() => {})}>
           <Txt size={13} weight="medium" color="accentInk" align="center">
@@ -200,10 +193,10 @@ export function MeScreen() {
   );
 }
 
-/** The developer's credit at the foot of the page (owner's request, 2026-11-12). */
-const DEV_PHONE = '01501053600';
+/** The developer's credit at the foot of the page (owner's requests, 2026-11-12 and 2026-11-14). */
+const DEV_PHONE = DEVELOPER.phone;
 
-/** A public page on the API's host, in the in-app browser. With no email app, support falls back to its page. */
+/** A public page on the API's host, in the in-app browser. */
 function openPage(path: string) {
   const url = mediaUrl(path);
   if (url) void WebBrowser.openBrowserAsync(url).catch(() => {});

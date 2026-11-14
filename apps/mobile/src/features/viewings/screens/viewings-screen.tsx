@@ -114,6 +114,8 @@ const STATUS: Record<ViewingStatus, { ar: string; en: string; tone: (c: Colors) 
   rescheduled: { ar: 'اتغير موعدها', en: 'Rescheduled', tone: (c) => [c.accentSoft, c.accentInk] },
   cancelled: { ar: 'ملغاة', en: 'Cancelled', tone: (c) => [c.dangerSoft, c.danger] },
   completed: { ar: 'تمت', en: 'Completed', tone: (c) => [c.sageSoft, c.sageInk] },
+  // Booked from a chat, waiting for the advisor (2026-11-14).
+  pending: { ar: 'مستنية التأكيد', en: 'Awaiting confirmation', tone: (c) => [c.accentSoft, c.accentInk] },
 };
 
 function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) {

@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   type AdminViewingItem,
+  type AnswerBookingBody,
   type AdminViewingsPage,
   BOOKING_DAYS,
   type BookViewingBody,
@@ -13,6 +14,7 @@ import {
   VIEWING_MINUTES,
   type ViewingItem,
   type ViewingCanceller,
+  isActiveViewing,
 } from '@maqar/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -96,9 +98,10 @@ export class ViewingsService {
 
   /**
    * Books with the listing's advisor, or — from a conversation that kept its own advisor after the
-   * listing moved — with the agent the client is actually talking to (`agentId`).
+   * listing moved — with the agent the client is actually talking to (`agentId`). A booking from a
+   * chat is `pending` (owner, 2026-11-14): it holds the hour, and the chat tells the advisor.
    */
-  async book(user: AuthUser, body: BookViewingBody, agentId?: number): Promise<ViewingItem> {
+  async book(user: AuthUser, body: BookViewingBody, agentId?: number, pending = false): Promise<ViewingItem> {
     const home = await this.properties.bookingTarget(body.propertyId);
     if (home.category === 'stay') throw new BadRequestException('Stays are not booked as viewings');
     if (await this.repo.activeFor(user.id, home.id)) {
@@ -114,6 +117,7 @@ export class ViewingsService {
         agentId: withAgent,
         startsAt: cairoInstant(body.date, body.time),
         reminders: body.reminders,
+        pending,
       });
     } catch (err) {
       const conflict = conflictOf(err);
@@ -122,8 +126,52 @@ export class ViewingsService {
     }
     const item = await this.item(id);
     await this.counter.interest(home.id, user.id, 'booked');
-    await this.tell(item, 'booked');
+    if (!pending) await this.tell(item, 'booked');
     return item;
+  }
+
+  /**
+   * The advisor's answer to a request booked from a chat (owner, 2026-11-14): accept it, decline it
+   * (the hour is free again), or move it to another free hour, which is then confirmed. The client
+   * is told. 409 once it is no longer waiting.
+   */
+  async answer(user: AuthUser, id: number, body: AnswerBookingBody): Promise<ViewingItem> {
+    const v = await this.repo.findById(id);
+    if (!v || v.agentId !== user.id) throw new NotFoundException('Viewing not found');
+    if (v.status !== 'pending') throw new ConflictException('This request was already answered');
+    if (v.startsAt.getTime() <= Date.now()) throw new ConflictException('This viewing has already started');
+    if (body.action === 'accept') {
+      if (!(await this.repo.confirm(id))) throw new ConflictException('This request was already answered');
+      const item = await this.item(id);
+      await this.tell(item, 'booked', true, undefined, false);
+      return item;
+    }
+    if (body.action === 'decline') {
+      if (!(await this.repo.cancel(id, 'agent', true))) throw new ConflictException('This request was already answered');
+      const item = await this.item(id);
+      await this.tell(item, 'cancelled', true, undefined, false);
+      return item;
+    }
+    const at = cairoInstant(body.date, body.time);
+    if (at.getTime() === v.startsAt.getTime()) throw new BadRequestException('That is the time it already has');
+    await this.assertFree(v.agentId, body.date, body.time, id);
+    try {
+      if (!(await this.repo.reschedule(id, v.startsAt, at, undefined, true))) throw new ConflictException('This request was already answered');
+    } catch (err) {
+      if (err instanceof ConflictException) throw err;
+      if (isDuplicate(err)) throw new ConflictException(TAKEN);
+      throw err;
+    }
+    const item = await this.item(id);
+    await this.tell(item, 'rescheduled', true, undefined, false);
+    return item;
+  }
+
+  /** A viewing as it stands now, with who cancelled it; undefined when there is none. */
+  async current(id: number): Promise<{ item: ViewingItem; cancelledBy: ViewingCanceller | null } | undefined> {
+    const row = await this.repo.findById(id);
+    const [item] = row ? await this.items([row], false) : [];
+    return row && item ? { item, cancelledBy: row.cancelledBy } : undefined;
   }
 
   /** A client's own viewings, or an agent's, soonest first. */
@@ -160,7 +208,7 @@ export class ViewingsService {
   /** Cancel or reschedule one active, future viewing; `note` (an admin's reason) goes in the notices. */
   private async change(v: ViewingRow, body: UpdateViewingBody, note: string | undefined, by: ViewingCanceller): Promise<ViewingItem> {
     const id = v.id;
-    if (v.status !== 'confirmed' && v.status !== 'rescheduled') throw new ConflictException('This viewing is not active any more');
+    if (!isActiveViewing(v)) throw new ConflictException('This viewing is not active any more');
     if (v.startsAt.getTime() <= Date.now()) throw new ConflictException('This viewing has already started');
     if (body.action === 'cancel') {
       // The write itself carries the expected state, so a cancel racing a reschedule has one winner.
@@ -191,7 +239,7 @@ export class ViewingsService {
    */
   async cancelUpcomingOf(clientId: number): Promise<number> {
     const now = Date.now();
-    const upcoming = (await this.repo.list({ clientId })).filter((v) => (v.status === 'confirmed' || v.status === 'rescheduled') && v.startsAt.getTime() > now);
+    const upcoming = (await this.repo.list({ clientId })).filter((v) => isActiveViewing(v) && v.startsAt.getTime() > now);
     let cancelled = 0;
     for (const v of upcoming) {
       if (!(await this.repo.cancel(v.id, 'admin'))) continue;
@@ -299,7 +347,7 @@ export class ViewingsService {
   }
 
   /** The client and the agent each hear about a booking, a new time and a cancellation (contract §8.7). */
-  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled', clientToo = true, note?: string): Promise<void> {
+  private async tell(v: ViewingItem, what: 'booked' | 'rescheduled' | 'cancelled', clientToo = true, note?: string, agentToo = true): Promise<void> {
     const row = (await this.repo.findById(v.id))!;
     const client = await this.users.findActiveById(row.clientId);
     const leadId = await this.repo.leadIdOf(row.clientId, row.agentId);
@@ -333,7 +381,8 @@ ${lang === 'ar' ? 'من مقر' : 'From Maqar'}: ${note}` : text);
             href: '/viewings',
           })
         : null,
-      this.notifications.notify(row.agentId, {
+      agentToo
+        ? this.notifications.notify(row.agentId, {
         kind: 'lead',
         titleAr: forAgent[0]!,
         titleEn: forAgent[1]!,
@@ -341,7 +390,8 @@ ${lang === 'ar' ? 'من مقر' : 'From Maqar'}: ${note}` : text);
         bodyEn: withNote(`${who} | ${home('en')} | ${when('en')}`, 'en'),
         // The lead page: it shows the viewing, the client and "New from app".
         href: leadId ? `/agent/lead/${leadId}` : '/agent',
-      }),
+      })
+        : null,
     ]);
   }
 }

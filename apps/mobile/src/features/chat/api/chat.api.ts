@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatPage, ChatReport, ChatReportBody, ChatThread, SendChatBody, ViewingItem } from '@maqar/shared';
+import type { AnswerBookingBody, ChatMessage, ChatPage, ChatReport, ChatReportBody, ChatThread, SendChatBody, ViewingItem } from '@maqar/shared';
 import { apiFetch } from '@/core/api/api';
 import type { PhotoPart } from '../photos';
 
@@ -25,6 +25,10 @@ export const readRequest = (id: number) => apiFetch<void>(`/chats/${id}/read`, {
 
 export const bookSlotRequest = (id: number, messageId: number, time: string) =>
   apiFetch<{ viewing: ViewingItem; card: ChatMessage }>(`/chats/${id}/messages/${messageId}/book`, { method: 'POST', body: { time } });
+
+/** The advisor accepts, declines or moves a booking request (2026-11-14). */
+export const answerBookingRequest = (id: number, messageId: number, body: AnswerBookingBody) =>
+  apiFetch<{ viewing: ViewingItem; card: ChatMessage }>(`/chats/${id}/messages/${messageId}/answer`, { method: 'POST', body });
 
 /** Phase 24: report the conversation to the admins, or close it for both sides. */
 export const reportChatRequest = (id: number, body: ChatReportBody) => apiFetch<ChatReport>(`/chats/${id}/report`, { method: 'POST', body });

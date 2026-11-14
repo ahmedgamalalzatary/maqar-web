@@ -1,9 +1,9 @@
-import type { ChatBody, ChatMessage, ChatReportBody, ChatSender, SendChatBody } from '@maqar/shared';
+import type { AnswerBookingBody, ChatBody, ChatMessage, ChatReportBody, ChatSender, SendChatBody } from '@maqar/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useSession } from '@/features/auth/store/session.store';
 import { VIEWINGS_KEY } from '@/features/viewings/hooks/use-viewings';
-import { blockChatRequest, bookSlotRequest, getChats, getMessages, getThread, readRequest, reportChatRequest, sendImagesRequest, sendRequest, startChatRequest } from '../api/chat.api';
+import { answerBookingRequest, blockChatRequest, bookSlotRequest, getChats, getMessages, getThread, readRequest, reportChatRequest, sendImagesRequest, sendRequest, startChatRequest } from '../api/chat.api';
 import { addMessage, chatsKey, type Messages, messagesKey, removeMessage, replaceMessage, threadKey } from '../chat-cache';
 import type { PhotoPart } from '../photos';
 
@@ -122,14 +122,32 @@ export function useBookSlot(threadId: number) {
   return useMutation({
     mutationFn: ({ messageId, time }: { messageId: number; time: string }) => bookSlotRequest(threadId, messageId, time),
     onSuccess: ({ card }) => replaceMessage(qc, me?.id ?? null, card),
-    onSettled: () =>
-      Promise.all([
-        qc.invalidateQueries({ queryKey: VIEWINGS_KEY }),
-        qc.invalidateQueries({ queryKey: ['slots'] }),
-        qc.invalidateQueries({ queryKey: chatsKey(me?.id ?? null) }),
-      ]),
+    onSettled: () => afterBooking(qc, me?.id ?? null, threadId),
   });
 }
+
+/** The advisor's answer to a booking request (2026-11-14): the request card is marked at once. */
+export function useAnswerBooking(threadId: number) {
+  const me = useChatUser();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, body }: { messageId: number; body: AnswerBookingBody }) => answerBookingRequest(threadId, messageId, body),
+    onSuccess: ({ card }) => replaceMessage(qc, me?.id ?? null, card),
+    onSettled: () => afterBooking(qc, me?.id ?? null, threadId),
+  });
+}
+
+/**
+ * After a booking or an answer: the viewings, the hours and the list are stale, and the card the
+ * server posted comes with the messages (the socket brings it too, when it is connected).
+ */
+const afterBooking = (qc: ReturnType<typeof useQueryClient>, userId: number | null, threadId: number) =>
+  Promise.all([
+    qc.invalidateQueries({ queryKey: VIEWINGS_KEY }),
+    qc.invalidateQueries({ queryKey: ['slots'] }),
+    qc.invalidateQueries({ queryKey: chatsKey(userId) }),
+    qc.invalidateQueries({ queryKey: messagesKey(userId, threadId) }),
+  ]);
 
 /** Phase 24: report the conversation to the admins. */
 export function useReportChat(threadId: number) {

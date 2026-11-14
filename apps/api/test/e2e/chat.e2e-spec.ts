@@ -12,6 +12,8 @@ import { seedProperties } from '../../src/modules/properties/properties.seed.js'
 import { users } from '../../src/modules/users/users.schema.js';
 import { seedDemoAccounts } from '../../src/modules/users/users.seed.js';
 import { cairoClock } from '../../src/modules/viewings/slots.js';
+import { viewings } from '../../src/modules/viewings/viewings.schema.js';
+import { ViewingsService } from '../../src/modules/viewings/viewings.service.js';
 import { createTestApp } from '../utils/app.js';
 import { bearer, signInSeeded, signUp } from '../utils/auth.js';
 import { resetDb } from '../utils/db.js';
@@ -192,26 +194,128 @@ describe('Chat (e2e)', () => {
       return days.slice(2).find((d) => weekdayOf(d.date) !== 5 && d.slots.filter((s) => s.state === 'free').length >= 2)!;
     };
 
-    it('books the time in one step, marks the card, and confirms with a booking card', async () => {
+    const viewingsOf = async (token: string) => (await http().get('/v1/viewings').set(bearer(token)).expect(200)).body as ViewingItem[];
+    const answer = (token: string, threadId: number, messageId: number, body: Record<string, unknown>) =>
+      http().post(`/v1/chats/${threadId}/messages/${messageId}/answer`).set(bearer(token)).send(body);
+    const hourState = async (homeId: number, date: string, time: string) =>
+      ((await http().get(`/v1/properties/${homeId}/slots`).expect(200)).body as SlotsResponse).days.find((d) => d.date === date)!.slots.find((s) => s.time === time)!.state;
+    /** A client's booking from a times card, and the request card the pick posts. */
+    const requested = async () => {
       const home = aHome();
       const t = await start(client.accessToken, home.id);
       const day = await freeDay(home.id);
       const card = (await send(omar, t.id, { kind: 'slots', date: day.date }).expect(201)).body as ChatMessage;
       const times = (card.body as { times: string[] }).times;
-      expect(times).toEqual(day.slots.filter((s) => s.state === 'free').map((s) => s.time));
-
       const res = await http().post(`/v1/chats/${t.id}/messages/${card.id}/book`).set(bearer(client.accessToken)).send({ time: times[1] }).expect(201);
-      const viewing = res.body.viewing as ViewingItem;
-      expect(viewing).toMatchObject({ status: 'confirmed', date: day.date, time: times[1], property: { id: home.id } });
-      expect(res.body.card.body).toMatchObject({ kind: 'slots', chosen: times[1] });
-      const last = (await page(client.accessToken, t.id)).items.at(-1)!;
-      expect(last).toMatchObject({ sender: 'agent', body: { kind: 'booking', viewingId: viewing.id, date: day.date, time: times[1] } });
-      // The client has seen the confirmation already: it is not unread.
-      expect(last.readAt).toEqual(expect.any(String));
-      // Same rules as the booking screen: the hour is taken now, and the card is spent.
-      const { days } = (await http().get(`/v1/properties/${home.id}/slots`).expect(200)).body as SlotsResponse;
-      expect(days.find((d) => d.date === day.date)!.slots.find((s) => s.time === times[1])!.state).toBe('taken');
+      const req = (await page(client.accessToken, t.id)).items.at(-1)!;
+      return { home, t, day, card, times, viewing: res.body.viewing as ViewingItem, slotsCard: res.body.card as ChatMessage, req };
+    };
+
+    // Owner, 2026-11-14: a time picked in the chat is a request; the advisor accepts, declines or moves it.
+    it('books the picked time as a request: the hour is held, and the chat says what the client booked', async () => {
+      const { home, t, day, times, viewing, slotsCard, req, card } = await requested();
+      expect(times).toEqual(day.slots.filter((s) => s.state === 'free').map((s) => s.time));
+      expect(viewing).toMatchObject({ status: 'pending', date: day.date, time: times[1], property: { id: home.id } });
+      expect(slotsCard.body).toMatchObject({ kind: 'slots', chosen: times[1] });
+      // The automatic message, from the client's side, unread by the advisor, who is told.
+      expect(req).toMatchObject({ sender: 'client', readAt: null, body: { kind: 'booking', viewingId: viewing.id, date: day.date, time: times[1], state: 'pending' } });
+      expect((await list(omar)).find((x) => x.id === t.id)!.unread).toBeGreaterThan(0);
+      expect((await inbox(omar)).items[0]).toMatchObject({ kind: 'chat', href: `/agent/chat/${t.id}` });
+      expect((await viewingsOf(client.accessToken)).find((v) => v.id === viewing.id)!.status).toBe('pending');
+      expect(await hourState(home.id, day.date, times[1]!)).toBe('taken');
       await http().post(`/v1/chats/${t.id}/messages/${card.id}/book`).set(bearer(client.accessToken)).send({ time: times[0] }).expect(409);
+    });
+
+    it('the advisor accepts: the viewing is confirmed, the request is marked, and a confirmation follows', async () => {
+      const { t, req, viewing, times, day } = await requested();
+      const reminders = app.get(ViewingsService);
+      // No reminder goes out for a viewing that is not confirmed yet.
+      const before = new Date(Date.parse(viewing.startsAt) - 90 * 60_000);
+      expect(await reminders.sendDueReminders(before)).toBe(0);
+      await answer(client.accessToken, t.id, req.id, { action: 'accept' }).expect(403);
+
+      const res = await answer(omar, t.id, req.id, { action: 'accept' }).expect(201);
+      expect(res.body.viewing).toMatchObject({ id: viewing.id, status: 'confirmed' });
+      expect(res.body.card).toMatchObject({ id: req.id, body: { state: 'accepted' } });
+      const last = (await page(client.accessToken, t.id)).items.at(-1)!;
+      expect(last).toMatchObject({ sender: 'agent', body: { kind: 'booking', viewingId: viewing.id, date: day.date, time: times[1], state: 'accepted' } });
+      expect((await inbox(client.accessToken)).items[0]).toMatchObject({ kind: 'booking', titleEn: 'Viewing confirmed' });
+      expect(await reminders.sendDueReminders(before)).toBe(1);
+      await answer(omar, t.id, req.id, { action: 'decline' }).expect(409);
+    });
+
+    it('the advisor declines: the hour is free again and the client can book again', async () => {
+      const { home, t, req, viewing, times, day } = await requested();
+      const res = await answer(omar, t.id, req.id, { action: 'decline' }).expect(201);
+      expect(res.body.viewing).toMatchObject({ id: viewing.id, status: 'cancelled' });
+      expect(res.body.card.body).toMatchObject({ state: 'declined' });
+      expect((await page(client.accessToken, t.id)).items.at(-1)!.body).toMatchObject({ kind: 'booking', state: 'declined' });
+      expect((await inbox(client.accessToken)).items[0]).toMatchObject({ kind: 'booking', titleEn: 'Viewing cancelled' });
+      expect(await hourState(home.id, day.date, times[1]!)).toBe('free');
+      const again = (await send(omar, t.id, { kind: 'slots', date: day.date }).expect(201)).body as ChatMessage;
+      await http().post(`/v1/chats/${t.id}/messages/${again.id}/book`).set(bearer(client.accessToken)).send({ time: times[0] }).expect(201);
+    });
+
+    it('the advisor moves it to another free hour, which is confirmed', async () => {
+      const { home, t, req, viewing, times, day } = await requested();
+      await answer(omar, t.id, req.id, { action: 'reschedule', date: day.date }).expect(400);
+      await answer(omar, t.id, req.id, { action: 'reschedule', date: day.date, time: '03:30' }).expect(400);
+      const res = await answer(omar, t.id, req.id, { action: 'reschedule', date: day.date, time: times[0] }).expect(201);
+      expect(res.body.viewing).toMatchObject({ id: viewing.id, status: 'rescheduled', date: day.date, time: times[0] });
+      expect(res.body.card.body).toMatchObject({ state: 'moved' });
+      expect((await page(client.accessToken, t.id)).items.at(-1)!.body).toMatchObject({ kind: 'booking', state: 'moved', date: day.date, time: times[0] });
+      expect((await inbox(client.accessToken)).items[0]).toMatchObject({ kind: 'booking', titleEn: 'Viewing rescheduled' });
+      expect(await hourState(home.id, day.date, times[1]!)).toBe('free');
+      expect(await hourState(home.id, day.date, times[0]!)).toBe('taken');
+    });
+
+    it('a request the client cancelled first can no longer be answered, and its card says so', async () => {
+      const { t, req, viewing } = await requested();
+      await http().patch(`/v1/viewings/${viewing.id}`).set(bearer(client.accessToken)).send({ action: 'cancel' }).expect(200);
+      await answer(omar, t.id, req.id, { action: 'accept' }).expect(409);
+      expect((await page(omar, t.id)).items.find((m) => m.id === req.id)!.body).toMatchObject({ state: 'cancelled' });
+    });
+
+    // CodeRabbit (2026-11-14): two answers at once, and writes that stopped half-way.
+    it('takes one of two answers sent at the same moment', async () => {
+      const { t, req, viewing } = await requested();
+      const [a, b] = await Promise.all([answer(omar, t.id, req.id, { action: 'accept' }), answer(omar, t.id, req.id, { action: 'decline' })]);
+      expect([a.status, b.status].sort()).toEqual([201, 409]);
+      const won = a.status === 201 ? 'confirmed' : 'cancelled';
+      expect((await viewingsOf(client.accessToken)).find((v) => v.id === viewing.id)!.status).toBe(won);
+      expect((await page(omar, t.id)).items.filter((m) => m.body.kind === 'booking' && m.sender === 'agent')).toHaveLength(1);
+    });
+
+    it('a booking whose request card was never stored gets it on the retry', async () => {
+      const { t, card, times, viewing, req } = await requested();
+      // As if the server stopped after booking, before the card was written.
+      await db.delete(chatMessages).where(eq(chatMessages.id, req.id));
+      const res = await http().post(`/v1/chats/${t.id}/messages/${card.id}/book`).set(bearer(client.accessToken)).send({ time: times[1] }).expect(201);
+      expect(res.body.viewing).toMatchObject({ id: viewing.id, status: 'pending' });
+      const requests = (await page(omar, t.id)).items.filter((m) => m.body.kind === 'booking');
+      expect(requests).toHaveLength(1);
+      expect(requests[0]!.body).toMatchObject({ viewingId: viewing.id, state: 'pending' });
+      // Another try finds it there and adds nothing.
+      await http().post(`/v1/chats/${t.id}/messages/${card.id}/book`).set(bearer(client.accessToken)).send({ time: times[1] }).expect(201);
+      expect((await page(omar, t.id)).items.filter((m) => m.body.kind === 'booking')).toHaveLength(1);
+    });
+
+    it('an answer whose chat cards were never written is finished on the retry, with what was really done', async () => {
+      const { t, req, viewing, times, day } = await requested();
+      // As if the server stopped after moving the viewing, before the chat was told.
+      await app.get(ViewingsService).answer({ id: omarId, role: 'agent' } as never, viewing.id, { action: 'reschedule', date: day.date, time: times[0]! });
+      await answer(omar, t.id, req.id, { action: 'accept' }).expect(409);
+      const items = (await page(omar, t.id)).items;
+      expect(items.find((m) => m.id === req.id)!.body).toMatchObject({ state: 'moved' });
+      expect(items.at(-1)).toMatchObject({ sender: 'agent', body: { kind: 'booking', state: 'moved', date: day.date, time: times[0] } });
+    });
+
+    it('a request nobody answered before its time is closed with the past viewings', async () => {
+      const { viewing } = await requested();
+      await db.update(viewings).set({ startsAt: new Date(Date.now() - 3_600_000) }).where(eq(viewings.id, viewing.id));
+      await app.get(ViewingsService).completePastViewings();
+      const [row] = await db.select({ status: viewings.status }).from(viewings).where(eq(viewings.id, viewing.id));
+      expect(row!.status).toBe('cancelled');
     });
 
     it('refuses a time not on the card, the agent booking, and a day with no free hours', async () => {

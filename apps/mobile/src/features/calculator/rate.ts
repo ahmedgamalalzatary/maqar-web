@@ -16,3 +16,13 @@ export function parseYears(text: string, max: number, min = 1): number | undefin
   const n = Number(latin);
   return n >= min && n <= max ? n : undefined;
 }
+
+/** A number typed in Arabic or Latin digits, with a decimal mark and separators allowed; undefined otherwise. */
+export function parseAmount(text: string): number | undefined {
+  const latin = text
+    .trim()
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[\s,٬،]/g, '')
+    .replace(/٫/g, '.');
+  return /^\d+(\.\d+)?$/.test(latin) ? Number(latin) : undefined;
+}

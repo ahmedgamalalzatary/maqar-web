@@ -112,6 +112,29 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
       expect(((await put({ calculator: { minDownPct: 11, minYears: 2, maxYears: 8 } }).expect(200)).body as AppSettings).calculator.minDownPct).toBe(11);
     });
 
+    it('keeps the Contact us details, trimmed, and refuses one filled in wrong (2026-11-14)', async () => {
+      const contact = {
+        email: ' info@maqar.app ',
+        phone: '01012345678',
+        whatsapp: '+20 101 234 5678',
+        facebook: 'https://facebook.com/maqar',
+        instagram: '',
+        tiktok: 'https://www.tiktok.com/@maqar',
+      };
+      const before = await settings();
+      const saved = (await put({ contact }).expect(200)).body as AppSettings;
+      expect(saved.contact).toEqual({ ...contact, email: 'info@maqar.app' });
+      expect(saved.calculator).toEqual(before.calculator);
+      expect((await settings()).contact.whatsapp).toBe('+20 101 234 5678');
+
+      await put({ contact: { ...contact, email: 'nope' } }).expect(400);
+      await put({ contact: { ...contact, whatsapp: 'call me' } }).expect(400);
+      await put({ contact: { ...contact, facebook: 'javascript:alert(1)' } }).expect(400);
+      await put({ contact: { ...contact, instagram: undefined } }).expect(400);
+      await put({ contact }, client).expect(403);
+      expect((await settings()).contact.email).toBe('info@maqar.app');
+    });
+
     it('takes a picture or a video of at most 3 seconds for the opening screen, with text', async () => {
       const jpeg = await sharp({ create: { width: 800, height: 1200, channels: 3, background: '#234' } }).jpeg().toBuffer();
       const photo = ((await http().post('/v1/uploads').set(as()).attach('photo', jpeg, { filename: 'p.jpg', contentType: 'image/jpeg' }).expect(201)).body as UploadResponse).url;

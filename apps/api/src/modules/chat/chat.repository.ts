@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatBlocker, ChatBody, ChatReportReason, ChatSender, ReportOutcome } from '@maqar/shared';
+import type { BookingCardState, ChatBlocker, ChatBody, ChatReportReason, ChatSender, ReportOutcome } from '@maqar/shared';
 import { and, count, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { leads } from '../leads/leads.schema.js';
@@ -112,6 +112,32 @@ export class ChatRepository {
       .update(chatMessages)
       .set({ body: sql`json_set(${chatMessages.body}, '$.chosen', ${time})` })
       .where(and(eq(chatMessages.id, id), eq(chatMessages.kind, 'slots'), sql`json_type(json_extract(${chatMessages.body}, '$.chosen')) = 'NULL'`));
+    return res.affectedRows === 1;
+  }
+
+  /** Whether the conversation has a booking card for this viewing from this side. */
+  async hasBookingCard(threadId: number, viewingId: number, sender: ChatSender): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.threadId, threadId),
+          eq(chatMessages.kind, 'booking'),
+          eq(chatMessages.sender, sender),
+          sql`json_extract(${chatMessages.body}, '$.viewingId') = ${viewingId}`,
+        ),
+      )
+      .limit(1);
+    return !!row;
+  }
+
+  /** Marks a booking request with the advisor's answer (2026-11-14), only while it still waits. */
+  async markBooking(id: number, state: BookingCardState): Promise<boolean> {
+    const [res] = await this.db
+      .update(chatMessages)
+      .set({ body: sql`json_set(${chatMessages.body}, '$.state', ${state})` })
+      .where(and(eq(chatMessages.id, id), eq(chatMessages.kind, 'booking'), sql`json_unquote(json_extract(${chatMessages.body}, '$.state')) = 'pending'`));
     return res.affectedRows === 1;
   }
 

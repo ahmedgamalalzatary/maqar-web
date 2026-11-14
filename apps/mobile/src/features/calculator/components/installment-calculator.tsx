@@ -9,12 +9,20 @@ import { useCalculatorLimits } from '@/core/app-config/store';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { BudgetSlider } from '@/features/prefs/components/budget-slider';
-import { parseRate, parseYears } from '../rate';
+import { parseAmount, parseRate, parseYears } from '../rate';
 
 const PRICE_SCALE = { min: 1_000_000, max: 40_000_000, step: 100_000 };
 const DOWN_MAX = 60;
 const DOWN_STEP = 5;
 const DEFAULT_RATE = 18;
+/** The most a typed price can be. */
+const PRICE_MAX = 10_000_000_000;
+
+/** A number as the fields show it: no separators, one decimal at most, in the app's digits. */
+const fieldText = (n: number, lang: 'ar' | 'en') => {
+  const s = String(Math.round(n * 10) / 10);
+  return lang === 'ar' ? localDigits(s, 'ar').replace('.', '٫') : s;
+};
 
 type Mode = 'dev' | 'bank';
 type Frequency = 'monthly' | 'quarterly';
@@ -44,8 +52,11 @@ export function InstallmentCalculator({
   const [typedPrice, setTypedPrice] = useState(initialPrice);
   const limits = useCalculatorLimits();
   const downScale = { min: minDownOf(limits, ownPlan ? defaultDown : undefined), max: DOWN_MAX, step: DOWN_STEP };
-  const [pickedDown, setDown] = useState(defaultDown);
+  const [pickedDown, setPickedDown] = useState(defaultDown);
   const down = Math.max(downScale.min, pickedDown);
+  // The down payment and the price can also be typed (owner, 2026-11-14). A field being typed in
+  // keeps its own text; the others show the numbers in use.
+  const [typing, setTyping] = useState<{ field: 'pct' | 'amount' | 'price'; text: string } | null>(null);
   // Typed, not picked (2026-11-12), inside the admin's range, or the listing's own plan.
   const { min: minYears, max: maxYears } = yearsLimits(limits, ownPlan ? defaultYears : undefined);
   const inRange = (n: number) => Math.min(maxYears, Math.max(minYears, n));
@@ -59,6 +70,28 @@ export function InstallmentCalculator({
   const [rateText, setRateText] = useState(localDigits(String(DEFAULT_RATE), lang));
 
   const price = editablePrice ? typedPrice : initialPrice;
+  const downAmount = (price * down) / 100;
+  const inDownRange = (p: number) => p >= downScale.min && p <= downScale.max;
+  // What is typed into a down payment field, as a percent; undefined while it is not a number.
+  const typedPct = typing?.field === 'pct' ? parseAmount(typing.text) : typing?.field === 'amount' ? ((parseAmount(typing.text) ?? NaN) / price) * 100 : undefined;
+  const downOutOfRange = typing !== null && typing.field !== 'price' && typedPct !== undefined && !Number.isNaN(typedPct) && !inDownRange(typedPct);
+  const setDown = (p: number) => {
+    setTyping(null);
+    setPickedDown(p);
+  };
+  const typeDown = (field: 'pct' | 'amount', text: string) => {
+    setTyping({ field, text });
+    const n = parseAmount(text);
+    if (n === undefined || price <= 0) return;
+    const p = field === 'pct' ? n : (n / price) * 100;
+    if (inDownRange(p)) setPickedDown(p);
+  };
+  const typePrice = (text: string) => {
+    setTyping({ field: 'price', text });
+    const n = parseAmount(text);
+    if (n !== undefined && n >= 1 && n <= PRICE_MAX) setTypedPrice(Math.round(n));
+  };
+  const shown = (field: 'pct' | 'amount' | 'price', n: number) => (typing?.field === field ? typing.text : fieldText(n, lang));
   const rate = parseRate(rateText);
   const plan = installment(price, down, years, mode === 'bank' ? rate : 0, frequency === 'quarterly');
   const downShare = plan.total > 0 ? (plan.down / plan.total) * 100 : 0;
@@ -86,9 +119,20 @@ export function InstallmentCalculator({
           <BudgetSlider
             scale={PRICE_SCALE}
             value={price}
-            onChange={setTypedPrice}
+            onChange={(p) => {
+              setTyping(null);
+              setTypedPrice(p);
+            }}
             label={t('سعر الوحدة', 'Unit price')}
             valueText={fmtMoney(price, lang, false)}
+          />
+          <TextField
+            label={t('سعر الوحدة (جنيه)', 'Unit price (EGP)')}
+            value={shown('price', price)}
+            onChangeText={typePrice}
+            onEndEditing={() => setTyping(null)}
+            keyboardType="number-pad"
+            maxLength={14}
           />
         </View>
       ) : null}
@@ -135,6 +179,33 @@ export function InstallmentCalculator({
           label={t('المقدم', 'Down payment')}
           valueText={fmtPct(down, lang)}
         />
+        <View style={styles.downFields}>
+          <View style={styles.flex}>
+            <TextField
+              label={t('المقدم (٪)', 'Down payment (%)')}
+              value={shown('pct', down)}
+              onChangeText={(v) => typeDown('pct', v)}
+              onEndEditing={() => setTyping(null)}
+              keyboardType="decimal-pad"
+              maxLength={5}
+            />
+          </View>
+          <View style={styles.flex}>
+            <TextField
+              label={t('المقدم (جنيه)', 'Down payment (EGP)')}
+              value={shown('amount', downAmount)}
+              onChangeText={(v) => typeDown('amount', v)}
+              onEndEditing={() => setTyping(null)}
+              keyboardType="number-pad"
+              maxLength={14}
+            />
+          </View>
+        </View>
+        {downOutOfRange ? (
+          <Txt size={12} color="danger">
+            {t(`المقدم من ${fmtNum(downScale.min, 'ar')}٪ لـ ${fmtNum(downScale.max, 'ar')}٪`, `The down payment is ${downScale.min}% to ${downScale.max}%`)}
+          </Txt>
+        ) : null}
       </View>
 
       <View style={styles.years}>
@@ -214,6 +285,7 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 4 },
   figures: { flexDirection: 'row', gap: 8, marginTop: 12 },
   years: { gap: 8 },
+  downFields: { flexDirection: 'row', gap: 10, marginTop: 12 },
   note: { flexDirection: 'row', gap: 6 },
   flex: { flex: 1 },
 });

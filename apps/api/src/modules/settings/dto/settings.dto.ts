@@ -3,6 +3,8 @@ import {
   type AppSettingsBody,
   CALCULATOR_BOUNDS,
   type CalculatorSettings,
+  CONTACT_MAX,
+  type ContactSettings,
   HOME_SECTIONS,
   type HomeSection,
   SPLASH_KINDS,
@@ -52,7 +54,28 @@ export class HomeDto {
   sections: HomeSection[];
 }
 
-/** `PUT /admin/settings`: any of the three parts; a part sent replaces that part. */
+/** What Contact us shows; an empty string hides that line. The format is checked by `contactProblem`. */
+export class ContactDto implements ContactSettings {
+  @ApiProperty() @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  email: string;
+
+  @ApiProperty() @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  phone: string;
+
+  @ApiProperty() @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  whatsapp: string;
+
+  @ApiProperty({ description: 'A full https link, or empty' }) @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  facebook: string;
+
+  @ApiProperty({ description: 'A full https link, or empty' }) @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  instagram: string;
+
+  @ApiProperty({ description: 'A full https link, or empty' }) @Transform(trim) @IsString() @MaxLength(CONTACT_MAX)
+  tiktok: string;
+}
+
+/** `PUT /admin/settings`: any of the parts; a part sent replaces that part. */
 export class SettingsDto implements AppSettingsBody {
   @ApiPropertyOptional({ type: SplashDto }) @IsOptional() @ValidateNested() @Type(() => SplashDto)
   splash?: SplashDto;
@@ -62,4 +85,7 @@ export class SettingsDto implements AppSettingsBody {
 
   @ApiPropertyOptional({ type: HomeDto }) @IsOptional() @ValidateNested() @Type(() => HomeDto)
   home?: HomeDto;
+
+  @ApiPropertyOptional({ type: ContactDto }) @IsOptional() @ValidateNested() @Type(() => ContactDto)
+  contact?: ContactDto;
 }

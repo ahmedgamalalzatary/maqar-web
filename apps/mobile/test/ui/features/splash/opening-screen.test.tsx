@@ -1,6 +1,7 @@
 import { DEFAULT_APP_SETTINGS, type SplashSettings } from '@maqar/shared';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useAppConfig } from '@/core/app-config/store';
+import { BootedContext } from '@/core/providers/booted';
 import { OpeningHost, OpeningScreen } from '@/features/splash/components/opening-screen';
 import { jsonResponse, mockFetch } from '../../../utils/api';
 import { renderWithProviders } from '../../../utils/render';
@@ -48,10 +49,65 @@ describe('The opening screen', () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
+  it('a picture or a video has the developer’s credit at its foot and no logo; the logo alone has no credit (2026-11-14)', async () => {
+    const { unmount } = await renderWithProviders(<OpeningScreen splash={image} onDone={jest.fn()} />);
+    expect(screen.getByText('Powered by Bit Technologies')).toBeOnTheScreen();
+    expect(screen.getByText('01501053600')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    await unmount();
+
+    const vid = await renderWithProviders(<OpeningScreen splash={video} onDone={jest.fn()} />);
+    expect(screen.getByText('Powered by Bit Technologies')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    await vid.unmount();
+
+    await renderWithProviders(<OpeningScreen splash={{ ...DEFAULT_APP_SETTINGS.splash, textAr: 'أهلا' }} onDone={jest.fn()} />);
+    expect(screen.getByLabelText('مقر MAQAR | لكل طموح مقر')).toBeOnTheScreen();
+    expect(screen.queryByText('Powered by Bit Technologies')).toBeNull();
+  });
+
+  // The phone's own launch screen is plain navy now (2026-11-14), so a picture or a video is the
+  // first thing seen. With nothing set, the logo shows here instead, while the app starts.
+  it('with nothing set, shows the logo only while the app is still starting', async () => {
+    const { rerender } = await renderWithProviders(
+      <BootedContext.Provider value={false}>
+        <OpeningHost />
+      </BootedContext.Provider>,
+    );
+    expect(screen.getByLabelText('مقر MAQAR | لكل طموح مقر')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'تخطي' })).toBeNull();
+    await rerender(
+      <BootedContext.Provider value>
+        <OpeningHost />
+      </BootedContext.Provider>,
+    );
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+  });
+
+  it('keeps the picture up until the app has started, never the logo after it', async () => {
+    useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, splash: image } });
+    const { rerender } = await renderWithProviders(
+      <BootedContext.Provider value={false}>
+        <OpeningHost />
+      </BootedContext.Provider>,
+    );
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    await act(async () => jest.advanceTimersByTime(5000));
+    expect(screen.getByTestId('opening-image')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    await rerender(
+      <BootedContext.Provider value>
+        <OpeningHost />
+      </BootedContext.Provider>,
+    );
+    expect(screen.queryByTestId('opening-image')).toBeNull();
+  });
+
   it('is not shown at all when the admin set nothing, and asks the server for the latest settings', async () => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(200, { ...DEFAULT_APP_SETTINGS, splash: image }));
     await renderWithProviders(<OpeningHost />);
     expect(screen.queryByRole('button', { name: 'تخطي' })).toBeNull();
+    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
     await act(async () => jest.runOnlyPendingTimers());
     expect(fetchMock).toHaveBeenCalled();
     // What arrives is for the next start: nothing pops up in the middle of this one.

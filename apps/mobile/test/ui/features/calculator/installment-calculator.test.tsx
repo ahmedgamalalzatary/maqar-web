@@ -125,6 +125,63 @@ describe('The installment calculator', () => {
     expect(screen.getByText(money(installment(PRICE + 100_000, 20, 5).payment))).toBeOnTheScreen();
   });
 
+  // Owner, 2026-11-14: the client types the down payment, as a percent or an amount, and the price.
+  describe('typed by hand', () => {
+    const pct = () => screen.getByLabelText('المقدم (٪)');
+    const amount = () => screen.getByLabelText('المقدم (جنيه)');
+
+    it('takes the down payment as a percent, and shows the amount it makes', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      expect(pct().props.value).toBe('٢٠');
+      expect(amount().props.value).toBe('٢٠٠٠٠٠٠');
+      await fireEvent.changeText(pct(), '33');
+      expect(screen.getByText(money(installment(PRICE, 33, 5).payment))).toBeOnTheScreen();
+      expect(amount().props.value).toBe('٣٣٠٠٠٠٠');
+    });
+
+    it('takes the down payment as an amount, and shows its percent', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      await fireEvent.changeText(amount(), '٢٥٠٠٠٠٠');
+      expect(screen.getByText(money(installment(PRICE, 25, 5).payment))).toBeOnTheScreen();
+      expect(pct().props.value).toBe('٢٥');
+      await fireEvent.changeText(amount(), '2345678');
+      expect(screen.getByText(money(installment(PRICE, 23.45678, 5).payment))).toBeOnTheScreen();
+      expect(pct().props.value).toBe('٢٣٫٥');
+    });
+
+    it('follows the slider', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      await slide('المقدم', 'increment');
+      expect(pct().props.value).toBe('٢٥');
+      expect(amount().props.value).toBe('٢٥٠٠٠٠٠');
+    });
+
+    it('says what it takes when the down payment is out of range, keeping the last good one', async () => {
+      useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, calculator: { minDownPct: 15, minYears: 1, maxYears: 10 } } });
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);
+      await fireEvent.changeText(pct(), '70');
+      expect(screen.getByText('المقدم من ١٥٪ لـ ٦٠٪')).toBeOnTheScreen();
+      expect(screen.getByText(money(installment(PRICE, 20, 5).payment))).toBeOnTheScreen();
+      await fireEvent.changeText(amount(), '1000000');
+      expect(screen.getByText('المقدم من ١٥٪ لـ ٦٠٪')).toBeOnTheScreen();
+      await fireEvent(amount(), 'endEditing');
+      expect(amount().props.value).toBe('٢٠٠٠٠٠٠');
+      expect(pct().props.value).toBe('٢٠');
+      expect(screen.queryByText('المقدم من ١٥٪ لـ ٦٠٪')).toBeNull();
+    });
+
+    it('takes the price typed, when the price can change', async () => {
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} editablePrice />);
+      const price = () => screen.getByLabelText('سعر الوحدة (جنيه)');
+      expect(price().props.value).toBe('١٠٠٠٠٠٠٠');
+      await fireEvent.changeText(price(), '12000000');
+      expect(screen.getByText(money(installment(12_000_000, 20, 5).payment))).toBeOnTheScreen();
+      expect(amount().props.value).toBe('٢٤٠٠٠٠٠');
+      await slide('سعر الوحدة', 'increment');
+      expect(price().props.value).toBe('١٢١٠٠٠٠٠');
+    });
+  });
+
   it('works in English', async () => {
     await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />, { lang: 'en' });
     expect(screen.getByText('Monthly installment')).toBeOnTheScreen();

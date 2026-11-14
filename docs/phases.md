@@ -1031,3 +1031,14 @@ Contract §8.1, §8.11, §11, §13.
 **Phone check (2026-11-14, owner):** everything worked. Two changes asked: the least down payment is typed by hand (11, 12, 9…), and the web top bar puts the menu button opposite the logo and title.
 
 **Status (2026-11-14): done.** Deployed (`e31ef07`, migration `0023`), checked on the phone; the owner's two changes follow in the next commit and deploy.
+
+## Phase 30: Owner's changes after the phone check (2026-11-14)
+
+Contract §8.7, §8.11, §8.12, §8.14, §11.
+
+- **Opening screen:** the phone's own launch screen is plain navy now (`assets/brand/splash-blank.png`; it shows before any app code, so it cannot know the admin's choice). The app then shows the admin's picture or video straight away, with no logo before it, or the logo when none is set. It stays up until start-up (resuming the session) is done (`core/providers/booted.ts`). Every picture and video has the developer's credit at its foot: "Powered by Bit Technologies" and 01501053600 (shared `DEVELOPER`).
+- **Contact us:** a fourth settings part, `contact` (email, phone, WhatsApp, Facebook, Instagram, TikTok; an empty field is not shown; links must be full https addresses; shared `contactProblem`, `contactLinks`). Set under App settings in the app and on the web. Clients and guests open it from My account (`/contact`); WhatsApp opens `wa.me` with the country code (an Egyptian 0… number becomes 20…). It starts with the support address, so it is the in-app contact Apple 1.2 and 1.5 want.
+- **My account footer:** the support line is gone (Contact us carries it); the credit reads "Powered by Bit Technologies".
+- **Calculator:** the client can type the down payment as a percent or as an amount, and the price on the standalone calculator, as well as using the sliders. A typed value outside the range is named and the last good one kept.
+- **Sign-up:** the mobile number field no longer says "optional" (it still is).
+- **Bookings from the chat wait for the advisor:** a time picked on a times card books the viewing as `pending` (migration `0024`: the status, and `active` covers it, so the hour stays held). A card from the client's side says what was booked ("The client booked a viewing", date and time). The advisor answers on that card (`POST /chats/:id/messages/:messageId/answer`): confirm, decline (the hour is free again) or change the time (another free hour of the same advisor, then confirmed). The request card shows the outcome and the answer follows as its own card; the client is told by the usual booking notice. No reminder goes out before confirmation; a request still unanswered when its time comes is cancelled with the past viewings. The client can cancel or move a pending viewing from My viewings as before (it stays pending when moved by the client). Bookings from the booking screen are confirmed at once, as before.

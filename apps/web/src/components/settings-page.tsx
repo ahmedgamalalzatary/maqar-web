@@ -4,6 +4,11 @@ import {
   type AppSettings,
   CALCULATOR_BOUNDS,
   calculatorProblem,
+  CONTACT_FIELDS,
+  CONTACT_MAX,
+  type ContactField,
+  contactProblem,
+  type ContactSettings,
   HOME_SECTION_LABEL,
   type HomeSection,
   readWholeNumber,
@@ -45,6 +50,7 @@ export function SettingsPage() {
           <Splash saved={settings.data} />
           <Calculator saved={settings.data} />
           <HomeOrder saved={settings.data} />
+          <Contact saved={settings.data} />
         </>
       )}
     </div>
@@ -240,6 +246,74 @@ function HomeOrder({ saved }: { saved: AppSettings }) {
       <div>
         <Button variant="gold" loading={save.busy} disabled={!changed} onClick={() => save.run({ home: { sections: order } })}>
           {t("احفظ الترتيب", "Save the order")}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+const CONTACT_LABEL: Record<ContactField, [string, string]> = {
+  email: ["الإيميل", "Email"],
+  phone: ["رقم التليفون", "Phone number"],
+  whatsapp: ["واتساب", "WhatsApp"],
+  facebook: ["فيسبوك (رابط)", "Facebook (link)"],
+  instagram: ["إنستجرام (رابط)", "Instagram (link)"],
+  tiktok: ["تيك توك (رابط)", "TikTok (link)"],
+};
+const CONTACT_PROBLEM: Record<ContactField, [string, string]> = {
+  email: ["اكتب إيميل صحيح.", "Type a valid email address."],
+  phone: ["اكتب رقم تليفون صحيح.", "Type a valid phone number."],
+  whatsapp: ["اكتب رقم واتساب صحيح.", "Type a valid WhatsApp number."],
+  facebook: ["الرابط لازم يكون كامل ويبدأ بـ https://", "The link must be a full address starting with https://"],
+  instagram: ["الرابط لازم يكون كامل ويبدأ بـ https://", "The link must be a full address starting with https://"],
+  tiktok: ["الرابط لازم يكون كامل ويبدأ بـ https://", "The link must be a full address starting with https://"],
+};
+const CONTACT_INPUT: Record<ContactField, { type: string; placeholder?: string }> = {
+  email: { type: "email" },
+  phone: { type: "tel" },
+  whatsapp: { type: "tel" },
+  facebook: { type: "url", placeholder: "https://facebook.com/…" },
+  instagram: { type: "url", placeholder: "https://instagram.com/…" },
+  tiktok: { type: "url", placeholder: "https://tiktok.com/@…" },
+};
+/** Numbers typed in Arabic digits are kept in Latin ones, which every phone and WhatsApp reads. */
+const latinDigits = (s: string) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+
+/** What the client's Contact us screen shows (owner, 2026-11-14); an empty field is not shown. */
+function Contact({ saved }: { saved: AppSettings }) {
+  const t = useT();
+  const save = useSave();
+  const [draft, setDraft] = useState<ContactSettings>(saved.contact);
+  const value = Object.fromEntries(
+    CONTACT_FIELDS.map((f) => [f, f === "phone" || f === "whatsapp" ? latinDigits(draft[f].trim()) : draft[f].trim()]),
+  ) as ContactSettings;
+  const problem = contactProblem(value);
+  return (
+    <Card className="flex flex-col gap-4">
+      <div>
+        <h2 className="font-semibold">{t("تواصل معنا", "Contact us")}</h2>
+        <p className="text-sm text-ink-2">
+          {t("اللي بتكتبه هنا بيظهر للعميل في «تواصل معنا». الخانة الفاضية مش بتظهر.", "What you type here shows to clients under Contact us. An empty field does not show.")}
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {CONTACT_FIELDS.map((f) => (
+          <Field
+            key={f}
+            label={t(...CONTACT_LABEL[f])}
+            value={draft[f]}
+            onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}
+            type={CONTACT_INPUT[f].type}
+            placeholder={CONTACT_INPUT[f].placeholder}
+            error={problem === f && draft[f].trim() ? t(...CONTACT_PROBLEM[f]) : undefined}
+            maxLength={CONTACT_MAX}
+            dir="ltr"
+          />
+        ))}
+      </div>
+      <div>
+        <Button variant="gold" loading={save.busy} disabled={!!problem} onClick={() => save.run({ contact: value })}>
+          {t("احفظ بيانات التواصل", "Save the contact details")}
         </Button>
       </div>
     </Card>

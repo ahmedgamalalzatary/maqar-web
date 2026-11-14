@@ -64,12 +64,15 @@ export class ViewingsRepository {
     return row;
   }
 
-  /** Marks past confirmed/rescheduled viewings completed (contract §8.7), so they free the home and read truthfully. */
+  /**
+   * Marks past confirmed/rescheduled viewings completed (contract §8.7), so they free the home and
+   * read truthfully. A request the advisor never answered (2026-11-14) is cancelled instead.
+   */
   async completePastViewings(): Promise<number> {
     const [res] = await this.db
       .update(viewings)
-      .set({ status: 'completed' })
-      .where(and(inArray(viewings.status, ['confirmed', 'rescheduled']), lt(viewings.startsAt, sql`now()`)));
+      .set({ status: sql`if(${viewings.status} = 'pending', 'cancelled', 'completed')` })
+      .where(and(inArray(viewings.status, ['confirmed', 'rescheduled', 'pending']), lt(viewings.startsAt, sql`now()`)));
     return res.affectedRows ?? 0;
   }
 
@@ -78,11 +81,11 @@ export class ViewingsRepository {
    * to `viewing` (a lead further on, at negotiation or won, keeps its stage). All or nothing; a
    * duplicate key means the hour was just taken.
    */
-  async book(v: { propertyId: number; clientId: number; agentId: number; startsAt: Date; reminders: ReminderOffset[] }): Promise<number> {
+  async book(v: { propertyId: number; clientId: number; agentId: number; startsAt: Date; reminders: ReminderOffset[]; pending?: boolean }): Promise<number> {
     return this.db.transaction(async (tx) => {
       const [{ id }] = await tx
         .insert(viewings)
-        .values({ propertyId: v.propertyId, clientId: v.clientId, agentId: v.agentId, startsAt: v.startsAt })
+        .values({ propertyId: v.propertyId, clientId: v.clientId, agentId: v.agentId, startsAt: v.startsAt, status: v.pending ? 'pending' : 'confirmed' })
         .$returningId();
       await this.setReminders(tx, id!, v.reminders, v.startsAt);
       // The budget comes from the client's preferences, when they set them. The lead turns hot and
@@ -105,14 +108,18 @@ export class ViewingsRepository {
     });
   }
 
-  /** Moves a live viewing; its reminders (the new choices, or the old ones) count again from the new time. */
-  /** Moves the hour only while the viewing is still active; false when another change got there first. */
-  async reschedule(id: number, from: Date, to: Date, reminders?: ReminderOffset[]): Promise<boolean> {
+  /**
+   * Moves a live viewing; its reminders (the new choices, or the old ones) count again from the new
+   * time. Only while the viewing is still active; false when another change got there first. A
+   * request still waiting for the advisor keeps waiting, unless the advisor is the one moving it.
+   */
+  async reschedule(id: number, from: Date, to: Date, reminders?: ReminderOffset[], confirm = false): Promise<boolean> {
     return this.db.transaction(async (tx) => {
       const [res] = await tx
         .update(viewings)
-        .set({ startsAt: to, rescheduledFrom: from, status: 'rescheduled' })
-        .where(and(eq(viewings.id, id), inArray(viewings.status, ['confirmed', 'rescheduled'])));
+        .set({ startsAt: to, rescheduledFrom: from, status: confirm ? 'rescheduled' : sql`if(${viewings.status} = 'pending', 'pending', 'rescheduled')` })
+        // The advisor's answer moves only a request still waiting, so two answers cannot both win.
+        .where(and(eq(viewings.id, id), confirm ? eq(viewings.status, 'pending') : inArray(viewings.status, ['confirmed', 'rescheduled', 'pending'])));
       if (res.affectedRows !== 1) return false;
       const keep = reminders ?? (await tx.select({ offset: viewingReminders.offset }).from(viewingReminders).where(eq(viewingReminders.viewingId, id))).map((r) => r.offset);
       await this.setReminders(tx, id, keep, to);
@@ -124,12 +131,24 @@ export class ViewingsRepository {
     });
   }
 
-  /** Cancels only while the viewing is still active; false when another change got there first. */
-  async cancel(id: number, by: ViewingCanceller): Promise<boolean> {
+  /**
+   * Cancels only while the viewing is still active (or, for the advisor declining a request, still
+   * waiting); false when another change got there first.
+   */
+  async cancel(id: number, by: ViewingCanceller, onlyPending = false): Promise<boolean> {
     const [res] = await this.db
       .update(viewings)
       .set({ status: 'cancelled', cancelledBy: by })
-      .where(and(eq(viewings.id, id), inArray(viewings.status, ['confirmed', 'rescheduled'])));
+      .where(and(eq(viewings.id, id), inArray(viewings.status, onlyPending ? ['pending'] : ['confirmed', 'rescheduled', 'pending'])));
+    return res.affectedRows === 1;
+  }
+
+  /** The advisor accepts a request (2026-11-14); false when it is no longer waiting. */
+  async confirm(id: number): Promise<boolean> {
+    const [res] = await this.db
+      .update(viewings)
+      .set({ status: 'confirmed' })
+      .where(and(eq(viewings.id, id), eq(viewings.status, 'pending')));
     return res.affectedRows === 1;
   }
 
@@ -155,6 +174,8 @@ export class ViewingsRepository {
         and(
           isNull(viewingReminders.sentAt),
           isNotNull(viewings.active),
+          // Not before the advisor confirms a request.
+          ne(viewings.status, 'pending'),
           gt(viewings.startsAt, now),
           lte(viewings.startsAt, new Date(now.getTime() + LONGEST_REMINDER_MS)),
           or(isNull(viewingReminders.claimedAt), lt(viewingReminders.claimedAt, new Date(now.getTime() - LEASE_MS))),
