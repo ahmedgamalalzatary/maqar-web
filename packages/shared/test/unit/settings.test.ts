@@ -11,7 +11,12 @@ describe('app settings the admin controls (phase 29)', () => {
   it('takes a calculator whose numbers make sense', () => {
     expect(calculatorProblem(DEFAULT_APP_SETTINGS.calculator)).toBeNull();
     expect(calculatorProblem({ minDownPct: 10, minYears: 2, maxYears: 8 })).toBeNull();
-    expect(calculatorProblem({ minDownPct: 12, minYears: 1, maxYears: 10 })).toBe('down');
+    // Any whole percent from 0 to 50, typed by the admin (owner, 2026-11-14).
+    expect(calculatorProblem({ minDownPct: 11, minYears: 1, maxYears: 10 })).toBeNull();
+    expect(calculatorProblem({ minDownPct: 0, minYears: 1, maxYears: 10 })).toBeNull();
+    expect(calculatorProblem({ minDownPct: 50, minYears: 1, maxYears: 10 })).toBeNull();
+    expect(calculatorProblem({ minDownPct: 12.5, minYears: 1, maxYears: 10 })).toBe('down');
+    expect(calculatorProblem({ minDownPct: -1, minYears: 1, maxYears: 10 })).toBe('down');
     expect(calculatorProblem({ minDownPct: 55, minYears: 1, maxYears: 10 })).toBe('down');
     expect(calculatorProblem({ minDownPct: 10, minYears: 0, maxYears: 10 })).toBe('years');
     expect(calculatorProblem({ minDownPct: 10, minYears: 6, maxYears: 5 })).toBe('years');

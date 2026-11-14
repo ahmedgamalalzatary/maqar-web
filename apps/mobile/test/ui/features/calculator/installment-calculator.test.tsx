@@ -182,6 +182,17 @@ describe('The /calculator screen', () => {
       expect(screen.getByText(money(installment(PRICE, 5, 12).payment))).toBeOnTheScreen();
     });
 
+    it('starts at a least down payment that is not a step of 5, then moves in steps of 5', async () => {
+      useAppConfig.setState({ config: { ...DEFAULT_APP_SETTINGS, calculator: { minDownPct: 11, minYears: 1, maxYears: 10 } } });
+      await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={0} defaultYears={5} />);
+      const down = () => screen.getByRole('adjustable', { name: 'المقدم' }).props.accessibilityValue.now as number;
+      expect(down()).toBe(11);
+      await slide('المقدم', 'increment');
+      expect(down()).toBe(15);
+      await slide('المقدم', 'decrement');
+      expect(down()).toBe(11);
+    });
+
     // Phase 29 review: the start-up refresh can bring new limits while the calculator is open.
     it('follows limits that change while it is open', async () => {
       await renderWithProviders(<InstallmentCalculator price={PRICE} defaultDown={20} defaultYears={5} />);

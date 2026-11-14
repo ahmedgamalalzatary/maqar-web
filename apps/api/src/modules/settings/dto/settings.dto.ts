@@ -33,7 +33,7 @@ export class SplashDto {
 }
 
 export class CalculatorDto implements CalculatorSettings {
-  @ApiProperty({ description: 'The least down payment, in percent: 0 to 50 in steps of 5' }) @IsInt() @Min(0) @Max(CALCULATOR_BOUNDS.downMax)
+  @ApiProperty({ description: 'The least down payment, in percent: a whole number from 0 to 50' }) @IsInt() @Min(0) @Max(CALCULATOR_BOUNDS.downMax)
   minDownPct: number;
 
   @ApiProperty() @IsInt() @Min(1) @Max(CALCULATOR_BOUNDS.yearsMax)

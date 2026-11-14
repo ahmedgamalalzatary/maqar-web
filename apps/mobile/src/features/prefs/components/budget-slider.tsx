@@ -7,7 +7,11 @@ import { useTheme } from '@/core/theme';
 
 const THUMB = 30;
 
-const snap = (v: number, { min, max, step }: Scale) => Math.min(max, Math.max(min, min + Math.round((v - min) / step) * step));
+/**
+ * To the nearest multiple of the step, kept inside the scale. A minimum off the grid (a least down
+ * payment of 11%) is its own first stop: 11, then 15, 20…; a minimum on the grid works as before.
+ */
+const snap = (v: number, { min, max, step }: Scale) => Math.min(max, Math.max(min, Math.round(v / step) * step));
 
 /**
  * A one-thumb slider for the budget (contract §8.1). The thumb sits at a physical `left`,

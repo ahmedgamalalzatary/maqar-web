@@ -109,12 +109,13 @@ function Menu({ name }: { name: string }) {
 
   return (
     <>
-      <header ref={bar} className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-2 backdrop-blur lg:hidden print:hidden">
+      {/* The logo and page name on one side, the menu button on the other (owner, 2026-11-14). */}
+      <header ref={bar} className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 ps-4 pe-2 backdrop-blur lg:hidden print:hidden">
+        <Image src="/admin/brand/icon.svg" alt="" width={28} height={28} />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{current?.label ?? t("لوحة الإدارة", "Admin")}</span>
         <button ref={opener} type="button" onClick={() => setOpen(true)} aria-label={t("افتح القائمة", "Open the menu")} aria-expanded={open} aria-controls="menu" className="grid size-11 place-items-center rounded-lg text-ink hover:bg-surface-2">
           <MenuIcon className="size-5" aria-hidden />
         </button>
-        <Image src="/admin/brand/icon.svg" alt="" width={28} height={28} />
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{current?.label ?? t("لوحة الإدارة", "Admin")}</span>
       </header>
       {/* The backdrop closes on a tap; the keyboard uses Escape or the close button, so it is not a tab stop. */}
       {open ? <button type="button" tabIndex={-1} aria-label={t("اقفل القائمة", "Close the menu")} onClick={close} className="fixed inset-0 z-40 bg-navy/50 lg:hidden" /> : null}
