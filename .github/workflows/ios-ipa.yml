@@ -27,6 +27,14 @@ jobs:
           test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history, for the build number below
+
+      # OPS-03: the store build number is the commit count on main, so each upload is higher than the last.
+      - name: Set the build number
+        run: |
+          echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "Build number: $(git rev-list --count HEAD)"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -77,6 +85,14 @@ jobs:
           test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history, for the build number below
+
+      # OPS-03: the store build number is the commit count on main, so each upload is higher than the last.
+      - name: Set the build number
+        run: |
+          echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "Build number: $(git rev-list --count HEAD)"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

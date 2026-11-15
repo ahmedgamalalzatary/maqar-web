@@ -22,7 +22,7 @@ These are the items that would get a submission rejected or stop it from uploadi
 | B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B6 | App Store | **Paid Apple Developer account, signed build, APNs key** | ⏸ OPS-02 |
 | B7 | Google Play | **Firebase `google-services.json`** (no Android push without it) | ⏸ OPS-01 |
-| B8 | Both | **Version and build numbers that go up on each upload.** The first upload works; the second is refused without this. | ⏸ OPS-03 |
+| B8 | Both | **Version and build numbers that go up on each upload.** CI sets them from the commit count on main (2026-11-15). | ✅ |
 | B9 | Google Play | **New personal developer account:** a closed test with **12 testers opted in for 14 days in a row** before production can be requested | 📝 an account choice (see §2.1) |
 | B10 | Both | **A working review account and a server that stays up** throughout review | 📝 demo accounts exist ✅; the server is temporary, see §4 |
 
@@ -52,7 +52,7 @@ Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`dep
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
 | Push (FCM) | ⏸ | OPS-01: needs `google-services.json`. |
 | **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.maqar.app` and the upload and Play signing SHA-1s. |
-| versionCode goes up on each upload | ⏸ | OPS-03. Play refuses a versionCode it has already seen. |
+| versionCode goes up on each upload | ✅ | The commit count on main, set by the AAB workflow (2026-11-15). Build each upload from a newer commit. |
 
 ### 2.3 App content (Play Console → Policy → App content)
 
@@ -109,7 +109,7 @@ What account deletion does is solid. `UsersRepository.softDelete` blanks the nam
 | Register the bundle ID `com.maqar.app` | 📝 ⚠️ | Check that it's free. If another team already owns it, the ID has to change before the first build. |
 | Signing, provisioning profile, **Push Notifications capability and APNs key** (uploaded to Expo for Expo push) | ⏸ | OPS-02. `ios-ipa.yml` builds unsigned on purpose today. |
 | Built with **Xcode 26 / iOS 26 SDK** (required for uploads since 2026-04-28) | ⚠️ | `macos-latest` should be on Xcode 26 by now. Print `xcodebuild -version` in the workflow to prove it. Uploads must also target iOS 13 or later; Expo SDK 58 targets much higher ✅. |
-| Build number goes up on each upload | ⏸ | OPS-03 |
+| Build number goes up on each upload | ✅ | The commit count on main, set by the iOS workflow (2026-11-15). |
 | **Export compliance** | ✅ fixed in Phase 20 (was ❌) | Not set, so every upload stops at "Missing Compliance". The app only uses HTTPS and the OS's own encryption, which is exempt. Set `ios.config.usesNonExemptEncryption: false` (this becomes `ITSAppUsesNonExemptEncryption = NO`). |
 | **Privacy manifest** (`PrivacyInfo.xcprivacy`, "required reason" APIs) | ⚠️ | Expo SDK packages ship their own. A third-party native library without one (for example `react-native-maps` or async-storage) gets an **ITMS-91053** e-mail after upload. Add what it lists under `ios.privacyManifests` in `app.json`, then upload again. Do this on the first TestFlight upload, before sending for review. |
 | iPad | ⚠️ | `supportsTablet: false` ✅, so no iPad screenshots are needed. But iPhone-only apps still run on iPads in compatibility mode, and reviewers sometimes test on an iPad. Open the app once on an iPad simulator to check nothing is cut off. |
@@ -183,7 +183,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 9. App Store Connect: App Privacy, age rating, trader status, review notes and demo account, screenshots (§3.4).
 
 **Deferred items. Each blocks an upload when its time comes:**
-10. OPS-01 Firebase file, OPS-02 Apple account, signing and APNs key, OPS-03 version and build numbers. Add the Google Maps key secret at the same time.
+10. OPS-01 Firebase file, OPS-02 Apple account, signing and APNs key. Add the Google Maps key secret at the same time.
 11. First TestFlight and Play internal-test uploads. Handle any ITMS-91053 (privacy manifest) e-mail and any Play 16 KB or permission warning **before** sending for review.
 
 ---
