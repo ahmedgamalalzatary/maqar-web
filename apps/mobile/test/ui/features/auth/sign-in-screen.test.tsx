@@ -47,6 +47,13 @@ describe('SignInScreen', () => {
     expect(useSession.getState().user).toBeNull();
   });
 
+  it('opens Forgot password with the email typed so far (phase 31)', async () => {
+    await renderWithProviders(<SignInScreen />);
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'omar@maqar.app');
+    await fireEvent.press(screen.getByRole('link', { name: 'نسيت كلمة السر؟' }));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/forgot-password', params: { email: 'omar@maqar.app' } });
+  });
+
   // The owner's choice (2026-11-13): guests can still browse (App Store 5.1.1), but the way in is a quiet link.
   it('offers browsing as a guest as a small link under the buttons', async () => {
     await renderWithProviders(<SignInScreen />);

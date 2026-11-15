@@ -1,10 +1,11 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Building2, CalendarCheck, FileBarChart, Languages, LayoutDashboard, LogOut, MapPin, Menu as MenuIcon, MessagesSquare, Moon, Settings, ShieldUser, Sun, UserCog, Users, UsersRound, X } from "lucide-react";
+import { Building2, CalendarCheck, FileBarChart, KeyRound, Languages, LayoutDashboard, LogOut, MapPin, Menu as MenuIcon, MessagesSquare, Moon, Settings, ShieldUser, Sun, UserCog, Users, UsersRound, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { passwordOk, readResetCode, RESET_CODE_MINUTES } from "@maqar/shared";
 import { createContext, type FormEvent, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { api, useSession } from "@/lib/client";
@@ -151,6 +152,11 @@ function Menu({ name }: { name: string }) {
         </nav>
         <div className="flex shrink-0 flex-col gap-0.5 border-t border-line p-2">
           <p className="truncate px-3 py-1 text-xs text-ink-3">{name}</p>
+          {/* Phase 31: the admin's own password. */}
+          <Link href="/password/" onClick={close} aria-current={path.startsWith("/password") ? "page" : undefined} className={tool}>
+            <KeyRound className="size-[18px] shrink-0" aria-hidden />
+            {t("غيّر كلمة السر", "Change password")}
+          </Link>
           <button type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className={tool}>
             <Languages className="size-[18px] shrink-0" aria-hidden />
             {lang === "ar" ? "English" : "العربية"}
@@ -172,6 +178,7 @@ function Menu({ name }: { name: string }) {
 function SignIn() {
   const t = useT();
   const lang = useLang();
+  const [forgot, setForgot] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -197,6 +204,7 @@ function SignIn() {
       setBusy(false);
     }
   };
+  if (forgot) return <ForgotPassword email={email} onBack={() => setForgot(false)} />;
   return (
     <main className="grid min-h-dvh place-items-center bg-navy px-4">
       <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-surface p-6 shadow-float">
@@ -204,6 +212,9 @@ function SignIn() {
         <h1 className="text-center text-lg font-semibold">{t("لوحة إدارة مقر", "Maqar admin")}</h1>
         <Field label={t("الإيميل", "Email")} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
         <Field label={t("كلمة السر", "Password")} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
+        <button type="button" onClick={() => setForgot(true)} className="-mt-2 self-end text-sm text-accent-ink underline-offset-4 hover:underline">
+          {t("نسيت كلمة السر؟", "Forgot your password?")}
+        </button>
         {error ? (
           <p role="alert" className="text-sm text-danger">
             {error}
@@ -216,6 +227,112 @@ function SignIn() {
           {lang === "ar" ? "English" : "العربية"}
         </button>
       </form>
+    </main>
+  );
+}
+
+/**
+ * Phase 31 (2026-11-15): a forgotten password. The email gets a six-digit code; the code and a new
+ * password sign the admin in. The answer never says whether the email has an account.
+ */
+function ForgotPassword({ email: typed, onBack }: { email: string; onBack: () => void }) {
+  const t = useT();
+  const [email, setEmail] = useState(typed.trim());
+  const [sentTo, setSentTo] = useState<string>();
+  const [code, setCode] = useState("");
+  const [next, setNext] = useState("");
+  const [again, setAgain] = useState("");
+  const [tried, setTried] = useState(false);
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+
+  const failure = (err: unknown) => {
+    const status = err instanceof ApiError ? err.status : -1;
+    return status === 400
+      ? t("الكود غلط أو وقته خلص. اطلب كود جديد لو محتاج.", "The code is wrong or has expired. Ask for a new one if you need to.")
+      : status === 403
+        ? t("كلمة السر اتغيرت، بس اللوحة دي لفريق مقر بس", "Your password was changed, but this dashboard is for the Maqar team only")
+        : status === 429
+          ? t("محاولات كتير، استنى دقيقة", "Too many tries, wait a minute")
+          : t("مفيش اتصال بالسيرفر، حاول تاني", "Can’t reach the server, try again");
+  };
+  const ask = async (to: string) => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await api.forgotPassword(to);
+      setSentTo(to);
+    } catch (err) {
+      setError(failure(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const askSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (/^\S+@\S+\.\S+$/.test(email.trim())) void ask(email.trim());
+  };
+  const reset = async (e: FormEvent) => {
+    e.preventDefault();
+    setTried(true);
+    const c = readResetCode(code);
+    if (!sentTo || !c || !passwordOk(next) || again !== next) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      await api.resetPassword(sentTo, c, next);
+    } catch (err) {
+      setError(failure(err));
+      setBusy(false);
+    }
+  };
+
+  const card = "flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-surface p-6 shadow-float";
+  const alert = error ? (
+    <p role="alert" className="text-sm text-danger">
+      {error}
+    </p>
+  ) : null;
+  const back = (
+    <button type="button" onClick={onBack} className="text-sm text-ink-2 underline-offset-4 hover:underline">
+      {t("رجوع لتسجيل الدخول", "Back to sign in")}
+    </button>
+  );
+  return (
+    <main className="grid min-h-dvh place-items-center bg-navy px-4">
+      {!sentTo ? (
+        <form onSubmit={askSubmit} className={card} noValidate>
+          <h1 className="text-center text-lg font-semibold">{t("نسيت كلمة السر", "Forgot password")}</h1>
+          <p className="text-sm text-ink-2">{t("اكتب إيميل حسابك، وهنبعتلك كود تعمل بيه كلمة سر جديدة.", "Type your account’s email and we’ll send you a code to set a new password.")}</p>
+          <Field label={t("الإيميل", "Email")} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+          {alert}
+          <Button type="submit" variant="gold" loading={busy}>
+            {t("ابعتلي الكود", "Send me the code")}
+          </Button>
+          {back}
+        </form>
+      ) : (
+        <form onSubmit={reset} className={card} noValidate>
+          <h1 className="text-center text-lg font-semibold">{t("كلمة سر جديدة", "New password")}</h1>
+          <p className="text-sm text-ink-2">
+            {t(
+              `لو الإيميل ${sentTo} عليه حساب، هيوصله كود من ٦ أرقام شغال ${RESET_CODE_MINUTES} دقيقة. بص في الـ Spam لو مش لاقيه.`,
+              `If ${sentTo} has an account, it gets a 6-digit code that works for ${RESET_CODE_MINUTES} minutes. Check spam if you can’t find it.`,
+            )}
+          </p>
+          <Field label={t("الكود", "Code")} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} error={tried && !readResetCode(code) ? t("الكود ٦ أرقام", "The code is 6 digits") : undefined} dir="ltr" />
+          <Field label={t("كلمة السر الجديدة", "New password")} type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} error={(tried || next) && !passwordOk(next) ? t("٨ حروف على الأقل، فيها حرف ورقم", "At least 8 characters, with a letter and a digit") : undefined} dir="ltr" />
+          <Field label={t("اكتب كلمة السر الجديدة تاني", "Type the new password again")} type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} error={(tried || again) && again !== next ? t("الكلمتين مش زي بعض", "The two don’t match") : undefined} dir="ltr" />
+          {alert}
+          <Button type="submit" variant="gold" loading={busy}>
+            {t("غيّر كلمة السر", "Change password")}
+          </Button>
+          <button type="button" disabled={busy} onClick={() => void ask(sentTo)} className="text-sm text-accent-ink underline-offset-4 hover:underline">
+            {t("ابعت الكود تاني", "Send the code again")}
+          </button>
+          {back}
+        </form>
+      )}
     </main>
   );
 }

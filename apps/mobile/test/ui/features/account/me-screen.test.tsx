@@ -34,6 +34,21 @@ describe('MeScreen', () => {
     expect(screen.queryByRole('button', { name: 'عدّل تفضيلاتك' })).toBeNull();
   });
 
+  it('clients and admins can change their password; an agent asks the admin (phase 31)', async () => {
+    await useSession.getState().setSession(makeAuth({ role: 'client' }));
+    const view = await renderWithProviders(<MeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'غيّر كلمة السر' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/profile/password');
+
+    await useSession.getState().setSession(makeAuth({ role: 'admin' }));
+    await view.rerender(<MeScreen />);
+    expect(screen.getByRole('button', { name: 'غيّر كلمة السر' })).toBeOnTheScreen();
+
+    await useSession.getState().setSession(makeAuth({ role: 'agent' }));
+    await view.rerender(<MeScreen />);
+    expect(screen.queryByRole('button', { name: 'غيّر كلمة السر' })).toBeNull();
+  });
+
   it('guests and clients can open the calculator; an agent has no row for it', async () => {
     const { unmount } = await renderWithProviders(<MeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'حاسبة التقسيط' }));

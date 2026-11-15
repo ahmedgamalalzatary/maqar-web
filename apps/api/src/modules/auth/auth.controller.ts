@@ -4,7 +4,7 @@ import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import type { AuthResponse } from '@maqar/shared';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { AuthService } from './auth.service.js';
-import { RefreshDto, SignInDto, SignUpDto } from './dto/auth.dto.js';
+import { ForgotPasswordDto, RefreshDto, ResetPasswordDto, SignInDto, SignUpDto } from './dto/auth.dto.js';
 
 /** Router for `/v1/auth`. Sign-up and sign-in are rate limited per IP (contract §15). */
 @ApiTags('auth')
@@ -31,6 +31,20 @@ export class AuthController {
   @SkipThrottle()
   refresh(@Body() body: RefreshDto): Promise<AuthResponse> {
     return this.auth.refresh(body.refreshToken);
+  }
+
+  /** Emails a code to set a new password (phase 31). Always 204: it never says whether the email has an account. */
+  @Post('forgot-password')
+  @HttpCode(204)
+  forgotPassword(@Body() body: ForgotPasswordDto): Promise<void> {
+    return this.auth.forgotPassword(body.email);
+  }
+
+  /** The emailed code and a new password: signs in, and every older session ends (phase 31). */
+  @Post('reset-password')
+  @HttpCode(200)
+  resetPassword(@Body() body: ResetPasswordDto): Promise<AuthResponse> {
+    return this.auth.resetPassword(body);
   }
 
   @Post('sign-out')
