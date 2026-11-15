@@ -21,7 +21,7 @@ These are the items that would get a submission rejected or stop it from uploadi
 | B4 | App Store | **Vague iOS permission texts** ("Allow Maqar to access your device motion"); Apple rejects these under 5.1.1 | ✅ fixed in Phase 20 (was ❌) see §3.2 |
 | B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B6 | App Store | **Paid Apple Developer account, signed build, APNs key** | ⏸ OPS-02 |
-| B7 | Google Play | **Firebase `google-services.json`** (no Android push without it) | ⏸ OPS-01 |
+| B7 | Google Play | **Firebase `google-services.json`** (no Android push without it). In the GitHub secret `GOOGLE_SERVICES_JSON_CONTENT`; the FCM V1 key is uploaded to the Expo project (2026-11-15). | ✅ |
 | B8 | Both | **Version and build numbers that go up on each upload.** CI sets them from the commit count on main (2026-11-15). | ✅ |
 | B9 | Google Play | **New personal developer account:** a closed test with **12 testers opted in for 14 days in a row** before production can be requested | 📝 an account choice (see §2.1) |
 | B10 | Both | **A working review account and a server that stays up** throughout review | 📝 demo accounts exist ✅; the server is temporary, see §4 |
@@ -50,7 +50,7 @@ Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`dep
 | HTTPS only | ✅ | The release API is `https://old-host.invalid/v1`, so cleartext stays off. |
 | **Permissions the app doesn't use** | ✅ fixed in Phase 20 (was ❌) | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
-| Push (FCM) | ⏸ | OPS-01: needs `google-services.json`. |
+| Push (FCM) | ✅ | Firebase project `maqar-app-notification-354f3`; the APK and AAB workflows write the file from the secret (2026-11-15). |
 | **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.maqar.app` and the upload and Play signing SHA-1s. |
 | versionCode goes up on each upload | ✅ | The commit count on main, set by the AAB workflow (2026-11-15). Build each upload from a newer commit. |
 
@@ -183,7 +183,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 9. App Store Connect: App Privacy, age rating, trader status, review notes and demo account, screenshots (§3.4).
 
 **Deferred items. Each blocks an upload when its time comes:**
-10. OPS-01 Firebase file, OPS-02 Apple account, signing and APNs key. Add the Google Maps key secret at the same time.
+10. OPS-02 Apple account, signing and APNs key. Add the Google Maps key secret at the same time.
 11. First TestFlight and Play internal-test uploads. Handle any ITMS-91053 (privacy manifest) e-mail and any Play 16 KB or permission warning **before** sending for review.
 
 ---

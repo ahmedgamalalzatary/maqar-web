@@ -64,6 +64,18 @@ jobs:
       - name: Build the shared package
         run: pnpm --filter @maqar/shared build
 
+      # OPS-01: the Firebase app file, so Android gets push tokens. Without the secret the build has no push.
+      - name: Put the Firebase file in place
+        env:
+          GOOGLE_SERVICES_JSON_CONTENT: ${{ secrets.GOOGLE_SERVICES_JSON_CONTENT }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_CONTENT" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_CONTENT" > "$RUNNER_TEMP/google-services.json"
+            echo "GOOGLE_SERVICES_JSON=$RUNNER_TEMP/google-services.json" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No GOOGLE_SERVICES_JSON_CONTENT secret: this build gets no Android push"
+          fi
+
       - name: Generate the native Android project
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --no-install
