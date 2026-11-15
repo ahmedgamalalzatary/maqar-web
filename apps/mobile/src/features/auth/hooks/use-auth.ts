@@ -1,9 +1,9 @@
-import type { AuthResponse, SignInBody, SignUpBody } from '@maqar/shared';
+import type { AuthResponse, ResetPasswordBody, SignInBody, SignUpBody } from '@maqar/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/core/settings/store';
 import { forgetThisPhone } from '@/features/notifications/push';
-import { signInRequest, signOutRequest, signUpRequest } from '../api/auth.api';
+import { forgotPasswordRequest, resetPasswordRequest, signInRequest, signOutRequest, signUpRequest } from '../api/auth.api';
 import { takePendingAction } from '../pending-action';
 import { homeFor, useSession } from '../store/session.store';
 
@@ -39,6 +39,17 @@ export function useSignIn() {
 export function useSignUp() {
   const onSignedIn = useOnSignedIn(true);
   return useMutation({ mutationFn: (body: SignUpBody) => signUpRequest(body), onSuccess: onSignedIn });
+}
+
+/** Phase 31: emails a code to set a new password. */
+export function useForgotPassword() {
+  return useMutation({ mutationFn: (email: string) => forgotPasswordRequest(email) });
+}
+
+/** Phase 31: the emailed code and a new password sign the account in, like a sign-in. */
+export function useResetPassword() {
+  const onSignedIn = useOnSignedIn();
+  return useMutation({ mutationFn: (body: ResetPasswordBody) => resetPasswordRequest(body), onSuccess: onSignedIn });
 }
 
 /**

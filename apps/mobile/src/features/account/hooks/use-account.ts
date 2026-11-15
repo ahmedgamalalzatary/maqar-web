@@ -1,15 +1,23 @@
-import type { Lang, ThemePref, UpdateMeBody } from '@maqar/shared';
+import type { ChangePasswordBody, Lang, ThemePref, UpdateMeBody } from '@maqar/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { toast } from '@/components/toast';
 import { useSettings } from '@/core/settings/store';
 import { useSession } from '@/features/auth/store/session.store';
-import { deleteMeRequest, updateMeRequest } from '../api/me.api';
+import { changePasswordRequest, deleteMeRequest, updateMeRequest } from '../api/me.api';
 
 export function useUpdateMe() {
   return useMutation({
     mutationFn: (body: UpdateMeBody) => updateMeRequest(body),
     onSuccess: (me) => useSession.getState().setUser(me),
+  });
+}
+
+/** Phase 31: the new password; the session it answers with replaces this phone's. */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: ChangePasswordBody) => changePasswordRequest(body),
+    onSuccess: (auth) => useSession.getState().setSession(auth),
   });
 }
 

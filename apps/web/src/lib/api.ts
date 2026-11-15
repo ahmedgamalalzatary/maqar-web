@@ -190,7 +190,27 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock, upload
 
   /** Only admins use the dashboard: any other account is signed out again at once. */
   async function signIn(email: string, password: string): Promise<AuthResponse> {
-    const auth = await read<AuthResponse>(await send("/auth/sign-in", { method: "POST", body: { email, password } }, undefined));
+    return keepAdmin(await read<AuthResponse>(await send("/auth/sign-in", { method: "POST", body: { email, password } }, undefined)));
+  }
+
+  /** Phase 31: the new password; the session it answers with replaces this tab's. */
+  async function changePassword(currentPassword: string, newPassword: string): Promise<AuthResponse> {
+    const auth = await request<AuthResponse>("/me/password", { method: "PUT", body: { currentPassword, newPassword } });
+    store.save(auth);
+    return auth;
+  }
+
+  /** Phase 31: emails a code; always answered the same, account or not. */
+  async function forgotPassword(email: string): Promise<void> {
+    await read<void>(await send("/auth/forgot-password", { method: "POST", body: { email } }, undefined));
+  }
+
+  /** Phase 31: the code and a new password sign in, admins only, like `signIn`. */
+  async function resetPassword(email: string, code: string, newPassword: string): Promise<AuthResponse> {
+    return keepAdmin(await read<AuthResponse>(await send("/auth/reset-password", { method: "POST", body: { email, code, newPassword } }, undefined)));
+  }
+
+  async function keepAdmin(auth: AuthResponse): Promise<AuthResponse> {
     if (auth.user.role !== "admin") {
       await send("/auth/sign-out", { method: "POST", body: { refreshToken: auth.refreshToken } }, undefined).catch(() => undefined);
       throw new ApiError(403, "This dashboard is for the Maqar team");
@@ -205,7 +225,7 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock, upload
     if (cur) await send("/auth/sign-out", { method: "POST", body: { refreshToken: cur.refreshToken } }, undefined).catch(() => undefined);
   }
 
-  return { request, upload, signIn, signOut, session: () => store.load() };
+  return { request, upload, signIn, signOut, changePassword, forgotPassword, resetPassword, session: () => store.load() };
 }
 
 export type Api = ReturnType<typeof createApi>;

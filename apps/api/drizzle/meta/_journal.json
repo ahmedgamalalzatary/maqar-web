@@ -176,6 +176,13 @@
       "when": 1794661704760,
       "tag": "0024_chat_booking_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1794763842431,
+      "tag": "0025_password_resets",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,8 @@
-import { DEVELOPER, fmtNum, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
+import { canChangeOwnPassword, DEVELOPER, fmtNum, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Headset, Languages, MapPin, MessagesSquare, Moon, Settings, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
+import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Headset, KeyRound, Languages, MapPin, MessagesSquare, Moon, Settings, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
@@ -126,6 +126,10 @@ export function MeScreen() {
             label={t('عدّل بياناتك', 'Edit profile')}
             onPress={() => router.push('/profile/edit')}
           />
+        ) : null}
+        {/* Phase 31: clients and admins change their own password; an advisor asks the admin. */}
+        {user && canChangeOwnPassword(user.role) ? (
+          <LinkRow icon={<KeyRound size={20} color={colors.accentInk} />} label={t('غيّر كلمة السر', 'Change password')} onPress={() => router.push('/profile/password')} />
         ) : null}
         {user?.role === 'client' ? (
           <LinkRow

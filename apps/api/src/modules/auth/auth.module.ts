@@ -10,6 +10,8 @@ import { AuthController } from './auth.controller.js';
 import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { AccessTokenGuard } from './guards/access-token.guard.js';
+import { PasswordResetsRepository } from './password-resets.repository.js';
+import { PasswordController } from './password.controller.js';
 import { TokenUsers } from './token-users.js';
 
 @Module({
@@ -29,10 +31,11 @@ import { TokenUsers } from './token-users.js';
       ],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, PasswordController],
   providers: [
     AuthService,
     AuthRepository,
+    PasswordResetsRepository,
     TokenUsers,
     // Order matters: who you are first, then what your role may do.
     { provide: APP_GUARD, useClass: AccessTokenGuard },

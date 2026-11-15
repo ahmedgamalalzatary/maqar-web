@@ -90,6 +90,34 @@ export class Env {
   @IsString()
   EXPO_ACCESS_TOKEN?: string;
 
+  /**
+   * Optional: the mail server for password-reset codes (phase 31), for example Gmail
+   * (smtp.gmail.com, 465, the address, and a Google app password). Without SMTP_HOST no email
+   * leaves: outside production the email is written to the log instead.
+   */
+  @IsOptional()
+  @IsString()
+  SMTP_HOST?: string;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? 465 : Number(value)))
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  SMTP_PORT = 465;
+
+  @IsOptional()
+  @IsString()
+  SMTP_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_PASS?: string;
+
+  /** The sender shown, e.g. "Maqar <maqarcompany@gmail.com>". Defaults to SMTP_USER. */
+  @IsOptional()
+  @IsString()
+  MAIL_FROM?: string;
+
   /** Password for the seeded demo accounts. Only the seed script reads it. */
   @IsOptional()
   @IsString()

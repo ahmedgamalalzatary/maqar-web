@@ -89,6 +89,36 @@ export type UpdateMeBody = Partial<Pick<Me, 'name' | 'phone' | 'lang' | 'theme' 
 /** Deleting an account needs the current password. */
 export type DeleteMeBody = { password: string };
 
+// ---- Passwords (phase 31, 2026-11-15) ----
+
+/** At least PASSWORD_MIN characters (at most 128), with a letter and a digit: the API's rule. */
+export function passwordOk(p: string): boolean {
+  return p.length >= PASSWORD_MIN && p.length <= 128 && /[A-Za-z]/.test(p) && /\d/.test(p);
+}
+
+/** Clients and admins change and recover their own password; an advisor asks the admin (owner's call). */
+export function canChangeOwnPassword(role: Role): boolean {
+  return role !== 'agent';
+}
+
+/** `PUT /v1/me/password`: answered with a new session, and every other session ends. */
+export type ChangePasswordBody = { currentPassword: string; newPassword: string };
+/** `POST /v1/auth/forgot-password`: always 204, so it cannot tell whether an email has an account. */
+export type ForgotPasswordBody = { email: string };
+/** `POST /v1/auth/reset-password`: the emailed code and the new password; answered with a session. */
+export type ResetPasswordBody = { email: string; code: string; newPassword: string };
+
+/** The emailed code: this many digits, good for RESET_CODE_MINUTES and RESET_CODE_TRIES wrong tries. */
+export const RESET_CODE_LENGTH = 6;
+export const RESET_CODE_MINUTES = 15;
+export const RESET_CODE_TRIES = 5;
+
+/** A typed code as the API takes it: Arabic digits read, spaces dropped; null when it is not six digits. */
+export function readResetCode(text: string): string | null {
+  const code = text.replace(/\s/g, '').replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+  return code.length === RESET_CODE_LENGTH && /^\d+$/.test(code) ? code : null;
+}
+
 // ---- Browse listings (phase 3) ----
 
 /** One page of a list. `page` starts at 1. */

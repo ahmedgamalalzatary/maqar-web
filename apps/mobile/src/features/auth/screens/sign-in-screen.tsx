@@ -47,6 +47,18 @@ export function SignInScreen() {
         textContentType="password"
         onSubmitEditing={submit}
       />
+      {/* Phase 31: a code by email sets a new password. */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={t('نسيت كلمة السر؟', 'Forgot your password?')}
+        onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim() } })}
+        hitSlop={12}
+        style={styles.forgot}
+      >
+        <Txt size={13} color="accentInk">
+          {t('نسيت كلمة السر؟', 'Forgot your password?')}
+        </Txt>
+      </Pressable>
       {signIn.isError ? (
         <Txt color="danger" accessibilityLiveRegion="polite">
           {t(authErrorMessage(signIn.error))}
@@ -78,5 +90,6 @@ export function SignInScreen() {
 const styles = StyleSheet.create({
   top: { alignItems: 'center', gap: 12, paddingVertical: 16 },
   guest: { alignSelf: 'center', paddingVertical: 4 },
+  forgot: { alignSelf: 'flex-end', paddingVertical: 2 },
   guestText: { textDecorationLine: 'underline' },
 });
