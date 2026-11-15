@@ -38,22 +38,39 @@ const KEEP_RULES = `
  */
 const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...(config as ExpoConfig),
-  android: { ...config.android, ...(googleServicesFile && { googleServicesFile }) },
-  plugins: [
-    ...(config.plugins ?? []),
-    // Android release builds refuse plain http:// unless allowed. Only needed while
-    // the API runs on a LAN address without TLS; production uses https.
-    [
-      'expo-build-properties',
-      { android: { usesCleartextTraffic: apiUrl?.startsWith('http://') ?? false, extraProguardRules: KEEP_RULES } },
+/**
+ * The store build number (OPS-03, 2026-11-15): Android's versionCode and iOS's buildNumber. CI sets
+ * it to the commit count on main, so each upload is higher than the last; a local build leaves it
+ * to Expo (1). Play takes whole numbers from 1 to 2,100,000,000.
+ */
+function storeBuildNumber(): number | undefined {
+  const raw = process.env.APP_BUILD_NUMBER;
+  if (raw === undefined || raw === '') return undefined;
+  const n = Number(raw);
+  if (!/^\d+$/.test(raw) || n < 1 || n > 2_100_000_000) throw new Error(`APP_BUILD_NUMBER must be a whole number from 1 to 2100000000, not "${raw}"`);
+  return n;
+}
+
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const build = storeBuildNumber();
+  return {
+    ...(config as ExpoConfig),
+    android: { ...config.android, ...(googleServicesFile && { googleServicesFile }), ...(build && { versionCode: build }) },
+    ios: { ...config.ios, ...(build && { buildNumber: String(build) }) },
+    plugins: [
+      ...(config.plugins ?? []),
+      // Android release builds refuse plain http:// unless allowed. Only needed while
+      // the API runs on a LAN address without TLS; production uses https.
+      [
+        'expo-build-properties',
+        { android: { usesCleartextTraffic: apiUrl?.startsWith('http://') ?? false, extraProguardRules: KEEP_RULES } },
+      ],
+      ['react-native-maps', { androidGoogleMapsApiKey: googleMapsKey }],
     ],
-    ['react-native-maps', { androidGoogleMapsApiKey: googleMapsKey }],
-  ],
-  extra: {
-    ...config.extra,
-    apiUrl,
-    hasGoogleMapsKey: !!googleMapsKey,
-  },
-});
+    extra: {
+      ...config.extra,
+      apiUrl,
+      hasGoogleMapsKey: !!googleMapsKey,
+    },
+  };
+};

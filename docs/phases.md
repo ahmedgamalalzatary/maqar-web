@@ -166,7 +166,7 @@ Contract §4 (production database) and §5 (production server rules).
 **Docker**
 - `Dockerfile.api` at the repo root: a multi-stage build that ships only the built API and its production packages.
 - `docker-compose.yml`: the `api` and `mysql` services. MySQL data and the uploaded images live in named volumes, so a new deploy never loses them.
-- Configuration comes from **`.env.production`** on the server (git-ignored). `.env.production.example` in the repo lists every variable.
+- Configuration comes from **`.env.production`** on the server (git-ignored). `deploy/setup-server.sh` writes it, with the secrets it generates (the repo's example file was removed on 2026-11-15).
 
 **Every deploy (a GitHub Action on push to `main`, after the checks are green)**
 1. Back up the database (`mysqldump`) and the images folder into `/root/maqar-backups`, named by date and commit.
