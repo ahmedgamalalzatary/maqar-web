@@ -1,3 +1,4 @@
+import { ErrorText } from '@/components/error-text';
 import { readMobile } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -58,11 +59,7 @@ export function SignUpScreen() {
         textContentType="newPassword"
         placeholder={t('٨ حروف على الأقل، فيها حرف ورقم', '8+ characters, a letter and a digit')}
       />
-      {signUp.isError ? (
-        <Txt color="danger" accessibilityLiveRegion="polite">
-          {t(authErrorMessage(signUp.error))}
-        </Txt>
-      ) : null}
+      <ErrorText message={signUp.isError ? t(authErrorMessage(signUp.error)) : undefined} trigger={signUp.submittedAt} />
       <Button
         label={t('إنشاء حساب', 'Create account')}
         disabled={!ready}

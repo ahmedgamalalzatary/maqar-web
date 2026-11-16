@@ -1,6 +1,9 @@
 import type { LucideIcon } from 'lucide-react-native';
 import { Check, X } from 'lucide-react-native';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { PressableScale } from '@/components/pressable-scale';
+import { haptic } from '@/core/motion/haptics';
+import { CSS_EASE_OUT } from '@/core/motion/motion';
 import { Txt } from '@/components/text';
 import { radius, useTheme } from '@/core/theme';
 
@@ -31,22 +34,27 @@ export function ToggleChip({
   const fg = tone === 'quick' ? (selected ? colors.navy : colors.accentInk) : selected ? colors.bg : colors.ink;
   const ShowIcon = Icon ?? (selected && tone === 'plain' ? Check : undefined);
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      scaleTo={0.95}
+      style={[
         styles.chip,
+        styles.colour,
         tone === 'quick' ? styles.quick : styles.plain,
-        { backgroundColor: bg, borderColor: tone === 'quick' ? 'transparent' : colors.line, opacity: pressed ? 0.8 : 1 },
+        { backgroundColor: bg, borderColor: tone === 'quick' ? 'transparent' : colors.line },
       ]}
     >
       {ShowIcon ? <ShowIcon size={14} color={fg} strokeWidth={2} /> : null}
       <Txt size={tone === 'quick' ? 12 : 13} weight="medium" style={{ color: fg }}>
         {text}
       </Txt>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -54,17 +62,18 @@ export function ToggleChip({
 export function RemovableChip({ text, removeLabel, onRemove }: { text: string; removeLabel: string; onRemove: () => void }) {
   const { colors } = useTheme();
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={removeLabel}
       onPress={onRemove}
-      style={({ pressed }) => [styles.chip, styles.quick, { backgroundColor: colors.ink, opacity: pressed ? 0.8 : 1 }]}
+      scaleTo={0.95}
+      style={[styles.chip, styles.quick, { backgroundColor: colors.ink }]}
     >
       <Txt size={12} weight="medium" style={{ color: colors.bg }}>
         {text}
       </Txt>
       <X size={14} color={colors.bg} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -72,4 +81,6 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth },
   plain: { minHeight: 38, minWidth: 48, justifyContent: 'center', paddingHorizontal: 14 },
   quick: { height: 32, paddingHorizontal: 12, borderWidth: 0 },
+  // Picking a chip eases its colour over instead of snapping (2026-11-16).
+  colour: { transitionProperty: ['backgroundColor', 'transform', 'opacity'], transitionDuration: 160, transitionTimingFunction: CSS_EASE_OUT },
 });

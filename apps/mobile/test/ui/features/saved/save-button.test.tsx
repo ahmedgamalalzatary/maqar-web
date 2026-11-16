@@ -142,3 +142,41 @@ describe('The heart on a card', () => {
     expect(screen.getByRole('button', { name: SAVE, selected: false })).toBeOnTheScreen();
   });
 });
+
+// 2026-11-16 motion pass: the heart pops and bursts on a save, and the phone ticks.
+describe('The heart’s feedback', () => {
+  const Haptics = jest.requireMock('expo-haptics') as typeof import('expo-haptics');
+  const burst = () => screen.queryByTestId('heart-burst', { includeHiddenElements: true });
+
+  it('bursts and buzzes lightly on a save', async () => {
+    signIn();
+    api([]);
+    await renderWithProviders(<PropertyCardView card={villa} />);
+    expect(burst()).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: SAVE }));
+
+    expect(burst()).toBeOnTheScreen();
+    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
+  });
+
+  it('only ticks, with no burst, when a home is taken off', async () => {
+    signIn();
+    api([villa]);
+    await renderWithProviders(<PropertyCardView card={villa} />);
+
+    await fireEvent.press(await screen.findByRole('button', { name: REMOVE }));
+
+    expect(burst()).toBeNull();
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not buzz for a guest, who is asked to sign in instead', async () => {
+    api();
+    await renderWithProviders(<PropertyCardView card={villa} />);
+    await fireEvent.press(screen.getByRole('button', { name: SAVE }));
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(burst()).toBeNull();
+  });
+});

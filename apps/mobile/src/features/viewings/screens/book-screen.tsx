@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SuccessCheck } from '@/components/success-check';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
@@ -386,10 +387,8 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
     : t('مفيش تذكير', 'No reminders');
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.done, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
-      <View style={[styles.okOuter, { backgroundColor: colors.successSoft }]}>
-        <View style={[styles.okInner, { backgroundColor: colors.success }]}>
-          <Check size={36} color="#fff" strokeWidth={3} />
-        </View>
+      <View style={styles.ok}>
+        <SuccessCheck size={96} />
       </View>
       <Txt accessibilityRole="header" size={24} weight="semibold" align="center">
         {rescheduled ? t('اتغير الموعد', 'Rescheduled') : t('معاينتك اتأكدت', 'You’re booked')}
@@ -491,8 +490,7 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, borderRadius: radius.full, paddingHorizontal: 14 },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12, gap: 8 },
   done: { paddingHorizontal: 20, gap: 12 },
-  okOuter: { alignSelf: 'center', width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  okInner: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  ok: { alignSelf: 'center', marginBottom: 12 },
   card: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', marginTop: 16 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderTopWidth: 1 },

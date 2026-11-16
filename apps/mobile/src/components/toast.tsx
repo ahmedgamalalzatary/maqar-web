@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EASE_OUT } from '@/core/motion/motion';
 import { create } from 'zustand';
 import { radius, useTheme } from '@/core/theme';
 import { Txt } from './text';
@@ -9,6 +11,9 @@ export type ToastInput = { title: string; body?: string; tone?: Tone; onPress?: 
 type Shown = ToastInput & { id: number };
 
 const SHOW_MS = 3500;
+// It leaves the way it came, a little faster (2026-11-16).
+const TOAST_IN = FadeInUp.duration(260).easing(EASE_OUT);
+const TOAST_OUT = FadeOutUp.duration(200).easing(EASE_OUT);
 
 const useToast = create<{ current: Shown | null }>(() => ({ current: null }));
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -38,7 +43,7 @@ export function ToastHost() {
   if (!current) return null;
   const dot = { gold: colors.accent, sage: colors.sage, danger: colors.danger }[current.tone ?? 'gold'];
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { top: insets.top + 8 }]}>
+    <Animated.View key={current.id} entering={TOAST_IN} exiting={TOAST_OUT} pointerEvents="box-none" style={[styles.wrap, { top: insets.top + 8 }]}>
       <Pressable
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
@@ -60,7 +65,7 @@ export function ToastHost() {
           ) : null}
         </View>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 

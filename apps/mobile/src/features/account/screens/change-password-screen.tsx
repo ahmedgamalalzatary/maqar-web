@@ -1,9 +1,9 @@
+import { ErrorText } from '@/components/error-text';
 import { passwordOk } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
-import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
@@ -71,11 +71,7 @@ export function ChangePasswordScreen() {
         onSubmitEditing={save}
         error={mismatch ? t('الكلمتين مش زي بعض', 'The two don’t match') : undefined}
       />
-      {failureText ? (
-        <Txt color="danger" accessibilityLiveRegion="polite">
-          {failureText}
-        </Txt>
-      ) : null}
+      <ErrorText message={failureText ?? undefined} trigger={change.submittedAt} />
       <Button label={t('غيّر كلمة السر', 'Change password')} disabled={!ready} loading={change.isPending} onPress={save} />
       <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={() => router.back()} />
     </Screen>

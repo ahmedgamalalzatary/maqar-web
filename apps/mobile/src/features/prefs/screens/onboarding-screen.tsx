@@ -20,6 +20,8 @@ import { takePendingAction } from '@/features/auth/pending-action';
 import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react-native';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
+import { CSS_EASE_OUT, EASE_OUT } from '@/core/motion/motion';
 import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
@@ -57,6 +59,10 @@ const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x
  * types, then bedrooms and must-haves with a live count of the homes that fit 70% or more.
  * After sign-up it ends on Home; reopened from Me it starts from the saved preferences and goes back.
  */
+// Module scope: layout-animation builders made in render cost every re-render.
+const STEP_FROM_RIGHT = FadeInRight.duration(280).easing(EASE_OUT);
+const STEP_FROM_LEFT = FadeInLeft.duration(280).easing(EASE_OUT);
+
 export function OnboardingScreen() {
   const t = useT();
   const lang = useLang();
@@ -70,6 +76,11 @@ export function OnboardingScreen() {
   const save = useSavePrefs();
 
   const [step, setStep] = useState(0);
+  const [forward, setForward] = useState(true);
+  const go = (by: 1 | -1) => {
+    setForward(by > 0);
+    setStep((s) => s + by);
+  };
   const [name, setName] = useState(user?.name ?? '');
   const [purpose, setPurpose] = useState<Category[]>(start.purpose);
   const [rentBudget, setRentBudget] = useState(start.purpose[0] === 'rent' ? start.budgetMax : RENT_START);
@@ -108,18 +119,20 @@ export function OnboardingScreen() {
 
   const last = step === STEPS - 1;
   const Back = rtl ? ArrowRight : ArrowLeft;
+  // Forward comes in from the reading direction's end, back from its start (2026-11-16).
+  const fromRight = forward !== rtl;
 
   return (
     <KeyboardAvoiding style={{ backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
       <View style={styles.top}>
         {step > 0 ? (
-          <IconButton label={t('رجوع', 'Back')} onPress={() => setStep((s) => s - 1)} icon={<Back size={20} color={colors.ink} />} />
+          <IconButton label={t('رجوع', 'Back')} onPress={() => go(-1)} icon={<Back size={20} color={colors.ink} />} />
         ) : (
           <View style={styles.topSpace} />
         )}
         <View style={styles.progress} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {Array.from({ length: STEPS }, (_, i) => (
-            <View key={i} style={[styles.dash, { backgroundColor: i <= step ? colors.accent : colors.surface3 }]} />
+            <Animated.View key={i} style={[styles.dash, { backgroundColor: i <= step ? colors.accent : colors.surface3 }]} />
           ))}
         </View>
         {saved ? (
@@ -138,6 +151,7 @@ export function OnboardingScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Animated.View key={step} entering={step === 0 && forward ? undefined : fromRight ? STEP_FROM_RIGHT : STEP_FROM_LEFT} style={styles.step}>
         {step === 0 ? (
           <>
             <Title
@@ -290,6 +304,7 @@ export function OnboardingScreen() {
             </View>
           </>
         ) : null}
+        </Animated.View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -301,7 +316,7 @@ export function OnboardingScreen() {
         <Button
           label={last ? (saved ? t('احفظ تفضيلاتك', 'Save preferences') : t('اعرض ترشيحاتي', 'Show my picks')) : t('التالي', 'Next')}
           loading={last && save.isPending}
-          onPress={last ? finish : () => setStep((s) => s + 1)}
+          onPress={last ? finish : () => go(1)}
         />
       </View>
     </KeyboardAvoiding>
@@ -395,7 +410,8 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   topSpace: { width: 44, height: 44 },
   progress: { flex: 1, flexDirection: 'row', gap: 6 },
-  dash: { flex: 1, height: 6, borderRadius: 3 },
+  dash: { flex: 1, height: 6, borderRadius: 3, transitionProperty: 'backgroundColor', transitionDuration: 260, transitionTimingFunction: CSS_EASE_OUT },
+  step: { gap: 24 },
   body: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 24, gap: 24 },
   title: { gap: 8 },
   titleText: { lineHeight: 34 },

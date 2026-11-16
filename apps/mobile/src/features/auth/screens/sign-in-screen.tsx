@@ -1,3 +1,4 @@
+import { ErrorText } from '@/components/error-text';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -59,11 +60,7 @@ export function SignInScreen() {
           {t('نسيت كلمة السر؟', 'Forgot your password?')}
         </Txt>
       </Pressable>
-      {signIn.isError ? (
-        <Txt color="danger" accessibilityLiveRegion="polite">
-          {t(authErrorMessage(signIn.error))}
-        </Txt>
-      ) : null}
+      <ErrorText message={signIn.isError ? t(authErrorMessage(signIn.error)) : undefined} trigger={signIn.submittedAt} />
       <Button
         label={t('دخول', 'Sign in')}
         disabled={!ready}

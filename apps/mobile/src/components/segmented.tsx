@@ -1,4 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { haptic } from '@/core/motion/haptics';
+import { CSS_EASE_OUT } from '@/core/motion/motion';
+import { PressableScale } from './pressable-scale';
 import { radius, useTheme } from '@/core/theme';
 import { Txt } from './text';
 
@@ -18,18 +21,21 @@ export function Segmented<T extends string>({
       {options.map((o) => {
         const on = o.value === value;
         return (
-          <Pressable
+          <PressableScale
             key={o.value}
             accessibilityRole="radio"
             accessibilityLabel={o.label}
             accessibilityState={{ checked: on }}
-            onPress={() => onChange(o.value)}
-            style={[styles.option, on && { backgroundColor: colors.surface }]}
+            onPress={() => {
+              if (!on) haptic.select();
+              onChange(o.value);
+            }}
+            style={[styles.option, { backgroundColor: on ? colors.surface : 'transparent' }]}
           >
             <Txt size={13} weight={on ? 'semibold' : 'medium'} align="center" color={on ? 'ink' : 'ink2'}>
               {o.label}
             </Txt>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -38,5 +44,15 @@ export function Segmented<T extends string>({
 
 const styles = StyleSheet.create({
   group: { flexDirection: 'row', borderRadius: radius.md, padding: 3, gap: 3 },
-  option: { flex: 1, minHeight: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  option: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    transitionProperty: ['backgroundColor', 'transform', 'opacity'],
+    transitionDuration: 180,
+    transitionTimingFunction: CSS_EASE_OUT,
+  },
 });

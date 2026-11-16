@@ -1,3 +1,4 @@
+import { ErrorText } from '@/components/error-text';
 import { fmtNum, passwordOk, RESET_CODE_MINUTES, readResetCode } from '@maqar/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -61,11 +62,7 @@ export function ForgotPasswordScreen() {
           textContentType="emailAddress"
           onSubmitEditing={ask}
         />
-        {forgot.isError ? (
-          <Txt color="danger" accessibilityLiveRegion="polite">
-            {t(authErrorMessage(forgot.error))}
-          </Txt>
-        ) : null}
+        <ErrorText message={forgot.isError ? t(authErrorMessage(forgot.error)) : undefined} trigger={forgot.submittedAt} />
         <Button label={t('ابعتلي الكود', 'Send me the code')} disabled={!/^\S+@\S+\.\S+$/.test(email.trim())} loading={forgot.isPending} onPress={ask} />
       </Screen>
     );
@@ -109,11 +106,7 @@ export function ForgotPasswordScreen() {
         onSubmitEditing={save}
         error={mismatch ? t('الكلمتين مش زي بعض', 'The two don’t match') : undefined}
       />
-      {failureText ? (
-        <Txt color="danger" accessibilityLiveRegion="polite">
-          {failureText}
-        </Txt>
-      ) : null}
+      <ErrorText message={failureText ?? undefined} trigger={reset.submittedAt} />
       <Button label={t('غيّر كلمة السر', 'Change password')} disabled={!ready} loading={reset.isPending} onPress={save} />
       <Button label={t('ابعت الكود تاني', 'Send the code again')} variant="ghost" loading={forgot.isPending} onPress={() => send(sentTo)} />
     </Screen>

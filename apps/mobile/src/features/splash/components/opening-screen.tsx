@@ -3,6 +3,8 @@ import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeOut } from 'react-native-reanimated';
+import { EASE_OUT } from '@/core/motion/motion';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logo } from '@/components/logo';
 import { Txt } from '@/components/text';
@@ -38,13 +40,18 @@ export function OpeningHost() {
   return booted ? null : <StartCover />;
 }
 
-/** The logo on navy, like the launch screen used to be, while the app starts. */
+const COVER_OUT = FadeOut.duration(280).easing(EASE_OUT);
+
+/**
+ * The logo on navy, like the launch screen used to be, while the app starts. 2026-11-16: the logo
+ * builds itself layer by layer, and the cover dissolves into the app instead of vanishing.
+ */
 function StartCover() {
   const { colors } = useTheme();
   return (
-    <View style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: colors.navy }]} accessibilityViewIsModal>
-      <Logo width={150} onDark />
-    </View>
+    <Animated.View exiting={COVER_OUT} style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: colors.navy }]} accessibilityViewIsModal>
+      <Logo width={150} onDark animated />
+    </Animated.View>
   );
 }
 
@@ -79,10 +86,10 @@ export function OpeningScreen({ splash, onDone }: { splash: SplashSettings; onDo
   }, [isVideo]);
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: colors.navy }]} accessibilityViewIsModal testID="opening-screen">
+    <Animated.View exiting={COVER_OUT} style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: colors.navy }]} accessibilityViewIsModal testID="opening-screen">
       {isImage ? <Image testID="opening-image" source={{ uri: mediaUrl(splash.media)! }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="disk" /> : null}
       {isVideo ? <OpeningVideo url={splash.media!} poster={splash.poster} onEnd={() => finish.current()} /> : null}
-      {!isImage && !isVideo ? <Logo width={150} onDark /> : null}
+      {!isImage && !isVideo ? <Logo width={150} onDark animated /> : null}
       <View style={[styles.foot, { bottom: insets.bottom + 24 }]}>
         {text ? (
           <Txt size={20} weight="semibold" align="center" style={[styles.shadow, { color: colors.cream }]}>
@@ -112,7 +119,7 @@ export function OpeningScreen({ splash, onDone }: { splash: SplashSettings; onDo
           {t('تخطي', 'Skip')}
         </Txt>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 

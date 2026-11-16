@@ -16,7 +16,12 @@ import {
   UserRound,
   Users,
 } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
+import { type ColorValue, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
+import { BOUNCE, CSS_EASE_OUT, EASE_OUT } from '@/core/motion/motion';
 import { useT } from '@/core/i18n';
 import { fonts, useTheme } from '@/core/theme';
 
@@ -57,6 +62,50 @@ export const TABS: Record<TabRole, Tab[]> = {
   ],
 };
 
+/**
+ * A tab's icon (2026-11-16). When the tab is picked, the icon dips and springs back and a gold dot
+ * fades in under it; the screens themselves switch with no slide, as tabs are side by side.
+ */
+export function TabIcon({ icon: Icon, color, size, focused, dot }: { icon: LucideIcon; color: ColorValue; size: number; focused: boolean; dot: string }) {
+  const reduced = useReduceMotion();
+  const scale = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    // Not on the first draw: only a tap that picks the tab bounces it.
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (focused && !reduced) scale.set(withSequence(withTiming(0.82, { duration: 90, easing: EASE_OUT }), withSpring(1, BOUNCE)));
+  }, [focused, reduced, scale]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  return (
+    <View style={tabStyles.wrap}>
+      <Animated.View style={style}>
+        <Icon color={color} size={size} strokeWidth={focused ? 2.1 : 1.8} />
+      </Animated.View>
+      <Animated.View
+        testID="tab-dot"
+        style={[tabStyles.dot, { backgroundColor: dot, opacity: focused ? 1 : 0, transform: [{ scale: focused ? 1 : 0.4 }] }]}
+      />
+    </View>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  wrap: { alignItems: 'center' },
+  dot: {
+    position: 'absolute',
+    bottom: -6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    transitionProperty: ['opacity', 'transform'],
+    transitionDuration: 200,
+    transitionTimingFunction: CSS_EASE_OUT,
+  },
+});
+
 /** `badges`: a count to show on a tab, by the tab's `name` (the role's layout passes them in). */
 export function RoleTabs({ role, badges = {} }: { role: TabRole; badges?: Record<string, number> }) {
   const t = useT();
@@ -93,7 +142,7 @@ export function RoleTabs({ role, badges = {} }: { role: TabRole; badges?: Record
               tabBarAccessibilityLabel: count ? t(`${label.ar}، ${count} جديد`, `${label.en}, ${count} new`) : t(label),
               tabBarBadge: count ? (count > 9 ? '9+' : count) : undefined,
               tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.navy, fontFamily: fonts.semibold, fontSize: 10 },
-              tabBarIcon: ({ color, size }) => <Icon color={color} size={size - 2} strokeWidth={1.8} />,
+              tabBarIcon: ({ color, size, focused }) => <TabIcon icon={Icon} color={color} size={size - 2} focused={focused} dot={colors.accent} />,
             }}
           />
         );

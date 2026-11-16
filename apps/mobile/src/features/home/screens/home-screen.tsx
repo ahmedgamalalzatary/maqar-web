@@ -12,6 +12,7 @@ import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useHomeOrder } from '@/core/app-config/store';
 import { useLang, useT } from '@/core/i18n';
+import { Entrance, useEntranceClock } from '@/core/motion/entrance';
 import { radius, useTheme } from '@/core/theme';
 import { usePreferences } from '@/features/account/hooks/use-account';
 import { useSession } from '@/features/auth/store/session.store';
@@ -46,6 +47,7 @@ export function Home() {
   const { width } = useWindowDimensions();
   const areas = useAreas();
   const launches = useProperties({ category: 'project', limit: 10 });
+  const launchEntrance = useEntranceClock();
   const cardWidth = Math.round(width * 0.72);
   const order = useHomeOrder();
 
@@ -136,7 +138,11 @@ export function Home() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
             {launches.isPending
               ? [0, 1].map((i) => <CardSkeleton key={i} width={cardWidth} />)
-              : launches.data.items.map((c) => <PropertyCardView key={c.id} card={c} width={cardWidth} />)}
+              : launches.data.items.map((c, i) => (
+                  <Entrance key={c.id} clock={launchEntrance} index={i}>
+                    <PropertyCardView card={c} width={cardWidth} />
+                  </Entrance>
+                ))}
           </ScrollView>
         )}
       </Section>
@@ -200,6 +206,7 @@ function Picks({ cardWidth }: { cardWidth: number }) {
   const { colors } = useTheme();
   const isClient = useIsClient();
   const picks = useRecommended(isClient);
+  const entrance = useEntranceClock();
 
   if (!isClient) {
     return (
@@ -235,8 +242,8 @@ function Picks({ cardWidth }: { cardWidth: number }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
           {picks.isPending
             ? [0, 1].map((i) => <CardSkeleton key={i} width={cardWidth} />)
-            : picks.data.map((c) => (
-                <View key={c.id} style={{ width: cardWidth }}>
+            : picks.data.map((c, i) => (
+                <Entrance key={c.id} clock={entrance} index={i} style={{ width: cardWidth }}>
                   <PropertyCardView card={c} width={cardWidth} />
                   {c.match?.reasons.length ? (
                     <View style={styles.reasons}>
@@ -249,7 +256,7 @@ function Picks({ cardWidth }: { cardWidth: number }) {
                       ))}
                     </View>
                   ) : null}
-                </View>
+                </Entrance>
               ))}
         </ScrollView>
       )}
@@ -262,13 +269,16 @@ function Featured({ cardWidth }: { cardWidth: number }) {
   const t = useT();
   const { colors } = useTheme();
   const featured = useProperties({ featured: true, limit: 10 });
+  const entrance = useEntranceClock();
   const items = featured.data?.items ?? [];
   if (!items.length) return null;
   return (
     <Section title={t('مميزة من مقر', 'Featured by Maqar')} icon={<Award size={18} color={colors.accentInk} />}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
-        {items.map((c) => (
-          <PropertyCardView key={c.id} card={c} width={cardWidth} />
+        {items.map((c, i) => (
+          <Entrance key={c.id} clock={entrance} index={i}>
+            <PropertyCardView card={c} width={cardWidth} />
+          </Entrance>
         ))}
       </ScrollView>
     </Section>

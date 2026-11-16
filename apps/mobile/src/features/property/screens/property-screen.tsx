@@ -36,6 +36,9 @@ import {
 } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, useAnimatedRef, useScrollOffset } from 'react-native-reanimated';
+import { PressableScale } from '@/components/pressable-scale';
+import { Skeleton } from '@/components/skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { FollowPriceButton } from '@/features/alerts/components/follow-price-button';
@@ -45,8 +48,9 @@ import { ApiError } from '@/core/api/api';
 import { useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
-import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
-import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
+import { ListingsError } from '@/features/listings/components/list-states';
+import { dropPct, PropertyCardView, propertyPhotoTag } from '@/features/listings/components/property-card';
+import { EASE_OUT } from '@/core/motion/motion';
 import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
 import { AdvisorCard } from '../components/advisor-card';
@@ -70,6 +74,11 @@ const FEATURE_ICON: Record<Feature, LucideIcon> = {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// Module scope: layout-animation builders made in render cost every re-render.
+const STRIP_IN = FadeIn.duration(160).easing(EASE_OUT);
+const STRIP_OUT = FadeOut.duration(130).easing(EASE_OUT);
+const PAGE_IN = FadeIn.duration(220).easing(EASE_OUT);
+
 /**
  * The property page (contract §8.5), phase 4, with price alerts (phase 12) and booking (phase 13).
  * Chat arrives with its own phase.
@@ -78,17 +87,10 @@ export function PropertyScreen({ id }: { id: number }) {
   const t = useT();
   const router = useRouter();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const property = useProperty(id);
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  if (property.isPending) {
-    return (
-      <View style={[styles.fill, { backgroundColor: colors.bg, paddingTop: insets.top + 64, paddingHorizontal: 16 }]}>
-        <CardSkeleton />
-      </View>
-    );
-  }
+  if (property.isPending) return <PageSkeleton />;
   if (property.isError) {
     const gone = property.error instanceof ApiError && (property.error.status === 404 || property.error.status === 400);
     return (
@@ -135,6 +137,9 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const days = Math.max(0, Math.floor((now - Date.parse(p.publishedAt)) / DAY));
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const bookBar = useShowsBookBar(p);
+  // The page's scroll, read on the UI thread: the photos drift and stretch with it (2026-11-16).
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useScrollOffset(scrollRef);
 
   const share = () =>
     Share.share({
@@ -145,8 +150,9 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
     });
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
-      <ScrollView
+    <Animated.View entering={PAGE_IN} style={[styles.fill, { backgroundColor: colors.bg }]}>
+      <Animated.ScrollView
+        ref={scrollRef}
         testID="property-scroll"
         scrollEventThrottle={16}
         onScroll={(e) => {
@@ -156,7 +162,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}
       >
         <View>
-          <Gallery images={p.images} videos={p.videos} label={title} />
+          <Gallery images={p.images} videos={p.videos} label={title} tag={propertyPhotoTag(p.id)} scrollY={scrollY} />
           {p.tourRooms.length ? (
             <Pressable
               accessibilityRole="button"
@@ -344,10 +350,12 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
             </Section>
           ) : null}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {solidTop ? (
-        <View
+        <Animated.View
+          entering={STRIP_IN}
+          exiting={STRIP_OUT}
           testID="property-top-fill"
           pointerEvents="none"
           style={[styles.topFill, { height: topBarHeight, backgroundColor: colors.bg, borderBottomColor: colors.line2 }]}
@@ -366,6 +374,36 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         </View>
       </View>
       {bookBar ? <BookBar card={p} /> : null}
+    </Animated.View>
+  );
+}
+
+/** The page's shape while it loads (2026-11-16): the photo, the title, the price box and the specs. */
+function PageSkeleton() {
+  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  return (
+    <View
+      testID="property-skeleton"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.fill, { backgroundColor: colors.bg }]}
+    >
+      <Skeleton style={{ height: Math.round(width * 0.9) }} />
+      <View style={styles.skeletonBody}>
+        <View style={styles.badges}>
+          <Skeleton style={styles.skeletonPill} />
+          <Skeleton style={styles.skeletonPill} />
+        </View>
+        <Skeleton style={[styles.skeletonLine, { width: '75%', height: 22 }]} />
+        <Skeleton style={[styles.skeletonLine, { width: '50%' }]} />
+        <Skeleton style={styles.skeletonBox} />
+        <View style={styles.specs}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} style={[styles.flex, styles.skeletonSpec]} />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -373,15 +411,9 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
 /** A round see-through button over the photos. */
 function Glass({ label, onPress, children }: { label: string; onPress: () => void; children: ReactNode }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.glass, { opacity: pressed ? 0.7 : 1 }]}
-    >
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6} scaleTo={0.88} style={styles.glass}>
       {children}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -423,6 +455,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  skeletonBody: { padding: 16, gap: 12 },
+  skeletonPill: { width: 72, height: 26, borderRadius: radius.full },
+  skeletonLine: { height: 14, borderRadius: radius.sm },
+  skeletonBox: { height: 96, borderRadius: radius.lg, marginTop: 8 },
+  skeletonSpec: { height: 64, borderRadius: radius.md },
   center: { alignItems: 'center', justifyContent: 'center', gap: 12 },
   backBtn: { paddingHorizontal: 32 },
   body: { marginTop: -24, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 16, paddingTop: 20, gap: 16 },
