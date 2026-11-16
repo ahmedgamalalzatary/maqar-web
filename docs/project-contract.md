@@ -7,9 +7,9 @@ This is the single source of truth for what Maqar is, what it does and how it is
 1. Anything new (a feature, screen, endpoint, table, rule or tool) is added here **before** it is built, or in the same commit.
 2. If the code and this file disagree, this file wins. Either fix the code, or change this file on purpose in the same commit.
 3. Removing or changing an agreed item means editing it here and adding a line to the [change log](#18-change-log).
-4. The behaviour of the demo (`apps/demo`) is the reference for the user experience. The real apps must match it or improve on it, never do less.
+4. The behaviour of the demo (`apps/demo`, removed on 2026-11-16 and kept in git history) was the reference for the user experience. The real apps match it or improve on it, never do less.
 5. Status tags used below:
-   - **[Demo]**: built in `apps/demo`, simulated on the device
+   - **[Demo]**: was built in `apps/demo` (removed 2026-11-16), simulated on the device
    - **[Real]**: needed in the real mobile app and API
    - **[Open]**: not decided yet; decide before building it
 
@@ -94,7 +94,6 @@ Rules:
 
 | Path | Package | Purpose |
 |---|---|---|
-| `apps/demo` | `@maqar/demo` | Next.js front-end demo. All data is sample data kept in localStorage. Port 3210. This is the UX reference. |
 | `apps/mobile` | `@maqar/mobile` | The real app: Expo SDK 58 with Expo Router, for iOS and Android. |
 | `apps/api` | `@maqar/api` | The real backend: NestJS 12, MySQL through Drizzle ORM. |
 | `apps/web` | `@maqar/web` | The admin web dashboard (Phase 17): Next.js 16 and Tailwind, a static export served by nginx at `/admin/` on the API's host. Port 3220 in development. |
@@ -128,7 +127,6 @@ Rules:
 | Production database | A `mysql` service in the project's Docker Compose, configured by `.env.production` on the server (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`; `deploy/setup-server.sh` writes them). The Docker files and `.env.production` are added in Phase 2. |
 | Production server | Its own Hostinger KVM2 VPS (2 CPUs, 8 GB, about 100 GB disk), used only by Maqar. nginx on the server with a Let's Encrypt certificate for `api.<domain>` (the free domain from the Hostinger plan). Each deploy backs up the database and images, then runs the migrations (Phase 2). |
 | File storage | The server's disk (an uploads volume), served by nginx; a local git-ignored `uploads/` folder in development. Images are resized with `sharp`. |
-| Demo | Next.js 16, React 19.3, Tailwind v4, motion, three.js, Zustand |
 | pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
 [Open] Push provider and the admin UI. See [section 16](#16-open-decisions-and-out-of-scope).
@@ -142,7 +140,7 @@ Rules:
 - Commit messages: a short imperative subject and a body that says what and why.
 - `pnpm build lint typecheck test` must pass before pushing.
 - **One `.env` at the repo root** is used by every app (API, Drizzle, mobile). **Tests use the root `.env.test` instead** (`NODE_ENV=test`, port 4001, the `maqar_test` database). Both files are git-ignored. The root `.env.example` lists every variable and is kept up to date; `.env.test` holds the same variables with test values (the README lists them). Apps load the root file explicitly; they never have their own `.env`.
-- Ports: the dev API runs on **4000** (tests on 4001), the demo on 3210, the Expo dev server on its default 8081.
+- Ports: the dev API runs on **4000** (tests on 4001), the Expo dev server on its default 8081.
 - **Test first (TDD), only where it matters.** A test is written and seen to fail before the code. Tests cover business rules, formatters, auth and role guards, data rules and each screen's main flow and key states, not plumbing. All tests live in `test/` next to `src/`, sorted by kind.
 - **Code layout.** API: `src/modules/<feature>/` (controller, service, repository, DTOs, module), plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), plus `src/core`, `src/components`, and `src/app` for routes only.
 - Database changes go only through Drizzle migrations. Never edit a production database by hand.
@@ -155,7 +153,7 @@ Rules:
 
 ### 6.1 Identity
 
-- **Logo:** the Kufic مقر lock-up with the square mark and the tagline "لكل طموح ..مقر". Colour layers are in `apps/demo/public/brand/`: full, gold, sage, cream, plus icons at 192, 512 and SVG. The square mark is also drawn as a vector.
+- **Logo:** the Kufic مقر lock-up with the square mark and the tagline "لكل طموح ..مقر". Colour layers are in `docs/brand/`: full, gold, sage, cream, plus icons at 192, 512 and SVG. The square mark is also drawn as a vector.
 - **Font:** Readex Pro, which covers Arabic and Latin.
 - **Photos and panoramas:** in the demo they come from Unsplash, and the panoramas are Poly Haven CC0 images at 4096×2048. [Real] Owners and agents upload their own photos.
 
@@ -675,7 +673,7 @@ Access is checked by role guards on every route. Agents and clients can only rea
 - Online payments, deposits and contracts.
 - Broker or agency accounts outside Maqar.
 - Mortgage applications with banks (the calculator only estimates).
-- A public web version of the app. `apps/demo` is a sales demo, not a product.
+- A public web version of the app. (The `apps/demo` sales demo was removed on 2026-11-16.)
 - Admin tools left out on 2026-11-12: hard-deleting listings or agents (they are closed or turned off, so history keeps its links), broadcast notifications, and an audit log of admin changes.
 
 ---
@@ -699,7 +697,7 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 ### 17.2 Release operations (QA-04)
 
 - [ ] Migrations `0014`–`0016` ran on the production database; before `0015`, no client and home have two active viewings (the migration fails if they do).
-- [ ] The API image builds from a clean checkout (it still copies `apps/demo`; removing the demo later must update `Dockerfile.api` first, OPS-07).
+- [x] The API image builds from a clean checkout without `apps/demo` (OPS-07, 2026-11-16).
 - [ ] A pre-deploy backup (database and images) is taken, and a restore is tried once on the server.
 - [ ] Push notifications arrive in foreground, background and killed-app states for booking, chat, price drops and matches.
 - [ ] The web dashboard at `/admin/` loads and signs in against the production API, and an already-open dashboard keeps working across a deploy (OPS-06).
@@ -755,6 +753,7 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-12 | Phase 25 built: `GET /admin/overview?days=7|30|90` and the overview as the admin's first page in the app and on the web (Listings moves to its own tab and to `/listings/`). Migration `0020`: `properties.closed_at`. |
 | 2026-11-12 | Scope added (owner's call): admin reports (Phase 27), eleven standard reports in four groups in the app and on the web, with ranges, comparison with the previous period, filters and CSV export; migration records who cancelled a viewing and when a lead was lost. §11, §13, §14 updated. |
 | 2026-11-12 | Phase 28 built (owner's client-app changes): optional phone at sign-up (Apple 5.1.1); typed payment years (1–10) in the calculator; an OpenStreetMap map in the web preview; no views group in compare; support moved from a row to the account footer with the "Powered by Bit Tech" credit; typed size range in the filters; "What you're looking for" on Home. Details in Phase 28. |
+
 | 2026-11-14 | Phase 29 built (owner's admin changes): admin-set opening screen (picture, or video of at most 3 s, with text), calculator limits (least down payment, years range) and Home section order, as `GET /settings` and `PUT /admin/settings` (migration `0023`); listings picked in the agent's form; area picture and listing developer optional; add-listing moved under Listings (`/listing/new/`); side menu on the web; search, filters and sorting in every report table; one advisor's own report. The client-accounts list stays (Apple 1.2: an app with chat must be able to suspend or delete an abusive user). Details in Phase 29. |
 | 2026-11-14 | Phase 29 CodeRabbit fixes (transactions and row locks for agent edits and settings, shared videos kept, start-up never stuck on a bad saved store, report filter fixes, web drawer focus). Deploys now back up the database before migrating and delete the backup only when the deploy and the live check are green; failures report the step and the reason. |
 | 2026-11-14 | After the phone check (owner): the least down payment is any whole percent from 0 to 50, typed in the app and on the web; the client's slider starts at it, then moves in steps of 5. The web's phone top bar puts the menu button opposite the logo and page name. |
@@ -765,3 +764,4 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-12 | Phase 27 built: `GET /admin/analytics/:id` for the eleven reports (closed deals, advisor performance, leads and sources, inventory, listing performance, price changes, listing quality, clients and engagement, demand by area, viewings, chats and response times), Reports in the web menu and under More in the app, with ranges, the previous period, filters, CSV export and print. Migration `0022`: `viewings.cancelled_by`, `leads.lost_at`. The web menu scrolls inside itself on narrow screens. |
 | 2026-11-12 | Phase 26 built: listing videos. `POST /uploads/videos` (admins; MP4 or MOV, at most 150 MB and 3 minutes; stored as H.264 MP4 with a poster under `/uploads/videos/`, converted when needed), the listing's `videos` (at most 5, in order; migration `0021`), a Videos step in the listing form in the app and on the web, and the videos after the photos in the client's gallery, played full screen (`expo-video`). The API image installs ffmpeg; nginx takes 160 MB on the video route. |
 | 2026-11-12 | Scope added (owner's call on the admin gap review): admins upload 360° tours (Phase 21); manage clients and other admins, with suspension (Phase 22); oversee viewings (Phase 23); read every chat, with report and block for clients and agents (Phase 24); a business overview (Phase 25). Left out on purpose: hard-deleting listings or agents, broadcast notifications, an audit log. §2, §8.6, §8.12, §11, §12, §13, §14 updated. |
+| 2026-11-16 | `apps/demo` removed (OPS-07). Its sample photos and panoramas moved to `apps/api/seed/` for the seed script (the image leaves them out; on the server mount them: `-v /root/maqar/apps/api/seed:/app/apps/api/seed:ro`); its logo files to `docs/brand/`. The demo stays in git history, for example `git show 1c91fa1:apps/demo/README.md`. |

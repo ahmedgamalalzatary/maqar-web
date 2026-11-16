@@ -39,7 +39,7 @@ type SeedProperty = {
   descEn: string;
 };
 
-/** The demo's 6 panoramas (apps/demo/public/pano, copied to uploads/seed/pano). */
+/** The 6 sample panoramas (apps/api/seed/pano, copied to uploads/seed/pano). */
 export const SEED_ROOMS = {
   living: { nameAr: 'المعيشة', nameEn: 'Living room', file: 'lebombo.jpg' },
   open: { nameAr: 'المطبخ والسفرة', nameEn: 'Kitchen & dining', file: 'kiara_interior.jpg' },
@@ -56,7 +56,7 @@ const tourRows = (propertyId: number, tour: SeedRoom[]) =>
     return { propertyId, ...name, pano: `/uploads/seed/pano/${file}`, sort };
   });
 
-// The demo's 16 listings (apps/demo/src/lib/data.ts). Names of compounds and developers are fictional.
+// The demo's 16 listings (from the removed apps/demo). Names of compounds and developers are fictional.
 export const SEED_PROPERTIES: SeedProperty[] = [
   {
     category: 'sale',

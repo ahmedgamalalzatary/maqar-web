@@ -8,7 +8,6 @@ Real-estate platform for buyers, owners and sales agents. pnpm + Turborepo monor
 
 | Path | Package | What |
 |---|---|---|
-| `apps/demo` | `@maqar/demo` | Next.js front-end demo (mobile layout, all data in localStorage) |
 | `apps/mobile` | `@maqar/mobile` | Expo (SDK 58, Expo Router) app for iOS and Android |
 | `apps/api` | `@maqar/api` | NestJS 12 API, MySQL through Drizzle ORM |
 | `apps/web` | `@maqar/web` | Admin web dashboard (Next.js, static export served at `/admin/`) |
@@ -38,7 +37,6 @@ pnpm test:e2e     # api e2e against the maqar_test database
 One app:
 
 ```sh
-pnpm --filter @maqar/demo dev      # http://localhost:3210
 pnpm --filter @maqar/mobile dev    # Expo dev server
 pnpm --filter @maqar/api dev       # NestJS in watch mode, http://localhost:4000/v1 (docs at /docs)
 NEXT_PUBLIC_API_URL=http://localhost:4000/v1 pnpm --filter @maqar/web dev   # http://localhost:3220/admin/

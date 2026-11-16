@@ -17,12 +17,12 @@ const { DATABASE_URL, SEED_PASSWORD } = process.env;
 const UPLOADS_DIR = process.env.UPLOADS_DIR || 'uploads';
 if (!DATABASE_URL || !SEED_PASSWORD) throw new Error('DATABASE_URL and SEED_PASSWORD must be set in the root .env');
 
-// The demo photos become the seed listings' photos (uploads/seed, git-ignored).
+// The sample photos in apps/api/seed become the seed listings' photos (uploads/seed, git-ignored).
 const seedDir = path.resolve(UPLOADS_DIR, 'seed');
 await mkdir(seedDir, { recursive: true });
-await cp(path.resolve('../demo/public/img'), seedDir, { recursive: true });
-// And the demo's panoramas become the 360° tours' rooms (uploads/seed/pano).
-await cp(path.resolve('../demo/public/pano'), path.join(seedDir, 'pano'), { recursive: true });
+await cp(path.resolve('seed/img'), seedDir, { recursive: true });
+// And the sample panoramas become the 360° tours' rooms (uploads/seed/pano).
+await cp(path.resolve('seed/pano'), path.join(seedDir, 'pano'), { recursive: true });
 
 const pool = utcPool(DATABASE_URL);
 const db = drizzle({ client: pool, schema, mode: 'default' });

@@ -6,7 +6,7 @@ import { DEFAULT_HOURS } from '../viewings/slots.js';
 import { hashPassword } from '../auth/password.js';
 import { users } from './users.schema.js';
 
-// The demo's agents (apps/demo/src/lib/data.ts). Names are fictional.
+// The demo's agents (from the removed apps/demo). Names are fictional.
 const AGENTS = [
   { email: 'omar@maqar.app', nameAr: 'عمر حسن', nameEn: 'Omar Hassan', roleTitleAr: 'مستشار مبيعات أول', roleTitleEn: 'Senior sales advisor', rating: 4.9, dealsCount: 184, years: 7, languagesAr: 'العربية، الإنجليزية', languagesEn: 'Arabic, English', avgReplyMins: 4, phone: '+201000000001', colour: '#b38959' },
   { email: 'mariam@maqar.app', nameAr: 'مريم عادل', nameEn: 'Mariam Adel', roleTitleAr: 'مستشارة مشروعات جديدة', roleTitleEn: 'New projects advisor', rating: 4.8, dealsCount: 132, years: 5, languagesAr: 'العربية، الإنجليزية، الفرنسية', languagesEn: 'Arabic, English, French', avgReplyMins: 6, phone: '+201000000002', colour: '#61766d' },

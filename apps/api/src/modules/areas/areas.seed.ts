@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../core/db/db.module.js';
 import { areas } from './areas.schema.js';
 
-// The demo's areas (apps/demo/src/lib/data.ts). Photos are copied to uploads/seed by the seed script.
+// The demo's areas (from the removed apps/demo). Photos are copied to uploads/seed by the seed script.
 export const SEED_AREAS = [
   { id: 'new-cairo', nameAr: 'التجمع الخامس', nameEn: 'New Cairo', cityAr: 'القاهرة', cityEn: 'Cairo', image: '/uploads/seed/p26.jpg' },
   { id: 'zayed', nameAr: 'الشيخ زايد', nameEn: 'Sheikh Zayed', cityAr: 'الجيزة', cityEn: 'Giza', image: '/uploads/seed/p2.jpg' },
