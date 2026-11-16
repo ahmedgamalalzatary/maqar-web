@@ -15,7 +15,7 @@ The scope of every phase comes from [project-contract.md](project-contract.md); 
    - Unit tests cover every business rule.
    - e2e tests cover the main flow, including the forbidden and invalid cases.
 3. **Mobile:**
-   - Screens match the demo (`apps/demo`) or improve on it.
+   - Screens match the demo (`apps/demo`, removed 2026-11-16; see git history) or improve on it.
    - Arabic RTL and English LTR both work, in light and dark.
    - Loading, empty and error states are designed.
    - Data comes from the real API, not sample data.

@@ -18,7 +18,7 @@ deploy
 # Only the API image is built from here; the other apps give just their manifests.
 apps/mobile/*
 !apps/mobile/package.json
-apps/demo/*
-!apps/demo/package.json
+# The seed photos are mounted when the seed runs on the server, not built into the image.
+apps/api/seed
 apps/web/*
 !apps/web/package.json
