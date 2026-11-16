@@ -142,7 +142,7 @@ describe('Onboarding', () => {
     expect(screen.getByRole('checkbox', { name: 'إيجار' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'شراء' })).not.toBeChecked();
     for (let i = 0; i < 4; i++) await next();
-    expect(screen.getByRole('radio', { name: '٢ غرف أو أكتر' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'غرفتين أو أكتر' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'جيم' })).toBeChecked();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ تفضيلاتك' }));
     await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());

@@ -75,7 +75,7 @@ describe('Listing insights (admin listing screen)', () => {
     const call = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     await renderWithProviders(<AdminListingScreen id={7} />);
     await screen.findByLabelText('مشاهدات: ٣٨, ١٢٠ من الأول');
-    fireEvent.press(screen.getByRole('radio', { name: '٧ يوم' }));
+    fireEvent.press(screen.getByRole('radio', { name: '٧ أيام' }));
     expect(await screen.findByLabelText('مشاهدات: ١٥, ١٢٠ من الأول')).toBeTruthy();
     expect(fetchMock.mock.calls.some((_, i) => queryOf(fetchMock, i).days === '7')).toBe(true);
 
@@ -99,7 +99,7 @@ describe('Listing insights (admin listing screen)', () => {
     fireEvent.press(screen.getByLabelText(`${fmtDate(`${gone}T12:00:00Z`, 'ar')}: ١ مشاهدة، ٠ حفظ، ٠ مهتم جديد`));
     expect(await screen.findByText(`${fmtDate(`${gone}T12:00:00Z`, 'ar')}`)).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('radio', { name: '٧ يوم' }));
+    fireEvent.press(screen.getByRole('radio', { name: '٧ أيام' }));
     expect(await screen.findByLabelText('مشاهدات: ١٥, ١٢٠ من الأول')).toBeTruthy();
     expect(screen.getByText('المشاهدات في اليوم، دوس على يوم')).toBeTruthy();
     expect(screen.getByText('٩ مشاهدة | ٢ حفظ | ١ مهتم جديد')).toBeTruthy();
@@ -123,7 +123,7 @@ describe('Listing insights (admin listing screen)', () => {
     });
     await renderWithProviders(<AdminListingScreen id={7} />);
     await screen.findByLabelText('مشاهدات: ٣٨, ١٢٠ من الأول');
-    fireEvent.press(screen.getByRole('radio', { name: '٧ يوم' }));
+    fireEvent.press(screen.getByRole('radio', { name: '٧ أيام' }));
     // The previous range's numbers stay visible as a placeholder, but must not be shareable.
     await waitFor(() =>
       expect(screen.getByLabelText('ابعتها للمالك').props.accessibilityState).toMatchObject({ disabled: true }),

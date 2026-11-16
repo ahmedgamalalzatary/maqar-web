@@ -11,7 +11,7 @@ import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useAppConfig } from '@/core/app-config/store';
 import { useBooted } from '@/core/providers/booted';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 /** A video gets this long past its 3 seconds to load and finish before the screen goes away anyway. */
@@ -110,13 +110,13 @@ export function OpeningScreen({ splash, onDone }: { splash: SplashSettings; onDo
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('تخطي', 'Skip')}
+        accessibilityLabel={t(m.common.skip)}
         onPress={() => finish.current()}
         hitSlop={10}
         style={[styles.skip, { top: insets.top + 12 }]}
       >
         <Txt size={13} weight="medium" style={{ color: colors.cream }}>
-          {t('تخطي', 'Skip')}
+          {t(m.common.skip)}
         </Txt>
       </Pressable>
     </Animated.View>

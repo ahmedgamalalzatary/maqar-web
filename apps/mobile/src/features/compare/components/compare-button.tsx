@@ -5,7 +5,7 @@ import { type ComponentRef, useRef } from 'react';
 import { type StyleProp, StyleSheet, type View, type ViewStyle } from 'react-native';
 import { PressableScale } from '@/components/pressable-scale';
 import { toast } from '@/components/toast';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { haptic } from '@/core/motion/haptics';
 import { useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
@@ -39,18 +39,18 @@ function Toggle({ card, size, style }: { card: PropertyCard; size: number; style
     button.current?.measureInWindow((x, y, w, h) => useCompareFlight.getState().launch(card.id, { x: x + w / 2, y: y + h / 2 }));
     if (useCompare.getState().homes.length < COMPARE_MAX) {
       toast.show({
-        title: t('اتضافت للمقارنة', 'Added to compare'),
-        body: t('اختار وحدة تانية عشان تقارن.', 'Pick one more home to compare.'),
+        title: t(m.compare.addedToCompare),
+        body: t(m.compare.pickOneMoreHomeTo),
         tone: 'sage',
       });
       return;
     }
     toast.show({
-      title: t('جاهزين للمقارنة', 'Ready to compare'),
+      title: t(m.compare.readyToCompare),
       body:
         result === 'replaced'
-          ? t('استبدلنا أقدم وحدة. دوس هنا عشان تقارن.', 'We swapped out the oldest one. Tap to compare.')
-          : t('دوس هنا عشان تشوفهم جنب بعض.', 'Tap to see them side by side.'),
+          ? t(m.compare.weSwappedOutTheOldest)
+          : t(m.compare.tapToSeeThemSide),
       tone: 'sage',
       onPress: () => router.push('/compare'),
     });
@@ -60,7 +60,7 @@ function Toggle({ card, size, style }: { card: PropertyCard; size: number; style
     <PressableScale
       ref={button}
       accessibilityRole="button"
-      accessibilityLabel={on ? t('شيل من المقارنة', 'Remove from compare') : t('قارن', 'Compare')}
+      accessibilityLabel={on ? t(m.compare.removeFromCompare) : t(m.common.compare)}
       accessibilityState={{ selected: on }}
       onPress={press}
       hitSlop={6}

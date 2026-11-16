@@ -1,4 +1,4 @@
-import { type AdminAgentDetail, type AgentBody, fmtNum, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from '@maqar/shared';
+import { pickField, type AdminAgentDetail, type AgentBody, fmtNum, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react-native';
 import { useState } from 'react';
@@ -11,7 +11,7 @@ import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useAgent, useAgentListingOptions, useAgents, useSaveAgent } from '../hooks/use-admin';
 
@@ -61,7 +61,7 @@ export function AgentFormScreen({ id }: { id?: number }) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: colors.bg }]}>
         {agent.isError ? (
-          <Txt>{agent.error instanceof ApiError && agent.error.status === 404 ? t('المسؤول ده مش موجود.', 'This agent does not exist.') : t('مقدرناش نجيب المسؤول', 'We couldn’t load the agent')}</Txt>
+          <Txt>{agent.error instanceof ApiError && agent.error.status === 404 ? t(m.common.thisAgentDoesNotExist) : t(m.admin.weCouldntLoadTheAgent)}</Txt>
         ) : (
           <ActivityIndicator color={colors.accent} />
         )}
@@ -106,13 +106,13 @@ function Form({ saved }: { saved?: AdminAgentDetail }) {
     };
     save.mutate(body, {
       onSuccess: (a) => {
-        toast.show({ title: saved ? t('البيانات اتحفظت', 'Saved') : t('المسؤول اتضاف، ابعتله الإيميل وكلمة السر', 'Agent added: send them the email and password'), tone: 'sage' });
+        toast.show({ title: saved ? t(m.admin.saved) : t(m.admin.agentAddedSendThemThe), tone: 'sage' });
         if (saved) back();
         else router.replace(`/admin/agent/${a.id}`);
       },
       onError: (e) =>
         toast.show({
-          title: e instanceof ApiError && e.status === 409 ? t('الإيميل ده عليه حساب', 'That email already has an account') : t('مقدرناش نحفظ، راجع البيانات', 'We couldn’t save; check the details'),
+          title: e instanceof ApiError && e.status === 409 ? t(m.common.thatEmailAlreadyHasAn) : t(m.common.weCouldntSaveCheckThe),
           tone: 'danger',
         }),
     });
@@ -121,49 +121,49 @@ function Form({ saved }: { saved?: AdminAgentDetail }) {
   return (
     <KeyboardAvoiding style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.top, { paddingTop: insets.top + 8, borderBottomColor: colors.line }]}>
-        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
+        <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
         <Txt accessibilityRole="header" size={18} weight="semibold" style={styles.flex}>
-          {saved ? t('عدّل المسؤول', 'Edit agent') : t('مسؤول جديد', 'New agent')}
+          {saved ? t(m.admin.editAgent) : t(m.admin.newAgent)}
         </Txt>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-        <TextField label={t('الاسم (عربي)', 'Name (Arabic)')} value={d.nameAr} onChangeText={(v) => set('nameAr', v)} error={err('nameAr', t('اكتب الاسم', 'Enter the name'))} />
-        <TextField label={t('الاسم (إنجليزي)', 'Name (English)')} value={d.nameEn} onChangeText={(v) => set('nameEn', v)} error={err('nameEn', t('اكتب الاسم', 'Enter the name'))} />
+        <TextField label={t(m.common.nameArabic)} value={d.nameAr} onChangeText={(v) => set('nameAr', v)} error={err('nameAr', t(m.common.enterTheName))} />
+        <TextField label={t(m.common.nameEnglish)} value={d.nameEn} onChangeText={(v) => set('nameEn', v)} error={err('nameEn', t(m.common.enterTheName))} />
         <TextField
-          label={t('الإيميل (للدخول)', 'Email (to sign in)')}
+          label={t(m.admin.emailToSignIn)}
           value={d.email}
           onChangeText={(v) => set('email', v)}
           keyboardType="email-address"
           autoCapitalize="none"
-          error={err('email', t('إيميل مش صح', 'Not an email'))}
+          error={err('email', t(m.admin.notAnEmail))}
         />
         <TextField
-          label={saved ? t('كلمة سر جديدة (اختياري)', 'New password (optional)') : t('كلمة سر البداية', 'Starting password')}
+          label={saved ? t(m.admin.newPasswordOptional) : t(m.admin.startingPassword)}
           value={d.password}
           onChangeText={(v) => set('password', v)}
           autoCapitalize="none"
-          error={err('password', t('٨ حروف على الأقل، فيها حرف ورقم', 'At least 8 characters, with a letter and a digit'))}
+          error={err('password', t(m.common.atLeast8CharactersWith))}
         />
         {saved && d.password ? (
           <Txt size={12} color="ink3">
-            {t('كلمة السر الجديدة بتعمل خروج للمسؤول من كل الأجهزة.', 'A new password signs the agent out everywhere.')}
+            {t(m.admin.aNewPasswordSignsThe)}
           </Txt>
         ) : null}
-        <TextField label={t('الموبايل', 'Phone')} value={d.phone} onChangeText={(v) => set('phone', v)} keyboardType="phone-pad" error={err('phone', t('رقم موبايل بالأرقام', 'A phone number in digits'))} />
-        <TextField label={t('المسمى (عربي)', 'Title (Arabic)')} value={d.roleTitleAr} onChangeText={(v) => set('roleTitleAr', v)} error={err('roleTitleAr', t('اكتب المسمى', 'Enter the title'))} />
-        <TextField label={t('المسمى (إنجليزي)', 'Title (English)')} value={d.roleTitleEn} onChangeText={(v) => set('roleTitleEn', v)} error={err('roleTitleEn', t('اكتب المسمى', 'Enter the title'))} />
-        <TextField label={t('اللغات (عربي)', 'Languages (Arabic)')} value={d.languagesAr} onChangeText={(v) => set('languagesAr', v)} error={err('languagesAr', t('اكتب اللغات', 'Enter the languages'))} />
-        <TextField label={t('اللغات (إنجليزي)', 'Languages (English)')} value={d.languagesEn} onChangeText={(v) => set('languagesEn', v)} error={err('languagesEn', t('اكتب اللغات', 'Enter the languages'))} />
+        <TextField label={t(m.admin.phone)} value={d.phone} onChangeText={(v) => set('phone', v)} keyboardType="phone-pad" error={err('phone', t(m.admin.aPhoneNumberInDigits))} />
+        <TextField label={t(m.admin.titleArabic)} value={d.roleTitleAr} onChangeText={(v) => set('roleTitleAr', v)} error={err('roleTitleAr', t(m.common.enterTheTitle))} />
+        <TextField label={t(m.admin.titleEnglish)} value={d.roleTitleEn} onChangeText={(v) => set('roleTitleEn', v)} error={err('roleTitleEn', t(m.common.enterTheTitle))} />
+        <TextField label={t(m.admin.languagesArabic)} value={d.languagesAr} onChangeText={(v) => set('languagesAr', v)} error={err('languagesAr', t(m.common.enterTheLanguages))} />
+        <TextField label={t(m.admin.languagesEnglish)} value={d.languagesEn} onChangeText={(v) => set('languagesEn', v)} error={err('languagesEn', t(m.common.enterTheLanguages))} />
         <TextField
-          label={t('الهدف في الشهر (صفقات)', 'Monthly target (deals)')}
+          label={t(m.admin.monthlyTargetDeals)}
           value={d.monthlyTarget}
           onChangeText={(v) => set('monthlyTarget', v)}
           keyboardType="number-pad"
-          error={err('monthlyTarget', t('رقم', 'A number'))}
+          error={err('monthlyTarget', t(m.admin.aNumber))}
         />
         <View style={styles.group}>
           <Txt size={13} weight="medium" color="ink2">
-            {t('اللون', 'Colour')}
+            {t(m.admin.colour)}
           </Txt>
           <View style={styles.colours}>
             {COLOURS.map((c) => (
@@ -171,7 +171,7 @@ function Form({ saved }: { saved?: AdminAgentDetail }) {
                 key={c}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: d.colour === c }}
-                accessibilityLabel={t(`اللون ${c}`, `Colour ${c}`)}
+                accessibilityLabel={t(m.admin.colourName(c))}
                 onPress={() => set('colour', c)}
                 style={[styles.swatch, { backgroundColor: c, borderColor: d.colour === c ? colors.ink : 'transparent' }]}
               >
@@ -181,7 +181,7 @@ function Form({ saved }: { saved?: AdminAgentDetail }) {
           </View>
         </View>
         <ListingsPicker agentId={saved?.id} off={saved ? !saved.active : false} picked={picked} onChange={setPicked} />
-        <Button label={saved ? t('احفظ', 'Save') : t('أضف المسؤول', 'Add the agent')} loading={save.isPending} onPress={submit} />
+        <Button label={saved ? t(m.common.save) : t(m.admin.addTheAgent)} loading={save.isPending} onPress={submit} />
       </ScrollView>
     </KeyboardAvoiding>
   );
@@ -200,7 +200,7 @@ function ListingsPicker({ agentId, off, picked, onChange }: { agentId?: number; 
   const [q, setQ] = useState('');
   const nameOf = (id: number | null) => {
     const a = agents.data?.find((x) => x.id === id);
-    return a ? t(`مع ${a.nameAr}`, `with ${a.nameEn}`) : t('من غير مسؤول', 'no advisor');
+    return a ? t(m.admin.withAgent(a)) : t(m.admin.noAdvisor);
   };
   const words = q.trim().toLowerCase();
   const all = options.data ?? [];
@@ -211,20 +211,20 @@ function ListingsPicker({ agentId, off, picked, onChange }: { agentId?: number; 
   return (
     <View style={styles.group}>
       <Txt accessibilityRole="header" size={15} weight="semibold">
-        {`${t('العقارات اللي معاه', 'Their listings')} (${fmtNum(mine + picked.length, lang)})`}
+        {`${t(m.admin.theirListings)} (${fmtNum(mine + picked.length, lang)})`}
       </Txt>
       <Txt size={12} color="ink2">
         {off
-          ? t('المسؤول موقوف: شغّله الأول عشان تديله عقارات.', 'This agent is turned off: turn them on before giving them listings.')
-          : t('علّم على العقارات اللي عايز تديها له. عشان تشيل عقار منه، اديه لمسؤول تاني.', 'Tick the listings to give them. To take one away, give it to another agent.')}
+          ? t(m.admin.thisAgentIsTurnedOff)
+          : t(m.admin.tickTheListingsToGive)}
       </Txt>
       <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Search size={16} color={colors.ink3} />
         <TextInput
-          accessibilityLabel={t('ابحث باسم العقار', 'Search by listing title')}
+          accessibilityLabel={t(m.common.searchByListingTitle)}
           value={q}
           onChangeText={setQ}
-          placeholder={t('ابحث باسم العقار', 'Search by listing title')}
+          placeholder={t(m.common.searchByListingTitle)}
           placeholderTextColor={colors.ink3}
           autoCorrect={false}
           autoCapitalize="none"
@@ -235,24 +235,24 @@ function ListingsPicker({ agentId, off, picked, onChange }: { agentId?: number; 
         <ActivityIndicator color={colors.accent} />
       ) : options.isError ? (
         <Txt size={12} color="danger">
-          {t('مقدرناش نجيب العقارات', 'We couldn’t load the listings')}
+          {t(m.admin.weCouldntLoadTheListings)}
         </Txt>
       ) : !shown.length ? (
         <Txt size={12} color="ink3">
-          {t('مفيش عقارات هنا', 'No listings here')}
+          {t(m.common.noListingsHere)}
         </Txt>
       ) : (
         <View style={[styles.listings, { borderColor: colors.line }]}>
           {shown.map((o, i) => {
             const theirs = agentId !== undefined && o.agentId === agentId;
             const on = theirs || picked.includes(o.id);
-            const title = lang === 'ar' ? o.titleAr : o.titleEn;
-            const sub = `${t(PROPERTY_STATUS_LABEL[o.status])}${t('،', ',')} ${theirs ? t('معاه', 'theirs') : nameOf(o.agentId)}`;
+            const title = pickField(o, 'title', lang);
+            const sub = `${t(PROPERTY_STATUS_LABEL[o.status])}${t(m.common.comma)} ${theirs ? t(m.admin.theirs) : nameOf(o.agentId)}`;
             return (
               <Pressable
                 key={o.id}
                 accessibilityRole="checkbox"
-                accessibilityLabel={`${title}${t('،', ',')} ${sub}`}
+                accessibilityLabel={`${title}${t(m.common.comma)} ${sub}`}
                 accessibilityState={{ checked: on, disabled: theirs || off }}
                 disabled={theirs || off}
                 onPress={() => toggle(o.id)}

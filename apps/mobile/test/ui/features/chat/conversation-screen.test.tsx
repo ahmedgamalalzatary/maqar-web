@@ -256,7 +256,7 @@ describe('Conversation (agent)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'جولة ٣٦٠°' }));
     await fireEvent.press(screen.getByRole('button', { name: 'تفاصيل الوحدة' }));
     await fireEvent.press(screen.getByRole('button', { name: 'مواعيد متاحة' }));
-    const day = await screen.findByRole('button', { name: /^الجمعة ١٣ نوفمبر، ٢ ميعاد/ });
+    const day = await screen.findByRole('button', { name: /^الجمعة ١٣ نوفمبر، ميعادين/ });
     expect(screen.queryByRole('button', { name: /الخميس ١٢ نوفمبر/ })).toBeNull();
     await fireEvent.press(day);
     await waitFor(() =>

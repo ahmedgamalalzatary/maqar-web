@@ -128,8 +128,33 @@ export function fmtDate(input: Date | string | number, lang: Lang, style: DateSt
   }
 }
 
-/** Arabic counted-noun forms: one, two, 3–10, 11 and up. */
-type ArForms = [one: string, two: string, few: string, many: string];
+/** Arabic counted-noun forms: one, two, 3–10, and 0 or 11 and up. */
+export type ArForms = [one: string, two: string, few: string, many: string];
+
+/** A counted noun with its number, using the Arabic forms or the English singular/plural. */
+export function count(n: number, forms: { ar: ArForms; en: [one: string, many: string] }, lang: Lang): string {
+  if (lang === 'ar') return arCount(n, forms.ar);
+  return `${fmtNum(n, lang)} ${n === 1 ? forms.en[0] : forms.en[1]}`;
+}
+
+/** Both languages at once, for `t(countBoth(n, forms))`. */
+export function countBoth(n: number, forms: { ar: ArForms; en: [one: string, many: string] }): Bi {
+  return { ar: count(n, forms, 'ar'), en: count(n, forms, 'en') };
+}
+
+/** Parts joined for reading aloud: "، " in Arabic, ", " in English; empty parts are skipped. */
+export function joinParts(parts: (string | null | undefined)[], lang: Lang): string {
+  return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '').join(lang === 'ar' ? '، ' : ', ');
+}
+
+/** A server field kept as `nameAr`/`nameEn` pairs: `pickField(x, 'name', lang)`, falling back to the other language. */
+export function pickField<K extends string>(obj: { [P in `${K}Ar` | `${K}En`]?: string | null }, base: K, lang: Lang): string {
+  // Typed by the field name, so a misspelt `base` or a missing field fails to compile.
+  const pair = obj as Record<string, string | null | undefined>;
+  const ar = pair[`${base}Ar`] ?? '';
+  const en = pair[`${base}En`] ?? '';
+  return pick({ ar: ar || en, en: en || ar }, lang);
+}
 
 const UNITS: { secs: number; ar: ArForms; en: string }[] = [
   { secs: 86_400, ar: ['يوم', 'يومين', 'أيام', 'يوم'], en: 'day' },
@@ -140,7 +165,7 @@ const UNITS: { secs: number; ar: ArForms; en: string }[] = [
 function arCount(n: number, [one, two, few, many]: ArForms): string {
   if (n === 1) return one;
   if (n === 2) return two;
-  return `${localDigits(String(n), 'ar')} ${n <= 10 ? few : many}`;
+  return `${fmtNum(n, 'ar', 0)} ${n >= 3 && n <= 10 ? few : many}`;
 }
 
 /** "قبل ساعتين" / "2 hours ago", "بعد ٣ أيام" / "in 3 days". */

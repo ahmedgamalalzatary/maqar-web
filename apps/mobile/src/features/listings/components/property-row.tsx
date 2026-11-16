@@ -1,4 +1,4 @@
-import { fmtMoney, type PropertyCard } from '@maqar/shared';
+import { pickField, fmtMoney, type PropertyCard } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 /**
@@ -19,9 +19,9 @@ export function PropertyRow({ card, sub, right }: { card: PropertyCard; sub?: Re
   const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
-  const title = lang === 'ar' ? card.titleAr : card.titleEn;
-  const place = `${lang === 'ar' ? card.compoundAr : card.compoundEn} | ${lang === 'ar' ? card.area.nameAr : card.area.nameEn}`;
-  const suffix = card.category === 'rent' ? t('/ شهر', '/ mo') : card.category === 'stay' ? t('/ ليلة', '/ night') : '';
+  const title = pickField(card, 'title', lang);
+  const place = `${pickField(card, 'compound', lang)} | ${pickField(card.area, 'name', lang)}`;
+  const suffix = card.category === 'rent' ? t(m.common.mo) : card.category === 'stay' ? t(m.common.night) : '';
   const cover = mediaUrl(card.cover);
   return (
     <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.line }]}>

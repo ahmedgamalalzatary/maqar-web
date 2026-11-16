@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Skeleton } from '@/components/skeleton';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 /** Shimmering blocks in the shape of a card, while listings load. */
@@ -25,14 +25,14 @@ export function EmptyListings({ onClear }: { onClear?: () => void }) {
     <View style={styles.center}>
       <SearchX size={32} color={colors.ink3} strokeWidth={1.6} />
       <Txt weight="medium" align="center">
-        {onClear ? t('مفيش نتايج بالفلاتر دي', 'No homes match these filters') : t('مفيش وحدات هنا لسه', 'No homes here yet')}
+        {onClear ? t(m.listings.noHomesMatchTheseFilters) : t(m.listings.noHomesHereYet)}
       </Txt>
       <Txt size={13} color="ink2" align="center">
         {onClear
-          ? t('وسّع الميزانية أو شيل فلتر.', 'Widen the budget or remove a filter.')
-          : t('جرّب فئة أو منطقة تانية.', 'Try another category or area.')}
+          ? t(m.listings.widenTheBudgetOrRemove)
+          : t(m.listings.tryAnotherCategoryOrArea)}
       </Txt>
-      {onClear ? <Button label={t('مسح الفلاتر', 'Clear filters')} variant="secondary" onPress={onClear} style={styles.retry} /> : null}
+      {onClear ? <Button label={t(m.common.clearFilters)} variant="secondary" onPress={onClear} style={styles.retry} /> : null}
     </View>
   );
 }
@@ -44,9 +44,9 @@ export function ListingsError({ onRetry }: { onRetry: () => void }) {
     <View style={styles.center}>
       <WifiOff size={32} color={colors.ink3} strokeWidth={1.6} />
       <Txt weight="medium" align="center">
-        {t('مش قادرين نوصل للسيرفر', 'We can’t reach the server')}
+        {t(m.listings.weCantReachTheServer)}
       </Txt>
-      <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={onRetry} style={styles.retry} />
+      <Button label={t(m.common.tryAgain)} variant="secondary" onPress={onRetry} style={styles.retry} />
     </View>
   );
 }

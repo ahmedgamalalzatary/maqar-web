@@ -1,11 +1,11 @@
-import { type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, fmtPct, fmtTime } from '@maqar/shared';
+import { pickField, joinParts, type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtPct, fmtTime } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bot, Calculator, CalendarCheck, CalendarClock, CalendarX, Check, CheckCheck, Clock, Hourglass, Rotate3d } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { rtlLine, useLang, useT } from '@/core/i18n';
+import { m as mT, rtlLine, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 const clock = (iso: string) => {
@@ -42,8 +42,8 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
   const { colors } = useTheme();
   const mine = m.sender === side;
   const p = thread.property;
-  const title = lang === 'ar' ? p.titleAr : p.titleEn;
-  const place = `${lang === 'ar' ? p.compoundAr : p.compoundEn} | ${lang === 'ar' ? p.area.nameAr : p.area.nameEn}`;
+  const title = pickField(p, 'title', lang);
+  const place = `${pickField(p, 'compound', lang)} | ${pickField(p.area, 'name', lang)}`;
   // My bubble is filled with the ink colour (navy in light mode, cream in dark), so what sits on it
   // is drawn in the page colour, faded where it should be quieter. Never white: it vanishes on cream.
   const fg = mine ? colors.bg : colors.ink;
@@ -62,29 +62,29 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
       </Txt>
       {mine ? (
         sending ? (
-          <Clock size={12} color={soft} accessibilityLabel={t('بيتبعت', 'Sending')} />
+          <Clock size={12} color={soft} accessibilityLabel={t(mT.common.sending)} />
         ) : m.readAt ? (
-          <CheckCheck size={14} color={colors.accent} accessibilityLabel={t('اتقرت', 'Read')} />
+          <CheckCheck size={14} color={colors.accent} accessibilityLabel={t(mT.common.read)} />
         ) : (
-          <Check size={14} color={soft} accessibilityLabel={t('اتبعتت', 'Sent')} />
+          <Check size={14} color={soft} accessibilityLabel={t(mT.common.sent)} />
         )
       ) : null}
     </View>
   );
   // What a screen reader says of my message: sending, sent, or read.
-  const state = sending ? t('بيتبعت', 'Sending') : m.readAt ? t('اتقرت', 'Read') : t('اتبعتت', 'Sent');
+  const state = sending ? t(mT.common.sending) : m.readAt ? t(mT.common.read) : t(mT.common.sent);
   const b = m.body;
   const cover = mediaUrl(p.cover);
 
   switch (b.kind) {
     case 'text':
       return (
-        <View style={[shell, styles.pad]} accessible accessibilityLabel={mine ? `${t('أنت', 'You')}: ${b.text}، ${state}` : b.text}>
+        <View style={[shell, styles.pad]} accessible accessibilityLabel={mine ? joinParts([`${t(mT.chat.you)}: ${b.text}`, state], lang) : b.text}>
           {b.auto ? (
             <View style={styles.inline}>
               <Bot size={13} color={soft} />
               <Txt size={11} style={{ color: soft }}>
-                {t('رد تلقائي', 'Automatic reply')}
+                {t(mT.chat.automaticReply)}
               </Txt>
             </View>
           ) : null}
@@ -103,7 +103,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
               <Pressable
                 key={u}
                 accessibilityRole="imagebutton"
-                accessibilityLabel={t('افتح الصورة', 'Open photo')}
+                accessibilityLabel={t(mT.chat.openPhoto)}
                 onPress={() => onImage(u)}
                 style={[styles.photo, b.urls.length === 1 && styles.single, { backgroundColor: colors.surface2 }]}
               >
@@ -117,7 +117,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
 
     case 'property':
       return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${title}، ${fmtMoney(p.price, lang)}`} onPress={() => router.push(`/property/${p.id}`)} style={[shell, styles.card]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={joinParts([title, fmtMoney(p.price, lang)], lang)} onPress={() => router.push(`/property/${p.id}`)} style={[shell, styles.card]}>
           <View style={[styles.cover, { backgroundColor: colors.surface2 }]}>{cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}</View>
           <View style={styles.pad}>
             <Txt size={15} weight="semibold" style={{ color: fg }}>
@@ -139,7 +139,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
         <View style={[shell, styles.card]}>
           <View style={[styles.planTop, { backgroundColor: colors.navy }]}>
             <Txt size={11} style={styles.cream60}>
-              {t('القسط الشهري', 'Monthly installment')}
+              {t(mT.common.monthlyInstallment)}
             </Txt>
             <Txt size={22} weight="semibold" style={{ color: colors.gold }}>
               {fmtMoney(b.monthly, lang, false)}
@@ -148,7 +148,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
           <View style={[styles.pad, styles.planRow]}>
             <View style={styles.flex}>
               <Txt size={11} style={{ color: soft }}>
-                {t('المقدم', 'Down payment')}
+                {t(mT.common.downPayment)}
               </Txt>
               <Txt size={12} weight="semibold" style={{ color: fg }}>
                 {fmtPct(b.downPct, lang)} | {fmtMoney((b.price * b.downPct) / 100, lang)}
@@ -156,10 +156,10 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
             </View>
             <View style={styles.flex}>
               <Txt size={11} style={{ color: soft }}>
-                {t('المدة', 'Period')}
+                {t(mT.chat.period)}
               </Txt>
               <Txt size={12} weight="semibold" style={{ color: fg }}>
-                {t(`${fmtNum(b.years, 'ar')} سنين`, `${b.years} years`)}
+                {t(mT.common.years(b.years))}
               </Txt>
             </View>
           </View>
@@ -170,7 +170,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
           >
             <Calculator size={15} color={colors.accentInk} />
             <Txt size={12.5} weight="medium" color="accentInk">
-              {t('غيّر المقدم والمدة', 'Adjust down payment & period')}
+              {t(mT.chat.adjustDownPaymentPeriod)}
             </Txt>
           </Pressable>
           <View style={styles.padX}>{meta}</View>
@@ -179,7 +179,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
 
     case 'tour':
       return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${t('ابدأ الجولة ٣٦٠°', 'Start 360° tour')}، ${title}`} onPress={() => router.push(`/property/${p.id}/tour`)} style={[shell, styles.card]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={joinParts([t(mT.common.start360Tour), title], lang)} onPress={() => router.push(`/property/${p.id}/tour`)} style={[shell, styles.card]}>
           <View style={[styles.cover, { backgroundColor: colors.surface2 }]}>
             {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
             <View style={styles.tourShade}>
@@ -188,7 +188,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
                   <Rotate3d size={15} color={colors.gold} />
                 </View>
                 <Txt size={13} weight="semibold" style={{ color: colors.navy }}>
-                  {t('ابدأ الجولة ٣٦٠°', 'Start 360° tour')}
+                  {t(mT.common.start360Tour)}
                 </Txt>
               </View>
             </View>
@@ -219,7 +219,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
                 <Pressable
                   key={tm}
                   accessibilityRole="button"
-                  accessibilityLabel={on ? `${fmtTime(tm, lang)}، ${t('اتحجزت', 'booked')}` : fmtTime(tm, lang)}
+                  accessibilityLabel={on ? joinParts([fmtTime(tm, lang), t(mT.chat.booked)], lang) : fmtTime(tm, lang)}
                   accessibilityState={{ disabled: !canPick, selected: on }}
                   disabled={!canPick}
                   onPress={() => onBook(m.id, tm)}
@@ -238,11 +238,11 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
           </View>
           {canPick ? (
             <Txt size={11} style={{ color: soft }}>
-              {t('دوس على ميعاد، والمسؤول هيأكده', 'Tap a time; the advisor confirms it')}
+              {t(mT.chat.tapATimeTheAdvisor)}
             </Txt>
           ) : b.chosen && side === 'agent' ? (
             <Txt size={11} color="success">
-              {t('العميل اختار ميعاد', 'The client picked a time')}
+              {t(mT.chat.theClientPickedATime)}
             </Txt>
           ) : null}
           {meta}
@@ -254,22 +254,22 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
       // A request from the chat waits for the advisor (2026-11-14); a card without a state was confirmed at once.
       const state = b.state ?? 'accepted';
       const look = {
-        pending: { Icon: Hourglass, bg: colors.accent, title: t('معاينة مستنية التأكيد', 'Viewing awaiting confirmation') },
-        accepted: { Icon: CalendarCheck, bg: colors.success, title: t('المعاينة اتأكدت', 'Viewing confirmed') },
-        moved: { Icon: CalendarClock, bg: colors.success, title: t('الميعاد اتغير', 'New time confirmed') },
-        declined: { Icon: CalendarX, bg: colors.danger, title: t('المسؤول اعتذر عن المعاينة', 'The advisor declined the viewing') },
-        cancelled: { Icon: CalendarX, bg: colors.danger, title: t('المعاينة اتلغت', 'Viewing cancelled') },
+        pending: { Icon: Hourglass, bg: colors.accent, title: t(mT.chat.viewingAwaitingConfirmation) },
+        accepted: { Icon: CalendarCheck, bg: colors.success, title: t(mT.chat.viewingConfirmed) },
+        moved: { Icon: CalendarClock, bg: colors.success, title: t(mT.chat.newTimeConfirmed) },
+        declined: { Icon: CalendarX, bg: colors.danger, title: t(mT.chat.theAdvisorDeclinedTheViewing) },
+        cancelled: { Icon: CalendarX, bg: colors.danger, title: t(mT.common.viewingCancelled) },
       }[state];
       // The client's request keeps its headline once answered, with where it stands under it; the
       // advisor's answer follows as its own card.
       const request = m.sender === 'client';
-      const booked = side === 'client' ? t('حجزت معاينة', 'You booked a viewing') : t('العميل حجز معاينة', 'The client booked a viewing');
+      const booked = side === 'client' ? t(mT.chat.youBookedAViewing) : t(mT.chat.theClientBookedAViewing);
       const outcome = {
-        pending: side === 'client' ? t('مستنية تأكيد المسؤول', 'Waiting for the advisor to confirm') : null,
-        accepted: t('اتأكدت', 'Confirmed'),
-        moved: t('اتنقلت لميعاد تاني', 'Moved to another time'),
-        declined: t('اتعتذر عنها', 'Declined'),
-        cancelled: t('اتلغت', 'Cancelled'),
+        pending: side === 'client' ? t(mT.chat.waitingForTheAdvisorTo) : null,
+        accepted: t(mT.chat.confirmed),
+        moved: t(mT.chat.movedToAnotherTime),
+        declined: t(mT.chat.declined),
+        cancelled: t(mT.chat.cancelled),
       }[state];
       const asks = state === 'pending' && side === 'agent' && !!onAnswer;
       return (
@@ -304,7 +304,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
                 style={[styles.cardAction, styles.flat, { backgroundColor: colors.success }]}
               >
                 <Txt size={12.5} weight="semibold" style={{ color: '#fff' }}>
-                  {t('أكّد المعاينة', 'Confirm')}
+                  {t(mT.chat.confirm)}
                 </Txt>
               </Pressable>
               <View style={styles.answerRow}>
@@ -316,7 +316,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
                   style={[styles.cardAction, styles.flat, styles.flex, { backgroundColor: chip }]}
                 >
                   <Txt size={12.5} weight="medium" style={{ color: fg }}>
-                    {t('غيّر الميعاد', 'Change the time')}
+                    {t(mT.chat.changeTheTime)}
                   </Txt>
                 </Pressable>
                 <Pressable
@@ -327,7 +327,7 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
                   style={[styles.cardAction, styles.flat, styles.flex, { backgroundColor: chip }]}
                 >
                   <Txt size={12.5} weight="medium" color="danger">
-                    {t('اعتذر', 'Decline')}
+                    {t(mT.chat.decline)}
                   </Txt>
                 </Pressable>
               </View>
@@ -335,13 +335,13 @@ export function Bubble({ m, thread, side, tail, onBook, booking, onImage, onAnsw
           ) : state === 'pending' && side === 'agent' ? null : side === 'client' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/viewings')} style={[styles.cardAction, styles.flat, { backgroundColor: chip }]}>
               <Txt size={12.5} weight="medium" style={{ color: fg }}>
-                {t('معايناتي', 'My viewings')}
+                {t(mT.common.myViewings)}
               </Txt>
             </Pressable>
           ) : thread.leadId ? (
             <Pressable accessibilityRole="button" onPress={() => router.push(`/agent/lead/${thread.leadId}`)} style={[styles.cardAction, styles.flat, { backgroundColor: chip }]}>
               <Txt size={12.5} weight="medium" style={{ color: fg }}>
-                {t('صفحة العميل', 'Lead page')}
+                {t(mT.chat.leadPage)}
               </Txt>
             </Pressable>
           ) : null}

@@ -109,7 +109,7 @@ describe('The bell on Home', () => {
     await useSession.getState().setSession(makeAuth());
     serve(2);
     await renderWithProviders(<NotificationBell />);
-    const bell = await screen.findByRole('button', { name: 'التنبيهات، 2 جديد' });
+    const bell = await screen.findByRole('button', { name: 'التنبيهات، ٢ جديد' });
     expect(screen.getByTestId('bell-dot')).toBeOnTheScreen();
     await fireEvent.press(bell);
     expect(mockRouter.push).toHaveBeenCalledWith('/notifications');

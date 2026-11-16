@@ -1,4 +1,4 @@
-import { type ChatSender, type ChatThread, chatPreview, fmtNum, relTime } from '@maqar/shared';
+import { pickField, joinParts, type ChatSender, type ChatThread, chatPreview, fmtNum, relTime } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, CheckCheck, MessagesSquare } from 'lucide-react-native';
@@ -8,7 +8,7 @@ import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { rtlLine, useDir, useLang, useT } from '@/core/i18n';
+import { m, rtlLine, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useChats } from '../hooks/use-chat';
@@ -34,9 +34,9 @@ export function ChatsScreen({ side }: { side: ChatSender }) {
       ItemSeparatorComponent={() => <View style={styles.gap} />}
       ListHeaderComponent={
         <View style={styles.header}>
-          {side === 'client' ? <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={() => router.back()} /> : null}
+          {side === 'client' ? <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={() => router.back()} /> : null}
           <Txt accessibilityRole="header" size={24} weight="semibold">
-            {t('المحادثات', 'Messages')}
+            {t(m.common.messages)}
           </Txt>
         </View>
       }
@@ -49,14 +49,14 @@ export function ChatsScreen({ side }: { side: ChatSender }) {
           <View style={styles.empty}>
             <MessagesSquare size={32} color={colors.ink3} strokeWidth={1.6} />
             <Txt weight="medium" align="center">
-              {t('مفيش محادثات لسه', 'No conversations yet')}
+              {t(m.chat.noConversationsYet)}
             </Txt>
             <Txt size={13} color="ink2" align="center">
               {side === 'client'
-                ? t('افتح أي وحدة واضغط «شات» عشان تكلم مسؤول المبيعات بتاعها مباشرة.', 'Open any home and tap “Chat” to talk to its sales advisor directly.')
-                : t('أول ما عميل يكلمك عن وحدة من وحداتك هتلاقي المحادثة هنا.', 'When a client messages you about one of your homes, the conversation shows up here.')}
+                ? t(m.chat.openAnyHomeAndTap)
+                : t(m.chat.whenAClientMessagesYou)}
             </Txt>
-            {side === 'client' ? <Button label={t('استكشف الوحدات', 'Explore homes')} variant="secondary" onPress={() => router.push('/explore')} /> : null}
+            {side === 'client' ? <Button label={t(m.common.exploreHomes)} variant="secondary" onPress={() => router.push('/explore')} /> : null}
           </View>
         )
       }
@@ -71,15 +71,15 @@ function Row({ c, side }: { c: ChatThread; side: ChatSender }) {
   const router = useRouter();
   const { colors } = useTheme();
   const typing = useTyping((s) => (s[c.id] ?? 0) > 0);
-  const name = side === 'client' ? (lang === 'ar' ? c.agent.nameAr : c.agent.nameEn) : c.client?.name || t('حساب محذوف', 'Deleted account');
-  const home = lang === 'ar' ? c.property.titleAr : c.property.titleEn;
-  const preview = typing ? t('بيكتب…', 'typing…') : c.last ? chatPreview(c.last.body, lang) : '';
+  const name = side === 'client' ? (pickField(c.agent, 'name', lang)) : c.client?.name || t(m.common.deletedAccount2);
+  const home = pickField(c.property, 'title', lang);
+  const preview = typing ? t(m.common.typing) : c.last ? chatPreview(c.last.body, lang) : '';
   const mineLast = c.last?.sender === side;
   const cover = mediaUrl(c.property.cover);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[name, home, preview, c.unread ? t(`${fmtNum(c.unread, 'ar')} جديدة`, `${c.unread} new`) : null].filter(Boolean).join('، ')}
+      accessibilityLabel={joinParts([name, home, preview, c.unread ? t(m.chat.newCount(c.unread)) : null], lang)}
       onPress={() => router.push(side === 'client' ? `/chat/${c.id}` : `/agent/chat/${c.id}`)}
       style={({ pressed }) => [
         styles.row,

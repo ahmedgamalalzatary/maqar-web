@@ -16,6 +16,7 @@ import {
   type PropertyCard,
   type PropertyDetail,
   winner,
+  pickField,
 } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -28,7 +29,7 @@ import { Sheet } from '@/components/sheet';
 import { TextField } from '@/components/text-field';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { ListingsError } from '@/features/listings/components/list-states';
@@ -58,17 +59,17 @@ export function CompareScreen() {
 
   return (
     <Screen
-      title={t('قارن الوحدات', 'Compare homes')}
+      title={t(m.compare.compareHomes)}
       right={
         <IconButton
-          label={t('رجوع', 'Back')}
+          label={t(m.common.back)}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
           icon={<BackIcon size={20} color={colors.ink} />}
         />
       }
     >
       <Txt size={13} color="ink2" style={styles.subtitle}>
-        {t('جنب بعض، بالأرقام', 'Side by side, in numbers')}
+        {t(m.compare.sideBySideInNumbers)}
       </Txt>
 
       {query.isError && !query.data ? (
@@ -91,8 +92,7 @@ export function CompareScreen() {
           <Scale size={20} color={colors.gold} />
           <Txt size={13} style={[styles.flex, { color: colors.cream, opacity: 0.8 }]}>
             {t(
-              'اختار وحدتين عشان نقارنهم في السعر، سعر المتر، القسط، المساحة والمميزات، ونقولك مين الأحسن في إيه.',
-              'Pick two homes and we’ll compare price, price per m², installment, size and amenities, and tell you which wins where.',
+              m.compare.pickTwoHomesAndWell,
             )}
           </Txt>
         </View>
@@ -117,7 +117,7 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
   const sameCategory = a.category === b.category;
   const monthly = pair.map(compareMonthly);
   const drops = pair.map((p) => (p.oldPrice && p.oldPrice > p.price ? p.oldPrice - p.price : 0));
-  const suffix = (p: PropertyDetail) => (p.category === 'rent' ? t(' / شهر', ' / mo') : p.category === 'stay' ? t(' / ليلة', ' / night') : '');
+  const suffix = (p: PropertyDetail) => (p.category === 'rent' ? t(m.compare.mo) : p.category === 'stay' ? t(m.compare.night) : '');
   const features = [...new Set([...a.features, ...b.features])] as Feature[];
   const num = (f: (p: PropertyDetail) => number) => pair.map(f) as unknown as [number, number];
 
@@ -128,7 +128,7 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
           <View style={styles.inline}>
             <Sparkles size={16} color={colors.accent} />
             <Txt size={14} weight="semibold">
-              {t('الخلاصة', 'The short version')}
+              {t(m.compare.theShortVersion)}
             </Txt>
           </View>
           {verdict.map((v) => (
@@ -142,41 +142,41 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
         </View>
       ) : null}
 
-      <Group title={t('السعر والتكلفة', 'Price & cost')}>
+      <Group title={t(m.compare.priceCost)}>
         <Row
-          label={t('السعر', 'Price')}
+          label={t(m.common.price)}
           better={sameCategory ? 'low' : null}
           vals={num((p) => p.price)}
           fmt={(v, i) => `${fmtMoney(v, lang)}${suffix(pair[i])}`}
         />
         <Row
-          label={t('سعر المتر', 'Price per m²')}
+          label={t(m.compare.pricePerM)}
           better={sameCategory ? 'low' : null}
           vals={num((p) => p.price / p.sizeM2)}
           fmt={(v) => fmtMoney(Math.round(v), lang, false)}
         />
         {monthly[0] || monthly[1] ? (
           <Row
-            label={t('القسط الشهري', 'Monthly installment')}
+            label={t(m.common.monthlyInstallment)}
             better="low"
             vals={[monthly[0]?.payment ?? null, monthly[1]?.payment ?? null]}
             fmt={(v, i) => {
-              const m = monthly[i]!;
-              const terms = `${t(`مقدم ${fmtPct(m.downPct, 'ar')} على ${fmtNum(m.years, 'ar')} سنين`, `${m.downPct}% down over ${m.years}y`)}`;
+              const plan = monthly[i]!;
+              const terms = `${t(m.compare.downOverYears(plan.downPct, plan.years))}`;
               // A home with no plan is judged on assumed terms; the cell says so.
-              return `${fmtMoney(Math.round(v), lang)}\n${m.estimated ? `${terms} ${t('(تقديري)', '(estimated)')}` : terms}`;
+              return `${fmtMoney(Math.round(v), lang)}\n${plan.estimated ? `${terms} ${t(m.compare.estimated)}` : terms}`;
             }}
           />
         ) : null}
         <Row
-          label={t('الصيانة', 'Maintenance')}
+          label={t(m.compare.maintenance)}
           better="low"
           vals={[a.maintenanceFee, b.maintenanceFee]}
           fmt={(v) => fmtPct(v, lang)}
         />
         {drops[0] || drops[1] ? (
           <Row
-            label={t('نزول السعر', 'Price drop')}
+            label={t(m.compare.priceDrop)}
             better="high"
             vals={drops as [number, number]}
             fmt={(v) => (v ? `-${fmtMoney(v, lang)}` : '—')}
@@ -184,34 +184,34 @@ function Table({ a, b }: { a: PropertyDetail; b: PropertyDetail }) {
         ) : null}
       </Group>
 
-      <Group title={t('المساحة والتفاصيل', 'Size & details')}>
-        <Row label={t('المساحة', 'Size')} better="high" vals={num((p) => p.sizeM2)} fmt={(v) => `${fmtNum(v, lang)} ${t('م²', 'm²')}`} />
-        <Row label={t('الغرف', 'Bedrooms')} better="high" vals={num((p) => p.beds)} fmt={(v) => fmtNum(v, lang)} />
-        <Row label={t('الحمامات', 'Bathrooms')} better="high" vals={num((p) => p.baths)} fmt={(v) => fmtNum(v, lang)} />
-        <TextRow label={t('النوع', 'Type')} vals={[t(PROPERTY_TYPE_LABEL[a.type]), t(PROPERTY_TYPE_LABEL[b.type])]} />
-        <TextRow label={t('التشطيب', 'Finishing')} vals={[t(FINISHING_LABEL[a.finishing]), t(FINISHING_LABEL[b.finishing])]} />
+      <Group title={t(m.compare.sizeDetails)}>
+        <Row label={t(m.common.size)} better="high" vals={num((p) => p.sizeM2)} fmt={(v) => `${fmtNum(v, lang)} ${t(m.common.m)}`} />
+        <Row label={t(m.common.bedrooms)} better="high" vals={num((p) => p.beds)} fmt={(v) => fmtNum(v, lang)} />
+        <Row label={t(m.common.bathrooms)} better="high" vals={num((p) => p.baths)} fmt={(v) => fmtNum(v, lang)} />
+        <TextRow label={t(m.common.type)} vals={[t(PROPERTY_TYPE_LABEL[a.type]), t(PROPERTY_TYPE_LABEL[b.type])]} />
+        <TextRow label={t(m.common.finishing)} vals={[t(FINISHING_LABEL[a.finishing]), t(FINISHING_LABEL[b.finishing])]} />
         <Row
-          label={t('الاستلام', 'Delivery')}
+          label={t(m.common.delivery)}
           better="low"
           vals={num((p) => (p.delivery === 'ready' ? 0 : p.delivery))}
-          fmt={(v) => (v === 0 ? t('فوري', 'Ready') : localDigits(String(v), lang))}
+          fmt={(v) => (v === 0 ? t(m.compare.ready) : localDigits(String(v), lang))}
         />
         <TextRow
-          label={t('الدور', 'Floor')}
+          label={t(m.common.floor)}
           vals={[a.floor !== null ? fmtNum(a.floor, lang) : '—', b.floor !== null ? fmtNum(b.floor, lang) : '—']}
         />
       </Group>
 
-      <Group title={t('الموقع', 'Location')}>
-        <TextRow label={t('المنطقة', 'Area')} vals={[t({ ar: a.area.nameAr, en: a.area.nameEn }), t({ ar: b.area.nameAr, en: b.area.nameEn })]} />
-        <TextRow label={t('الكمبوند', 'Compound')} vals={[t({ ar: a.compoundAr, en: a.compoundEn }), t({ ar: b.compoundAr, en: b.compoundEn })]} />
+      <Group title={t(m.common.location)}>
+        <TextRow label={t(m.common.area)} vals={[t({ ar: a.area.nameAr, en: a.area.nameEn }), t({ ar: b.area.nameAr, en: b.area.nameEn })]} />
+        <TextRow label={t(m.compare.compound)} vals={[t({ ar: a.compoundAr, en: a.compoundEn }), t({ ar: b.compoundAr, en: b.compoundEn })]} />
       </Group>
 
-      <Group title={t('المميزات', 'Amenities')}>
+      <Group title={t(m.common.amenities)}>
         {/* The amenities either home has, then the 360° tour, as in the demo. */}
         {[
           ...features.map((f) => ({ key: f, label: t(FEATURE_LABEL[f]), on: [a.features.includes(f), b.features.includes(f)] })),
-          { key: 'tour', label: t('جولة ٣٦٠°', '360° tour'), on: [a.tour, b.tour] },
+          { key: 'tour', label: t(m.common.n360Tour), on: [a.tour, b.tour] },
         ].map((row, i) => (
           <View
             key={row.key}
@@ -237,7 +237,7 @@ function Head({ home, slot, onChange, onRemove }: { home: PropertyDetail; slot: 
   const router = useRouter();
   const { colors } = useTheme();
   const cover = mediaUrl(home.cover);
-  const title = lang === 'ar' ? home.titleAr : home.titleEn;
+  const title = pickField(home, 'title', lang);
   return (
     <View style={[styles.head, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={() => router.push(`/property/${home.id}`)}>
@@ -264,18 +264,18 @@ function Head({ home, slot, onChange, onRemove }: { home: PropertyDetail; slot: 
         <View style={styles.headActions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t(`غيّر ${LETTER[slot]}`, `Change ${LETTER[slot]}`)}
+            accessibilityLabel={t(m.compare.changeSlot(LETTER[slot]))}
             onPress={onChange}
             style={({ pressed }) => [styles.change, { backgroundColor: colors.surface2, opacity: pressed ? 0.8 : 1 }]}
           >
             <ArrowLeftRight size={14} color={colors.ink} />
             <Txt size={11.5} weight="medium">
-              {t('غيّر', 'Change')}
+              {t(m.common.change)}
             </Txt>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t(`شيل ${LETTER[slot]}`, `Remove ${LETTER[slot]}`)}
+            accessibilityLabel={t(m.compare.removeSlot(LETTER[slot]))}
             onPress={onRemove}
             style={({ pressed }) => [styles.removeBtn, { backgroundColor: colors.surface2, opacity: pressed ? 0.8 : 1 }]}
           >
@@ -293,7 +293,7 @@ function EmptySlot({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t('اختار وحدة', 'Pick a home')}
+      accessibilityLabel={t(m.common.pickAHome)}
       onPress={onPress}
       style={({ pressed }) => [styles.emptySlot, { borderColor: colors.line2, backgroundColor: colors.surface, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -301,7 +301,7 @@ function EmptySlot({ onPress }: { onPress: () => void }) {
         <Plus size={24} color={colors.accentInk} />
       </View>
       <Txt size={13} weight="medium" color="ink2">
-        {t('اختار وحدة', 'Pick a home')}
+        {t(m.common.pickAHome)}
       </Txt>
     </Pressable>
   );
@@ -365,7 +365,7 @@ function Row({
           <View
             key={i}
             accessible
-            accessibilityLabel={best ? t(`${label} ${LETTER[i]}: ${text}، الأفضل`, `${label} ${LETTER[i]}: ${text}, better`) : `${label} ${LETTER[i]}: ${text}`}
+            accessibilityLabel={best ? t(m.compare.betterValue(label, LETTER[i], text)) : `${label} ${LETTER[i]}: ${text}`}
             style={[styles.cell, { backgroundColor: best ? colors.accentSoft : colors.surface2 }]}
           >
             {best ? <Crown size={14} color={colors.accent} fill={colors.accent} style={styles.crown} /> : null}
@@ -411,7 +411,7 @@ function Yes({ on, label }: { on: boolean; label: string }) {
   const t = useT();
   const { colors } = useTheme();
   return (
-    <View style={styles.yesWrap} accessible accessibilityLabel={`${label}: ${on ? t('موجود', 'yes') : t('مش موجود', 'no')}`}>
+    <View style={styles.yesWrap} accessible accessibilityLabel={`${label}: ${on ? t(m.compare.yes) : t(m.compare.no)}`}>
       <View style={[styles.yes, { backgroundColor: on ? colors.successSoft : colors.surface2 }]}>
         {on ? <Check size={16} color={colors.success} strokeWidth={3} /> : <Minus size={16} color={colors.ink3} />}
       </View>
@@ -446,9 +446,9 @@ function PickSheet({ slot, other, onClose }: { slot: Slot | null; other?: Proper
   };
 
   return (
-    <Sheet open={open} onClose={close} title={t('اختار وحدة للمقارنة', 'Pick a home to compare')}>
+    <Sheet open={open} onClose={close} title={t(m.compare.pickAHomeToCompare)}>
       <TextField
-        label={t('ابحث بالمنطقة أو الكمبوند', 'Search by area or compound')}
+        label={t(m.compare.searchByAreaOrCompound)}
         value={q}
         onChangeText={setQ}
         autoCorrect={false}
@@ -458,12 +458,12 @@ function PickSheet({ slot, other, onClose }: { slot: Slot | null; other?: Proper
         {list.isError ? <ListingsError onRetry={() => void list.refetch()} /> : null}
         {list.isSuccess && !homes.length ? (
           <Txt size={13} color="ink2" align="center">
-            {t('مفيش وحدات بالاسم ده.', 'No homes match that.')}
+            {t(m.compare.noHomesMatchThat)}
           </Txt>
         ) : null}
         {homes.map((c) => {
           const cover = mediaUrl(c.cover);
-          const title = lang === 'ar' ? c.titleAr : c.titleEn;
+          const title = pickField(c, 'title', lang);
           return (
             <Pressable
               key={c.id}
@@ -492,7 +492,7 @@ function PickSheet({ slot, other, onClose }: { slot: Slot | null; other?: Proper
               {savedIds.includes(c.id) ? (
                 <View style={[styles.savedBadge, { backgroundColor: colors.accentSoft }]}>
                   <Txt size={11} weight="medium" color="accentInk">
-                    {t('محفوظة', 'Saved')}
+                    {t(m.compare.saved)}
                   </Txt>
                 </View>
               ) : null}

@@ -1,4 +1,4 @@
-import { type NotificationItem, type NotificationKind, relTime } from '@maqar/shared';
+import { pickField, type NotificationItem, type NotificationKind, relTime } from '@maqar/shared';
 import { type Href, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
-import { rtlLine, useDir, useLang, useT } from '@/core/i18n';
+import { m, rtlLine, useDir, useLang, useT } from '@/core/i18n';
 import { type Colors, radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { useMarkAllRead, useMarkRead, useNotifications } from '../hooks/use-notifications';
@@ -60,20 +60,20 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
 
   const empty = !signedIn ? (
     <Message
-      title={t('سجّل دخولك عشان توصلك التنبيهات', 'Sign in to get notifications')}
-      body={t('تذكير المعاينات ونزول الأسعار بيوصلوا لحسابك.', 'Viewing reminders and price drops come to your account.')}
-      action={{ label: t('تسجيل الدخول', 'Sign in'), onPress: () => router.push('/sign-in') }}
+      title={t(m.notifications.signInToGetNotifications)}
+      body={t(m.notifications.viewingRemindersAndPriceDrops)}
+      action={{ label: t(m.common.signIn), onPress: () => router.push('/sign-in') }}
     />
   ) : inbox.isPending ? (
     <ActivityIndicator color={colors.accent} style={styles.loading} />
   ) : inbox.isError ? (
     <Message
-      title={t('معرفناش نجيب التنبيهات', 'Couldn’t load notifications')}
-      body={t('اتأكد إنك متصل بالإنترنت.', 'Check your connection.')}
-      action={{ label: t('حاول تاني', 'Try again'), onPress: () => void inbox.refetch() }}
+      title={t(m.notifications.couldntLoadNotifications)}
+      body={t(m.notifications.checkYourConnection)}
+      action={{ label: t(m.common.tryAgain), onPress: () => void inbox.refetch() }}
     />
   ) : (
-    <Message title={t('مفيش تنبيهات', 'No notifications')} body={t('هنا هتلاقي تذكير المعاينات ونزول الأسعار.', 'Viewing reminders and price drops will show up here.')} />
+    <Message title={t(m.notifications.noNotifications)} body={t(m.notifications.viewingRemindersAndPriceDrops2)} />
   );
 
   return (
@@ -93,18 +93,18 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
         <View style={styles.header}>
           {back ? (
             <IconButton
-              label={t('رجوع', 'Back')}
+              label={t(m.common.back)}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
               icon={<BackIcon size={20} color={colors.ink} />}
             />
           ) : null}
           <Txt accessibilityRole="header" size={24} weight="semibold" style={styles.flex}>
-            {t('التنبيهات', 'Notifications')}
+            {t(m.common.notifications)}
           </Txt>
           {unread > 0 ? (
             <Pressable accessibilityRole="button" onPress={() => markAll.mutate(undefined)} hitSlop={8}>
               <Txt size={13} weight="medium" color="accentInk">
-                {t('علّم الكل مقروء', 'Mark all read')}
+                {t(m.notifications.markAllRead)}
               </Txt>
             </Pressable>
           ) : null}
@@ -124,13 +124,13 @@ function Row({ n, onPress }: { n: NotificationItem; onPress: () => void }) {
   const { colors } = useTheme();
   const { icon: Icon, tone } = KIND[n.kind];
   const [bg, fg] = tone(colors);
-  const title = lang === 'ar' ? n.titleAr : n.titleEn;
-  const body = lang === 'ar' ? n.bodyAr : n.bodyEn;
+  const title = pickField(n, 'title', lang);
+  const body = pickField(n, 'body', lang);
   const when = relTime(new Date(n.createdAt), lang);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${n.read ? '' : t('جديد: ', 'New: ')}${title}. ${body}. ${when}`}
+      accessibilityLabel={`${n.read ? '' : t(m.notifications.new)}${title}. ${body}. ${when}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,

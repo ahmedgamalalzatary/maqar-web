@@ -1,5 +1,6 @@
 import {
   type AppSettings,
+  type Bi,
   CALCULATOR_BOUNDS,
   calculatorProblem,
   CONTACT_MAX,
@@ -28,7 +29,7 @@ import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { preparePhotos } from '@/features/chat/photos';
 import { ListingsError } from '@/features/listings/components/list-states';
@@ -48,10 +49,10 @@ export function AppSettingsScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.head}>
           <Txt accessibilityRole="header" size={22} weight="semibold">
-            {t('إعدادات التطبيق', 'App settings')}
+            {t(m.common.appSettings)}
           </Txt>
           <Txt size={13} color="ink2">
-            {t('اللي بتغيره هنا بيظهر في تطبيق العملاء من غير تحديث للتطبيق.', 'What you change here shows in the client app without an app update.')}
+            {t(m.admin.whatYouChangeHereShows)}
           </Txt>
         </View>
         {settings.isPending ? (
@@ -81,8 +82,8 @@ function useSave() {
     busy: save.isPending,
     run: (body: Parameters<typeof save.mutate>[0]) =>
       save.mutate(body, {
-        onSuccess: () => toast.show({ title: t('اتحفظ، وهيظهر في التطبيق مع أول فتح', 'Saved: the app shows it the next time it opens'), tone: 'sage' }),
-        onError: (e) => toast.show({ title: e instanceof ApiError && e.status === 400 ? e.message : t('مقدرناش نحفظ، حاول تاني', 'We couldn’t save, try again'), tone: 'danger' }),
+        onSuccess: () => toast.show({ title: t(m.admin.savedTheAppShowsIt), tone: 'sage' }),
+        onError: (e) => toast.show({ title: e instanceof ApiError && e.status === 400 ? e.message : t(m.admin.weCouldntSaveTryAgain), tone: 'danger' }),
       }),
   };
 }
@@ -121,7 +122,7 @@ function Splash({ saved }: { saved: AppSettings }) {
   const [showErrors, setShowErrors] = useState(false);
   const media = kind === 'image' ? image : kind === 'video' ? (video?.url ?? null) : null;
   const missing = kind !== 'none' && !media;
-  const tooLong = () => toast.show({ title: t('الفيديو لازم يكون ٣ ثواني أو أقل', 'The video must be 3 seconds or shorter'), tone: 'danger' });
+  const tooLong = () => toast.show({ title: t(m.admin.theVideoMustBe3), tone: 'danger' });
 
   const pick = async () => {
     if (kind === 'image') {
@@ -132,7 +133,7 @@ function Splash({ saved }: { saved: AppSettings }) {
         const [part] = await preparePhotos(res.assets.slice(0, 1));
         setImage((await uploadPhotoRequest(part!)).url);
       } catch {
-        toast.show({ title: t('مقدرناش نرفع الملف', 'We couldn’t upload the file'), tone: 'danger' });
+        toast.show({ title: t(m.common.weCouldntUploadTheFile), tone: 'danger' });
       } finally {
         setUploading(false);
       }
@@ -145,7 +146,7 @@ function Splash({ saved }: { saved: AppSettings }) {
     });
     const a = res.canceled ? undefined : res.assets[0];
     if (!a) return;
-    if (!(VIDEO_TYPES as readonly string[]).includes(typeOfVideo(a))) return toast.show({ title: t('الفيديو لازم يكون MP4 أو MOV', 'The video must be an MP4 or MOV'), tone: 'danger' });
+    if (!(VIDEO_TYPES as readonly string[]).includes(typeOfVideo(a))) return toast.show({ title: t(m.admin.theVideoMustBeAn), tone: 'danger' });
     if (a.duration && Math.round(a.duration / 1000) > SPLASH_VIDEO_MAX_SECONDS) return tooLong();
     setUploading(true);
     try {
@@ -153,7 +154,7 @@ function Splash({ saved }: { saved: AppSettings }) {
       setVideo({ url: v.url, poster: v.poster });
     } catch (e) {
       if (e instanceof ApiError && /3 seconds/.test(e.message)) tooLong();
-      else toast.show({ title: t('مقدرناش نرفع الملف', 'We couldn’t upload the file'), tone: 'danger' });
+      else toast.show({ title: t(m.common.weCouldntUploadTheFile), tone: 'danger' });
     } finally {
       setUploading(false);
     }
@@ -164,13 +165,13 @@ function Splash({ saved }: { saved: AppSettings }) {
   };
 
   const kinds: { value: SplashKind; label: string }[] = [
-    { value: 'none', label: t('اللوجو بس', 'The logo only') },
-    { value: 'image', label: t('صورة', 'A picture') },
-    { value: 'video', label: t('فيديو (٣ ثواني)', 'A video (3 seconds)') },
+    { value: 'none', label: t(m.admin.theLogoOnly) },
+    { value: 'image', label: t(m.admin.aPicture) },
+    { value: 'video', label: t(m.admin.aVideo3Seconds) },
   ];
   const preview = kind === 'image' ? image : kind === 'video' ? (video?.poster ?? null) : null;
   return (
-    <Block title={t('شاشة الفتح', 'The opening screen')} about={t('أول حاجة العميل بيشوفها لما يفتح التطبيق، بعد اللوجو.', 'The first thing a client sees when the app opens, after the logo.')}>
+    <Block title={t(m.admin.theOpeningScreen)} about={t(m.admin.theFirstThingAClient)}>
       <View accessibilityRole="radiogroup" style={styles.chips}>
         {kinds.map((k) => (
           <Pressable
@@ -196,32 +197,32 @@ function Splash({ saved }: { saved: AppSettings }) {
           <View style={styles.mediaSide}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={media ? t('غيّر الملف', 'Change the file') : kind === 'image' ? t('ارفع صورة', 'Upload a picture') : t('ارفع فيديو', 'Upload a video')}
+              accessibilityLabel={media ? t(m.common.changeTheFile) : kind === 'image' ? t(m.common.uploadAPicture) : t(m.common.uploadAVideo)}
               disabled={uploading}
               onPress={() => void pick()}
               style={[styles.upload, { borderColor: colors.line2, backgroundColor: colors.surface2 }]}
             >
               {kind === 'image' ? <ImagePlus size={18} color={colors.ink} /> : <Video size={18} color={colors.ink} />}
               <Txt size={13} weight="medium">
-                {media ? t('غيّر الملف', 'Change the file') : kind === 'image' ? t('ارفع صورة', 'Upload a picture') : t('ارفع فيديو', 'Upload a video')}
+                {media ? t(m.common.changeTheFile) : kind === 'image' ? t(m.common.uploadAPicture) : t(m.common.uploadAVideo)}
               </Txt>
             </Pressable>
             <Txt size={12} color="ink3">
               {kind === 'image'
-                ? t('صورة بالطول بتبان أحسن. بتفضل ظاهرة ثانيتين.', 'An upright picture looks best. It stays up for 2 seconds.')
-                : t('MP4 أو MOV، ٣ ثواني أو أقل، من غير صوت.', 'MP4 or MOV, 3 seconds or shorter, played without sound.')}
+                ? t(m.admin.anUprightPictureLooksBest)
+                : t(m.admin.mp4OrMov3Seconds)}
             </Txt>
             {showErrors && missing ? (
               <Txt size={12} color="danger">
-                {kind === 'image' ? t('ارفع الصورة الأول', 'Upload the picture first') : t('ارفع الفيديو الأول', 'Upload the video first')}
+                {kind === 'image' ? t(m.admin.uploadThePictureFirst) : t(m.admin.uploadTheVideoFirst)}
               </Txt>
             ) : null}
           </View>
         </View>
       ) : null}
-      <TextField label={t('النص (عربي، اختياري)', 'Text (Arabic, optional)')} value={textAr} onChangeText={setTextAr} maxLength={SPLASH_TEXT_MAX} />
-      <TextField label={t('النص (إنجليزي، اختياري)', 'Text (English, optional)')} value={textEn} onChangeText={setTextEn} maxLength={SPLASH_TEXT_MAX} />
-      <Button label={t('احفظ شاشة الفتح', 'Save the opening screen')} loading={save.busy} disabled={uploading} onPress={submit} />
+      <TextField label={t(m.admin.textArabicOptional)} value={textAr} onChangeText={setTextAr} maxLength={SPLASH_TEXT_MAX} />
+      <TextField label={t(m.admin.textEnglishOptional)} value={textEn} onChangeText={setTextEn} maxLength={SPLASH_TEXT_MAX} />
+      <Button label={t(m.admin.saveTheOpeningScreen)} loading={save.busy} disabled={uploading} onPress={submit} />
     </Block>
   );
 }
@@ -243,43 +244,43 @@ function Calculator({ saved }: { saved: AppSettings }) {
   };
   return (
     <Block
-      title={t('حاسبة التقسيط', 'The installment calculator')}
-      about={t('أقل مقدم وأقل وأكتر سنين العميل يقدر يختارهم. العقار اللي له خطة تقسيط خاصة بيتحسب بخطته.', 'The least down payment and the fewest and most years a client can pick. A listing with its own payment plan keeps its plan.')}
+      title={t(m.admin.theInstallmentCalculator)}
+      about={t(m.admin.theLeastDownPaymentAnd)}
     >
       {/* Any whole percent, typed (owner, 2026-11-14): 11, 12, 9… */}
-      <TextField label={t('أقل مقدم (٪)', 'Least down payment (%)')} value={down} onChangeText={setDown} keyboardType="number-pad" maxLength={2} />
+      <TextField label={t(m.admin.leastDownPayment)} value={down} onChangeText={setDown} keyboardType="number-pad" maxLength={2} />
       {showErrors && problem === 'down' ? (
         <Txt size={12} color="danger">
-          {t(`أقل مقدم من ٠ لـ ${fmtNum(CALCULATOR_BOUNDS.downMax, 'ar')}٪.`, `The least down payment is 0 to ${CALCULATOR_BOUNDS.downMax}%.`)}
+          {t(m.admin.leastDownPaymentUpTo(CALCULATOR_BOUNDS.downMax))}
         </Txt>
       ) : null}
-      <TextField label={t('أقل سنين', 'Fewest years')} value={minYears} onChangeText={setMinYears} keyboardType="number-pad" maxLength={2} />
-      <TextField label={t('أكتر سنين', 'Most years')} value={maxYears} onChangeText={setMaxYears} keyboardType="number-pad" maxLength={2} />
+      <TextField label={t(m.admin.fewestYears)} value={minYears} onChangeText={setMinYears} keyboardType="number-pad" maxLength={2} />
+      <TextField label={t(m.admin.mostYears)} value={maxYears} onChangeText={setMaxYears} keyboardType="number-pad" maxLength={2} />
       {showErrors && problem === 'years' ? (
         <Txt size={12} color="danger">
-          {t('السنين من ١ لـ ٣٠، والأقل ميزيدش عن الأكتر.', 'Years go from 1 to 30, and the fewest cannot be more than the most.')}
+          {t(m.admin.yearsGoFrom1To)}
         </Txt>
       ) : null}
-      <Button label={t('احفظ الحاسبة', 'Save the calculator')} loading={save.busy} onPress={submit} />
+      <Button label={t(m.admin.saveTheCalculator)} loading={save.busy} onPress={submit} />
     </Block>
   );
 }
 
-const CONTACT_LABEL: Record<ContactField, [string, string]> = {
-  email: ['الإيميل', 'Email'],
-  phone: ['رقم التليفون', 'Phone number'],
-  whatsapp: ['واتساب', 'WhatsApp'],
-  facebook: ['فيسبوك (رابط)', 'Facebook (link)'],
-  instagram: ['إنستجرام (رابط)', 'Instagram (link)'],
-  tiktok: ['تيك توك (رابط)', 'TikTok (link)'],
+const CONTACT_LABEL: Record<ContactField, Bi> = {
+  email: m.common.email,
+  phone: m.account.phoneNumber,
+  whatsapp: m.admin.whatsapp,
+  facebook: m.admin.contactLabelFacebook,
+  instagram: m.admin.contactLabelInstagram,
+  tiktok: m.admin.contactLabelTiktok,
 };
-const CONTACT_PROBLEM: Record<ContactField, [string, string]> = {
-  email: ['اكتب إيميل صحيح.', 'Type a valid email address.'],
-  phone: ['اكتب رقم تليفون صحيح.', 'Type a valid phone number.'],
-  whatsapp: ['اكتب رقم واتساب صحيح.', 'Type a valid WhatsApp number.'],
-  facebook: ['رابط فيسبوك لازم يكون كامل ويبدأ بـ https://', 'The Facebook link must be a full address starting with https://'],
-  instagram: ['رابط إنستجرام لازم يكون كامل ويبدأ بـ https://', 'The Instagram link must be a full address starting with https://'],
-  tiktok: ['رابط تيك توك لازم يكون كامل ويبدأ بـ https://', 'The TikTok link must be a full address starting with https://'],
+const CONTACT_PROBLEM: Record<ContactField, Bi> = {
+  email: m.admin.contactProblemEmail,
+  phone: m.admin.contactProblemPhone,
+  whatsapp: m.admin.contactProblemWhatsapp,
+  facebook: m.admin.contactProblemFacebook,
+  instagram: m.admin.contactProblemInstagram,
+  tiktok: m.admin.contactProblemTiktok,
 };
 /** Numbers typed in Arabic digits are kept in Latin ones, which every phone and WhatsApp reads. */
 const latinDigits = (s: string) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
@@ -307,7 +308,7 @@ function Contact({ saved }: { saved: AppSettings }) {
   const field = (f: ContactField, keyboard: 'email-address' | 'phone-pad' | 'url') => (
     <TextField
       key={f}
-      label={t(...CONTACT_LABEL[f])}
+      label={t(CONTACT_LABEL[f])}
       value={draft[f]}
       onChangeText={(v) => setDraft((d) => ({ ...d, [f]: v }))}
       keyboardType={keyboard}
@@ -318,8 +319,8 @@ function Contact({ saved }: { saved: AppSettings }) {
   );
   return (
     <Block
-      title={t('تواصل معنا', 'Contact us')}
-      about={t('اللي بتكتبه هنا بيظهر للعميل في «تواصل معنا». الخانة الفاضية مش بتظهر.', 'What you type here shows to clients under Contact us. An empty field does not show.')}
+      title={t(m.common.contactUs)}
+      about={t(m.admin.whatYouTypeHereShows)}
     >
       {field('email', 'email-address')}
       {field('phone', 'phone-pad')}
@@ -329,10 +330,10 @@ function Contact({ saved }: { saved: AppSettings }) {
       {field('tiktok', 'url')}
       {showErrors && problem ? (
         <Txt size={12} color="danger">
-          {t(...CONTACT_PROBLEM[problem])}
+          {t(CONTACT_PROBLEM[problem])}
         </Txt>
       ) : null}
-      <Button label={t('احفظ بيانات التواصل', 'Save the contact details')} loading={save.busy} onPress={submit} />
+      <Button label={t(m.admin.saveTheContactDetails)} loading={save.busy} onPress={submit} />
     </Block>
   );
 }
@@ -352,8 +353,8 @@ function HomeOrder({ saved }: { saved: AppSettings }) {
     });
   return (
     <Block
-      title={t('ترتيب الصفحة الرئيسية', 'The order of the Home page')}
-      about={t('العنوان وخانة البحث ثابتين فوق. القسم اللي مفيهوش حاجة للعميل مش بيظهر.', 'The headline and the search box stay on top. A section with nothing for the client does not show.')}
+      title={t(m.admin.theOrderOfTheHome)}
+      about={t(m.admin.theHeadlineAndTheSearch)}
     >
       {order.map((s, i) => {
         const name = HOME_SECTION_LABEL[s];
@@ -365,12 +366,12 @@ function HomeOrder({ saved }: { saved: AppSettings }) {
             <Txt size={13} weight="medium" style={styles.flex}>
               {t(name)}
             </Txt>
-            <Pressable accessibilityRole="button" accessibilityLabel={t(`طلّع «${name.ar}» لفوق`, `Move “${name.en}” up`)} disabled={i === 0} onPress={() => move(i, -1)} hitSlop={4} style={[styles.orderBtn, { opacity: i === 0 ? 0.3 : 1 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.moveSectionUp(name))} disabled={i === 0} onPress={() => move(i, -1)} hitSlop={4} style={[styles.orderBtn, { opacity: i === 0 ? 0.3 : 1 }]}>
               <ArrowUp size={18} color={colors.ink} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t(`نزّل «${name.ar}» لتحت`, `Move “${name.en}” down`)}
+              accessibilityLabel={t(m.admin.moveSectionDown(name))}
               disabled={i === order.length - 1}
               onPress={() => move(i, 1)}
               hitSlop={4}
@@ -381,7 +382,7 @@ function HomeOrder({ saved }: { saved: AppSettings }) {
           </View>
         );
       })}
-      <Button label={t('احفظ الترتيب', 'Save the order')} loading={save.busy} onPress={() => save.run({ home: { sections: order } })} />
+      <Button label={t(m.admin.saveTheOrder)} loading={save.busy} onPress={() => save.run({ home: { sections: order } })} />
     </Block>
   );
 }

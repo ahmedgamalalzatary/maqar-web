@@ -1,11 +1,11 @@
-import { type AgentViewing, fmtDate, fmtMoney, fmtTime, LEAD_SOURCE_LABEL, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, type LeadCard, type LeadStage, relTime } from '@maqar/shared';
+import { joinParts, type AgentViewing, fmtDate, fmtMoney, fmtTime, LEAD_SOURCE_LABEL, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, type LeadCard, type LeadStage, relTime } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Flame, MapPin, Video } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 /** The flame of hot leads (contract §10.2). Red in both themes, as in the demo. */
@@ -14,7 +14,7 @@ export const HOT = '#e0574b';
 /** A deleted account keeps its lead but loses its name. */
 export function useLeadName() {
   const t = useT();
-  return (name: string) => name || t('حساب محذوف', 'Deleted account');
+  return (name: string) => name || t(m.common.deletedAccount2);
 }
 
 /** A round avatar with the first letter, in the stage's (or the agent's) colour. */
@@ -46,7 +46,7 @@ export function NewBadge() {
   return (
     <View style={[styles.badge, { backgroundColor: colors.accentSoft }]}>
       <Txt size={10.5} weight="semibold" color="accentInk">
-        {t('جديد من التطبيق', 'New from app')}
+        {t(m.common.newFromApp)}
       </Txt>
     </View>
   );
@@ -63,12 +63,12 @@ export function LeadRow({ lead, firstCall }: { lead: LeadCard; firstCall?: boole
   const router = useRouter();
   const { colors } = useTheme();
   const name = useLeadName()(lead.name);
-  const home = lead.property ? t({ ar: lead.property.titleAr, en: lead.property.titleEn }) : t('من غير وحدة محددة', 'No home yet');
+  const home = lead.property ? t({ ar: lead.property.titleAr, en: lead.property.titleEn }) : t(m.agent.noHomeYet);
   const Chevron = dir === 'rtl' ? ChevronLeft : ChevronRight;
   const meta = firstCall
     ? `${home} | ${t(LEAD_SOURCE_LABEL[lead.source])}`
-    : [lead.budget ? `${t('ميزانية', 'Budget')} ${fmtMoney(lead.budget, lang)}` : null, relTime(new Date(lead.lastActivityAt), lang)].filter(Boolean).join(' | ');
-  const label = [name, lead.hot ? t('مهم', 'Hot') : null, lead.isNew ? t('جديد من التطبيق', 'New from app') : null, home, t(LEAD_STAGE_LABEL[lead.stage])].filter(Boolean).join('، ');
+    : [lead.budget ? `${t(m.agent.budget)} ${fmtMoney(lead.budget, lang)}` : null, relTime(new Date(lead.lastActivityAt), lang)].filter(Boolean).join(' | ');
+  const label = joinParts([name, lead.hot ? t(m.agent.hot) : null, lead.isNew ? t(m.common.newFromApp) : null, home, t(LEAD_STAGE_LABEL[lead.stage])], lang);
   return (
     <Pressable
       accessibilityRole="button"
@@ -108,12 +108,12 @@ export function AgentViewingRow({ v, showDate }: { v: AgentViewing; showDate?: b
   const name = useLeadName()(v.clientName);
   const p = v.property;
   const cover = mediaUrl(p.cover);
-  const day = showDate ? fmtDate(v.date, lang) : t('النهارده', 'Today');
-  const where = v.mode === 'video' ? t('فيديو لايف', 'Live video') : `${t({ ar: p.compoundAr, en: p.compoundEn })} | ${t({ ar: p.area.nameAr, en: p.area.nameEn })}`;
+  const day = showDate ? fmtDate(v.date, lang) : t(m.common.today);
+  const where = v.mode === 'video' ? t(m.common.liveVideo) : `${t({ ar: p.compoundAr, en: p.compoundEn })} | ${t({ ar: p.area.nameAr, en: p.area.nameEn })}`;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[`${fmtTime(v.time, lang)} ${day}`, name, v.newFromApp ? t('جديد من التطبيق', 'New from app') : null, t({ ar: p.titleAr, en: p.titleEn })].filter(Boolean).join('، ')}
+      accessibilityLabel={joinParts([`${fmtTime(v.time, lang)} ${day}`, name, v.newFromApp ? t(m.common.newFromApp) : null, t({ ar: p.titleAr, en: p.titleEn })], lang)}
       disabled={!v.leadId}
       onPress={() => v.leadId && router.push(`/agent/lead/${v.leadId}`)}
       style={({ pressed }) => [

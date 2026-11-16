@@ -8,6 +8,7 @@ import {
   fmtDate,
   fmtNum,
   fmtPct,
+  joinParts,
   REPORT_GROUP_LABEL,
   REPORT_GROUPS,
   REPORT_PRESET_LABEL,
@@ -27,6 +28,7 @@ import {
   type TableView,
   viewRows,
   weekdayName,
+  pickField,
 } from '@maqar/shared';
 import { type Href, useRouter } from 'expo-router';
 import { ArrowDownRight, ArrowUpRight, ChevronDown, FileBarChart, Search, Share2, X } from 'lucide-react-native';
@@ -35,7 +37,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { useAreas } from '@/features/listings/hooks/use-listings';
@@ -57,7 +59,7 @@ export function ReportsScreen() {
       <BackBar fallback="/admin/more" />
       <ScrollView contentContainerStyle={styles.content}>
         <Txt accessibilityRole="header" size={24} weight="semibold">
-          {t('التقارير', 'Reports')}
+          {t(m.common.reports)}
         </Txt>
         {REPORT_GROUPS.map((g) => (
           <View key={g} style={styles.group}>
@@ -118,7 +120,7 @@ export function ReportScreen({ id, agentId }: { id: ReportId; agentId?: number }
       >
         <View style={styles.head}>
           <Txt accessibilityRole="header" size={22} weight="semibold">
-            {advisor ? (lang === 'ar' ? advisor.nameAr : advisor.nameEn) : t(spec.title)}
+            {advisor ? (pickField(advisor, 'name', lang)) : t(spec.title)}
           </Txt>
           <Txt size={13} color="ink2">
             {t(spec.description)}
@@ -143,21 +145,18 @@ export function ReportScreen({ id, agentId }: { id: ReportId; agentId?: number }
           </ScrollView>
         ) : (
           <Txt size={12} color="ink2">
-            {t('صورة للوضع دلوقتي، من غير مدة.', 'A snapshot of now, with no range.')}
+            {t(m.admin.aSnapshotOfNowWith)}
           </Txt>
         )}
         <FilterBar id={id} f={f} setF={setF} />
         {r?.range ? (
           <Txt size={12} color="ink3">
-            {t(
-              `${fmtCell(r.range.from, 'date', 'ar')} – ${fmtCell(r.range.to, 'date', 'ar')} | مقارنة بـ ${fmtCell(r.previous!.from, 'date', 'ar')} – ${fmtCell(r.previous!.to, 'date', 'ar')}`,
-              `${fmtCell(r.range.from, 'date', 'en')} – ${fmtCell(r.range.to, 'date', 'en')} | compared with ${fmtCell(r.previous!.from, 'date', 'en')} – ${fmtCell(r.previous!.to, 'date', 'en')}`,
-            )}
+            {t(m.admin.reportRange(r.range.from, r.range.to, r.previous!.from, r.previous!.to))}
           </Txt>
         ) : null}
         {spec.needsAgent && f.agentId === undefined ? (
           <Txt size={13} color="ink2">
-            {t('اختار المسؤول من فوق.', 'Pick the advisor above.')}
+            {t(m.admin.pickTheAdvisorAbove)}
           </Txt>
         ) : report.isPending ? (
           <ActivityIndicator color={colors.accent} style={styles.loading} />
@@ -198,18 +197,18 @@ function FilterBar({ id, f, setF }: { id: ReportId; f: Filters; setF: (f: Filter
   const [open, setOpen] = useState<'agent' | 'area' | 'category' | null>(null);
   const shown: ('agent' | 'area' | 'category')[] = spec.needsAgent ? ['agent'] : spec.filters;
   if (!shown.length) return null;
-  const all = t('الكل', 'All');
-  const name = (x: { nameAr: string; nameEn: string }) => (lang === 'ar' ? x.nameAr : x.nameEn);
+  const all = t(m.common.all);
+  const name = (x: { nameAr: string; nameEn: string }) => (pickField(x, 'name', lang));
   const lists: Record<'agent' | 'area' | 'category', { label: string; options: { key: string; label: string }[]; value: string | undefined; set: (v?: string) => void }> = {
     agent: {
-      label: t('المسؤول', 'Advisor'),
+      label: t(m.admin.advisor),
       options: (agents.data ?? []).map((a) => ({ key: String(a.id), label: name(a) })),
       value: f.agentId === undefined ? undefined : String(f.agentId),
       set: (v) => setF({ ...f, agentId: v ? Number(v) : undefined }),
     },
-    area: { label: t('المنطقة', 'Area'), options: (areas.data ?? []).map((a) => ({ key: a.id, label: name(a) })), value: f.areaId, set: (v) => setF({ ...f, areaId: v }) },
+    area: { label: t(m.common.area), options: (areas.data ?? []).map((a) => ({ key: a.id, label: name(a) })), value: f.areaId, set: (v) => setF({ ...f, areaId: v }) },
     category: {
-      label: t('الغرض', 'Purpose'),
+      label: t(m.admin.purpose),
       options: CATEGORIES.map((c) => ({ key: c, label: t(CATEGORY_LABEL[c]) })),
       value: f.category,
       set: (v) => setF({ ...f, category: v as Category | undefined }),
@@ -222,7 +221,7 @@ function FilterBar({ id, f, setF }: { id: ReportId; f: Filters; setF: (f: Filter
         {shown.map((k) => {
           const l = lists[k];
           const picked = l.options.find((o) => o.key === l.value)?.label;
-          return <Pill key={k} label={`${l.label}: ${picked ?? (spec.needsAgent ? t('اختار', 'Pick one') : all)}`} on={!!picked} onPress={() => setOpen(k)} />;
+          return <Pill key={k} label={`${l.label}: ${picked ?? (spec.needsAgent ? t(m.admin.pickOne) : all)}`} on={!!picked} onPress={() => setOpen(k)} />;
         })}
       </View>
       <Sheet open={current !== null} onClose={() => setOpen(null)} title={current?.label ?? ''} scroll>
@@ -275,12 +274,12 @@ function Kpi({ k }: { k: ReportKpi }) {
   const good = moved === null || moved === 0 || !k.better ? null : (moved > 0) === (k.better === 'up');
   const Arrow = moved !== null && moved > 0 ? ArrowUpRight : ArrowDownRight;
   const change = moved !== null && k.previous ? fmtPct((moved / Math.abs(k.previous)) * 100, lang, 0) : null;
-  const before = k.previous !== undefined ? t(`قبلها: ${fmtCell(k.previous ?? null, k.format, 'ar')}`, `Before: ${fmtCell(k.previous ?? null, k.format, 'en')}`) + (change ? ` (${change})` : '') : null;
+  const before = k.previous !== undefined ? t(m.admin.before(k.previous ?? null, k.format)) + (change ? ` (${change})` : '') : null;
   const tone = good === null ? colors.ink3 : good ? colors.sage : colors.danger;
   return (
     <View
       accessible
-      accessibilityLabel={`${t(k.label)}: ${fmtCell(k.value, k.format, lang)}${before ? `، ${before}` : ''}`}
+      accessibilityLabel={joinParts([`${t(k.label)}: ${fmtCell(k.value, k.format, lang)}`, before], lang)}
       style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.line }]}
     >
       <Txt size={12} color="ink2">
@@ -313,7 +312,7 @@ function Chart({ c }: { c: ReportChart }) {
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Txt weight="semibold">{t(c.title)}</Txt>
         <Txt size={12} color="ink2">
-          {shown ? `${fmtDate(shown.date, lang)}: ${fmtCell(shown.value, c.format, lang)}` : t('دوس على يوم', 'Tap a day')}
+          {shown ? `${fmtDate(shown.date, lang)}: ${fmtCell(shown.value, c.format, lang)}` : t(m.admin.tapADay)}
         </Txt>
         <View style={[styles.bars, { borderBottomColor: colors.line2, gap: c.points.length > 31 ? 1 : 2 }]}>
           {c.points.map((p) => (
@@ -354,7 +353,7 @@ function Chart({ c }: { c: ReportChart }) {
           ))
         ) : (
           <Txt size={12} color="ink3">
-            {t('مفيش حاجة في المدة دي', 'Nothing in this range')}
+            {t(m.admin.nothingInThisRange)}
           </Txt>
         )}
       </View>
@@ -424,7 +423,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const narrowed = found.length !== table.rows.length;
   // A filter the table no longer offers is dropped by viewRows.
   const tools = tableToolsShown(table, view);
-  const any = t('الكل', 'All');
+  const any = t(m.common.all);
   // In the advisors report a row opens that advisor's own report.
   const linkOf = (l: ReportLink): Href => (r.id === 'advisors' && l.kind === 'agent' ? (`/admin/report/advisor?agentId=${l.id}` as Href) : hrefOf(l));
   const share = async () => {
@@ -432,7 +431,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
     try {
       await shareCsv(r, { ...table, rows: found }, lang);
     } catch {
-      toast.show({ title: t('مقدرناش نجهز الملف', 'We couldn’t make the file'), tone: 'danger' });
+      toast.show({ title: t(m.admin.weCouldntMakeTheFile), tone: 'danger' });
     } finally {
       setSharing(false);
     }
@@ -443,28 +442,28 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
   const sortName = (col: (typeof table.columns)[number], up: boolean) =>
     col.format === 'text'
       ? up
-        ? t('من الأول للآخر', 'A to Z')
-        : t('من الآخر للأول', 'Z to A')
+        ? t(m.admin.aToZ)
+        : t(m.admin.zToA)
       : col.format === 'date'
         ? up
-          ? t('الأقدم الأول', 'oldest first')
-          : t('الأحدث الأول', 'newest first')
+          ? t(m.admin.oldestFirst)
+          : t(m.admin.newestFirst)
         : up
-          ? t('الأصغر الأول', 'smallest first')
-          : t('الأكبر الأول', 'biggest first');
+          ? t(m.admin.smallestFirst)
+          : t(m.admin.biggestFirst);
   const sortOptions = table.columns.flatMap((col) => (numeric(col.format) || col.format === 'date' ? [false, true] : [true, false]).map((up) => ({ col, up })));
   const sortCol = view.sort ? table.columns.find((c) => c.key === view.sort!.key) : undefined;
-  const sortLabel = `${t('الترتيب', 'Order')}: ${sortCol ? `${t(sortCol.label)}${t('،', ',')} ${sortName(sortCol, view.sort!.up)}` : t('زي ما هو', 'as it is')}`;
+  const sortLabel = `${t(m.common.order)}: ${sortCol ? `${t(sortCol.label)}${t(m.common.comma)} ${sortName(sortCol, view.sort!.up)}` : t(m.admin.asItIs)}`;
   const filter = filters.find((f) => f.key === open);
 
   return (
     <View style={styles.tableBlock}>
       <View style={styles.line}>
         <Txt weight="semibold" style={styles.flex}>
-          {`${t(table.title)} (${narrowed ? t(`${fmtNum(found.length, 'ar')} من ${fmtNum(table.rows.length, 'ar')}`, `${found.length} of ${table.rows.length}`) : fmtNum(table.rows.length, lang)})`}
+          {`${t(table.title)} (${narrowed ? t(m.admin.foundOf(found.length, table.rows.length)) : fmtNum(table.rows.length, lang)})`}
         </Txt>
         {found.length ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={t(`شارك ${t(table.title)} كملف CSV`, `Share ${table.title.en} as CSV`)} disabled={sharing} onPress={() => void share()} style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.shareCsv(table.title))} disabled={sharing} onPress={() => void share()} style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             {sharing ? <ActivityIndicator size="small" color={colors.accent} /> : <Share2 size={14} color={colors.ink} />}
             <Txt size={12} weight="medium">
               CSV
@@ -477,17 +476,17 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <Search size={16} color={colors.ink3} />
             <TextInput
-              accessibilityLabel={t(`ابحث في ${table.title.ar}`, `Search ${table.title.en}`)}
+              accessibilityLabel={t(m.admin.searchIn(table.title))}
               value={view.q ?? ''}
               onChangeText={(q) => setView((v) => ({ ...v, q }))}
-              placeholder={t('ابحث في الجدول', 'Search this table')}
+              placeholder={t(m.admin.searchThisTable)}
               placeholderTextColor={colors.ink3}
               autoCorrect={false}
               autoCapitalize="none"
               style={[styles.input, { color: colors.ink }]}
             />
             {view.q ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={t('امسح البحث', 'Clear search')} onPress={() => setView((v) => ({ ...v, q: '' }))} hitSlop={8}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.clearSearch)} onPress={() => setView((v) => ({ ...v, q: '' }))} hitSlop={8}>
                 <X size={16} color={colors.ink3} />
               </Pressable>
             ) : null}
@@ -503,7 +502,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
       ) : null}
       {!found.length ? (
         <Txt size={12} color="ink3">
-          {table.rows.length ? t('مفيش حاجة مطابقة للبحث والفلاتر', 'Nothing matches the search and filters') : t('مفيش حاجة هنا', 'Nothing here')}
+          {table.rows.length ? t(m.admin.nothingMatchesTheSearchAnd) : t(m.admin.nothingHere)}
         </Txt>
       ) : null}
       {rows.map((row, i) => {
@@ -541,7 +540,7 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
       {!all && found.length > PAGE ? (
         <Pressable accessibilityRole="button" onPress={() => setAll(true)} style={[styles.more, { borderColor: colors.line }]}>
           <Txt size={13} weight="medium" color="accentInk">
-            {t(`اعرض الكل (${fmtNum(found.length, 'ar')})`, `Show all (${found.length})`)}
+            {t(m.admin.showAllCount(found.length))}
           </Txt>
         </Pressable>
       ) : null}
@@ -550,11 +549,11 @@ function Table({ r, table }: { r: ReportResult; table: ReportTable }) {
           {t(table.note)}
         </Txt>
       ) : null}
-      <Sheet open={open !== null} onClose={() => setOpen(null)} title={open === 'sort' ? t('الترتيب', 'Order') : filter ? t(filter.label) : ''} scroll>
+      <Sheet open={open !== null} onClose={() => setOpen(null)} title={open === 'sort' ? t(m.common.order) : filter ? t(filter.label) : ''} scroll>
         {open === 'sort' ? (
           <>
             <Option
-              label={t('زي ما هو', 'As it is')}
+              label={t(m.admin.asItIs2)}
               on={!view.sort}
               onPress={() => {
                 setView((v) => ({ ...v, sort: null }));

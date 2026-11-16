@@ -4,7 +4,7 @@ import { MessageCircle } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { TAB_BAR_HEIGHT } from '@/core/navigation/role-tabs';
 import { useTheme } from '@/core/theme';
 import { useCompare } from '@/features/compare/store/compare.store';
@@ -26,7 +26,7 @@ export function ChatFab() {
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: TAB_BAR_HEIGHT + insets.bottom + 16 + lift }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={unread ? t(`المحادثات، ${fmtNum(unread, 'ar')} جديدة`, `Messages, ${unread} new`) : t('المحادثات', 'Messages')}
+        accessibilityLabel={unread ? t(m.chat.messagesNew(unread)) : t(m.common.messages)}
         onPress={() => router.push('/chat')}
         style={({ pressed }) => [styles.fab, { backgroundColor: colors.accent, borderColor: colors.bg, transform: [{ scale: pressed ? 0.92 : 1 }] }]}
       >

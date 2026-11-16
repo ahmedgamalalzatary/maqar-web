@@ -8,7 +8,7 @@ import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
 import { errorText } from '@/core/api/error-text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useChangePassword } from '../hooks/use-account';
 
 /**
@@ -32,7 +32,7 @@ export function ChangePasswordScreen() {
       { currentPassword: current, newPassword: next },
       {
         onSuccess: () => {
-          toast.show({ title: t('كلمة السر اتغيرت', 'Password changed'), body: t('خرجنا من الأجهزة التانية.', 'Other devices were signed out.'), tone: 'sage' });
+          toast.show({ title: t(m.common.passwordChanged), body: t(m.account.otherDevicesWereSignedOut), tone: 'sage' });
           router.back();
         },
       },
@@ -42,38 +42,38 @@ export function ChangePasswordScreen() {
   const failure = change.error;
   const failureText =
     failure instanceof ApiError && failure.status === 403
-      ? t('كلمة السر الحالية غلط', 'The current password is wrong')
+      ? t(m.account.theCurrentPasswordIsWrong)
       : failure instanceof ApiError && failure.status === 400
-        ? t('كلمة السر الجديدة لازم تكون مختلفة عن الحالية', 'The new password must be different from the current one')
+        ? t(m.account.theNewPasswordMustBe)
         : failure
           ? errorText(failure, t)
           : null;
 
   return (
-    <Screen title={t('غيّر كلمة السر', 'Change password')}>
-      <TextField label={t('كلمة السر الحالية', 'Current password')} value={current} onChangeText={setCurrent} secureTextEntry autoComplete="current-password" textContentType="password" />
+    <Screen title={t(m.common.changePassword)}>
+      <TextField label={t(m.account.currentPassword)} value={current} onChangeText={setCurrent} secureTextEntry autoComplete="current-password" textContentType="password" />
       <TextField
-        label={t('كلمة السر الجديدة', 'New password')}
+        label={t(m.common.newPassword)}
         value={next}
         onChangeText={setNext}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
-        error={weak ? t('٨ حروف على الأقل، فيها حرف ورقم', 'At least 8 characters, with a letter and a digit') : undefined}
+        error={weak ? t(m.common.atLeast8CharactersWith) : undefined}
       />
       <TextField
-        label={t('اكتب كلمة السر الجديدة تاني', 'Type the new password again')}
+        label={t(m.common.typeTheNewPasswordAgain)}
         value={again}
         onChangeText={setAgain}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
         onSubmitEditing={save}
-        error={mismatch ? t('الكلمتين مش زي بعض', 'The two don’t match') : undefined}
+        error={mismatch ? t(m.common.theTwoDontMatch) : undefined}
       />
       <ErrorText message={failureText ?? undefined} trigger={change.submittedAt} />
-      <Button label={t('غيّر كلمة السر', 'Change password')} disabled={!ready} loading={change.isPending} onPress={save} />
-      <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={() => router.back()} />
+      <Button label={t(m.common.changePassword)} disabled={!ready} loading={change.isPending} onPress={save} />
+      <Button label={t(m.common.cancel)} variant="ghost" onPress={() => router.back()} />
     </Screen>
   );
 }

@@ -4,7 +4,7 @@ import { X } from 'lucide-react-native';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mediaUrl } from '@/core/api/api';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 
 /**
  * A listing video full screen on black (phase 26), with the platform's own controls. It plays at
@@ -29,7 +29,7 @@ function Player({ video, onClose }: { video: ListingVideo; onClose: () => void }
       <VideoView player={player} style={styles.fill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true }} />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('اقفل الفيديو', 'Close the video')}
+        accessibilityLabel={t(m.property.closeTheVideo)}
         onPress={onClose}
         hitSlop={8}
         style={[styles.close, { top: insets.top + 8 }]}

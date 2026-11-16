@@ -2,7 +2,7 @@ import { Bell } from 'lucide-react-native';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { Toggle } from '@/components/toggle';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { usePushSwitch } from '../hooks/use-push-switch';
 
@@ -11,15 +11,15 @@ export function PushRow() {
   const t = useT();
   const { colors } = useTheme();
   const push = usePushSwitch();
-  const label = t('إشعارات الموبايل', 'Phone notifications');
+  const label = t(m.notifications.phoneNotifications);
   const sub =
     push.permission === 'unsupported'
-      ? t('مش متاحة على الجهاز ده', 'Not available on this device')
+      ? t(m.notifications.notAvailableOnThisDevice)
       : push.permission === 'denied'
-        ? t('مقفولة من إعدادات الموبايل', 'Blocked in your phone’s settings')
+        ? t(m.notifications.blockedInYourPhonesSettings)
         : push.on
-          ? t('مفعّلة', 'On')
-          : t('مقفولة', 'Off');
+          ? t(m.notifications.on)
+          : t(m.notifications.off);
 
   return (
     <View style={styles.row}>
@@ -32,7 +32,7 @@ export function PushRow() {
         {push.permission === 'denied' ? (
           <Pressable accessibilityRole="link" onPress={() => void Linking.openSettings()} hitSlop={6}>
             <Txt size={12} weight="medium" color="accentInk">
-              {t('افتح الإعدادات', 'Open settings')}
+              {t(m.notifications.openSettings)}
             </Txt>
           </Pressable>
         ) : null}

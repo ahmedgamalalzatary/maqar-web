@@ -1,4 +1,4 @@
-import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDate, fmtDuration, fmtMoney, fmtNum, type ListingVideo, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
+import { pickField, type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDuration, fmtMoney, type ListingVideo, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, Phone, Play } from 'lucide-react-native';
@@ -12,7 +12,7 @@ import { Txt } from '@/components/text';
 import { Toggle } from '@/components/toggle';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { priceSuffix, StatusBadge } from '../components/admin-parts';
@@ -34,14 +34,14 @@ export function AdminListingScreen({ id }: { id: number }) {
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
-        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
+        <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
       </View>
       {listing.isPending ? (
         <ActivityIndicator style={styles.loading} color={colors.accent} />
       ) : listing.isError ? (
         <View style={styles.pad}>
           {listing.error instanceof ApiError && listing.error.status === 404 ? (
-            <Txt align="center">{t('العقار ده مش موجود.', 'This listing does not exist.')}</Txt>
+            <Txt align="center">{t(m.common.thisListingDoesNotExist)}</Txt>
           ) : (
             <ListingsError onRetry={() => void listing.refetch()} />
           )}
@@ -67,26 +67,25 @@ function Body({ l }: { l: AdminListing }) {
 
   const failed = (err: unknown) =>
     toast.show({
-      title: err instanceof ApiError && err.status === 0 ? t('مفيش إنترنت، حاول تاني', 'No connection, try again') : t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'),
+      title: err instanceof ApiError && err.status === 0 ? t(m.common.noConnectionTryAgain) : t(m.common.somethingWentWrongTryAgain),
       tone: 'danger',
     });
   const run = (a: ListingAction, done: string) => action.mutate(a, { onSuccess: () => toast.show({ title: done, tone: 'sage' }), onError: failed });
   const pick = (agentId?: number) => {
     const mode = picking;
     setPicking(null);
-    if (mode === 'publish') run({ kind: 'publish', agentId }, t('العقار اتنشر وبقى ظاهر في استكشف', 'Published: it now shows in Explore'));
+    if (mode === 'publish') run({ kind: 'publish', agentId }, t(m.admin.publishedItNowShowsIn));
     else if (agentId && agentId !== l.agent?.id)
-      patch.mutate({ agentId }, { onSuccess: () => toast.show({ title: t('المسؤول اتغيّر', 'Advisor changed'), body: t('الشاتات القديمة بتفضل مع المسؤول القديم.', 'Earlier chats stay with the earlier advisor.'), tone: 'sage' }), onError: failed });
+      patch.mutate({ agentId }, { onSuccess: () => toast.show({ title: t(m.admin.advisorChanged), body: t(m.admin.earlierChatsStayWithThe), tone: 'sage' }), onError: failed });
   };
   const feature = (featured: boolean) =>
     patch.mutate(
       { featured },
-      { onSuccess: () => toast.show({ title: featured ? t('العقار بقى مميز في الرئيسية', 'Featured on Home') : t('العقار اتشال من المميزة', 'No longer featured'), tone: 'sage' }), onError: failed },
+      { onSuccess: () => toast.show({ title: featured ? t(m.admin.featuredOnHome) : t(m.admin.noLongerFeatured), tone: 'sage' }), onError: failed },
     );
 
-  const title = lang === 'ar' ? l.titleAr : l.titleEn;
-  const advisor = l.agent ? (lang === 'ar' ? l.agent.nameAr : l.agent.nameEn) : null;
-  const fact = (ar: string, en: string) => t(ar, en);
+  const title = pickField(l, 'title', lang);
+  const advisor = l.agent ? (pickField(l.agent, 'name', lang)) : null;
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.photos}>
@@ -96,7 +95,7 @@ function Body({ l }: { l: AdminListing }) {
             {i === 0 ? (
               <View style={[styles.cover, { backgroundColor: colors.accent }]}>
                 <Txt size={11} weight="semibold" style={{ color: colors.navy }}>
-                  {t('الغلاف', 'Cover')}
+                  {t(m.common.cover)}
                 </Txt>
               </View>
             ) : null}
@@ -106,7 +105,7 @@ function Body({ l }: { l: AdminListing }) {
           <Pressable
             key={v.url}
             accessibilityRole="button"
-            accessibilityLabel={t(`شغّل الفيديو ${fmtNum(i + 1, 'ar')} (${fmtDuration(v.durationS, 'ar')})`, `Play video ${i + 1} (${fmtDuration(v.durationS)})`)}
+            accessibilityLabel={t(m.common.playVideo(i + 1, v.durationS))}
             onPress={() => setPlaying(v)}
             style={[styles.photo, styles.center, { backgroundColor: colors.navy }]}
           >
@@ -130,7 +129,7 @@ function Body({ l }: { l: AdminListing }) {
           {title}
         </Txt>
         <Txt size={13} color="ink2">
-          {`${t(CATEGORY_LABEL[l.category])} | ${t(PROPERTY_TYPE_LABEL[l.type])} | ${lang === 'ar' ? l.area.nameAr : l.area.nameEn}`}
+          {`${t(CATEGORY_LABEL[l.category])} | ${t(PROPERTY_TYPE_LABEL[l.type])} | ${pickField(l.area, 'name', lang)}`}
         </Txt>
         <Txt size={20} weight="semibold">
           {fmtMoney(l.price, lang, false)}
@@ -140,9 +139,9 @@ function Body({ l }: { l: AdminListing }) {
         </Txt>
         <Txt size={13} color="ink2">
           {[
-            l.beds ? fact(`${fmtNum(l.beds, 'ar')} غرف`, `${l.beds} beds`) : null,
-            fact(`${fmtNum(l.baths, 'ar')} حمام`, `${l.baths} baths`),
-            fact(`${fmtNum(l.sizeM2, 'ar')} م²`, `${l.sizeM2} m²`),
+            l.beds ? t(m.common.beds(l.beds)) : null,
+            t(m.common.baths(l.baths)),
+            t(m.common.sizeM2(l.sizeM2)),
             t(FINISHING_LABEL[l.finishing]),
           ]
             .filter(Boolean)
@@ -152,11 +151,11 @@ function Body({ l }: { l: AdminListing }) {
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Txt size={12} color="ink3">
-          {t('المالك (لفريق مقر بس)', 'Owner (Maqar team only)')}
+          {t(m.admin.ownerMaqarTeamOnly)}
         </Txt>
         <View style={styles.ownerRow}>
           <View style={styles.flex}>
-            <Txt weight="medium">{l.ownerName ?? t('مش متسجل', 'Not recorded')}</Txt>
+            <Txt weight="medium">{l.ownerName ?? t(m.admin.notRecorded)}</Txt>
             {l.ownerPhone ? (
               <Txt size={13} color="ink2">
                 {ltrPhone(l.ownerPhone)}
@@ -164,35 +163,35 @@ function Body({ l }: { l: AdminListing }) {
             ) : null}
           </View>
           {l.ownerPhone ? (
-            <IconButton label={t('اتصل بالمالك', 'Call the owner')} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${l.ownerPhone}`)} />
+            <IconButton label={t(m.admin.callTheOwner)} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${l.ownerPhone}`)} />
           ) : null}
         </View>
         <View style={[styles.rule, { backgroundColor: colors.line }]} />
         <Txt size={12} color="ink3">
-          {t('مسؤول المبيعات', 'Sales advisor')}
+          {t(m.common.salesAdvisor)}
         </Txt>
         <View style={styles.ownerRow}>
           <Txt weight="medium" style={styles.flex}>
-            {advisor ?? t('هيتحدد لما تنشر العقار', 'Picked when you publish')}
+            {advisor ?? t(m.admin.pickedWhenYouPublish)}
           </Txt>
-          {l.agent ? <Button label={t('غيّر', 'Change')} variant="ghost" onPress={() => setPicking('move')} /> : null}
+          {l.agent ? <Button label={t(m.common.change)} variant="ghost" onPress={() => setPicking('move')} /> : null}
         </View>
         <Txt size={12} color="ink3">
           {l.publishedAt
-            ? t(`اتنشر ${fmtDate(l.publishedAt, 'ar')} | ${fmtNum(l.views, 'ar')} مشاهدة`, `Published ${fmtDate(l.publishedAt, 'en')} | ${l.views} views`)
-            : t(`اتضاف ${fmtDate(l.createdAt, 'ar')}`, `Added ${fmtDate(l.createdAt, 'en')}`)}
+            ? t(m.admin.publishedViews(l.publishedAt, l.views))
+            : t(m.admin.addedOn(l.createdAt))}
         </Txt>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <View style={styles.ownerRow}>
           <Txt weight="medium" style={styles.flex}>
-            {t('مميز في الرئيسية', 'Featured on Home')}
+            {t(m.common.featuredOnHome)}
           </Txt>
-          <Toggle label={t('مميز في الرئيسية', 'Featured on Home')} value={l.featured} disabled={patch.isPending} onChange={feature} />
+          <Toggle label={t(m.common.featuredOnHome)} value={l.featured} disabled={patch.isPending} onChange={feature} />
         </View>
         <Txt size={12} color="ink3">
-          {t('العقارات المميزة بتظهر أول حاجة في الرئيسية لما تكون منشورة.', 'Featured listings show first on Home while they are live.')}
+          {t(m.admin.featuredListingsShowFirstOn)}
         </Txt>
       </View>
 
@@ -200,26 +199,26 @@ function Body({ l }: { l: AdminListing }) {
 
       <View style={styles.actions}>
         {canMoveTo(l.status, 'approved') ? (
-          <Button label={l.status === 'draft' ? t('انشر العقار', 'Publish') : t('انشره تاني', 'Publish again')} loading={action.isPending} onPress={() => setPicking('publish')} />
+          <Button label={l.status === 'draft' ? t(m.admin.publish) : t(m.admin.publishAgain)} loading={action.isPending} onPress={() => setPicking('publish')} />
         ) : null}
-        <Button label={t('عدّل البيانات', 'Edit details')} variant="secondary" onPress={() => router.push(`/admin/listing/${l.id}/edit`)} />
+        <Button label={t(m.common.editDetails)} variant="secondary" onPress={() => router.push(`/admin/listing/${l.id}/edit`)} />
         {l.status === 'approved' ? (
-          <Button label={t('شوفه زي العميل', 'See it as a client')} variant="ghost" onPress={() => router.push(`/property/${l.id}`)} />
+          <Button label={t(m.admin.seeItAsAClient)} variant="ghost" onPress={() => router.push(`/property/${l.id}`)} />
         ) : null}
         {canMoveTo(l.status, 'unpublished') ? (
           <Button
-            label={t('أوقف النشر', 'Unpublish')}
+            label={t(m.admin.unpublish)}
             variant="secondary"
             disabled={action.isPending}
-            onPress={() => run({ kind: 'unpublish' }, t('العقار اتشال من استكشف', 'Unpublished: it left Explore'))}
+            onPress={() => run({ kind: 'unpublish' }, t(m.admin.unpublishedItLeftExplore))}
           />
         ) : null}
         {canMoveTo(l.status, closed) ? (
           <Button
-            label={closed === 'sold' ? t('اتباع', 'Mark as sold') : t('اتأجر', 'Mark as rented')}
+            label={closed === 'sold' ? t(m.admin.markAsSold) : t(m.admin.markAsRented)}
             variant="danger"
             disabled={action.isPending}
-            onPress={() => run({ kind: 'close' }, closed === 'sold' ? t('العقار اتعلّم إنه اتباع', 'Marked as sold') : t('العقار اتعلّم إنه اتأجر', 'Marked as rented'))}
+            onPress={() => run({ kind: 'close' }, closed === 'sold' ? t(m.admin.markedAsSold) : t(m.admin.markedAsRented))}
           />
         ) : null}
       </View>
@@ -253,14 +252,14 @@ function AdvisorSheet({ open, auto, current, onClose, onPick }: { open: boolean;
     </Pressable>
   );
   return (
-    <Sheet open={open} onClose={onClose} title={t('مين مسؤول المبيعات؟', 'Who is the sales advisor?')} scroll>
-      {auto ? option('auto', t('اختار تلقائي', 'Pick for me'), t('اللي عنده أقل عدد عقارات منشورة', 'The one with the fewest live listings'), () => onPick(undefined)) : null}
+    <Sheet open={open} onClose={onClose} title={t(m.admin.whoIsTheSalesAdvisor)} scroll>
+      {auto ? option('auto', t(m.admin.pickForMe), t(m.admin.theOneWithTheFewest), () => onPick(undefined)) : null}
       {agents.isPending ? <ActivityIndicator color={colors.accent} /> : null}
       {(agents.data ?? []).map((a) =>
         option(
           String(a.id),
-          lang === 'ar' ? a.nameAr : a.nameEn,
-          t(`${fmtNum(a.live, 'ar')} عقار منشور`, `${a.live} live listings`),
+          pickField(a, 'name', lang),
+          t(m.common.liveListings(a.live)),
           () => onPick(a.id),
           a.id === current,
         ),

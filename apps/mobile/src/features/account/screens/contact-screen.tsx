@@ -1,4 +1,4 @@
-import { type ContactField, contactLinks } from '@maqar/shared';
+import { type Bi, type ContactField, contactLinks } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Camera, Mail, MessageCircle, Music2, Phone } from 'lucide-react-native';
 import { type ReactNode, useEffect } from 'react';
@@ -8,14 +8,14 @@ import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { useAppConfig, useContact } from '@/core/app-config/store';
-import { useDir, useT } from '@/core/i18n';
+import { m, useDir, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 const WHATSAPP_GREEN = '#25D366';
-const SOCIAL: { field: 'facebook' | 'instagram' | 'tiktok'; ar: string; en: string; color: string }[] = [
-  { field: 'instagram', ar: 'إنستجرام', en: 'Instagram', color: '#E1306C' },
-  { field: 'facebook', ar: 'فيسبوك', en: 'Facebook', color: '#1877F2' },
-  { field: 'tiktok', ar: 'تيك توك', en: 'TikTok', color: '#111111' },
+const SOCIAL: { field: 'facebook' | 'instagram' | 'tiktok'; label: Bi; color: string }[] = [
+  { field: 'instagram', label: m.account.instagram, color: '#E1306C' },
+  { field: 'facebook', label: m.account.facebook, color: '#1877F2' },
+  { field: 'tiktok', label: m.account.tiktok, color: '#111111' },
 ];
 
 /**
@@ -40,35 +40,35 @@ export function ContactScreen() {
 
   return (
     <Screen
-      title={t('تواصل معنا', 'Contact us')}
+      title={t(m.common.contactUs)}
       right={
         <IconButton
-          label={t('رجوع', 'Back')}
+          label={t(m.common.back)}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           icon={<BackIcon size={20} color={colors.ink} />}
         />
       }
     >
       {!anything ? (
-        <Txt color="ink2">{t('لسه مفيش بيانات تواصل.', 'No contact details yet.')}</Txt>
+        <Txt color="ink2">{t(m.account.noContactDetailsYet)}</Txt>
       ) : null}
 
       {links.email || links.phone ? (
-        <Section title={t('بيانات التواصل', 'Contact details')}>
+        <Section title={t(m.account.contactDetails)}>
           {links.email ? (
-            <Detail icon={<Mail size={20} color="#EA4335" />} label={t('الإيميل', 'Email')} value={contact.email.trim()} onPress={() => open(links.email)} />
+            <Detail icon={<Mail size={20} color="#EA4335" />} label={t(m.common.email)} value={contact.email.trim()} onPress={() => open(links.email)} />
           ) : null}
           {links.phone ? (
-            <Detail icon={<Phone size={20} color={colors.accentInk} />} label={t('رقم التليفون', 'Phone number')} value={contact.phone.trim()} onPress={() => open(links.phone)} />
+            <Detail icon={<Phone size={20} color={colors.accentInk} />} label={t(m.account.phoneNumber)} value={contact.phone.trim()} onPress={() => open(links.phone)} />
           ) : null}
         </Section>
       ) : null}
 
       {social.length ? (
-        <Section title={t('منصات التواصل الاجتماعي', 'Social media')}>
+        <Section title={t(m.account.socialMedia)}>
           <View style={styles.social}>
             {social.map((s) => (
-              <Pressable key={s.field} accessibilityRole="link" accessibilityLabel={t(s.ar, s.en)} onPress={() => open(links[s.field])} style={styles.socialItem}>
+              <Pressable key={s.field} accessibilityRole="link" accessibilityLabel={t(s.label)} onPress={() => open(links[s.field])} style={styles.socialItem}>
                 <View style={[styles.badge, { backgroundColor: s.color }]}>
                   {s.field === 'facebook' ? (
                     <Txt size={22} weight="semibold" style={styles.white}>
@@ -80,7 +80,7 @@ export function ContactScreen() {
                     <Music2 size={22} color="#fff" />
                   )}
                 </View>
-                <Txt size={13}>{t(s.ar, s.en)}</Txt>
+                <Txt size={13}>{t(s.label)}</Txt>
               </Pressable>
             ))}
           </View>
@@ -90,13 +90,13 @@ export function ContactScreen() {
       {links.whatsapp ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('تواصل بالواتساب', 'Chat on WhatsApp')}
+          accessibilityLabel={t(m.common.chatOnWhatsapp)}
           onPress={() => open(links.whatsapp)}
           style={[styles.whatsapp, { borderColor: WHATSAPP_GREEN }]}
         >
           <MessageCircle size={20} color={WHATSAPP_GREEN} />
           <Txt weight="semibold" style={{ color: WHATSAPP_GREEN }}>
-            {t('تواصل بالواتساب', 'Chat on WhatsApp')}
+            {t(m.common.chatOnWhatsapp)}
           </Txt>
         </Pressable>
       ) : null}

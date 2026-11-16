@@ -1,4 +1,3 @@
-import { fmtNum } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 import { useState } from 'react';
@@ -8,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { Entrance, useEntranceClock } from '@/core/motion/entrance';
 import { EASE_OUT } from '@/core/motion/motion';
 import { useTheme } from '@/core/theme';
@@ -37,9 +36,9 @@ export function SavedScreen() {
 
   const empty = !signedIn ? (
     <Message
-      title={t('سجّل دخولك عشان تحفظ', 'Sign in to save homes')}
-      body={t('وحداتك المحفوظة بتفضل معاك على أي موبايل.', 'Your saved homes stay with you on any phone.')}
-      action={t('تسجيل الدخول', 'Sign in')}
+      title={t(m.saved.signInToSaveHomes)}
+      body={t(m.saved.yourSavedHomesStayWith)}
+      action={t(m.common.signIn)}
       onAction={() => router.push('/sign-in')}
     />
   ) : saved.isPending ? (
@@ -48,9 +47,9 @@ export function SavedScreen() {
     <ListingsError onRetry={() => void saved.refetch()} />
   ) : (
     <Message
-      title={t('لسه محفظتش حاجة', 'Nothing saved yet')}
-      body={t('دوس على القلب في أي وحدة عشان ترجعلها بسهولة.', 'Tap the heart on any home to come back to it easily.')}
-      action={t('استكشف', 'Explore')}
+      title={t(m.saved.nothingSavedYet)}
+      body={t(m.saved.tapTheHeartOnAny)}
+      action={t(m.common.explore)}
       onAction={() => router.push('/explore')}
     />
   );
@@ -71,14 +70,14 @@ export function SavedScreen() {
       ListHeaderComponent={
         <View style={styles.header}>
           <Txt accessibilityRole="header" size={24} weight="semibold">
-            {t('المحفوظة', 'Saved')}
+            {t(m.saved.saved)}
           </Txt>
           <Segmented
             value={tab}
             onChange={setTab}
             options={[
-              { value: 'saved', label: signedIn && saved.data ? t(`المفضلة (${fmtNum(cards.length, 'ar')})`, `Saved (${cards.length})`) : t('المفضلة', 'Saved') },
-              { value: 'alerts', label: t('تنبيهات السعر', 'Price alerts') },
+              { value: 'saved', label: signedIn && saved.data ? t(m.saved.savedCount(cards.length)) : t(m.saved.saved2) },
+              { value: 'alerts', label: t(m.saved.priceAlerts) },
             ]}
           />
           {onAlerts ? <PriceAlerts /> : null}

@@ -22,7 +22,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, w
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { BOUNCE, CSS_EASE_OUT, EASE_OUT } from '@/core/motion/motion';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { fonts, useTheme } from '@/core/theme';
 
 type Tab = { name: string; label: Bi; icon: LucideIcon };
@@ -31,34 +31,34 @@ export type TabRole = 'client' | 'agent' | 'admin';
 /** The tab bar's height above the bottom safe area. */
 export const TAB_BAR_HEIGHT = 64;
 
-const me: Tab = { name: 'me', label: { ar: 'حسابي', en: 'Me' }, icon: UserRound };
-const alerts: Tab = { name: 'alerts', label: { ar: 'التنبيهات', en: 'Alerts' }, icon: Bell };
+const me: Tab = { name: 'me', label: m.common.me, icon: UserRound };
+const alerts: Tab = { name: 'alerts', label: m.common.alerts, icon: Bell };
 
 /** Tab bars per role (contract §12). `name` is the route file inside the role's folder. */
 export const TABS: Record<TabRole, Tab[]> = {
   client: [
-    { name: 'index', label: { ar: 'الرئيسية', en: 'Home' }, icon: Home },
-    { name: 'explore', label: { ar: 'استكشف', en: 'Explore' }, icon: Search },
-    { name: 'viewings', label: { ar: 'معايناتي', en: 'Viewings' }, icon: CalendarCheck },
-    { name: 'saved', label: { ar: 'المحفوظة', en: 'Saved' }, icon: Heart },
+    { name: 'index', label: m.common.home, icon: Home },
+    { name: 'explore', label: m.common.explore, icon: Search },
+    { name: 'viewings', label: m.common.tabsViewings, icon: CalendarCheck },
+    { name: 'saved', label: m.saved.saved, icon: Heart },
     me,
   ],
   agent: [
-    { name: 'index', label: { ar: 'اليوم', en: 'Today' }, icon: Sun },
-    { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
-    { name: 'chats', label: { ar: 'الشات', en: 'Chats' }, icon: MessagesSquare },
+    { name: 'index', label: m.common.tabsToday, icon: Sun },
+    { name: 'leads', label: m.admin.leads, icon: Users },
+    { name: 'chats', label: m.common.tabsChats, icon: MessagesSquare },
     alerts,
     me,
   ],
   // Admins list every home for owners (2026-11-09: there are no owner accounts).
   admin: [
     // Phase 25: the overview opens first; Listings is the second tab.
-    { name: 'index', label: { ar: 'نظرة عامة', en: 'Overview' }, icon: LayoutDashboard },
-    { name: 'listings', label: { ar: 'العقارات', en: 'Listings' }, icon: Building2 },
-    { name: 'agents', label: { ar: 'المسؤولين', en: 'Agents' }, icon: UserCog },
-    { name: 'leads', label: { ar: 'العملاء', en: 'Leads' }, icon: Users },
+    { name: 'index', label: m.admin.overview, icon: LayoutDashboard },
+    { name: 'listings', label: m.admin.listings, icon: Building2 },
+    { name: 'agents', label: m.admin.agents, icon: UserCog },
+    { name: 'leads', label: m.admin.leads, icon: Users },
     // Phase 22: clients, areas, admins and the account settings live under More.
-    { name: 'more', label: { ar: 'المزيد', en: 'More' }, icon: LayoutGrid },
+    { name: 'more', label: m.account.more, icon: LayoutGrid },
   ],
 };
 
@@ -139,7 +139,7 @@ export function RoleTabs({ role, badges = {} }: { role: TabRole; badges?: Record
             name={name}
             options={{
               title: t(label),
-              tabBarAccessibilityLabel: count ? t(`${label.ar}، ${count} جديد`, `${label.en}, ${count} new`) : t(label),
+              tabBarAccessibilityLabel: count ? t(m.common.tabWithNew(label, count)) : t(label),
               tabBarBadge: count ? (count > 9 ? '9+' : count) : undefined,
               tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.navy, fontFamily: fonts.semibold, fontSize: 10 },
               tabBarIcon: ({ color, size, focused }) => <TabIcon icon={Icon} color={color} size={size - 2} focused={focused} dot={colors.accent} />,

@@ -1,4 +1,4 @@
-import { fmtDate, fmtNum, fmtTime, type PropertyDetail, type ReminderOffset, type Slot, type ViewingItem } from '@maqar/shared';
+import { type Bi, pickField, joinParts, fmtDate, fmtNum, fmtTime, type PropertyDetail, type ReminderOffset, type Slot, type ViewingItem } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { type Href, useRouter } from 'expo-router';
 import {
@@ -24,17 +24,17 @@ import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
-import { initialsOf, useDir, useLang, useT } from '@/core/i18n';
+import { m, initialsOf, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useRequireAuth } from '@/features/auth/hooks/use-require-auth';
 import { useProperty } from '@/features/property/hooks/use-property';
 import { addToCalendar } from '../calendar';
 import { useBook, useSlots, useUpdateViewing, useViewings } from '../hooks/use-viewings';
 
-const REMINDERS: { key: ReminderOffset; ar: string; en: string }[] = [
-  { key: '1d', ar: 'قبلها بيوم', en: '1 day before' },
-  { key: '2h', ar: 'قبلها بساعتين', en: '2 hours before' },
-  { key: '30m', ar: 'قبلها بنص ساعة', en: '30 min before' },
+const REMINDERS: { key: ReminderOffset; label: Bi }[] = [
+  { key: '1d', label: m.viewings.remind1d },
+  { key: '2h', label: m.viewings.remind2h },
+  { key: '30m', label: m.viewings.remind30m },
 ];
 
 const hourOf = (time: string) => Number(time.slice(0, 2));
@@ -79,9 +79,9 @@ function Failed({ retry, home }: { retry?: () => void; home?: Href }) {
   const back = () => (home && router.canGoBack() ? router.back() : home ? router.replace(home) : router.replace('/'));
   return (
     <View style={[styles.fill, styles.center, { backgroundColor: colors.bg, padding: 24, gap: 12 }]}>
-      <Txt align="center">{t('مش قادرين نفتح الحجز دلوقتي.', 'We couldn’t open booking right now.')}</Txt>
-      {retry ? <Button label={t('حاول تاني', 'Try again')} onPress={retry} /> : null}
-      <Button label={t('رجوع', 'Back')} variant="secondary" onPress={back} />
+      <Txt align="center">{t(m.viewings.weCouldntOpenBookingRight)}</Txt>
+      {retry ? <Button label={t(m.common.tryAgain)} onPress={retry} /> : null}
+      <Button label={t(m.common.back)} variant="secondary" onPress={back} />
     </View>
   );
 }
@@ -102,9 +102,9 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
   const [reminders, setReminders] = useState<ReminderOffset[]>(existing?.reminders ?? ['1d', '2h']);
   const [done, setDone] = useState<ViewingItem | null>(null);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
-  const title = lang === 'ar' ? p.titleAr : p.titleEn;
-  const place = `${lang === 'ar' ? p.compoundAr : p.compoundEn} | ${lang === 'ar' ? p.area.nameAr : p.area.nameEn}`;
-  const agentName = lang === 'ar' ? p.agent.nameAr : p.agent.nameEn;
+  const title = pickField(p, 'title', lang);
+  const place = `${pickField(p, 'compound', lang)} | ${pickField(p.area, 'name', lang)}`;
+  const agentName = pickField(p.agent, 'name', lang);
   const busy = book.isPending || update.isPending;
 
   if (done) return <Done v={done} rescheduled={!!existing} />;
@@ -117,13 +117,13 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
   // nothing counts as selected until the times load again (the server stays the final word).
   const time = !slots.isError && pickedTime && day?.slots.some((s) => s.time === pickedTime && s.state === 'free') ? pickedTime : null;
   const groups: { icon: LucideIcon; label: string; slots: Slot[] }[] = [
-    { icon: Sunrise, label: t('الصبح', 'Morning'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) < 13) },
-    { icon: Sun, label: t('بعد الضهر', 'Afternoon'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 13 && hourOf(s.time) < 17) },
-    { icon: Moon, label: t('بالليل', 'Evening'), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 17) },
+    { icon: Sunrise, label: t(m.viewings.morning), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) < 13) },
+    { icon: Sun, label: t(m.viewings.afternoon), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 13 && hourOf(s.time) < 17) },
+    { icon: Moon, label: t(m.viewings.evening), slots: (day?.slots ?? []).filter((s) => hourOf(s.time) >= 17) },
   ].filter((g) => g.slots.length);
 
   const stateLabel = (s: Slot) =>
-    ({ free: '', taken: t('محجوزة', 'taken'), past: t('فاتت', 'past'), closed: t('مقفولة', 'closed') })[s.state];
+    ({ free: '', taken: t(m.viewings.taken), past: t(m.viewings.past), closed: t(m.viewings.closed) })[s.state];
 
   const failed = (err: unknown) => {
     const already = err instanceof ApiError && /already have a viewing/i.test(err.message);
@@ -133,11 +133,11 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
     const reason = err instanceof ApiError && err.status === 409 ? err.message : '';
     toast.show({
       title: already
-        ? t('عندك معاينة للوحدة دي بالفعل', 'You already have a viewing for this home')
+        ? t(m.viewings.youAlreadyHaveAViewing)
         : taken
-          ? t('الميعاد ده لسه اتحجز، اختار ميعاد تاني', 'That time was just taken. Pick another.')
-          : reason || t('مقدرناش نأكد الحجز، حاول تاني', 'We couldn’t confirm that, try again'),
-      body: already ? t('غيّر ميعادها من معايناتي.', 'Change its time from My viewings.') : undefined,
+          ? t(m.viewings.thatTimeWasJustTaken)
+          : reason || t(m.viewings.weCouldntConfirmThatTry),
+      body: already ? t(m.viewings.changeItsTimeFromMy) : undefined,
       tone: 'danger',
     });
     if (taken && !already) {
@@ -159,10 +159,10 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 140 }}>
         <View style={styles.pad}>
           <View style={styles.header}>
-            <IconButton label={t('رجوع', 'Back')} onPress={() => (router.canGoBack() ? router.back() : router.replace(`/property/${p.id}`))} icon={<BackIcon size={20} color={colors.ink} />} />
+            <IconButton label={t(m.common.back)} onPress={() => (router.canGoBack() ? router.back() : router.replace(`/property/${p.id}`))} icon={<BackIcon size={20} color={colors.ink} />} />
             <View style={styles.flex}>
               <Txt accessibilityRole="header" size={20} weight="semibold">
-                {existing ? t('غيّر الموعد', 'Reschedule') : t('احجز معاينة', 'Book a viewing')}
+                {existing ? t(m.viewings.reschedule) : t(m.common.bookAViewing)}
               </Txt>
               <Txt size={12} color="ink2" numberOfLines={1}>
                 {title}
@@ -190,12 +190,12 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
           <View style={[styles.note, { backgroundColor: colors.accentSoft }]}>
             <MapPin size={16} color={colors.accentInk} />
             <Txt size={12.5} color="accentInk" style={styles.flex}>
-              {t('المعاينة في الموقع، مع مسؤول المبيعات.', 'The viewing is on site, with the sales advisor.')}
+              {t(m.viewings.theViewingIsOnSite)}
             </Txt>
           </View>
 
           <Txt size={15} weight="semibold" style={styles.h2}>
-            {t('اختار اليوم', 'Pick a day')}
+            {t(m.viewings.pickADay)}
           </Txt>
         </View>
 
@@ -203,8 +203,8 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
           <ActivityIndicator color={colors.accent} style={styles.loading} />
         ) : slots.isError ? (
           <View style={styles.pad}>
-            <Txt color="ink2">{t('مقدرناش نجيب المواعيد.', 'We couldn’t load the times.')}</Txt>
-            <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={() => void slots.refetch()} style={styles.retry} />
+            <Txt color="ink2">{t(m.viewings.weCouldntLoadTheTimes)}</Txt>
+            <Button label={t(m.common.tryAgain)} variant="secondary" onPress={() => void slots.refetch()} style={styles.retry} />
           </View>
         ) : (
           <>
@@ -212,12 +212,12 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
               {days.map((d, i) => {
                 const on = d.date === date;
                 const open = d.slots.some((s) => s.state === 'free');
-                const top = i === 0 ? t('النهارده', 'Today') : i === 1 ? t('بكرة', 'Tmrw') : fmtDate(d.date, lang, 'weekday');
+                const top = i === 0 ? t(m.common.today) : i === 1 ? t(m.viewings.tmrw) : fmtDate(d.date, lang, 'weekday');
                 return (
                   <Pressable
                     key={d.date}
                     accessibilityRole="button"
-                    accessibilityLabel={`${fmtDate(d.date, lang, 'long')}${open ? '' : t('، مفيش مواعيد', ', no times')}`}
+                    accessibilityLabel={`${fmtDate(d.date, lang, 'long')}${open ? '' : t(m.viewings.noTimes)}`}
                     accessibilityState={{ selected: on }}
                     onPress={() => {
                       setPicked(d.date);
@@ -245,7 +245,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
 
             <View style={styles.pad}>
               <Txt size={15} weight="semibold" style={styles.h2}>
-                {t('اختار الساعة', 'Pick a time')}
+                {t(m.viewings.pickATime)}
               </Txt>
               {groups.map((g) => (
                 <View key={g.label} style={styles.group}>
@@ -264,7 +264,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
                         <Pressable
                           key={s.time}
                           accessibilityRole="button"
-                          accessibilityLabel={free ? label : `${label}، ${stateLabel(s)}`}
+                          accessibilityLabel={free ? label : joinParts([label, stateLabel(s)], lang)}
                           accessibilityState={{ selected: on, disabled: !free }}
                           disabled={!free}
                           onPress={() => setTime(s.time)}
@@ -292,7 +292,7 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
               ))}
               {day && !day.slots.some((s) => s.state === 'free') ? (
                 <Txt size={13} color="ink2" style={styles.group}>
-                  {t('مفيش مواعيد فاضية اليوم ده، اختار يوم تاني.', 'No free times that day. Pick another day.')}
+                  {t(m.viewings.noFreeTimesThatDay)}
                 </Txt>
               ) : null}
             </View>
@@ -301,12 +301,12 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
 
         <View style={styles.pad}>
           <Txt size={15} weight="semibold" style={styles.h2}>
-            {t('هيقابلك', 'You’ll meet')}
+            {t(m.viewings.youllMeet)}
           </Txt>
           <View style={[styles.agent, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <View style={[styles.avatar, { backgroundColor: p.agent.colour }]}>
               <Txt size={16} weight="semibold" style={styles.white}>
-                {initialsOf(lang === 'ar' ? p.agent.nameAr : p.agent.nameEn, lang)}
+                {initialsOf(pickField(p.agent, 'name', lang), lang)}
               </Txt>
             </View>
             <View style={styles.flex}>
@@ -317,21 +317,21 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
                 <BadgeCheck size={16} color={colors.accent} />
               </View>
               <Txt size={12} color="ink2">
-                {lang === 'ar' ? p.agent.roleTitleAr : p.agent.roleTitleEn}
+                {pickField(p.agent, 'roleTitle', lang)}
               </Txt>
               <View style={styles.inline}>
                 <Txt size={11.5} color="ink2">
-                  {lang === 'ar' ? p.agent.languagesAr : p.agent.languagesEn}
+                  {pickField(p.agent, 'languages', lang)}
                 </Txt>
               </View>
             </View>
           </View>
           <Txt size={12.5} color="ink2" style={styles.meet}>
-            {t(`${agentName} هيستناك في الميعاد.`, `${agentName} will be there to meet you.`)}
+            {t(m.viewings.willMeetYou(agentName))}
           </Txt>
 
           <Txt size={15} weight="semibold" style={styles.h2}>
-            {t('فكّرني', 'Remind me')}
+            {t(m.viewings.remindMe)}
           </Txt>
           <View style={styles.chips}>
             {REMINDERS.map((r) => {
@@ -340,14 +340,14 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
                 <Pressable
                   key={r.key}
                   accessibilityRole="checkbox"
-                  accessibilityLabel={t(r.ar, r.en)}
+                  accessibilityLabel={t(r.label)}
                   accessibilityState={{ checked: on }}
                   onPress={() => setReminders((cur) => (on ? cur.filter((x) => x !== r.key) : [...cur, r.key]))}
                   style={[styles.chip, on ? { backgroundColor: colors.ink } : { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1 }]}
                 >
                   {on ? <Check size={16} color={colors.bg} /> : <Clock size={16} color={colors.ink2} />}
                   <Txt size={13} weight="medium" style={{ color: on ? colors.bg : colors.ink2 }}>
-                    {t(r.ar, r.en)}
+                    {t(r.label)}
                   </Txt>
                 </Pressable>
               );
@@ -358,10 +358,10 @@ function Book({ p, existing }: { p: PropertyDetail; existing?: ViewingItem }) {
 
       <View style={[styles.bar, { backgroundColor: colors.surface, borderColor: colors.line, paddingBottom: insets.bottom + 12 }]}>
         <Txt size={12} color="ink2" align="center">
-          {date && time ? `${fmtDate(date, lang, 'long')} | ${fmtTime(time, lang)}` : t('اختار ساعة عشان تكمل', 'Pick a time to continue')}
+          {date && time ? `${fmtDate(date, lang, 'long')} | ${fmtTime(time, lang)}` : t(m.viewings.pickATimeToContinue)}
         </Txt>
         <Button
-          label={existing ? t('أكّد الموعد الجديد', 'Confirm new time') : t('أكّد المعاينة', 'Confirm viewing')}
+          label={existing ? t(m.viewings.confirmNewTime) : t(m.viewings.confirmViewing)}
           onPress={confirm}
           disabled={!date || !time || busy || (!!existing && date === existing.date && time === existing.time)}
           loading={busy}
@@ -378,23 +378,23 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const agentName = lang === 'ar' ? v.agent.nameAr : v.agent.nameEn;
+  const agentName = pickField(v.agent, 'name', lang);
   const cover = mediaUrl(v.property.cover);
   const reminderText = v.reminders.length
-    ? `${t('هنفكرك ', 'We’ll remind you ')}${v.reminders
-        .map((r) => ({ '1d': t('قبلها بيوم', 'a day before'), '2h': t('قبلها بساعتين', '2 hours before'), '30m': t('قبلها بنص ساعة', '30 min before') })[r])
-        .join(t('، و', ', and '))}`
-    : t('مفيش تذكير', 'No reminders');
+    ? `${t(m.viewings.wellRemindYou)}${v.reminders
+        .map((r) => ({ '1d': t(m.viewings.aDayBefore), '2h': t(m.viewings.remind2h), '30m': t(m.viewings.remind30m) })[r])
+        .join(t(m.viewings.and))}`
+    : t(m.viewings.noReminders);
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.done, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
       <View style={styles.ok}>
         <SuccessCheck size={96} />
       </View>
       <Txt accessibilityRole="header" size={24} weight="semibold" align="center">
-        {rescheduled ? t('اتغير الموعد', 'Rescheduled') : t('معاينتك اتأكدت', 'You’re booked')}
+        {rescheduled ? t(m.viewings.rescheduled) : t(m.viewings.youreBooked)}
       </Txt>
       <Txt size={14} color="ink2" align="center">
-        {t(`${agentName} هيستناك في الميعاد.`, `${agentName} will be there to meet you.`)}
+        {t(m.viewings.willMeetYou(agentName))}
       </Txt>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
@@ -404,17 +404,17 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
           </View>
           <View style={styles.flex}>
             <Txt size={14} weight="semibold" numberOfLines={1}>
-              {lang === 'ar' ? v.property.titleAr : v.property.titleEn}
+              {pickField(v.property, 'title', lang)}
             </Txt>
             <Txt size={12} color="ink2" numberOfLines={1}>
-              {`${lang === 'ar' ? v.property.compoundAr : v.property.compoundEn} | ${lang === 'ar' ? v.property.area.nameAr : v.property.area.nameEn}`}
+              {`${pickField(v.property, 'compound', lang)} | ${pickField(v.property.area, 'name', lang)}`}
             </Txt>
           </View>
         </View>
         <View style={[styles.cardRow, { borderColor: colors.line }]}>
           <View style={styles.flex}>
             <Txt size={11} color="ink3">
-              {t('اليوم', 'Date')}
+              {t(m.viewings.date)}
             </Txt>
             <Txt size={14} weight="semibold">
               {fmtDate(v.date, lang, 'long')}
@@ -422,7 +422,7 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
           </View>
           <View style={styles.flex}>
             <Txt size={11} color="ink3">
-              {t('الساعة', 'Time')}
+              {t(m.common.time)}
             </Txt>
             <Txt size={14} weight="semibold">
               {fmtTime(v.time, lang)}
@@ -434,7 +434,7 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
             {agentName}
           </Txt>
           <Txt size={11.5} color="ink2">
-            {t('في الموقع', 'On site')}
+            {t(m.common.onSite)}
           </Txt>
         </View>
       </View>
@@ -450,14 +450,14 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
         <Pressable
           accessibilityRole="button"
           onPress={() =>
-            addToCalendar(v.id).catch(() => toast.show({ title: t('مقدرناش نجهز ملف التقويم', 'We couldn’t prepare the calendar file'), tone: 'danger' }))
+            addToCalendar(v.id).catch(() => toast.show({ title: t(m.common.weCouldntPrepareTheCalendar), tone: 'danger' }))
           }
           style={[styles.outline, { borderColor: colors.line2 }]}
         >
           <CalendarPlus size={20} color={colors.ink} />
-          <Txt weight="medium">{t('أضف للتقويم', 'Add to calendar')}</Txt>
+          <Txt weight="medium">{t(m.viewings.addToCalendar)}</Txt>
         </Pressable>
-        <Button label={t('معايناتي', 'My viewings')} onPress={() => router.replace('/viewings')} />
+        <Button label={t(m.common.myViewings)} onPress={() => router.replace('/viewings')} />
       </View>
     </ScrollView>
   );

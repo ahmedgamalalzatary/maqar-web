@@ -1,4 +1,4 @@
-import { type Category, fmtMoney, fmtPct, type HomeSection } from '@maqar/shared';
+import { type Bi, pickField, type Category, fmtMoney, fmtPct, type HomeSection } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Award, Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
@@ -11,7 +11,7 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useHomeOrder } from '@/core/app-config/store';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { Entrance, useEntranceClock } from '@/core/motion/entrance';
 import { radius, useTheme } from '@/core/theme';
 import { usePreferences } from '@/features/account/hooks/use-account';
@@ -25,11 +25,11 @@ import { useIsClient, useRecommended } from '@/features/prefs/hooks/use-prefs';
 import { MyPrefs } from '../components/my-prefs';
 import { NextViewingCard } from '@/features/viewings/components/next-viewing-card';
 
-const SHORTCUTS: { category: Category; icon: LucideIcon; ar: string; en: string }[] = [
-  { category: 'sale', icon: HomeIcon, ar: 'شراء', en: 'Buy' },
-  { category: 'rent', icon: KeyRound, ar: 'إيجار', en: 'Rent' },
-  { category: 'project', icon: Building2, ar: 'مشروعات', en: 'Projects' },
-  { category: 'stay', icon: Palmtree, ar: 'إقامة', en: 'Stays' },
+const SHORTCUTS: { category: Category; icon: LucideIcon; label: Bi }[] = [
+  { category: 'sale', icon: HomeIcon, label: m.home.buy },
+  { category: 'rent', icon: KeyRound, label: m.home.rent },
+  { category: 'project', icon: Building2, label: m.home.projects },
+  { category: 'stay', icon: Palmtree, label: m.home.stays },
 ];
 
 /**
@@ -55,11 +55,11 @@ export function Home() {
   const sections: Record<HomeSection, ReactNode> = {
     shortcuts: (
       <View style={styles.shortcuts}>
-        {SHORTCUTS.map(({ category, icon: Icon, ar, en }) => (
+        {SHORTCUTS.map(({ category, icon: Icon, label }) => (
           <Pressable
             key={category}
             accessibilityRole="button"
-            accessibilityLabel={t(ar, en)}
+            accessibilityLabel={t(label)}
             onPress={() => router.push({ pathname: '/explore', params: { category } })}
             style={({ pressed }) => [
               styles.shortcut,
@@ -70,7 +70,7 @@ export function Home() {
               <Icon size={20} color={colors.accentInk} strokeWidth={1.8} />
             </View>
             <Txt size={12} weight="medium" align="center">
-              {t(ar, en)}
+              {t(label)}
             </Txt>
           </Pressable>
         ))}
@@ -81,10 +81,10 @@ export function Home() {
     prefs: <MyPrefs />,
     picks: <Picks cardWidth={cardWidth} />,
     areas: (
-      <Section title={t('تصفح حسب المنطقة', 'Browse by area')}>
+      <Section title={t(m.home.browseByArea)}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
           {(areas.data ?? []).map((a) => {
-            const name = lang === 'ar' ? a.nameAr : a.nameEn;
+            const name = pickField(a, 'name', lang);
             const img = mediaUrl(a.image);
             return (
               <Pressable
@@ -109,7 +109,7 @@ export function Home() {
     calculator: (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('احسب قسطك الشهري', 'Work out your monthly installment')}
+        accessibilityLabel={t(m.common.workOutYourMonthlyInstallment)}
         onPress={() => router.push('/calculator')}
         style={({ pressed }) => [styles.calculator, { backgroundColor: colors.navy, opacity: pressed ? 0.9 : 1 }]}
       >
@@ -118,10 +118,10 @@ export function Home() {
         </View>
         <View style={styles.flex}>
           <Txt size={15} weight="semibold" style={{ color: colors.cream }}>
-            {t('احسب قسطك الشهري', 'Work out your monthly installment')}
+            {t(m.common.workOutYourMonthlyInstallment)}
           </Txt>
           <Txt size={12.5} style={{ color: colors.cream, opacity: 0.7 }}>
-            {t('المقدم + عدد السنين = القسط في ثانية', 'Down payment + years = installment, instantly')}
+            {t(m.home.downPaymentYearsInstallmentInstantly)}
           </Txt>
         </View>
       </Pressable>
@@ -129,8 +129,8 @@ export function Home() {
     drops: <PriceDrops />,
     launches: (
       <Section
-        title={t('مشروعات جديدة بالتقسيط', 'New launches on installments')}
-        action={{ label: t('الكل', 'See all'), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
+        title={t(m.home.newLaunchesOnInstallments)}
+        action={{ label: t(m.common.seeAll), onPress: () => router.push({ pathname: '/explore', params: { category: 'project' } }) }}
       >
         {launches.isError ? (
           <ListingsError onRetry={() => launches.refetch()} />
@@ -155,7 +155,7 @@ export function Home() {
         <Logo width={64} />
         <View style={styles.flex} />
         <IconButton
-          label={scheme === 'dark' ? t('الوضع الفاتح', 'Light mode') : t('الوضع الداكن', 'Dark mode')}
+          label={scheme === 'dark' ? t(m.home.lightMode) : t(m.common.darkMode)}
           onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
           icon={
             scheme === 'dark' ? (
@@ -170,22 +170,22 @@ export function Home() {
 
       <View>
         <Txt accessibilityRole="header" size={28} weight="semibold" style={styles.headline}>
-          {t('لاقي بيتك،', 'Find your home,')}
+          {t(m.home.findYourHome)}
         </Txt>
         <Txt size={28} weight="semibold" color="accentInk" style={styles.headline}>
-          {t('واحجز معاينته بنفسك.', 'book the viewing yourself.')}
+          {t(m.home.bookTheViewingYourself)}
         </Txt>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('منطقة، كمبوند أو نوع الوحدة', 'Area, compound or unit type')}
+        accessibilityLabel={t(m.common.areaCompoundOrUnitType)}
         onPress={() => router.push('/explore')}
         style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}
       >
         <Search size={20} color={colors.ink3} />
         <Txt size={14} color="ink3" style={styles.flex}>
-          {t('منطقة، كمبوند أو نوع الوحدة', 'Area, compound or unit type')}
+          {t(m.common.areaCompoundOrUnitType)}
         </Txt>
       </Pressable>
 
@@ -214,13 +214,13 @@ function Picks({ cardWidth }: { cardWidth: number }) {
         <View style={styles.inviteHead}>
           <Sparkles size={20} color={colors.gold} />
           <Txt size={16} weight="semibold" style={{ color: colors.cream }}>
-            {t('ترشيحات على مقاسك', 'Picks that fit you')}
+            {t(m.home.picksThatFitYou)}
           </Txt>
         </View>
         <Txt size={13} style={{ color: colors.cream, opacity: 0.75 }}>
-          {t('قولنا ميزانيتك والمناطق اللي بتحبها، ونرتب لك البيوت الأنسب.', 'Tell us your budget and favourite areas, and we’ll rank the homes that fit.')}
+          {t(m.home.tellUsYourBudgetAnd)}
         </Txt>
-        <Button label={t('ابدأ ترشيحاتك', 'Get your picks')} onPress={() => router.push('/sign-up')} />
+        <Button label={t(m.home.getYourPicks)} onPress={() => router.push('/sign-up')} />
       </View>
     );
   }
@@ -228,11 +228,11 @@ function Picks({ cardWidth }: { cardWidth: number }) {
 
   return (
     <Section
-      title={t('مختارة ليك', 'Picked for you')}
+      title={t(m.home.pickedForYou)}
       icon={<Sparkles size={18} color={colors.accent} />}
       action={{
-        label: t('الكل', 'See all'),
-        a11y: t('كل الترشيحات', 'All picks'),
+        label: t(m.common.seeAll),
+        a11y: t(m.home.allPicks),
         onPress: () => router.push({ pathname: '/explore', params: { sort: 'match' } }),
       }}
     >
@@ -273,7 +273,7 @@ function Featured({ cardWidth }: { cardWidth: number }) {
   const items = featured.data?.items ?? [];
   if (!items.length) return null;
   return (
-    <Section title={t('مميزة من مقر', 'Featured by Maqar')} icon={<Award size={18} color={colors.accentInk} />}>
+    <Section title={t(m.home.featuredByMaqar)} icon={<Award size={18} color={colors.accentInk} />}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
         {items.map((c, i) => (
           <Entrance key={c.id} clock={entrance} index={i}>
@@ -294,7 +294,7 @@ function PriceDrops() {
   const items = drops.data?.items ?? [];
   if (!items.length) return null;
   return (
-    <Section title={t('السعر نزل', 'Price drops')} icon={<TrendingDown size={18} color={colors.danger} />}>
+    <Section title={t(m.home.priceDrops)} icon={<TrendingDown size={18} color={colors.danger} />}>
       <View style={styles.rows}>
         {items.map((c) => (
           <PropertyRow

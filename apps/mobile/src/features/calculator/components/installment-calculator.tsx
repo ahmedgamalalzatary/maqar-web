@@ -7,7 +7,7 @@ import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { useCalculatorLimits } from '@/core/app-config/store';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { CSS_EASE_OUT } from '@/core/motion/motion';
 import { useTweenedNumber } from '@/core/motion/tween';
 import { radius, useTheme } from '@/core/theme';
@@ -113,7 +113,7 @@ export function InstallmentCalculator({
         <View>
           <View style={styles.labelRow}>
             <Txt size={13} weight="medium" color="ink2">
-              {t('سعر الوحدة', 'Unit price')}
+              {t(m.common.unitPrice)}
             </Txt>
             <Txt size={15} weight="semibold">
               {fmtMoney(price, lang, false)}
@@ -126,11 +126,11 @@ export function InstallmentCalculator({
               setTyping(null);
               setTypedPrice(p);
             }}
-            label={t('سعر الوحدة', 'Unit price')}
+            label={t(m.common.unitPrice)}
             valueText={fmtMoney(price, lang, false)}
           />
           <TextField
-            label={t('سعر الوحدة (جنيه)', 'Unit price (EGP)')}
+            label={t(m.calculator.unitPriceEgp)}
             value={shown('price', price)}
             onChangeText={typePrice}
             onEndEditing={() => setTyping(null)}
@@ -144,14 +144,14 @@ export function InstallmentCalculator({
         value={mode}
         onChange={setMode}
         options={[
-          { value: 'dev', label: t('خطة المطوّر (بدون فوايد)', 'Developer plan (0%)') },
-          { value: 'bank', label: t('تمويل بنكي', 'Bank finance') },
+          { value: 'dev', label: t(m.calculator.developerPlan0) },
+          { value: 'bank', label: t(m.calculator.bankFinance) },
         ]}
       />
 
       <View style={[styles.result, { backgroundColor: colors.navy }]}>
         <Txt size={12} style={faded}>
-          {frequency === 'monthly' ? t('القسط الشهري', 'Monthly installment') : t('القسط الربع سنوي', 'Quarterly installment')}
+          {frequency === 'monthly' ? t(m.common.monthlyInstallment) : t(m.calculator.quarterlyInstallment)}
         </Txt>
         <Payment value={Math.round(plan.payment)} color={colors.gold} />
         {/* The down payment's share of the total grows and shrinks instead of jumping (2026-11-16). */}
@@ -159,16 +159,16 @@ export function InstallmentCalculator({
           <Animated.View style={[styles.barFill, { width: `${downShare}%`, backgroundColor: colors.gold }]} />
         </View>
         <View style={styles.figures}>
-          <Figure label={t('مقدمك', 'Your down payment')} value={fmtMoney(Math.round(plan.down), lang)} labelStyle={faded} valueStyle={cream} />
-          <Figure label={t('عدد الأقساط', 'Installments')} value={fmtNum(plan.count, lang)} labelStyle={faded} valueStyle={cream} />
-          <Figure label={t('الإجمالي', 'Total')} value={fmtMoney(Math.round(plan.total), lang)} labelStyle={faded} valueStyle={cream} />
+          <Figure label={t(m.calculator.yourDownPayment)} value={fmtMoney(Math.round(plan.down), lang)} labelStyle={faded} valueStyle={cream} />
+          <Figure label={t(m.calculator.installments)} value={fmtNum(plan.count, lang)} labelStyle={faded} valueStyle={cream} />
+          <Figure label={t(m.calculator.total)} value={fmtMoney(Math.round(plan.total), lang)} labelStyle={faded} valueStyle={cream} />
         </View>
       </View>
 
       <View>
         <View style={styles.labelRow}>
           <Txt size={13} weight="medium" color="ink2">
-            {t('المقدم', 'Down payment')}
+            {t(m.common.downPayment)}
           </Txt>
           <Txt size={15} weight="semibold">
             {fmtPct(down, lang)}
@@ -178,13 +178,13 @@ export function InstallmentCalculator({
           scale={downScale}
           value={down}
           onChange={setDown}
-          label={t('المقدم', 'Down payment')}
+          label={t(m.common.downPayment)}
           valueText={fmtPct(down, lang)}
         />
         <View style={styles.downFields}>
           <View style={styles.flex}>
             <TextField
-              label={t('المقدم (٪)', 'Down payment (%)')}
+              label={t(m.calculator.downPayment)}
               value={shown('pct', down)}
               onChangeText={(v) => typeDown('pct', v)}
               onEndEditing={() => setTyping(null)}
@@ -194,7 +194,7 @@ export function InstallmentCalculator({
           </View>
           <View style={styles.flex}>
             <TextField
-              label={t('المقدم (جنيه)', 'Down payment (EGP)')}
+              label={t(m.calculator.downPaymentEgp)}
               value={shown('amount', downAmount)}
               onChangeText={(v) => typeDown('amount', v)}
               onEndEditing={() => setTyping(null)}
@@ -205,14 +205,14 @@ export function InstallmentCalculator({
         </View>
         {downOutOfRange ? (
           <Txt size={12} color="danger">
-            {t(`المقدم من ${fmtNum(downScale.min, 'ar')}٪ لـ ${fmtNum(downScale.max, 'ar')}٪`, `The down payment is ${downScale.min}% to ${downScale.max}%`)}
+            {t(m.calculator.downRange(downScale.min, downScale.max))}
           </Txt>
         ) : null}
       </View>
 
       <View style={styles.years}>
         <TextField
-          label={t('مدة التقسيط (بالسنين)', 'Payment period (years)')}
+          label={t(m.calculator.paymentPeriodYears)}
           value={yearsText}
           onChangeText={changeYears}
           onEndEditing={() => setYearsText(localDigits(String(years), lang))}
@@ -220,7 +220,7 @@ export function InstallmentCalculator({
           maxLength={2}
         />
         <Txt size={12} color={typedYears === undefined ? 'danger' : 'ink3'}>
-          {t(`من ${fmtNum(minYears, 'ar')} لـ ${fmtNum(maxYears, 'ar')} سنين`, `${minYears} to ${maxYears} years`)}
+          {t(m.calculator.yearsRange(minYears, maxYears))}
         </Txt>
       </View>
 
@@ -228,14 +228,14 @@ export function InstallmentCalculator({
         value={frequency}
         onChange={setFrequency}
         options={[
-          { value: 'monthly', label: t('شهري', 'Monthly') },
-          { value: 'quarterly', label: t('ربع سنوي', 'Quarterly') },
+          { value: 'monthly', label: t(m.calculator.monthly) },
+          { value: 'quarterly', label: t(m.calculator.quarterly) },
         ]}
       />
 
       {mode === 'bank' ? (
         <TextField
-          label={t('نسبة الفايدة السنوية ٪', 'Annual interest %')}
+          label={t(m.calculator.annualInterest)}
           value={rateText}
           onChangeText={setRateText}
           onEndEditing={() => setRateText(localDigits(String(rate), lang))}
@@ -247,8 +247,7 @@ export function InstallmentCalculator({
         <Info size={14} color={colors.ink3} />
         <Txt size={11.5} color="ink3" style={styles.flex}>
           {t(
-            'أرقام تقديرية للتوضيح. مسؤول المبيعات بيأكد الخطة النهائية معاك وقت المعاينة.',
-            'Estimates for guidance. Your sales advisor confirms the final plan with you at the viewing.',
+            m.calculator.estimatesForGuidanceYourSales,
           )}
         </Txt>
       </View>

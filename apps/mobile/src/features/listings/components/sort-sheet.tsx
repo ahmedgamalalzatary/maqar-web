@@ -3,17 +3,17 @@ import { Check } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 type T = ReturnType<typeof useT>;
 
 export const sortLabel = (s: Sort, t: T) =>
   ({
-    match: t('الأنسب ليك', 'Best match'),
-    newest: t('الأحدث', 'Newest'),
-    low: t('الأقل سعراً', 'Lowest price'),
-    high: t('الأعلى سعراً', 'Highest price'),
+    match: t(m.listings.bestMatch),
+    newest: t(m.listings.newest),
+    low: t(m.listings.lowestPrice),
+    high: t(m.listings.highestPrice),
   })[s];
 
 /** Best match first, as in the demo. */
@@ -37,7 +37,7 @@ export function SortSheet({
   const t = useT();
   const { colors } = useTheme();
   return (
-    <Sheet open={open} onClose={onClose} title={t('ترتيب حسب', 'Sort by')}>
+    <Sheet open={open} onClose={onClose} title={t(m.listings.sortBy)}>
       <View accessibilityRole="radiogroup">
         {ORDER.filter((s) => withMatch || s !== 'match').map((s) => (
           <Pressable

@@ -2,6 +2,7 @@ import type { ChangePasswordBody, Lang, ThemePref, UpdateMeBody } from '@maqar/s
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { toast } from '@/components/toast';
+import { m, tr } from '@/core/i18n';
 import { useSettings } from '@/core/settings/store';
 import { useSession } from '@/features/auth/store/session.store';
 import { changePasswordRequest, deleteMeRequest, updateMeRequest } from '../api/me.api';
@@ -31,10 +32,9 @@ export function usePreferences() {
     // Apply only this change, so a slow earlier response cannot undo a newer one.
     useSession.getState().setUser({ ...user, ...body });
     updateMeRequest(body).catch(() => {
-      const ar = useSettings.getState().lang === 'ar';
       toast.show({
-        title: ar ? 'محفوظ على الموبايل بس' : 'Saved on this phone only',
-        body: ar ? 'معرفناش نحفظه في حسابك.' : "Couldn't save it to your account.",
+        title: tr(m.account.savedOnThisPhoneOnly),
+        body: tr(m.account.couldntSaveToAccount),
         tone: 'danger',
       });
     });

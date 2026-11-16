@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { Button } from '@/components/button';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { setPendingAction } from '../pending-action';
 
 export const useAuthPrompt = create<{ open: boolean }>(() => ({ open: false }));
@@ -24,17 +24,16 @@ export function AuthPromptHost() {
     router.push(href);
   };
   return (
-    <Sheet open={open} onClose={close} title={t('سجّل دخولك الأول', 'Sign in first')}>
+    <Sheet open={open} onClose={close} title={t(m.auth.signInFirst)}>
       <Txt color="ink2">
         {t(
-          'محتاج حساب عشان تحفظ البيوت، تتابع الأسعار، تحجز معاينة أو تكلّم المستشار.',
-          'You need an account to save homes, follow prices, book viewings or chat with an advisor.',
+          m.auth.youNeedAnAccountTo,
         )}
       </Txt>
       <View style={styles.actions}>
-        <Button label={t('تسجيل الدخول', 'Sign in')} onPress={() => go('/sign-in')} />
-        <Button label={t('إنشاء حساب', 'Create an account')} variant="secondary" onPress={() => go('/sign-up')} />
-        <Button label={t('مش دلوقتي', 'Not now')} variant="ghost" onPress={close} />
+        <Button label={t(m.common.signIn)} onPress={() => go('/sign-in')} />
+        <Button label={t(m.common.createAnAccount)} variant="secondary" onPress={() => go('/sign-up')} />
+        <Button label={t(m.auth.notNow)} variant="ghost" onPress={close} />
       </View>
     </Sheet>
   );

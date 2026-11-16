@@ -7,13 +7,14 @@ import {
   fmtNum,
   PROPERTY_TYPE_LABEL,
   type Sort,
+  pickField,
 } from '@maqar/shared';
 import { ArrowDownUp, KeyRound, type LucideIcon, Rotate3d, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { Entrance, useEntranceClock } from '@/core/motion/entrance';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useIsClient } from '@/features/prefs/hooks/use-prefs';
@@ -76,25 +77,25 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   const clearAll = () => setFilters(clearFilters(filters));
 
   const quicks: { k: Quick; icon: LucideIcon; label: string }[] = [
-    { k: 'tour', icon: Rotate3d, label: t('جولة ٣٦٠°', '360° tour') },
-    { k: 'plan', icon: Sparkles, label: t('تقسيط', 'Installments') },
-    { k: 'ready', icon: KeyRound, label: t('استلام فوري', 'Ready to move') },
-    { k: 'dropped', icon: TrendingDown, label: t('السعر نزل', 'Price dropped') },
+    { k: 'tour', icon: Rotate3d, label: t(m.common.n360Tour) },
+    { k: 'plan', icon: Sparkles, label: t(m.listings.installments) },
+    { k: 'ready', icon: KeyRound, label: t(m.common.readyToMove) },
+    { k: 'dropped', icon: TrendingDown, label: t(m.listings.priceDropped) },
   ];
 
   const areaName = (id: string) => {
     const a = areas.data?.find((x) => x.id === id);
-    return a ? (lang === 'ar' ? a.nameAr : a.nameEn) : id;
+    return a ? (pickField(a, 'name', lang)) : id;
   };
-  const removeLabel = (name: string) => t(`شيل فلتر ${name}`, `Remove the ${name} filter`);
+  const removeLabel = (name: string) => t(m.listings.removeFilter(name));
 
   /** One chip per active filter; tapping removes that one. */
   const chips: { key: string; text: string; name: string; remove: () => void }[] = [
     ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
-      ? [{ key: 'price', text: priceRangeText(filters.minPrice, filters.maxPrice, t, lang), name: t('السعر', 'price'), remove: () => update({ minPrice: undefined, maxPrice: undefined }) }]
+      ? [{ key: 'price', text: priceRangeText(filters.minPrice, filters.maxPrice, t, lang), name: t(m.listings.price), remove: () => update({ minPrice: undefined, maxPrice: undefined }) }]
       : []),
     ...(filters.minSize !== undefined || filters.maxSize !== undefined
-      ? [{ key: 'size', text: sizeRangeText(filters.minSize ?? 50, filters.maxSize, t, lang), name: t('المساحة', 'size'), remove: () => update({ minSize: undefined, maxSize: undefined }) }]
+      ? [{ key: 'size', text: sizeRangeText(filters.minSize ?? 50, filters.maxSize, t, lang), name: t(m.listings.size), remove: () => update({ minSize: undefined, maxSize: undefined }) }]
       : []),
     ...(filters.areas ?? []).map((id) => ({ key: `a-${id}`, text: areaName(id), name: areaName(id), remove: () => update({ areas: without(filters.areas, id) }) })),
     ...(filters.types ?? []).map((k) => ({ key: `t-${k}`, text: t(PROPERTY_TYPE_LABEL[k]), name: t(PROPERTY_TYPE_LABEL[k]), remove: () => update({ types: without(filters.types, k) }) })),
@@ -120,10 +121,10 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
         <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
           <Search size={18} color={colors.ink3} />
           <TextInput
-            accessibilityLabel={t('بحث', 'Search')}
+            accessibilityLabel={t(m.listings.search)}
             value={text}
             onChangeText={setText}
-            placeholder={t('ابحث: التجمع، شاليه، أزور باي…', 'Search: New Cairo, chalet, Azure Bay…')}
+            placeholder={t(m.listings.searchNewCairoChaletAzure)}
             placeholderTextColor={colors.ink3}
             returnKeyType="search"
             autoCorrect={false}
@@ -132,7 +133,7 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
           {text ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('امسح البحث', 'Clear search')}
+              accessibilityLabel={t(m.common.clearSearch)}
               onPress={() => setText('')}
               hitSlop={8}
               style={[styles.clear, { backgroundColor: colors.surface2 }]}
@@ -143,7 +144,7 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('الفلاتر', 'Filters')}
+          accessibilityLabel={t(m.common.filters)}
           accessibilityValue={sheetCount ? { text: fmtNum(sheetCount, lang) } : undefined}
           onPress={() => setSheet('filters')}
           style={({ pressed }) => [styles.filterBtn, { backgroundColor: colors.ink, opacity: pressed ? 0.85 : 1 }]}
@@ -162,7 +163,7 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} accessibilityRole="tablist">
         {TABS.map((k) => {
           const on = tab === k;
-          const label = k === 'all' ? t('الكل', 'All') : t(CATEGORY_LABEL[k]);
+          const label = k === 'all' ? t(m.common.all) : t(CATEGORY_LABEL[k]);
           return (
             <Pressable
               key={k}
@@ -204,20 +205,20 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
               <Txt size={13} weight="semibold">
                 {fmtNum(total, lang)}
               </Txt>{' '}
-              {t('وحدة', total === 1 ? 'home' : 'homes')}
+              {t(m.listings.homesAfterNumber(total))}
             </Txt>
           ) : null}
           {sheetCount > 0 || anyQuick ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={t('مسح الفلاتر', 'Clear filters')} onPress={clearAll} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.clearFilters)} onPress={clearAll} hitSlop={8}>
               <Txt size={13} weight="medium" color="accentInk">
-                {t('مسح الفلاتر', 'Clear filters')}
+                {t(m.common.clearFilters)}
               </Txt>
             </Pressable>
           ) : null}
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(`ترتيب: ${sortLabel(shown.sort, t)}`, `Sort: ${sortLabel(shown.sort, t)}`)}
+          accessibilityLabel={t(m.listings.sortIs(sortLabel(shown.sort, t)))}
           onPress={() => setSheet('sort')}
           hitSlop={8}
           style={styles.sortBtn}

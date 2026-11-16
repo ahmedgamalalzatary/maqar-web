@@ -4,7 +4,7 @@ import { BellRing, TrendingDown } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
@@ -55,15 +55,15 @@ export function PriceAlerts() {
           <TrendingDown size={20} color={colors.gold} />
         </View>
         <Txt size={13} style={[styles.flex, { color: colors.cream, opacity: 0.85 }]}>
-          {t('فعّل التنبيه على أي وحدة، وأول ما السعر ينزل هيوصلك إشعار فوراً.', 'Turn on an alert for any home, and the moment its price drops you get a notification.')}
+          {t(m.alerts.turnOnAnAlertFor)}
         </Txt>
       </View>
 
       {!signedIn ? (
         <Empty
-          title={t('سجّل دخولك عشان تتابع الأسعار', 'Sign in to follow prices')}
-          body={t('هنبلغك أول ما سعر الوحدة اللي بتتابعها ينزل.', 'We’ll tell you the moment a home you follow gets cheaper.')}
-          action={{ label: t('تسجيل الدخول', 'Sign in'), onPress: () => router.push('/sign-in') }}
+          title={t(m.alerts.signInToFollowPrices)}
+          body={t(m.alerts.wellTellYouTheMoment)}
+          action={{ label: t(m.common.signIn), onPress: () => router.push('/sign-in') }}
         />
       ) : alerts.isPending || drops.isPending ? (
         <CardSkeleton />
@@ -71,9 +71,9 @@ export function PriceAlerts() {
         <ListingsError onRetry={() => void alerts.refetch()} />
       ) : list.length === 0 ? (
         <Empty
-          title={t('مفيش تنبيهات أسعار لسه', 'No price alerts yet')}
-          body={t('دوس "نبهني لو نزل" في صفحة أي وحدة.', 'Tap “Alert on drop” on any home’s page.')}
-          action={{ label: t('استكشف', 'Explore'), onPress: () => router.push('/explore') }}
+          title={t(m.alerts.noPriceAlertsYet)}
+          body={t(m.alerts.tapAlertOnDropOn)}
+          action={{ label: t(m.common.explore), onPress: () => router.push('/explore') }}
         />
       ) : (
         list.map((c) => <PropertyRow key={c.id} card={c} sub={<DropLine card={c} />} right={<AlertSwitch card={c} />} />)

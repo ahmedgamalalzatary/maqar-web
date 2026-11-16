@@ -13,6 +13,7 @@ import {
   priceScale,
   type Scale,
   SIZE_SCALE,
+  pickField,
 } from '@maqar/shared';
 import { X } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
@@ -26,7 +27,7 @@ import { useDragToClose } from '@/components/drag-to-close';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { clearFilters, type ExploreFilters, parseDigits } from '../filters';
 import { useAreas, useDebounced, useFacets } from '../hooks/use-listings';
@@ -77,14 +78,14 @@ export function FilterSheet({
   const drag = useDragToClose(true, onClose);
   // The count on the button rolls to each new total as filters change (2026-11-16).
   const rolled = Math.round(useTweenedNumber(total ?? 0));
-  const showText = (n: number) => t(`اعرض ${fmtNum(n, 'ar')} وحدة`, `Show ${n} ${n === 1 ? 'home' : 'homes'}`);
+  const showText = (n: number) => t(m.listings.showHomesCount(n));
 
   return (
     <Modal visible transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
       {/* A modal is its own window on Android: the drag needs its own gesture root. */}
       <GestureHandlerRootView style={styles.fill}>
         <Animated.View style={[styles.backdrop, drag.backdrop]}>
-          <Pressable accessibilityLabel={t('إغلاق', 'Close')} style={styles.flex} onPress={onClose} />
+          <Pressable accessibilityLabel={t(m.common.close2)} style={styles.flex} onPress={onClose} />
         </Animated.View>
         <Animated.View onLayout={drag.onLayout} style={[styles.sheet, { direction: dir, backgroundColor: colors.surface }, drag.sheet]}>
           {/* 2026-11-16: the handle and title drag the sheet down to close it. */}
@@ -93,9 +94,9 @@ export function FilterSheet({
               <View style={[styles.handle, { backgroundColor: colors.line2 }]} />
               <View style={styles.head}>
                 <Txt accessibilityRole="header" size={18} weight="semibold" style={styles.flex}>
-                  {t('الفلاتر', 'Filters')}
+                  {t(m.common.filters)}
                 </Txt>
-                <IconButton label={t('إغلاق', 'Close')} onPress={onClose} icon={<X size={20} color={colors.ink} />} />
+                <IconButton label={t(m.common.close2)} onPress={onClose} icon={<X size={20} color={colors.ink} />} />
               </View>
             </View>
           </GestureDetector>
@@ -103,7 +104,7 @@ export function FilterSheet({
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Section
               title={priceTitle(draft.category, t)}
-              hint={draft.category ? undefined : t('للبيع والمشروعات', 'for sale & projects')}
+              hint={draft.category ? undefined : t(m.listings.forSaleProjects)}
             >
               <RangeSlider
                 scale={price}
@@ -113,13 +114,13 @@ export function FilterSheet({
                   const { lo, hi } = limitsOf(v, price);
                   set({ minPrice: lo, maxPrice: hi });
                 }}
-                minLabel={t('أقل سعر', 'Minimum price')}
-                maxLabel={t('أعلى سعر', 'Maximum price')}
+                minLabel={t(m.listings.minimumPrice)}
+                maxLabel={t(m.listings.maximumPrice)}
                 valueText={(v) => fmtMoney(v, lang)}
               />
               <View style={styles.boxes}>
                 <NumberBox
-                  label={t('من', 'Min')}
+                  label={t(m.listings.min)}
                   value={draft.minPrice}
                   emptyText={fmtNum(0, lang)}
                   onCommit={(n) =>
@@ -127,9 +128,9 @@ export function FilterSheet({
                   }
                 />
                 <NumberBox
-                  label={t('إلى', 'Max')}
+                  label={t(m.listings.max)}
                   value={draft.maxPrice}
-                  emptyText={t('أي سعر', 'Any')}
+                  emptyText={t(m.listings.any2)}
                   onCommit={(n) =>
                     set({ maxPrice: n === undefined || n >= price.max ? undefined : Math.max(n, (draft.minPrice ?? 0) + price.step) })
                   }
@@ -137,7 +138,7 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title={t('المساحة', 'Size')} value={sizeRangeText(sizeRange[0], draft.maxSize, t, lang)}>
+            <Section title={t(m.common.size)} value={sizeRangeText(sizeRange[0], draft.maxSize, t, lang)}>
               <RangeSlider
                 scale={SIZE_SCALE}
                 value={sizeRange}
@@ -146,15 +147,15 @@ export function FilterSheet({
                   const { lo, hi } = limitsOf(v, SIZE_SCALE);
                   set({ minSize: lo, maxSize: hi });
                 }}
-                minLabel={t('أقل مساحة', 'Minimum size')}
-                maxLabel={t('أكبر مساحة', 'Maximum size')}
-                valueText={(v) => `${fmtNum(v, lang)} ${t('م²', 'm²')}`}
+                minLabel={t(m.listings.minimumSize)}
+                maxLabel={t(m.listings.maximumSize)}
+                valueText={(v) => `${fmtNum(v, lang)} ${t(m.common.m)}`}
               />
               {/* Typed like the price (2026-11-12): the slider follows these. */}
               <View style={styles.boxes}>
                 <NumberBox
-                  label={t('من (م²)', 'Min (m²)')}
-                  a11yLabel={t('أقل مساحة بالمتر', 'Minimum size in m²')}
+                  label={t(m.listings.minM)}
+                  a11yLabel={t(m.listings.minimumSizeInM)}
                   value={draft.minSize}
                   emptyText={fmtNum(SIZE_SCALE.min, lang)}
                   onCommit={(n) =>
@@ -164,10 +165,10 @@ export function FilterSheet({
                   }
                 />
                 <NumberBox
-                  label={t('إلى (م²)', 'Max (m²)')}
-                  a11yLabel={t('أكبر مساحة بالمتر', 'Maximum size in m²')}
+                  label={t(m.listings.maxM)}
+                  a11yLabel={t(m.listings.maximumSizeInM)}
                   value={draft.maxSize}
-                  emptyText={t('أي مساحة', 'Any')}
+                  emptyText={t(m.listings.any3)}
                   onCommit={(n) =>
                     set({
                       maxSize:
@@ -180,7 +181,7 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title={t('نوع الوحدة', 'Unit type')} hint={t('اختار أكتر من نوع', 'Pick any')}>
+            <Section title={t(m.common.unitType)} hint={t(m.listings.pickAny)}>
               <Chips>
                 {PROPERTY_TYPES.map((k) => (
                   <ToggleChip
@@ -193,7 +194,7 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('الغرف', 'Bedrooms')} hint={t('اختار أكتر من رقم', 'Pick any')}>
+            <Section title={t(m.common.bedrooms)} hint={t(m.listings.pickAny2)}>
               <Chips>
                 {BEDS_OPTIONS.map((n) => (
                   <ToggleChip
@@ -206,7 +207,7 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('الحمامات', 'Bathrooms')}>
+            <Section title={t(m.common.bathrooms)}>
               <Chips>
                 {BATHS_OPTIONS.map((n) => (
                   <ToggleChip
@@ -219,12 +220,12 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('المنطقة', 'Area')}>
+            <Section title={t(m.common.area)}>
               <Chips>
                 {(areas.data ?? []).map((a) => (
                   <ToggleChip
                     key={a.id}
-                    label={lang === 'ar' ? a.nameAr : a.nameEn}
+                    label={pickField(a, 'name', lang)}
                     selected={!!draft.areas?.includes(a.id)}
                     onPress={() => set({ areas: toggle(draft.areas, a.id) })}
                   />
@@ -232,7 +233,7 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('الاستلام', 'Delivery')}>
+            <Section title={t(m.common.delivery)}>
               <Chips>
                 {deliveries.map((d) => (
                   <ToggleChip
@@ -245,7 +246,7 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('التشطيب', 'Finishing')}>
+            <Section title={t(m.common.finishing)}>
               <Chips>
                 {FINISHINGS.map((k) => (
                   <ToggleChip
@@ -258,7 +259,7 @@ export function FilterSheet({
               </Chips>
             </Section>
 
-            <Section title={t('المميزات', 'Amenities')} hint={t('لازم تكون كلها موجودة', 'Must have all')}>
+            <Section title={t(m.common.amenities)} hint={t(m.listings.mustHaveAll)}>
               <Chips>
                 {FEATURES.map((k) => (
                   <ToggleChip
@@ -273,9 +274,9 @@ export function FilterSheet({
           </ScrollView>
 
           <View style={[styles.footer, { borderTopColor: colors.line, paddingBottom: insets.bottom + 12 }]}>
-            <Button label={t('مسح', 'Reset')} variant="secondary" onPress={() => setDraft(clearFilters(draft))} style={styles.reset} />
+            <Button label={t(m.listings.reset)} variant="secondary" onPress={() => setDraft(clearFilters(draft))} style={styles.reset} />
             <Button
-              label={total === undefined ? t('اعرض الوحدات', 'Show homes') : showText(total)}
+              label={total === undefined ? t(m.listings.showHomes) : showText(total)}
               text={total === undefined ? undefined : showText(rolled)}
               onPress={() => onApply(draft)}
               style={styles.flex}

@@ -7,7 +7,7 @@ import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { authErrorMessage } from '../auth-errors';
 import { useSignIn } from '../hooks/use-auth';
 
@@ -27,11 +27,11 @@ export function SignInScreen() {
       <View style={styles.top}>
         <Logo width={110} />
         <Txt size={22} weight="semibold" align="center">
-          {t('أهلًا بيك تاني', 'Welcome back')}
+          {t(m.auth.welcomeBack)}
         </Txt>
       </View>
       <TextField
-        label={t('الإيميل', 'Email')}
+        label={t(m.common.email)}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -40,7 +40,7 @@ export function SignInScreen() {
         textContentType="emailAddress"
       />
       <TextField
-        label={t('كلمة السر', 'Password')}
+        label={t(m.common.password)}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -51,33 +51,33 @@ export function SignInScreen() {
       {/* Phase 31: a code by email sets a new password. */}
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={t('نسيت كلمة السر؟', 'Forgot your password?')}
+        accessibilityLabel={t(m.common.forgotYourPassword)}
         onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim() } })}
         hitSlop={12}
         style={styles.forgot}
       >
         <Txt size={13} color="accentInk">
-          {t('نسيت كلمة السر؟', 'Forgot your password?')}
+          {t(m.common.forgotYourPassword)}
         </Txt>
       </Pressable>
       <ErrorText message={signIn.isError ? t(authErrorMessage(signIn.error)) : undefined} trigger={signIn.submittedAt} />
       <Button
-        label={t('دخول', 'Sign in')}
+        label={t(m.auth.signIn)}
         disabled={!ready}
         loading={signIn.isPending}
         onPress={submit}
       />
-      <Button label={t('معندكش حساب؟ اعمل حساب', 'No account? Create one')} variant="ghost" onPress={() => router.replace('/sign-up')} />
+      <Button label={t(m.auth.noAccountCreateOne)} variant="ghost" onPress={() => router.replace('/sign-up')} />
       {/* Browsing needs no account (App Store 5.1.1), so this stays; the owner wants it quiet (2026-11-13). */}
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={t('كمّل كضيف', 'Continue as a guest')}
+        accessibilityLabel={t(m.common.continueAsAGuest)}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
         hitSlop={12}
         style={styles.guest}
       >
         <Txt size={12.5} color="ink3" style={styles.guestText}>
-          {t('كمّل كضيف', 'Continue as a guest')}
+          {t(m.common.continueAsAGuest)}
         </Txt>
       </Pressable>
     </Screen>

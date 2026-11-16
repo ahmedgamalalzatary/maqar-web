@@ -5,7 +5,7 @@ import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { PressableScale } from '@/components/pressable-scale';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { haptic } from '@/core/motion/haptics';
 import { EASE_OUT } from '@/core/motion/motion';
 import { useTheme } from '@/core/theme';
@@ -48,7 +48,7 @@ function ToggleHeart({ card, size, style }: { card: PropertyCard; size: number; 
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={saved ? t('شيل من المحفوظة', 'Remove from saved') : t('احفظ الوحدة', 'Save home')}
+      accessibilityLabel={saved ? t(m.saved.removeFromSaved) : t(m.saved.saveHome)}
       accessibilityState={{ selected: saved }}
       onPress={press}
       hitSlop={6}

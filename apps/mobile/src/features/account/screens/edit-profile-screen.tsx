@@ -7,7 +7,7 @@ import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { errorText } from '@/core/api/error-text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useSession } from '@/features/auth/store/session.store';
 import { useUpdateMe } from '../hooks/use-account';
 
@@ -26,17 +26,17 @@ export function EditProfileScreen() {
       { name: name.trim(), phone: phone.trim() ? (readMobile(phone) ?? null) : null },
       {
         onSuccess: () => {
-          toast.show({ title: t('اتحفظت بياناتك', 'Profile saved'), tone: 'sage' });
+          toast.show({ title: t(m.account.profileSaved), tone: 'sage' });
           router.back();
         },
       },
     );
 
   return (
-    <Screen title={t('عدّل بياناتك', 'Edit profile')}>
-      <TextField label={t('الاسم', 'Name')} value={name} onChangeText={setName} autoComplete="name" />
+    <Screen title={t(m.common.editProfile)}>
+      <TextField label={t(m.common.name)} value={name} onChangeText={setName} autoComplete="name" />
       <TextField
-        label={t('رقم الموبايل', 'Mobile number')}
+        label={t(m.common.mobileNumber)}
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
@@ -44,14 +44,14 @@ export function EditProfileScreen() {
         placeholder="+20 100 000 0000"
       />
       {update.isError ? <Txt color="danger">{errorText(update.error, t)}</Txt> : null}
-      {phone.trim() && !readMobile(phone) ? <Txt color="danger">{t('اكتب رقم موبايل صحيح', 'Enter a valid mobile number')}</Txt> : null}
+      {phone.trim() && !readMobile(phone) ? <Txt color="danger">{t(m.common.enterAValidMobileNumber)}</Txt> : null}
       <Button
-        label={t('احفظ', 'Save')}
+        label={t(m.common.save)}
         disabled={name.trim().length < 2 || (!!phone.trim() && !readMobile(phone))}
         loading={update.isPending}
         onPress={save}
       />
-      <Button label={t('إلغاء', 'Cancel')} variant="ghost" onPress={() => router.back()} />
+      <Button label={t(m.common.cancel)} variant="ghost" onPress={() => router.back()} />
     </Screen>
   );
 }

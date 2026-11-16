@@ -1,4 +1,4 @@
-import { type AdminChatDetail, type AdminChatItem, type ChatMessage, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, type ReportOutcome } from '@maqar/shared';
+import { pickField, joinParts, type AdminChatDetail, type AdminChatItem, CHAT_REPORT_REASON_LABEL, type ChatMessage, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, REPORT_OUTCOME_LABEL, type ReportOutcome } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Flag, Lock, MessagesSquare } from 'lucide-react-native';
 import { useState } from 'react';
@@ -8,23 +8,14 @@ import { Button } from '@/components/button';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useAdminChat, useAdminChatMessages, useAdminChats, useResolveReport, useUnblockChat } from '../hooks/use-people';
 import { BackBar } from './clients-screen';
 
-export const REASON_LABEL: Record<ChatReportReason, { ar: string; en: string }> = {
-  spam: { ar: 'إزعاج أو سبام', en: 'Spam or nuisance' },
-  abuse: { ar: 'إساءة', en: 'Abuse' },
-  scam: { ar: 'نصب', en: 'Scam' },
-  other: { ar: 'حاجة تانية', en: 'Something else' },
-};
-const OUTCOME_LABEL: Record<ReportOutcome, { ar: string; en: string }> = {
-  dismissed: { ar: 'اتقفل من غير إجراء', en: 'Dismissed' },
-  blocked: { ar: 'المحادثة اتقفلت', en: 'Conversation closed' },
-  suspended: { ar: 'حساب العميل اتوقف', en: 'Client suspended' },
-};
+export const REASON_LABEL: Record<ChatReportReason, { ar: string; en: string }> = CHAT_REPORT_REASON_LABEL;
+const OUTCOME_LABEL = REPORT_OUTCOME_LABEL;
 
 /** `/admin/chats` (phase 24): every conversation, or those with open reports first. */
 export function AdminChatsScreen() {
@@ -45,23 +36,23 @@ export function AdminChatsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Txt accessibilityRole="header" size={24} weight="semibold">
-              {t('الشاتات', 'Chats')}
+              {t(m.common.chats)}
             </Txt>
             <Txt size={13} color="ink2">
-              {t('قراية بس: مبتبعتش، وفتحها مش بيعلّم الرسايل اتقرت.', 'Read-only: you cannot send, and opening one marks nothing read.')}
+              {t(m.admin.readOnlyYouCannotSend)}
             </Txt>
             <View style={styles.chips}>
               {[true, false].map((r) => (
                 <Pressable
                   key={String(r)}
                   accessibilityRole="radio"
-                  accessibilityLabel={r ? t('فيها بلاغات', 'With reports') : t('الكل', 'All')}
+                  accessibilityLabel={r ? t(m.common.withReports) : t(m.common.all)}
                   accessibilityState={{ checked: reported === r }}
                   onPress={() => setReported(r)}
                   style={[styles.chip, { backgroundColor: reported === r ? colors.ink : colors.surface, borderColor: colors.line }]}
                 >
                   <Txt size={13} weight="medium" style={{ color: reported === r ? colors.bg : colors.ink }}>
-                    {r ? t('فيها بلاغات', 'With reports') : t('الكل', 'All')}
+                    {r ? t(m.common.withReports) : t(m.common.all)}
                   </Txt>
                 </Pressable>
               ))}
@@ -76,7 +67,7 @@ export function AdminChatsScreen() {
           ) : (
             <View style={styles.empty}>
               <MessagesSquare size={32} color={colors.ink3} strokeWidth={1.6} />
-              <Txt weight="medium">{reported ? t('مفيش بلاغات مفتوحة', 'No open reports') : t('مفيش شاتات', 'No chats')}</Txt>
+              <Txt weight="medium">{reported ? t(m.admin.noOpenReports) : t(m.admin.noChats)}</Txt>
             </View>
           )
         }
@@ -94,18 +85,18 @@ function ChatRow({ c }: { c: AdminChatItem }) {
   const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
-  const name = c.client?.name ?? t('حساب اتمسح', 'Deleted account');
+  const name = c.client?.name ?? t(m.common.deletedAccount);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}، ${lang === 'ar' ? c.agent.nameAr : c.agent.nameEn}`}
+      accessibilityLabel={joinParts([name, pickField(c.agent, 'name', lang)], lang)}
       onPress={() => router.push(`/admin/chat/${c.id}`)}
       style={({ pressed }) => [styles.row, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
     >
       <View style={styles.flex}>
         <View style={styles.line}>
           <Txt weight="medium" style={styles.flex} numberOfLines={1}>
-            {`${name} ↔ ${lang === 'ar' ? c.agent.nameAr : c.agent.nameEn}`}
+            {`${name} ↔ ${pickField(c.agent, 'name', lang)}`}
           </Txt>
           {c.openReports ? (
             <View style={[styles.tag, { backgroundColor: colors.dangerSoft }]}>
@@ -118,7 +109,7 @@ function ChatRow({ c }: { c: AdminChatItem }) {
           {c.blocked ? <Lock size={14} color={colors.ink3} /> : null}
         </View>
         <Txt size={12} color="ink2" numberOfLines={1}>
-          {lang === 'ar' ? c.property.titleAr : c.property.titleEn}
+          {pickField(c.property, 'title', lang)}
         </Txt>
         {c.last ? (
           <Txt size={12} color="ink3" numberOfLines={1}>
@@ -142,7 +133,7 @@ export function AdminChatScreen({ id }: { id: number }) {
         <ActivityIndicator style={styles.empty} color={colors.accent} />
       ) : chat.isError ? (
         <View style={styles.pad}>
-          {chat.error instanceof ApiError && chat.error.status === 404 ? <Txt align="center">{t('المحادثة دي مش موجودة.', 'This conversation does not exist.')}</Txt> : <ListingsError onRetry={() => void chat.refetch()} />}
+          {chat.error instanceof ApiError && chat.error.status === 404 ? <Txt align="center">{t(m.admin.thisConversationDoesNotExist)}</Txt> : <ListingsError onRetry={() => void chat.refetch()} />}
         </View>
       ) : (
         <ChatBody c={chat.data} />
@@ -159,8 +150,8 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
   const messages = useAdminChatMessages(c.id);
   const unblock = useUnblockChat(c.id);
   const list = (messages.data?.pages.slice().reverse() ?? []).flatMap((p) => p.items);
-  const agentName = lang === 'ar' ? c.agent.nameAr : c.agent.nameEn;
-  const clientName = c.client?.name ?? t('حساب اتمسح', 'Deleted account');
+  const agentName = pickField(c.agent, 'name', lang);
+  const clientName = c.client?.name ?? t(m.common.deletedAccount);
   const open = c.reports.filter((r) => !r.resolvedAt);
   return (
     <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}>
@@ -168,7 +159,7 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
         {`${clientName} ↔ ${agentName}`}
       </Txt>
       <Txt size={13} color="ink2">
-        {lang === 'ar' ? c.property.titleAr : c.property.titleEn}
+        {pickField(c.property, 'title', lang)}
       </Txt>
       {c.blocked ? (
         <View style={[styles.card, { backgroundColor: colors.surface2, borderColor: colors.line }]}>
@@ -176,32 +167,32 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
             <Lock size={16} color={colors.ink2} />
             <Txt size={13} style={styles.flex}>
               {c.blocked.by === 'admin'
-                ? t('فريق مقر قفل المحادثة.', 'The Maqar team closed it.')
+                ? t(m.admin.theMaqarTeamClosedIt)
                 : c.blocked.by === 'agent'
-                  ? t('المسؤول قفل المحادثة.', 'The advisor closed it.')
-                  : t('العميل قفل المحادثة.', 'The client closed it.')}
+                  ? t(m.admin.theAdvisorClosedIt)
+                  : t(m.admin.theClientClosedIt)}
             </Txt>
           </View>
           <Button
-            label={t('افتح المحادثة تاني', 'Open it again')}
+            label={t(m.admin.openItAgain)}
             variant="secondary"
             loading={unblock.isPending}
-            onPress={() => unblock.mutate(undefined, { onSuccess: () => toast.show({ title: t('المحادثة اتفتحت', 'Conversation opened'), tone: 'sage' }) })}
+            onPress={() => unblock.mutate(undefined, { onSuccess: () => toast.show({ title: t(m.admin.conversationOpened), tone: 'sage' }) })}
           />
         </View>
       ) : null}
       {open.length ? (
         <Txt size={16} weight="semibold">
-          {t('بلاغات مفتوحة', 'Open reports')}
+          {t(m.admin.openReports)}
         </Txt>
       ) : null}
       {open.map((r) => (
         <ReportCard key={r.id} r={r} blocked={!!c.blocked} />
       ))}
       <Txt size={16} weight="semibold">
-        {t('الرسايل', 'Messages')}
+        {t(m.admin.messages)}
       </Txt>
-      {messages.hasNextPage ? <Button label={t('رسايل أقدم', 'Older messages')} variant="ghost" loading={messages.isFetchingNextPage} onPress={() => void messages.fetchNextPage()} /> : null}
+      {messages.hasNextPage ? <Button label={t(m.admin.olderMessages)} variant="ghost" loading={messages.isFetchingNextPage} onPress={() => void messages.fetchNextPage()} /> : null}
       {messages.isPending ? <ActivityIndicator color={colors.accent} /> : null}
       {list.map((m) => (
         <Line key={m.id} m={m} who={m.sender === 'client' ? clientName : agentName} />
@@ -209,7 +200,7 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
       {c.reports.some((r) => r.resolvedAt) ? (
         <>
           <Txt size={16} weight="semibold">
-            {t('بلاغات اتقفلت', 'Closed reports')}
+            {t(m.admin.closedReports)}
           </Txt>
           {c.reports
             .filter((r) => r.resolvedAt)
@@ -246,7 +237,7 @@ function ReportCard({ r, blocked }: { r: ChatReport; blocked: boolean }) {
       { id: r.id, outcome },
       {
         onSuccess: () => toast.show({ title: t(OUTCOME_LABEL[outcome]), tone: 'sage' }),
-        onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }),
+        onError: () => toast.show({ title: t(m.common.somethingWentWrongTryAgain), tone: 'danger' }),
       },
     );
   return (
@@ -261,20 +252,20 @@ function ReportCard({ r, blocked }: { r: ChatReport; blocked: boolean }) {
         </Txt>
       </View>
       <Txt size={13} color="ink2">
-        {r.by === 'agent' ? t(`من المسؤول${r.reporter ? `: ${r.reporter.name}` : ''}`, `By the advisor${r.reporter ? `: ${r.reporter.name}` : ''}`) : t('من العميل', 'By the client')}
+        {r.by === 'agent' ? t(m.admin.byAdvisor(r.reporter?.name)) : t(m.admin.byTheClient)}
       </Txt>
       {r.note ? <Txt size={14}>{r.note}</Txt> : null}
       <View style={styles.actions}>
-        <Button label={t('اقفل البلاغ بس', 'Dismiss')} variant="secondary" loading={resolve.isPending} onPress={() => act('dismissed')} />
-        {blocked ? null : <Button label={t('اقفل المحادثة', 'Close the conversation')} variant="secondary" loading={resolve.isPending} onPress={() => act('blocked')} />}
+        <Button label={t(m.admin.dismiss)} variant="secondary" loading={resolve.isPending} onPress={() => act('dismissed')} />
+        {blocked ? null : <Button label={t(m.common.closeTheConversation)} variant="secondary" loading={resolve.isPending} onPress={() => act('blocked')} />}
         <Button
-          label={t('وقّف حساب العميل', 'Suspend the client')}
+          label={t(m.admin.suspendTheClient)}
           variant="ghost"
           loading={resolve.isPending}
           onPress={() =>
-            Alert.alert(t('توقف حساب العميل؟', 'Suspend the client?'), t('هيتعمله خروج ومعايناته الجاية هتتلغي.', 'They are signed out and their upcoming viewings are cancelled.'), [
-              { text: t('لأ', 'No'), style: 'cancel' },
-              { text: t('وقّف', 'Suspend'), style: 'destructive', onPress: () => act('suspended') },
+            Alert.alert(t(m.admin.suspendTheClient2), t(m.admin.theyAreSignedOutAnd2), [
+              { text: t(m.common.no), style: 'cancel' },
+              { text: t(m.common.suspend), style: 'destructive', onPress: () => act('suspended') },
             ])
           }
         />

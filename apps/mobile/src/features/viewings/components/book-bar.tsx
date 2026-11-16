@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { toast } from '@/components/toast';
 import { useRequireAuth } from '@/features/auth/hooks/use-require-auth';
@@ -32,14 +32,14 @@ export function BookBar({ card }: { card: PropertyCard }) {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const suffix = card.category === 'rent' ? t('/ شهر', '/ mo') : '';
+  const suffix = card.category === 'rent' ? t(m.common.mo) : '';
   const requireAuth = useRequireAuth();
   const start = useStartChat();
   const chat = () =>
     requireAuth(() =>
       start.mutate(card.id, {
         onSuccess: (thread) => router.push(`/chat/${thread.id}`),
-        onError: () => toast.show({ title: t('مقدرناش نفتح الشات، حاول تاني', 'We couldn’t open the chat, try again'), tone: 'danger' }),
+        onError: () => toast.show({ title: t(m.viewings.weCouldntOpenTheChat), tone: 'danger' }),
       }),
     );
   return (
@@ -57,14 +57,14 @@ export function BookBar({ card }: { card: PropertyCard }) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('كلّم مسؤول المبيعات', 'Chat with the advisor')}
+        accessibilityLabel={t(m.viewings.chatWithTheAdvisor)}
         disabled={start.isPending}
         onPress={chat}
         style={[styles.chat, { backgroundColor: colors.accentSoft }]}
       >
         {start.isPending ? <ActivityIndicator color={colors.accentInk} /> : <MessageCircle size={20} color={colors.accentInk} />}
       </Pressable>
-      <Button label={t('احجز معاينة', 'Book a viewing')} onPress={() => router.push(`/property/${card.id}/book`)} style={styles.button} />
+      <Button label={t(m.common.bookAViewing)} onPress={() => router.push(`/property/${card.id}/book`)} style={styles.button} />
     </View>
   );
 }

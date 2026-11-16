@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
-import { useDir, useT } from '@/core/i18n';
+import { m, useDir, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { InstallmentCalculator } from '../components/installment-calculator';
 
@@ -14,10 +14,10 @@ export function CalculatorScreen() {
   const BackIcon = useDir() === 'rtl' ? ArrowRight : ArrowLeft;
   return (
     <Screen
-      title={t('حاسبة التقسيط', 'Installment calculator')}
+      title={t(m.common.installmentCalculator)}
       right={
         <IconButton
-          label={t('رجوع', 'Back')}
+          label={t(m.common.back)}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           icon={<BackIcon size={20} color={colors.ink} />}
         />

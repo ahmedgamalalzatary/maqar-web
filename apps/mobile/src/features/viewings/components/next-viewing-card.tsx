@@ -1,11 +1,11 @@
-import { fmtDate, fmtTime } from '@maqar/shared';
+import { pickField, joinParts, fmtDate, fmtTime } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { CalendarClock } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { initialsOf, useLang, useT } from '@/core/i18n';
+import { m, initialsOf, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useUpcoming } from '../hooks/use-viewings';
 
@@ -17,13 +17,13 @@ export function NextViewingCard() {
   const { colors } = useTheme();
   const next = useUpcoming()[0];
   if (!next) return null;
-  const title = lang === 'ar' ? next.property.titleAr : next.property.titleEn;
+  const title = pickField(next.property, 'title', lang);
   const when = `${fmtDate(next.date, lang, 'long')} | ${fmtTime(next.time, lang)}`;
   const cover = mediaUrl(next.property.cover);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${t('معاينتك الجاية', 'Your next viewing')}: ${title}، ${when}`}
+      accessibilityLabel={joinParts([`${t(m.common.yourNextViewing)}: ${title}`, when], lang)}
       onPress={() => router.push('/viewings')}
       style={({ pressed }) => [styles.card, { backgroundColor: colors.ink, opacity: pressed ? 0.9 : 1 }]}
     >
@@ -34,7 +34,7 @@ export function NextViewingCard() {
         <View style={styles.inline}>
           <CalendarClock size={14} color={colors.accent} />
           <Txt size={11} weight="medium" style={{ color: colors.accent }}>
-            {t('معاينتك الجاية', 'Your next viewing')}
+            {t(m.common.yourNextViewing)}
           </Txt>
         </View>
         <Txt size={14} weight="semibold" numberOfLines={1} style={{ color: colors.bg }}>
@@ -46,7 +46,7 @@ export function NextViewingCard() {
       </View>
       <View style={[styles.avatar, { backgroundColor: next.agent.colour }]}>
         <Txt size={13} weight="semibold" style={styles.white}>
-          {initialsOf(lang === 'ar' ? next.agent.nameAr : next.agent.nameEn, lang)}
+          {initialsOf(pickField(next.agent, 'name', lang), lang)}
         </Txt>
       </View>
     </Pressable>

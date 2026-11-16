@@ -1,4 +1,4 @@
-import { type AnswerBookingBody, CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtNum, fmtTime, type SendChatBody } from '@maqar/shared';
+import { pickField, joinParts, type AnswerBookingBody, CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtTime, type SendChatBody } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -15,7 +15,7 @@ import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
 import { isActive, useAppActive } from '@/core/app-active';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useSlots } from '@/features/viewings/hooks/use-viewings';
 import { newestFirst } from '../chat-cache';
@@ -54,12 +54,12 @@ export function ConversationScreen({ id, side }: { id: number; side: ChatSender 
     return (
       <View style={[styles.fill, { backgroundColor: colors.bg, paddingTop: insets.top + 8 }]}>
         <View style={styles.topBack}>
-          <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
+          <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
         </View>
         {thread.isError ? (
           <View style={styles.failed}>
-            <Txt align="center">{t('مش قادرين نفتح المحادثة دي.', 'We couldn’t open this conversation.')}</Txt>
-            <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={() => void thread.refetch()} />
+            <Txt align="center">{t(m.chat.weCouldntOpenThisConversation)}</Txt>
+            <Button label={t(m.common.tryAgain)} variant="secondary" onPress={() => void thread.refetch()} />
           </View>
         ) : (
           <ActivityIndicator color={colors.accent} style={styles.loading} />
@@ -98,8 +98,8 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   const p = thread.property;
-  const agentName = lang === 'ar' ? thread.agent.nameAr : thread.agent.nameEn;
-  const otherName = side === 'client' ? agentName : thread.client?.name || t('حساب محذوف', 'Deleted account');
+  const agentName = pickField(thread.agent, 'name', lang);
+  const otherName = side === 'client' ? agentName : thread.client?.name || t(m.common.deletedAccount2);
   const phone = side === 'client' ? thread.agent.phone : thread.client?.phone;
 
   // Reading: the other side's messages are marked read as they arrive on screen, and only while the
@@ -137,7 +137,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: CHAT_IMAGES_MAX, quality: 1 });
     if (res.canceled || !res.assets.length) return;
     const photos = await preparePhotos(res.assets.slice(0, CHAT_IMAGES_MAX)).catch(() => null);
-    if (!photos) return toast.show({ title: t('مقدرناش نجهز الصور', 'We couldn’t prepare the photos'), tone: 'danger' });
+    if (!photos) return toast.show({ title: t(m.common.weCouldntPrepareThePhotos), tone: 'danger' });
     sendImages.mutate(photos, { onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }) });
   };
 
@@ -146,7 +146,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
     book.mutate(
       { messageId, time },
       {
-        onSuccess: () => toast.show({ title: t('طلبك وصل، مستنيين المسؤول يأكد الميعاد', 'Request sent: the advisor will confirm the time'), tone: 'sage' }),
+        onSuccess: () => toast.show({ title: t(m.chat.requestSentTheAdvisorWill), tone: 'sage' }),
         onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }),
         onSettled: () => setBooking(null),
       },
@@ -162,10 +162,10 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           toast.show({
             title:
               body.action === 'accept'
-                ? t('المعاينة اتأكدت للعميل', 'Viewing confirmed to the client')
+                ? t(m.chat.viewingConfirmedToTheClient)
                 : body.action === 'decline'
-                  ? t('العميل عرف إنك اعتذرت', 'The client was told you declined')
-                  : t('الميعاد الجديد اتبعت للعميل', 'The new time was sent to the client'),
+                  ? t(m.chat.theClientWasToldYou)
+                  : t(m.chat.theNewTimeWasSent),
             tone: 'sage',
           }),
         onError: (err) => toast.show({ title: errorText(err, t), tone: 'danger' }),
@@ -178,18 +178,18 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   };
 
   const quick = [
-    t('لسه متاحة؟', 'Still available?'),
-    t('ممكن أعاينها؟', 'Can I view it?'),
-    t('خطة السداد إيه؟', 'What’s the payment plan?'),
-    t('ابعتلي صور أكتر', 'More photos please'),
-    t('فيه خصم كاش؟', 'Any cash discount?'),
-    ...(p.tour ? [t('فيه جولة ٣٦٠°؟', 'Is there a 360° tour?')] : []),
+    t(m.chat.stillAvailable),
+    t(m.chat.canIViewIt),
+    t(m.chat.whatsThePaymentPlan),
+    t(m.chat.morePhotosPlease),
+    t(m.chat.anyCashDiscount),
+    ...(p.tour ? [t(m.chat.isThereA360Tour)] : []),
   ];
   const actions: { icon: typeof Home; label: string; onPress: () => void }[] = [
-    { icon: CalendarClock, label: t('مواعيد متاحة', 'Free times'), onPress: () => setPicking(true) },
-    ...(p.plan ? [{ icon: Calculator, label: t('خطة السداد', 'Payment plan'), onPress: () => post({ kind: 'plan' }) }] : []),
-    ...(p.tour ? [{ icon: Rotate3d, label: t('جولة ٣٦٠°', '360° tour'), onPress: () => post({ kind: 'tour' }) }] : []),
-    { icon: Home, label: t('تفاصيل الوحدة', 'Home card'), onPress: () => post({ kind: 'property' }) },
+    { icon: CalendarClock, label: t(m.chat.freeTimes), onPress: () => setPicking(true) },
+    ...(p.plan ? [{ icon: Calculator, label: t(m.chat.paymentPlan), onPress: () => post({ kind: 'plan' }) }] : []),
+    ...(p.tour ? [{ icon: Rotate3d, label: t(m.common.n360Tour), onPress: () => post({ kind: 'tour' }) }] : []),
+    { icon: Home, label: t(m.chat.homeCard), onPress: () => post({ kind: 'property' }) },
   ];
 
   const renderItem = ({ item, index }: { item: ChatMessage; index: number }) => {
@@ -218,7 +218,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   return (
     <KeyboardAvoiding style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderColor: colors.line }]}>
-        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={onBack} />
+        <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={onBack} />
         <View style={[styles.avatar, { backgroundColor: side === 'client' ? thread.agent.colour : colors.sage }]}>
           <Txt size={15} weight="semibold" style={styles.white}>
             {otherName.slice(0, 1)}
@@ -233,19 +233,19 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           </View>
           <Txt size={12} color={otherTyping ? 'accentInk' : 'ink2'} numberOfLines={1}>
             {otherTyping
-              ? t('بيكتب…', 'typing…')
+              ? t(m.common.typing)
               : side === 'client'
-                ? t(`مستشار مبيعات | هدفنا الرد خلال ${fmtNum(thread.agent.avgReplyMins, 'ar')} د`, `Sales advisor | aims to reply in ${thread.agent.avgReplyMins} min`)
-                : t('عميل', 'Client')}
+                ? t(m.chat.advisorReplyIn(thread.agent.avgReplyMins))
+                : t(m.common.client)}
           </Txt>
         </View>
-        {phone ? <IconButton label={t('اتصال', 'Call')} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${phone}`)} /> : null}
-        <IconButton label={t('خيارات المحادثة', 'Conversation options')} icon={<MoreVertical size={18} color={colors.ink} />} onPress={() => setMenu('options')} />
+        {phone ? <IconButton label={t(m.common.call)} icon={<Phone size={18} color={colors.ink} />} onPress={() => void Linking.openURL(`tel:${phone}`)} /> : null}
+        <IconButton label={t(m.common.conversationOptions)} icon={<MoreVertical size={18} color={colors.ink} />} onPress={() => setMenu('options')} />
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${t('الوحدة', 'Home')}: ${lang === 'ar' ? p.titleAr : p.titleEn}`}
+        accessibilityLabel={`${t(m.chat.home)}: ${pickField(p, 'title', lang)}`}
         onPress={() => router.push(`/property/${p.id}`)}
         style={[styles.pinned, { backgroundColor: colors.surface, borderColor: colors.line }]}
       >
@@ -254,7 +254,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         </View>
         <View style={styles.flex}>
           <Txt size={13} weight="medium" numberOfLines={1}>
-            {lang === 'ar' ? p.titleAr : p.titleEn}
+            {pickField(p, 'title', lang)}
           </Txt>
           <Txt size={12} weight="semibold" color="accentInk">
             {fmtMoney(p.price, lang)}
@@ -262,7 +262,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         </View>
         <View style={[styles.view, { backgroundColor: colors.surface2 }]}>
           <Txt size={11.5} weight="medium">
-            {t('عرض', 'View')}
+            {t(m.chat.view)}
           </Txt>
         </View>
       </Pressable>
@@ -286,10 +286,10 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           ) : messages.isError ? (
             <View style={styles.retryRow}>
               <Txt size={12.5} color="ink2" align="center">
-                {messages.isFetchNextPageError ? t('مقدرناش نجيب الرسايل القديمة', 'We couldn’t load older messages') : t('مقدرناش نجيب الرسايل', 'We couldn’t load the messages')}
+                {messages.isFetchNextPageError ? t(m.chat.weCouldntLoadOlderMessages) : t(m.chat.weCouldntLoadTheMessages)}
               </Txt>
               <Button
-                label={t('حاول تاني', 'Try again')}
+                label={t(m.common.tryAgain)}
                 variant="secondary"
                 onPress={() => void (messages.isFetchNextPageError ? messages.fetchNextPage() : messages.refetch())}
               />
@@ -298,7 +298,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
             <View style={[styles.safety, { backgroundColor: colors.sageSoft }]}>
               <ShieldCheck size={16} color={colors.sageInk} />
               <Txt size={11.5} color="sageInk" style={styles.flex}>
-                {t('محادثتك مع مسؤول مبيعات موثّق من مقر. متشاركش بيانات الدفع في الشات.', 'You’re chatting with a verified Maqar advisor. Never share payment details in chat.')}
+                {t(m.chat.youreChattingWithAVerified)}
               </Txt>
             </View>
           ) : undefined
@@ -310,12 +310,12 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           <Lock size={16} color={colors.ink2} />
           <Txt size={13} color="ink2" style={styles.flex}>
             {thread.blocked.by === side
-              ? t('انت قفلت المحادثة دي. محدش يقدر يبعت فيها تاني.', 'You closed this conversation. Nobody can send in it any more.')
+              ? t(m.chat.youClosedThisConversationNobody)
               : thread.blocked.by === 'admin'
-                ? t('فريق مقر قفل المحادثة دي.', 'The Maqar team closed this conversation.')
+                ? t(m.chat.theMaqarTeamClosedThis)
                 : side === 'client'
-                  ? t('المسؤول قفل المحادثة دي. لو محتاج حاجة كلّم مقر.', 'The advisor closed this conversation. Contact Maqar if you need anything.')
-                  : t('العميل قفل المحادثة دي.', 'The client closed this conversation.')}
+                  ? t(m.chat.theAdvisorClosedThisConversation)
+                  : t(m.chat.theClientClosedThisConversation)}
           </Txt>
         </View>
       ) : (
@@ -342,7 +342,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
           <View style={[styles.composer, { backgroundColor: colors.surface, borderColor: colors.line, paddingBottom: insets.bottom + 10 }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('ابعت صور', 'Send photos')}
+              accessibilityLabel={t(m.chat.sendPhotos)}
               disabled={sendImages.isPending}
               onPress={() => void attach()}
               style={styles.attach}
@@ -350,13 +350,13 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
               {sendImages.isPending ? <ActivityIndicator color={colors.accent} /> : <ImagePlus size={22} color={colors.ink2} />}
             </Pressable>
             <TextInput
-              accessibilityLabel={t('اكتب رسالة', 'Write a message')}
+              accessibilityLabel={t(m.chat.writeAMessage)}
               value={draft}
               onChangeText={(v) => {
                 setDraft(v);
                 if (v.trim()) sendTyping(thread.id);
               }}
-              placeholder={t('اكتب رسالة…', 'Write a message…')}
+              placeholder={t(m.chat.writeAMessage2)}
               placeholderTextColor={colors.ink3}
               maxLength={CHAT_TEXT_MAX}
               multiline
@@ -364,7 +364,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('ابعت', 'Send')}
+              accessibilityLabel={t(m.chat.send)}
               accessibilityState={{ disabled: !draft.trim() }}
               disabled={!draft.trim()}
               onPress={() => sendText(draft)}
@@ -376,27 +376,27 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
         </>
       )}
 
-      <Sheet open={menu === 'options'} onClose={() => setMenu(null)} title={t('خيارات المحادثة', 'Conversation options')}>
+      <Sheet open={menu === 'options'} onClose={() => setMenu(null)} title={t(m.common.conversationOptions)}>
         <View style={styles.menu}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('بلّغ عن المحادثة', 'Report the conversation')} onPress={() => setMenu('report')} style={styles.menuRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.reportTheConversation)} onPress={() => setMenu('report')} style={styles.menuRow}>
             <Flag size={18} color={colors.ink} />
-            <Txt>{t('بلّغ عن المحادثة', 'Report the conversation')}</Txt>
+            <Txt>{t(m.common.reportTheConversation)}</Txt>
           </Pressable>
           {thread.blocked ? null : (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('اقفل المحادثة', 'Close the conversation')}
+              accessibilityLabel={t(m.common.closeTheConversation)}
               onPress={() => {
                 setMenu(null);
                 Alert.alert(
-                  t('تقفل المحادثة؟', 'Close the conversation?'),
-                  t('محدش هيقدر يبعت فيها تاني، وفريق مقر بس اللي يقدر يفتحها.', 'Nobody can send in it any more; only the Maqar team can open it again.'),
+                  t(m.chat.closeTheConversation),
+                  t(m.chat.nobodyCanSendInIt),
                   [
-                    { text: t('لأ', 'No'), style: 'cancel' },
+                    { text: t(m.common.no), style: 'cancel' },
                     {
-                      text: t('اقفل', 'Close'),
+                      text: t(m.common.close),
                       style: 'destructive',
-                      onPress: () => block.mutate(undefined, { onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }) }),
+                      onPress: () => block.mutate(undefined, { onError: () => toast.show({ title: t(m.common.somethingWentWrongTryAgain), tone: 'danger' }) }),
                     },
                   ],
                 );
@@ -404,7 +404,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
               style={styles.menuRow}
             >
               <Ban size={18} color={colors.danger} />
-              <Txt color="danger">{t('اقفل المحادثة', 'Close the conversation')}</Txt>
+              <Txt color="danger">{t(m.common.closeTheConversation)}</Txt>
             </Pressable>
           )}
         </View>
@@ -427,7 +427,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <View style={styles.viewer}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('اقفل', 'Close')} onPress={() => setViewer(null)} style={[styles.close, { top: insets.top + 12 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.close)} onPress={() => setViewer(null)} style={[styles.close, { top: insets.top + 12 }]}>
             <X size={20} color="#fff" />
           </Pressable>
           {viewer ? <Image source={{ uri: mediaUrl(viewer) ?? undefined }} style={styles.full} contentFit="contain" /> : null}
@@ -438,10 +438,10 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
 }
 
 const REASON_LABEL: Record<ChatReportReason, { ar: string; en: string }> = {
-  spam: { ar: 'إزعاج أو سبام', en: 'Spam or nuisance' },
-  abuse: { ar: 'إساءة أو كلام مش لائق', en: 'Abuse or offensive language' },
-  scam: { ar: 'نصب أو طلب فلوس', en: 'Scam or asking for money' },
-  other: { ar: 'حاجة تانية', en: 'Something else' },
+  spam: m.chat.spamOrNuisance,
+  abuse: m.chat.abuseOrOffensiveLanguage,
+  scam: m.chat.scamOrAskingForMoney,
+  other: m.chat.somethingElse,
 };
 
 /** Report the conversation to the Maqar team (phase 24): a reason and an optional note. */
@@ -452,10 +452,10 @@ function ReportSheet({ threadId, open, onClose }: { threadId: number; open: bool
   const [reason, setReason] = useState<ChatReportReason | null>(null);
   const [note, setNote] = useState('');
   return (
-    <Sheet open={open} onClose={onClose} title={t('بلّغ عن المحادثة', 'Report the conversation')}>
+    <Sheet open={open} onClose={onClose} title={t(m.common.reportTheConversation)}>
       <View style={styles.menu}>
         <Txt size={13} color="ink2">
-          {t('البلاغ بيوصل لفريق مقر بس، والطرف التاني مش هيعرف.', 'The report goes to the Maqar team only; the other side is not told.')}
+          {t(m.chat.theReportGoesToThe)}
         </Txt>
         {CHAT_REPORT_REASONS.map((r) => (
           <Pressable
@@ -469,9 +469,9 @@ function ReportSheet({ threadId, open, onClose }: { threadId: number; open: bool
             <Txt>{t(REASON_LABEL[r])}</Txt>
           </Pressable>
         ))}
-        <TextField label={t('تفاصيل (اختياري)', 'Details (optional)')} value={note} onChangeText={setNote} maxLength={500} multiline />
+        <TextField label={t(m.chat.detailsOptional)} value={note} onChangeText={setNote} maxLength={500} multiline />
         <Button
-          label={t('ابعت البلاغ', 'Send the report')}
+          label={t(m.chat.sendTheReport)}
           disabled={!reason}
           loading={report.isPending}
           onPress={() =>
@@ -479,12 +479,12 @@ function ReportSheet({ threadId, open, onClose }: { threadId: number; open: bool
               { reason: reason!, ...(note.trim() ? { note: note.trim() } : {}) },
               {
                 onSuccess: () => {
-                  toast.show({ title: t('البلاغ وصل لفريق مقر', 'The Maqar team got your report'), tone: 'sage' });
+                  toast.show({ title: t(m.chat.theMaqarTeamGotYour), tone: 'sage' });
                   setReason(null);
                   setNote('');
                   onClose();
                 },
-                onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }),
+                onError: () => toast.show({ title: t(m.common.somethingWentWrongTryAgain), tone: 'danger' }),
               },
             )
           }
@@ -502,7 +502,7 @@ function DayPicker({ propertyId, open, onClose, onPick }: { propertyId: number; 
   const slots = useSlots(propertyId);
   const days = (slots.data?.days ?? []).map((d) => ({ date: d.date, free: d.slots.filter((s) => s.state === 'free').length })).filter((d) => d.free > 0);
   return (
-    <Sheet open={open} onClose={onClose} title={t('ابعت مواعيد يوم', 'Send a day’s free times')} scroll>
+    <Sheet open={open} onClose={onClose} title={t(m.chat.sendADaysFreeTimes)} scroll>
       {slots.isPending ? (
         <ActivityIndicator color={colors.accent} />
       ) : days.length ? (
@@ -511,7 +511,7 @@ function DayPicker({ propertyId, open, onClose, onPick }: { propertyId: number; 
             <Pressable
               key={d.date}
               accessibilityRole="button"
-              accessibilityLabel={`${fmtDate(d.date, lang, 'long')}، ${t(`${fmtNum(d.free, 'ar')} ميعاد`, `${d.free} free`)}`}
+              accessibilityLabel={joinParts([fmtDate(d.date, lang, 'long'), t(m.chat.freeTimeCount(d.free))], lang)}
               onPress={() => {
                 onClose();
                 onPick(d.date);
@@ -522,13 +522,13 @@ function DayPicker({ propertyId, open, onClose, onPick }: { propertyId: number; 
                 {fmtDate(d.date, lang, 'long')}
               </Txt>
               <Txt size={11.5} color="ink2">
-                {t(`${fmtNum(d.free, 'ar')} ميعاد فاضي`, `${d.free} free`)}
+                {t(m.chat.freeTimeCountLong(d.free))}
               </Txt>
             </Pressable>
           ))}
         </View>
       ) : (
-        <Txt color="ink2">{t('مفيش مواعيد فاضية في الأسبوعين الجايين.', 'No free times in the next two weeks.')}</Txt>
+        <Txt color="ink2">{t(m.common.noFreeTimesInThe)}</Txt>
       )}
     </Sheet>
   );
@@ -547,7 +547,7 @@ function MovePicker({ propertyId, viewingId, onClose, onPick }: { propertyId: nu
   const days = (slots.data?.days ?? []).map((d) => ({ date: d.date, free: d.slots.filter((s) => s.state === 'free').map((s) => s.time) })).filter((d) => d.free.length > 0);
   const picked = days.find((d) => d.date === day);
   return (
-    <Sheet open onClose={onClose} title={picked ? fmtDate(picked.date, lang, 'long') : t('اختار يوم الميعاد الجديد', 'Pick the new day')} scroll>
+    <Sheet open onClose={onClose} title={picked ? fmtDate(picked.date, lang, 'long') : t(m.chat.pickTheNewDay)} scroll>
       {slots.isPending ? (
         <ActivityIndicator color={colors.accent} />
       ) : picked ? (
@@ -566,7 +566,7 @@ function MovePicker({ propertyId, viewingId, onClose, onPick }: { propertyId: nu
             <Pressable
               key={d.date}
               accessibilityRole="button"
-              accessibilityLabel={`${fmtDate(d.date, lang, 'long')}، ${t(`${fmtNum(d.free.length, 'ar')} ميعاد`, `${d.free.length} free`)}`}
+              accessibilityLabel={joinParts([fmtDate(d.date, lang, 'long'), t(m.chat.freeTimeCount(d.free.length))], lang)}
               onPress={() => setDay(d.date)}
               style={[styles.day, { backgroundColor: colors.surface2 }]}
             >
@@ -574,13 +574,13 @@ function MovePicker({ propertyId, viewingId, onClose, onPick }: { propertyId: nu
                 {fmtDate(d.date, lang, 'long')}
               </Txt>
               <Txt size={11.5} color="ink2">
-                {t(`${fmtNum(d.free.length, 'ar')} ميعاد فاضي`, `${d.free.length} free`)}
+                {t(m.chat.freeTimeCountLong(d.free.length))}
               </Txt>
             </Pressable>
           ))}
         </View>
       ) : (
-        <Txt color="ink2">{t('مفيش مواعيد فاضية في الأسبوعين الجايين.', 'No free times in the next two weeks.')}</Txt>
+        <Txt color="ink2">{t(m.common.noFreeTimesInThe)}</Txt>
       )}
     </Sheet>
   );
@@ -589,8 +589,8 @@ function MovePicker({ propertyId, viewingId, onClose, onPick }: { propertyId: nu
 /** "Today", "Yesterday", or the date, for the pill above a day's first message. */
 function dayLabel(iso: string, t: ReturnType<typeof useT>, lang: ReturnType<typeof useLang>, now = Date.now()): string {
   const d = new Date(iso).toDateString();
-  if (d === new Date(now).toDateString()) return t('النهارده', 'Today');
-  if (d === new Date(now - 86_400_000).toDateString()) return t('امبارح', 'Yesterday');
+  if (d === new Date(now).toDateString()) return t(m.common.today);
+  if (d === new Date(now - 86_400_000).toDateString()) return t(m.chat.yesterday);
   return fmtDate(new Date(iso), lang, 'long');
 }
 
@@ -611,7 +611,7 @@ function TypingDots() {
   const t = useT();
   const { colors } = useTheme();
   return (
-    <View accessible accessibilityLabel={t('بيكتب…', 'typing…')} style={[styles.typing, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+    <View accessible accessibilityLabel={t(m.common.typing)} style={[styles.typing, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       {[0, 1, 2].map((k) => (
         <View key={k} style={[styles.dot, { backgroundColor: colors.ink3 }]} />
       ))}
@@ -623,11 +623,11 @@ function TypingDots() {
 function errorText(err: unknown, t: ReturnType<typeof useT>): string {
   if (err instanceof ApiError && err.status === 409) {
     return /already have a viewing/i.test(err.message)
-      ? t('عندك معاينة للوحدة دي، غيّر ميعادها من معايناتي', 'You already have a viewing of this home: change it in My viewings')
-      : t('الميعاد ده لسه اتحجز، اختار ميعاد تاني', 'That time was just booked, pick another');
+      ? t(m.chat.youAlreadyHaveAViewing)
+      : t(m.chat.thatTimeWasJustBooked);
   }
-  if (err instanceof ApiError && err.status === 0) return t('مفيش إنترنت، حاول تاني', 'No connection, try again');
-  return t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again');
+  if (err instanceof ApiError && err.status === 0) return t(m.common.noConnectionTryAgain);
+  return t(m.common.somethingWentWrongTryAgain);
 }
 
 const styles = StyleSheet.create({

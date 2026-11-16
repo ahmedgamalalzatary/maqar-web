@@ -1,10 +1,10 @@
-import { fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, type LeadStage } from '@maqar/shared';
+import { joinParts, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, type LeadStage } from '@maqar/shared';
 import { Search, Users, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { LeadRow } from '../components/lead-parts';
@@ -48,27 +48,27 @@ export function LeadsScreen({ stage }: { stage?: LeadStage }) {
         <View style={styles.header}>
           <View>
             <Txt accessibilityRole="header" size={24} weight="semibold">
-              {t('عملائي', 'My leads')}
+              {t(m.agent.myLeads)}
             </Txt>
             {leads.isSuccess ? (
               <Txt size={13} color="ink2">
-                {t(`${fmtNum(all.length, 'ar')} عميل مخصصين ليك`, `${all.length} clients assigned to you`)}
+                {t(m.agent.assignedToYou(all.length))}
               </Txt>
             ) : null}
           </View>
           <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <Search size={18} color={colors.ink3} />
             <TextInput
-              accessibilityLabel={t('ابحث باسم العميل', 'Search by client name')}
+              accessibilityLabel={t(m.common.searchByClientName)}
               value={q}
               onChangeText={setQ}
-              placeholder={t('ابحث باسم العميل', 'Search by client name')}
+              placeholder={t(m.common.searchByClientName)}
               placeholderTextColor={colors.ink3}
               autoCorrect={false}
               style={[styles.input, { color: colors.ink }]}
             />
             {q ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={t('امسح البحث', 'Clear search')} onPress={() => setQ('')} hitSlop={8}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.clearSearch)} onPress={() => setQ('')} hitSlop={8}>
                 <X size={16} color={colors.ink3} />
               </Pressable>
             ) : null}
@@ -76,12 +76,12 @@ export function LeadsScreen({ stage }: { stage?: LeadStage }) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.chips}>
             {(['all', ...LEAD_STAGES] as Filter[]).map((s) => {
               const on = filter === s;
-              const label = s === 'all' ? t('الكل', 'All') : t(LEAD_STAGE_LABEL[s]);
+              const label = s === 'all' ? t(m.common.all) : t(LEAD_STAGE_LABEL[s]);
               return (
                 <Pressable
                   key={s}
                   accessibilityRole="radio"
-                  accessibilityLabel={`${label}، ${fmtNum(count(s), lang)}`}
+                  accessibilityLabel={joinParts([label, fmtNum(count(s), lang)], lang)}
                   accessibilityState={{ checked: on }}
                   onPress={() => setFilter(s)}
                   style={[styles.chip, { backgroundColor: on ? colors.ink : colors.surface, borderColor: colors.line }]}
@@ -105,12 +105,12 @@ export function LeadsScreen({ stage }: { stage?: LeadStage }) {
           <View style={styles.empty}>
             <Users size={32} color={colors.ink3} strokeWidth={1.6} />
             <Txt weight="medium" align="center">
-              {all.length ? t('مفيش عملاء هنا', 'No leads here') : t('لسه مفيش عملاء', 'No leads yet')}
+              {all.length ? t(m.common.noLeadsHere) : t(m.agent.noLeadsYet)}
             </Txt>
             <Txt size={13} color="ink2" align="center">
               {all.length
-                ? t('جرّب مرحلة تانية أو امسح البحث.', 'Try another stage or clear the search.')
-                : t('أول ما عميل يحجز معاينة لوحدة من وحداتك هيظهر هنا.', 'As soon as a client books a viewing of one of your homes, they show up here.')}
+                ? t(m.agent.tryAnotherStageOrClear)
+                : t(m.agent.asSoonAsAClient)}
             </Txt>
           </View>
         )
