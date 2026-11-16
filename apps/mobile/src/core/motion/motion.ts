@@ -1,4 +1,5 @@
-import { Easing } from 'react-native-reanimated';
+import type { ViewStyle } from 'react-native';
+import { Easing, cubicBezier } from 'react-native-reanimated';
 
 /**
  * Motion tokens (2026-11-16). UI motion stays under 300ms; anything a finger moves settles with a
@@ -8,8 +9,13 @@ import { Easing } from 'react-native-reanimated';
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 /** Moving across the screen. */
 export const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);
-/** The same ease-out for Reanimated CSS transitions. */
-export const CSS_EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+/**
+ * The same ease-out for Reanimated CSS transitions. It must be Reanimated's cubicBezier() object: a
+ * CSS curve string throws on the device as soon as the style is used, which stopped the app from
+ * opening. Expo's web style types only allow a string or a function here, so the type is widened in
+ * this one place.
+ */
+export const CSS_EASE_OUT = cubicBezier(0.23, 1, 0.32, 1) as unknown as ViewStyle['transitionTimingFunction'];
 
 export const PRESS_MS = 120;
 /** A sheet or a photo let go of: settles without bouncing past where it goes. */
