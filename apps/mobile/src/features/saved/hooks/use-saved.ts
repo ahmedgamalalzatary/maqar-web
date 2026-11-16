@@ -1,7 +1,7 @@
 import type { PropertyCard } from '@maqar/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/toast';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useSession } from '@/features/auth/store/session.store';
 import { getSaved, saveRequest, unsaveRequest } from '../api/saved.api';
 
@@ -44,7 +44,7 @@ export function useToggleSaved(card: PropertyCard) {
     },
     onError: (_err, on) => {
       queryClient.setQueryData<PropertyCard[]>(key, (cards) => withSaved(cards, card, !on));
-      toast.show({ title: t('مقدرناش نحفظ التغيير، حاول تاني', 'We couldn’t save that, try again'), tone: 'danger' });
+      toast.show({ title: t(m.common.weCouldntSaveThatTry), tone: 'danger' });
     },
     onSettled: () => {
       // Refresh after the last write only: an earlier answer must not undo a later tap on screen.

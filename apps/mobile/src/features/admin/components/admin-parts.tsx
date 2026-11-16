@@ -1,10 +1,10 @@
-import { type AdminListingItem, fmtMoney, fmtNum, PROPERTY_STATUS_LABEL, type PropertyStatus } from '@maqar/shared';
+import { pickField, joinParts, type AdminListingItem, fmtMoney, PROPERTY_STATUS_LABEL, type PropertyStatus } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { type Colors, radius, useTheme } from '@/core/theme';
 
 /** Badge colours per status: live is green, unpublished gold, closed and drafts quiet. */
@@ -37,7 +37,7 @@ export function StatusBadge({ status }: { status: PropertyStatus }) {
 
 /** Per month for rent, per night for stays. */
 export function priceSuffix(category: AdminListingItem['category'], t: ReturnType<typeof useT>): string {
-  return category === 'rent' ? t('/ شهر', '/ mo') : category === 'stay' ? t('/ ليلة', '/ night') : '';
+  return category === 'rent' ? t(m.common.mo) : category === 'stay' ? t(m.common.night) : '';
 }
 
 /** A listing in the admin list: photo, title, status, price, owner and advisor. Opens its page. */
@@ -46,13 +46,13 @@ export function AdminListingRow({ item }: { item: AdminListingItem }) {
   const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
-  const title = lang === 'ar' ? item.titleAr : item.titleEn;
+  const title = pickField(item, 'title', lang);
   const cover = mediaUrl(item.cover);
-  const advisor = item.agent ? (lang === 'ar' ? item.agent.nameAr : item.agent.nameEn) : t('من غير مسؤول لسه', 'No advisor yet');
+  const advisor = item.agent ? (pickField(item.agent, 'name', lang)) : t(m.admin.noAdvisorYet);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${title}، ${t(PROPERTY_STATUS_LABEL[item.status])}`}
+      accessibilityLabel={joinParts([title, t(PROPERTY_STATUS_LABEL[item.status])], lang)}
       onPress={() => router.push(`/admin/listing/${item.id}`)}
       style={({ pressed }) => [styles.row, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -67,7 +67,7 @@ export function AdminListingRow({ item }: { item: AdminListingItem }) {
           <StatusBadge status={item.status} />
         </View>
         <Txt size={12} color="ink2" numberOfLines={1}>
-          {lang === 'ar' ? item.area.nameAr : item.area.nameEn}
+          {pickField(item.area, 'name', lang)}
           {item.ownerName ? ` | ${item.ownerName}` : ''}
         </Txt>
         <Txt size={14} weight="semibold">
@@ -77,7 +77,7 @@ export function AdminListingRow({ item }: { item: AdminListingItem }) {
           </Txt>
         </Txt>
         <Txt size={11} color="ink3" numberOfLines={1}>
-          {`${advisor} | ${t(`${fmtNum(item.views, 'ar')} مشاهدة`, `${item.views} views`)}`}
+          {`${advisor} | ${t(m.common.views(item.views))}`}
         </Txt>
       </View>
     </Pressable>

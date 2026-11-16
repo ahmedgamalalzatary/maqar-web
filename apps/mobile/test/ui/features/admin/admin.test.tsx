@@ -124,7 +124,7 @@ describe('Admin listings tab', () => {
     await renderWithProviders(<AdminListingsScreen />);
     expect(await screen.findByText('شقة على الحديقة')).toBeOnTheScreen();
     expect(screen.getByText('فيلا منشورة')).toBeOnTheScreen();
-    expect(screen.getByText('٢ عقار، ١ منشور')).toBeOnTheScreen();
+    expect(screen.getByText('عقارين، ١ منشور')).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: 'مسودة، ١' })).toBeOnTheScreen();
     expect(screen.getByText('من غير مسؤول لسه | ٠ مشاهدة')).toBeOnTheScreen();
 
@@ -376,7 +376,7 @@ describe('Listing form', () => {
     await fireEvent.changeText(screen.getByLabelText('اسم الغرفة ١ (إنجليزي)'), 'Living room');
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByRole('button', { name: 'جولة ٣٦٠°: ١ غرفة' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'جولة ٣٦٠°: غرفة واحدة' })).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
     expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
     const save = writes().find(([m, u]) => m === 'POST' && u === '/admin/listings');
@@ -408,7 +408,7 @@ describe('Listing form', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
     await fireEvent.press(screen.getByRole('button', { name: 'التالي' }));
 
-    expect(screen.getByRole('button', { name: 'الفيديوهات: ١ فيديو' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'الفيديوهات: فيديو واحد' })).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ مسودة' }));
     expect(await screen.findByText('العقار اتحفظ كمسودة')).toBeOnTheScreen();
     const save = writes().find(([m, u]) => m === 'POST' && u === '/admin/listings');

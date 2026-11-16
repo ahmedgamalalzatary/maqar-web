@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 import { useDragToClose } from './drag-to-close';
 import { KeyboardAvoiding } from './keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDir, useT } from '@/core/i18n';
+import { m, useDir, useT } from '@/core/i18n';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { radius, useTheme } from '@/core/theme';
 import { Txt } from './text';
@@ -40,7 +40,7 @@ export function Sheet({
       <GestureHandlerRootView style={styles.fill}>
         <KeyboardAvoiding style={styles.fill}>
           <Animated.View style={[styles.backdrop, drag.backdrop]}>
-            <Pressable accessibilityLabel={t('اقفل', 'Close')} style={styles.fill} onPress={onClose} />
+            <Pressable accessibilityLabel={t(m.common.close)} style={styles.fill} onPress={onClose} />
           </Animated.View>
           <Animated.View
             testID="sheet"

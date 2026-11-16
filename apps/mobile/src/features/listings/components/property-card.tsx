@@ -1,4 +1,4 @@
-import { CATEGORY_LABEL, fmtMoney, fmtNum, fmtPct, installment, localDigits, type PropertyCard } from '@maqar/shared';
+import { pickField, CATEGORY_LABEL, fmtMoney, fmtNum, fmtPct, installment, type PropertyCard } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
@@ -28,10 +28,10 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
   const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
-  const title = lang === 'ar' ? card.titleAr : card.titleEn;
+  const title = pickField(card, 'title', lang);
   const drop = dropPct(card);
   const buying = card.category === 'sale' || card.category === 'project';
-  const suffix = card.category === 'rent' ? t('/ شهر', '/ mo') : card.category === 'stay' ? t('/ ليلة', '/ night') : '';
+  const suffix = card.category === 'rent' ? t(m.common.mo) : card.category === 'stay' ? t(m.common.night) : '';
   const monthly = card.plan ? Math.round(installment(card.price, card.plan.downPct, card.plan.years).payment) : null;
   const cover = mediaUrl(card.cover);
   const icon = { size: 14, color: colors.ink3, strokeWidth: 1.8 };
@@ -58,7 +58,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
               <Badge>
                 <Sparkles size={12} color={colors.gold} />
                 <Txt size={11} weight="semibold" style={styles.white}>
-                  {t(`تطابق ${fmtNum(card.match.score, 'ar')}٪`, `${card.match.score}% match`)}
+                  {t(m.listings.matchPct(card.match.score))}
                 </Txt>
               </Badge>
             ) : null}
@@ -80,7 +80,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
             {card.delivery !== 'ready' ? (
               <Badge>
                 <Txt size={11} weight="medium" style={styles.white}>
-                  {t(`استلام ${localDigits(String(card.delivery), 'ar')}`, `Delivery ${card.delivery}`)}
+                  {t(m.common.deliveryYear(card.delivery))}
                 </Txt>
               </Badge>
             ) : null}
@@ -117,11 +117,11 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
           <View style={styles.specs}>
             <Spec icon={<BedDouble {...icon} />} text={fmtNum(card.beds, lang)} />
             <Spec icon={<Bath {...icon} />} text={fmtNum(card.baths, lang)} />
-            <Spec icon={<Maximize2 {...icon} />} text={`${fmtNum(card.sizeM2, lang)} ${t('م²', 'm²')}`} />
+            <Spec icon={<Maximize2 {...icon} />} text={`${fmtNum(card.sizeM2, lang)} ${t(m.common.m)}`} />
             {monthly !== null ? (
               <View style={[styles.plan, { backgroundColor: colors.sageSoft }]}>
                 <Txt size={11} weight="medium" color="sageInk">
-                  {`${fmtMoney(monthly, lang)}/${t('شهر', 'mo')}`}
+                  {`${fmtMoney(monthly, lang)}/${t(m.listings.mo)}`}
                 </Txt>
               </View>
             ) : null}

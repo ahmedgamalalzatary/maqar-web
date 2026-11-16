@@ -5,9 +5,9 @@ import {
   FINISHING_LABEL,
   fmtMoney,
   fmtNum,
-  localDigits,
   PROPERTY_TYPE_LABEL,
   type PropertyDetail,
+  pickField,
 } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import {
@@ -45,7 +45,7 @@ import { FollowPriceButton } from '@/features/alerts/components/follow-price-but
 import { BOOK_BAR_HEIGHT, BookBar, useShowsBookBar } from '@/features/viewings/components/book-bar';
 import { Txt } from '@/components/text';
 import { ApiError } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { ListingsError } from '@/features/listings/components/list-states';
@@ -98,9 +98,9 @@ export function PropertyScreen({ id }: { id: number }) {
         {gone ? (
           <>
             <Txt color="ink2" align="center">
-              {t('الوحدة دي مش متاحة دلوقتي.', 'This home is no longer available.')}
+              {t(m.property.thisHomeIsNoLonger)}
             </Txt>
-            <Button label={t('رجوع', 'Back')} variant="secondary" onPress={back} style={styles.backBtn} />
+            <Button label={t(m.common.back)} variant="secondary" onPress={back} style={styles.backBtn} />
           </>
         ) : (
           <ListingsError onRetry={() => property.refetch()} />
@@ -127,11 +127,11 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const topBarHeight = insets.top + 8 + 44 + 8;
   const galleryHeight = Math.round(width * 0.9);
 
-  const title = lang === 'ar' ? p.titleAr : p.titleEn;
+  const title = pickField(p, 'title', lang);
   const place = lang === 'ar' ? `${p.compoundAr} | ${p.area.nameAr}` : `${p.compoundEn} | ${p.area.nameEn}`;
-  const developer = lang === 'ar' ? p.developerAr : p.developerEn;
+  const developer = pickField(p, 'developer', lang);
   const buying = p.category === 'sale' || p.category === 'project';
-  const suffix = p.category === 'rent' ? t('/ شهر', '/ mo') : p.category === 'stay' ? t('/ ليلة', '/ night') : '';
+  const suffix = p.category === 'rent' ? t(m.common.mo) : p.category === 'stay' ? t(m.common.night) : '';
   const drop = dropPct(p);
   const perM2 = Math.round(p.price / p.sizeM2);
   const days = Math.max(0, Math.floor((now - Date.parse(p.publishedAt)) / DAY));
@@ -146,7 +146,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
       title,
       // The deep link opens this exact listing in an installed app; without the app the text
       // above still carries what was shared.
-      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t('على مقر', 'On Maqar')}\nmaqar://property/${p.id}`.replace(/ \n/g, '\n'),
+      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t(m.property.onMaqar)}\nmaqar://property/${p.id}`.replace(/ \n/g, '\n'),
     });
 
   return (
@@ -166,7 +166,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           {p.tourRooms.length ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('جولة ٣٦٠°', '360° tour')}
+              accessibilityLabel={t(m.common.n360Tour)}
               onPress={() => router.push(`/property/${p.id}/tour`)}
               style={({ pressed }) => [styles.tour, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
             >
@@ -174,7 +174,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
                 <Rotate3d size={18} color={colors.gold} />
               </View>
               <Txt size={13} weight="semibold" style={{ color: colors.navy }}>
-                {t('جولة ٣٦٠°', '360° tour')}
+                {t(m.common.n360Tour)}
               </Txt>
             </Pressable>
           ) : null}
@@ -189,8 +189,8 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
               fg={colors.sageInk}
               text={
                 p.delivery === 'ready'
-                  ? t('استلام فوري', 'Ready to move')
-                  : t(`استلام ${localDigits(String(p.delivery), 'ar')}`, `Delivery ${p.delivery}`)
+                  ? t(m.common.readyToMove)
+                  : t(m.common.deliveryYear(p.delivery))
               }
             />
           </View>
@@ -232,13 +232,13 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
                     </Txt>
                     <TrendingDown size={14} color={colors.danger} />
                     <Txt size={12} weight="semibold" color="danger">
-                      {t(`نزل ${fmtNum(drop, 'ar')}٪`, `${drop}% lower`)}
+                      {t(m.property.pctLower(drop))}
                     </Txt>
                   </View>
                 ) : null}
                 {buying ? (
                   <Txt size={12} color="ink3">
-                    {t(`${fmtMoney(perM2, 'ar', false)} للمتر`, `${fmtMoney(perM2, 'en', false)} per m²`)}
+                    {t(m.property.perM2(perM2))}
                   </Txt>
                 ) : null}
               </View>
@@ -247,23 +247,23 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           </View>
 
           <View style={styles.specs}>
-            <Spec icon={BedDouble} value={fmtNum(p.beds, lang)} label={t('غرف', 'Beds')} />
-            <Spec icon={Bath} value={fmtNum(p.baths, lang)} label={t('حمام', 'Baths')} />
-            <Spec icon={Maximize2} value={fmtNum(p.sizeM2, lang)} label={t('م²', 'm²')} />
-            <Spec icon={Layers} value={p.floor !== null ? fmtNum(p.floor, lang) : '—'} label={t('الدور', 'Floor')} />
+            <Spec icon={BedDouble} value={fmtNum(p.beds, lang)} label={t(m.property.beds)} />
+            <Spec icon={Bath} value={fmtNum(p.baths, lang)} label={t(m.property.baths)} />
+            <Spec icon={Maximize2} value={fmtNum(p.sizeM2, lang)} label={t(m.common.m)} />
+            <Spec icon={Layers} value={p.floor !== null ? fmtNum(p.floor, lang) : '—'} label={t(m.common.floor)} />
           </View>
 
           <View style={styles.meta}>
             <View style={styles.inline}>
               <Eye size={14} color={colors.ink2} />
               <Txt size={12} color="ink2">
-                {t(`${fmtNum(p.views, 'ar')} مشاهدة`, `${fmtNum(p.views, 'en')} views`)}
+                {t(m.common.views(p.views))}
               </Txt>
             </View>
             <Txt size={12} color="ink2">
               {days === 0
-                ? t('اتعرضت النهارده', 'Listed today')
-                : t(`اتعرضت من ${fmtNum(days, 'ar')} يوم`, `Listed ${days} ${days === 1 ? 'day' : 'days'} ago`)}
+                ? t(m.property.listedToday)
+                : t(m.property.listedAgo(days))}
             </Txt>
             <Txt size={12} color="ink2" style={styles.end}>
               {t(FINISHING_LABEL[p.finishing])}
@@ -273,35 +273,29 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           <AdvisorCard agent={p.agent} />
 
           {buying ? (
-            <Section title={t('احسب قسطك', 'Your installment')}>
+            <Section title={t(m.property.yourInstallment)}>
               <Txt size={12.5} color="ink2">
                 {p.plan
-                  ? t(
-                      `خطة الوحدة: مقدم ${fmtNum(p.plan.downPct, 'ar')}٪ على ${fmtNum(p.plan.years, 'ar')} سنين. غيّرها براحتك.`,
-                      `This home’s plan: ${p.plan.downPct}% down over ${p.plan.years} years. Adjust freely.`,
-                    )
-                  : t('جرّب مقدم ومدة تناسبك.', 'Try a down payment and period that suit you.')}
+                  ? t(m.property.planNote(p.plan.downPct, p.plan.years))
+                  : t(m.property.tryADownPaymentAnd)}
               </Txt>
               <InstallmentCalculator price={p.price} defaultDown={p.plan?.downPct ?? 20} defaultYears={p.plan?.years ?? 5} ownPlan={!!p.plan} />
             </Section>
           ) : null}
 
-          <Section title={t('عن الوحدة', 'About this home')}>
+          <Section title={t(m.property.aboutThisHome)}>
             <Txt size={14} color="ink2" style={styles.desc}>
-              {lang === 'ar' ? p.descAr : p.descEn}
+              {pickField(p, 'desc', lang)}
             </Txt>
             {p.maintenanceFee ? (
               <Txt size={12} color="ink3">
-                {t(
-                  `مصاريف الصيانة: ${fmtNum(p.maintenanceFee, 'ar')}٪ من سعر الوحدة`,
-                  `Maintenance: ${p.maintenanceFee}% of the unit price`,
-                )}
+                {t(m.property.maintenance(p.maintenanceFee))}
               </Txt>
             ) : null}
           </Section>
 
           {p.features.length ? (
-            <Section title={t('المميزات', 'Amenities')}>
+            <Section title={t(m.common.amenities)}>
               <View style={styles.amenities}>
                 {p.features.map((f) => {
                   const Icon = FEATURE_ICON[f];
@@ -321,11 +315,11 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           ) : null}
 
           {p.location ? (
-            <Section title={t('الموقع', 'Location')}>
+            <Section title={t(m.common.location)}>
               <LocationMap lat={p.location.lat} lng={p.location.lng} title={title} />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('الاتجاهات', 'Directions')}
+                accessibilityLabel={t(m.common.directions)}
                 onPress={() => p.location && Linking.openURL(directionsUrl(p.location))}
                 style={({ pressed }) => [
                   styles.directions,
@@ -334,14 +328,14 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
               >
                 <Navigation size={16} color={colors.accentInk} />
                 <Txt size={14} weight="semibold" color="accentInk">
-                  {t('الاتجاهات', 'Directions')}
+                  {t(m.common.directions)}
                 </Txt>
               </Pressable>
             </Section>
           ) : null}
 
           {similar.data?.length ? (
-            <Section title={t('وحدات مشابهة', 'Similar homes')}>
+            <Section title={t(m.property.similarHomes)}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.similar}>
                 {similar.data.map((c) => (
                   <PropertyCardView key={c.id} card={c} width={Math.round(width * 0.7)} />
@@ -362,11 +356,11 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         />
       ) : null}
       <View style={[styles.topBar, { top: insets.top + 8 }]}>
-        <Glass label={t('رجوع', 'Back')} onPress={onBack}>
+        <Glass label={t(m.common.back)} onPress={onBack}>
           <BackIcon size={20} color="#fff" />
         </Glass>
         <View style={styles.topActions}>
-          <Glass label={t('مشاركة', 'Share')} onPress={share}>
+          <Glass label={t(m.property.share)} onPress={share}>
             <Share2 size={18} color="#fff" />
           </Glass>
           <CompareButton card={p} size={44} />

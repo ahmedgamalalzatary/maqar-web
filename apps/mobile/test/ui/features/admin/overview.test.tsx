@@ -42,7 +42,7 @@ it('shows the numbers for the last 30 days, switches range, and links to the ope
   expect(screen.getByLabelText('اتقفل ٣ من هدف ٦ الشهر ده')).toBeOnTheScreen();
   expect(requests()[0]).toBe('/admin/overview?days=30');
 
-  await fireEvent.press(screen.getByRole('radio', { name: 'آخر ٧ يوم' }));
+  await fireEvent.press(screen.getByRole('radio', { name: 'آخر ٧ أيام' }));
   expect(await screen.findByLabelText('عملاء جداد: ٩، ١٤٠ عميل في الكل')).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByRole('button', { name: '٢ بلاغ مفتوح على الشات' }));

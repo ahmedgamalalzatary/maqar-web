@@ -8,7 +8,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { BOUNCE, EASE_OUT } from '@/core/motion/motion';
 import { radius, useTheme } from '@/core/theme';
 import { type PickedHome, useCompare } from '../store/compare.store';
@@ -54,24 +54,24 @@ export function CompareTray({ bottom }: { bottom: number }) {
         </View>
         <View style={styles.text}>
           <Txt size={12.5} weight="semibold" style={{ color: colors.bg }}>
-            {two ? t('وحدتين جاهزين', '2 homes picked') : t('اختار وحدة كمان', 'Pick one more')}
+            {two ? t(m.compare.n2HomesPicked) : t(m.compare.pickOneMore)}
           </Txt>
           <Txt size={11.5} style={{ color: colors.bg, opacity: 0.6 }}>
-            {t('للمقارنة جنب بعض', 'to compare side by side')}
+            {t(m.compare.toCompareSideBySide)}
           </Txt>
         </View>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={t('قارن', 'Compare')}
+          accessibilityLabel={t(m.common.compare)}
           onPress={() => router.push('/compare')}
           style={[styles.go, { backgroundColor: colors.accent }]}
         >
           <Scale size={16} color={colors.navy} />
           <Txt size={13} weight="semibold" style={{ color: colors.navy }}>
-            {t('قارن', 'Compare')}
+            {t(m.common.compare)}
           </Txt>
         </PressableScale>
-        <PressableScale accessibilityRole="button" accessibilityLabel={t('مسح', 'Clear')} onPress={clear} hitSlop={6} scaleTo={0.88} style={styles.clear}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={t(m.compare.clear)} onPress={clear} hitSlop={6} scaleTo={0.88} style={styles.clear}>
           <X size={16} color={colors.bg} opacity={0.6} />
         </PressableScale>
       </Animated.View>

@@ -1,11 +1,11 @@
-import { fmtDate, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, targetProgress } from '@maqar/shared';
+import { joinParts, fmtDate, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, targetProgress } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Target, TrendingDown, TrendingUp } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
@@ -36,12 +36,12 @@ export function TodayScreen() {
             {fmtDate(new Date(), lang, 'long')}
           </Txt>
           <Txt accessibilityRole="header" size={18} weight="semibold">
-            {d ? t(`يومك يا ${d.firstNameAr}`, `Your day, ${d.firstNameEn}`) : t('يومك', 'Your day')}
+            {d ? t(m.agent.yourDayName(d)) : t(m.agent.yourDay)}
           </Txt>
         </View>
         <View style={[styles.badge, { backgroundColor: colors.sageSoft }]}>
           <Txt size={11} weight="medium" color="sageInk">
-            {t('تطبيق المبيعات', 'Sales app')}
+            {t(m.agent.salesApp)}
           </Txt>
         </View>
       </View>
@@ -53,27 +53,27 @@ export function TodayScreen() {
       ) : (
         <>
           <View style={styles.stats}>
-            <Stat label={t('معاينات النهارده', 'Today')} value={fmtNum(d.stats.today, lang)} />
-            <Stat label={t('عملاء جداد', 'New leads')} value={fmtNum(d.stats.fresh, lang)} gold />
-            <Stat label={t('نشطين', 'Active')} value={fmtNum(d.stats.active, lang)} />
+            <Stat label={t(m.agent.today)} value={fmtNum(d.stats.today, lang)} />
+            <Stat label={t(m.agent.newLeads)} value={fmtNum(d.stats.fresh, lang)} gold />
+            <Stat label={t(m.agent.active)} value={fmtNum(d.stats.active, lang)} />
           </View>
 
           <TargetCard won={d.target.won} target={d.target.target} teamAvg={d.target.teamAvg} />
 
-          <Section title={t('معاينات النهارده', 'Today’s viewings')}>
+          <Section title={t(m.agent.todaysViewings)}>
             {d.today.length ? (
               d.today.map((v) => <AgentViewingRow key={v.id} v={v} />)
             ) : (
               <View style={[styles.note, { backgroundColor: colors.surface, borderColor: colors.line }]}>
                 <Txt size={13} color="ink2">
-                  {t('مفيش معاينات تانية النهارده.', 'No more viewings today.')}
+                  {t(m.agent.noMoreViewingsToday)}
                 </Txt>
               </View>
             )}
           </Section>
 
           {d.upcoming.length ? (
-            <Section title={t('الجاية', 'Coming up')}>
+            <Section title={t(m.agent.comingUp)}>
               {d.upcoming.map((v) => (
                 <AgentViewingRow key={v.id} v={v} showDate />
               ))}
@@ -81,15 +81,15 @@ export function TodayScreen() {
           ) : null}
 
           <Section
-            title={t('حالة العملاء', 'Pipeline')}
-            action={{ label: t('كل العملاء', 'All leads'), onPress: () => router.push('/agent/leads') }}
+            title={t(m.agent.pipeline)}
+            action={{ label: t(m.agent.allLeads), onPress: () => router.push('/agent/leads') }}
           >
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pipeline} style={styles.bleed}>
               {LEAD_STAGES.map((s) => (
                 <Pressable
                   key={s}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t(LEAD_STAGE_LABEL[s])}، ${fmtNum(d.pipeline[s], lang)}`}
+                  accessibilityLabel={joinParts([t(LEAD_STAGE_LABEL[s]), fmtNum(d.pipeline[s], lang)], lang)}
                   onPress={() => router.push({ pathname: '/agent/leads', params: { stage: s } })}
                   style={({ pressed }) => [styles.stage, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
                 >
@@ -106,7 +106,7 @@ export function TodayScreen() {
           </Section>
 
           {d.firstCall.length ? (
-            <Section title={t('محتاجين تتواصل معاهم', 'Needs a first call')}>
+            <Section title={t(m.agent.needsAFirstCall)}>
               {d.firstCall.map((l) => (
                 <LeadRow key={l.id} lead={l} firstCall />
               ))}
@@ -143,28 +143,28 @@ function TargetCard({ won, target, teamAvg }: { won: number; target: number; tea
     vsTeam === null
       ? null
       : vsTeam === 0
-        ? t('زي متوسط الفريق', 'Level with the team average')
+        ? t(m.agent.levelWithTheTeamAverage)
         : vsTeam > 0
-          ? t(`أعلى من متوسط الفريق بـ ${fmtNum(vsTeam, 'ar')}٪`, `${vsTeam}% above team average`)
-          : t(`أقل من متوسط الفريق بـ ${fmtNum(-vsTeam, 'ar')}٪`, `${-vsTeam}% below team average`);
+          ? t(m.agent.aboveTeam(vsTeam))
+          : t(m.agent.belowTeam(-vsTeam));
   return (
     <View style={[styles.target, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       <View style={styles.between}>
         <View style={styles.inline}>
           <Target size={16} color={colors.accent} />
           <Txt size={14} weight="semibold">
-            {t('هدف الشهر', 'Monthly target')}
+            {t(m.common.monthlyTarget)}
           </Txt>
         </View>
         <Txt size={13} color="ink2">
-          {target > 0 ? `${fmtNum(won, lang)} / ${fmtNum(target, lang)} ${t('صفقات', 'deals')}` : `${fmtNum(won, lang)} ${t('صفقات', 'deals')}`}
+          {target > 0 ? `${fmtNum(won, lang)} / ${fmtNum(target, lang)} ${t(m.common.deals)}` : `${fmtNum(won, lang)} ${t(m.common.deals)}`}
         </Txt>
       </View>
       {share !== null ? (
         <View
           accessible
           accessibilityRole="progressbar"
-          accessibilityLabel={t('هدف الشهر', 'Monthly target')}
+          accessibilityLabel={t(m.common.monthlyTarget)}
           accessibilityValue={{ min: 0, max: target, now: Math.min(won, target) }}
           style={[styles.track, { backgroundColor: colors.surface2 }]}
         >
@@ -172,7 +172,7 @@ function TargetCard({ won, target, teamAvg }: { won: number; target: number; tea
         </View>
       ) : (
         <Txt size={12} color="ink3">
-          {t('مفيش هدف متحدد للشهر ده.', 'No target set for this month.')}
+          {t(m.agent.noTargetSetForThis)}
         </Txt>
       )}
       {vsText ? (

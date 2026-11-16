@@ -1,3 +1,4 @@
+import { pickField } from '@maqar/shared';
 import type { PropertyDetail } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { useProperty } from '@/features/property/hooks/use-property';
 import { PanoView } from '../components/pano-view';
@@ -36,9 +37,9 @@ export function TourScreen({ id }: { id: number }) {
     return (
       <View style={[styles.fill, styles.center, { backgroundColor: colors.navy, padding: 24 }]}>
         <Txt align="center" style={{ color: colors.cream }}>
-          {property.isError ? t('مش قادرين نفتح الجولة دلوقتي.', 'We couldn’t open the tour right now.') : t('الوحدة دي مالهاش جولة ٣٦٠°.', 'This home has no 360° tour.')}
+          {property.isError ? t(m.tour.weCouldntOpenTheTour) : t(m.tour.thisHomeHasNo360)}
         </Txt>
-        <Button label={t('رجوع', 'Back')} variant="secondary" onPress={back} style={styles.backBtn} />
+        <Button label={t(m.common.back)} variant="secondary" onPress={back} style={styles.backBtn} />
       </View>
     );
   }
@@ -62,7 +63,7 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const [gyro, setGyro] = useState(false);
   const [canGyro, setCanGyro] = useState(false);
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0]!;
-  const name = (r: { nameAr: string; nameEn: string }) => (lang === 'ar' ? r.nameAr : r.nameEn);
+  const name = (r: { nameAr: string; nameEn: string }) => (pickField(r, 'name', lang));
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   useEffect(() => {
@@ -81,7 +82,7 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   ).map((h) => {
     const target = rooms.find((r) => r.id === h.room)!;
     const label = name(target);
-    return { key: String(h.room), label, a11yLabel: t(`انتقل إلى ${label}`, `Go to ${label}`), lon: h.lon, lat: h.lat };
+    return { key: String(h.room), label, a11yLabel: t(m.tour.goTo(label)), lon: h.lon, lat: h.lat };
   });
 
   const go = (id: number) => {
@@ -120,11 +121,11 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         <View style={styles.failed} pointerEvents="box-none">
           <View style={[styles.failedCard, { backgroundColor: 'rgba(0,0,0,0.75)' }]}>
             <Txt align="center" style={styles.white}>
-              {t('مقدرناش نفتح صورة الغرفة دي.', 'We couldn’t load this room’s picture.')}
+              {t(m.tour.weCouldntLoadThisRooms)}
             </Txt>
             <View style={styles.failedRow}>
-              <Button label={t('حاول تاني', 'Try again')} onPress={() => { setFailed(false); setLoading(true); setTryNo((n) => n + 1); }} />
-              <Button label={t('الغرفة اللي فاتت', 'Previous room')} variant="secondary" onPress={() => go(roomId === rooms[0]!.id ? rooms[rooms.length - 1]!.id : rooms[rooms.findIndex((r) => r.id === room.id) - 1]!.id)} />
+              <Button label={t(m.common.tryAgain)} onPress={() => { setFailed(false); setLoading(true); setTryNo((n) => n + 1); }} />
+              <Button label={t(m.tour.previousRoom)} variant="secondary" onPress={() => go(roomId === rooms[0]!.id ? rooms[rooms.length - 1]!.id : rooms[rooms.findIndex((r) => r.id === room.id) - 1]!.id)} />
             </View>
           </View>
         </View>
@@ -135,19 +136,19 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
         style={[styles.top, { paddingTop: insets.top + 12 }]}
         pointerEvents="box-none"
       >
-        <Glass label={t('رجوع', 'Back')} onPress={onBack}>
+        <Glass label={t(m.common.back)} onPress={onBack}>
           <BackIcon size={20} color="#fff" />
         </Glass>
         <View style={styles.titles} pointerEvents="none">
           <Txt size={11} numberOfLines={1} style={styles.dim}>
-            {lang === 'ar' ? p.compoundAr : p.compoundEn}
+            {pickField(p, 'compound', lang)}
           </Txt>
           <Txt size={16} weight="semibold" numberOfLines={1} style={styles.white} accessibilityRole="header">
             {name(room)}
           </Txt>
         </View>
         {canGyro ? (
-          <Glass label={t('الجيروسكوب', 'Gyroscope')} onPress={toggleGyro} on={gyro}>
+          <Glass label={t(m.tour.gyroscope)} onPress={toggleGyro} on={gyro}>
             <Smartphone size={18} color={gyro ? colors.navy : '#fff'} />
           </Glass>
         ) : null}
@@ -166,11 +167,11 @@ function Tour({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           <View style={styles.hint}>
             <Hand size={32} color="#fff" />
             <Txt size={14} weight="medium" align="center" style={styles.white}>
-              {t('اسحب عشان تلف في الأوضة', 'Drag to look around')}
+              {t(m.tour.dragToLookAround)}
             </Txt>
             {rooms.length > 1 ? (
               <Txt size={12} align="center" style={styles.dim}>
-                {t('دوس على النقط البيضا عشان تنقل بين الغرف', 'Tap the white dots to move between rooms')}
+                {t(m.tour.tapTheWhiteDotsTo)}
               </Txt>
             ) : null}
           </View>

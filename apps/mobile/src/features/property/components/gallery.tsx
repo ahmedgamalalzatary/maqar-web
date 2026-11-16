@@ -8,7 +8,7 @@ import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reani
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { PhotoViewer } from './photo-viewer';
 import { VideoPlayerModal } from './video-player';
@@ -84,7 +84,7 @@ export function Gallery({
             <Pressable
               key={`${path}-${i}`}
               accessibilityRole="button"
-              accessibilityLabel={t(`افتح صورة ${fmtNum(i + 1, 'ar')} من ${fmtNum(images.length, 'ar')}`, `Open photo ${i + 1} of ${images.length}`)}
+              accessibilityLabel={t(m.property.openPhoto(i + 1, images.length))}
               onPress={() => setViewing(i)}
             >
               {i === 0 ? (
@@ -102,7 +102,7 @@ export function Gallery({
             key={v.url}
             testID="gallery-video"
             accessibilityRole="button"
-            accessibilityLabel={t(`شغّل الفيديو ${fmtNum(i + 1, 'ar')} (${fmtDuration(v.durationS, 'ar')})`, `Play video ${i + 1} (${fmtDuration(v.durationS)})`)}
+            accessibilityLabel={t(m.common.playVideo(i + 1, v.durationS))}
             onPress={() => setPlaying(v)}
             style={{ width, height, backgroundColor: '#000' }}
           >
@@ -119,13 +119,13 @@ export function Gallery({
       {videos.length ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(`${fmtNum(videos.length, 'ar')} فيديو، شغّل الأول`, `${videos.length} ${videos.length === 1 ? 'video' : 'videos'}, play the first`)}
+          accessibilityLabel={t(m.property.videosPlayFirst(videos.length))}
           onPress={() => setPlaying(videos[0]!)}
           style={styles.videosChip}
         >
           <Play size={12} color="#fff" fill="#fff" />
           <Txt size={11} weight="medium" style={styles.white}>
-            {t(`${fmtNum(videos.length, 'ar')} فيديو`, `${videos.length} ${videos.length === 1 ? 'video' : 'videos'}`)}
+            {t(m.common.videos(videos.length))}
           </Txt>
         </Pressable>
       ) : null}

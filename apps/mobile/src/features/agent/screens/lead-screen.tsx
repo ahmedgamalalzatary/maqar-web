@@ -23,7 +23,7 @@ import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { PropertyRow } from '@/features/listings/components/property-row';
 import { HOT, Initials, NewBadge, useLeadName } from '../components/lead-parts';
@@ -46,14 +46,14 @@ export function LeadScreen({ id }: { id: number }) {
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
-        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
+        <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={back} />
       </View>
       {lead.isPending ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : lead.isError || !lead.data ? (
         <View style={styles.failed}>
-          <Txt align="center">{t('مش لاقيين العميل ده.', 'We couldn’t find this lead.')}</Txt>
-          <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={() => void lead.refetch()} />
+          <Txt align="center">{t(m.agent.weCouldntFindThisLead)}</Txt>
+          <Button label={t(m.common.tryAgain)} variant="secondary" onPress={() => void lead.refetch()} />
         </View>
       ) : (
         <Lead l={lead.data} />
@@ -76,17 +76,17 @@ function Lead({ l }: { l: LeadDetail }) {
   const change = (body: { stage?: LeadStage; hot?: boolean }, done: string) =>
     update.mutate(body, {
       onSuccess: () => toast.show({ title: done, tone: 'sage' }),
-      onError: () => toast.show({ title: t('مقدرناش نحفظ التغيير، حاول تاني', 'We couldn’t save that, try again'), tone: 'danger' }),
+      onError: () => toast.show({ title: t(m.common.weCouldntSaveThatTry), tone: 'danger' }),
     });
   const setStage = (s: LeadStage) => {
-    if (s !== l.stage) change({ stage: s }, t(`الحالة: ${LEAD_STAGE_LABEL[s].ar}`, `Status: ${LEAD_STAGE_LABEL[s].en}`));
+    if (s !== l.stage) change({ stage: s }, t(m.agent.statusIs(LEAD_STAGE_LABEL[s])));
   };
   const send = () => {
     const text = note.trim();
     if (!text || addNote.isPending) return;
     addNote.mutate(text, {
       onSuccess: () => setNote(''),
-      onError: () => toast.show({ title: t('مقدرناش نحفظ الملاحظة', 'We couldn’t save the note'), tone: 'danger' }),
+      onError: () => toast.show({ title: t(m.agent.weCouldntSaveTheNote), tone: 'danger' }),
     });
   };
   const digits = l.phone?.replace(/[^\d]/g, '') ?? '';
@@ -114,7 +114,7 @@ function Lead({ l }: { l: LeadDetail }) {
               {l.isNew ? <NewBadge /> : null}
             </View>
             <Txt size={12.5} color="ink2" style={styles.ltr}>
-              {l.phone ? ltrPhone(l.phone) : t('من غير رقم', 'No phone number')}
+              {l.phone ? ltrPhone(l.phone) : t(m.agent.noPhoneNumber)}
             </Txt>
             {l.budget ? (
               <View style={styles.inline}>
@@ -127,9 +127,9 @@ function Lead({ l }: { l: LeadDetail }) {
           </View>
           <Pressable
             accessibilityRole="switch"
-            accessibilityLabel={t('عميل مهم', 'Hot lead')}
+            accessibilityLabel={t(m.agent.hotLead)}
             accessibilityState={{ checked: l.hot }}
-            onPress={() => change({ hot: !l.hot }, l.hot ? t('شلنا علامة مهم', 'No longer marked hot') : t('اتعلّم مهم', 'Marked hot'))}
+            onPress={() => change({ hot: !l.hot }, l.hot ? t(m.agent.noLongerMarkedHot) : t(m.agent.markedHot))}
             hitSlop={6}
             style={[styles.hot, { backgroundColor: l.hot ? 'rgba(224, 87, 75, 0.12)' : colors.surface2 }]}
           >
@@ -139,17 +139,17 @@ function Lead({ l }: { l: LeadDetail }) {
 
         {digits || l.chatId ? (
           <View style={styles.actions}>
-            {digits ? <Contact icon={Phone} label={t('اتصال', 'Call')} onPress={() => void Linking.openURL(`tel:${l.phone}`)} /> : null}
+            {digits ? <Contact icon={Phone} label={t(m.common.call)} onPress={() => void Linking.openURL(`tel:${l.phone}`)} /> : null}
             {l.chatId ? (
-              <Contact icon={MessagesSquare} label={t('الشات', 'Chat')} onPress={() => router.push(`/agent/chat/${l.chatId}`)} />
+              <Contact icon={MessagesSquare} label={t(m.agent.chat)} onPress={() => router.push(`/agent/chat/${l.chatId}`)} />
             ) : digits ? (
-              <Contact icon={MessageCircle} label={t('واتساب', 'WhatsApp')} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
+              <Contact icon={MessageCircle} label={t(m.admin.whatsapp)} onPress={() => void Linking.openURL(`https://wa.me/${digits}`)} />
             ) : null}
           </View>
         ) : null}
 
         <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-          {t('حالة العميل', 'Lead status')}
+          {t(m.agent.leadStatus)}
         </Txt>
         <View style={styles.steps}>
           <View style={[styles.rail, { backgroundColor: colors.surface3 }]} />
@@ -183,14 +183,14 @@ function Lead({ l }: { l: LeadDetail }) {
           style={styles.lost}
         >
           <Txt size={12} weight="medium" color={l.stage === 'lost' ? 'danger' : 'ink3'}>
-            {l.stage === 'lost' ? t('العميل مغلق، رجّعه جديد', 'Marked as lost: reopen as new') : t('علّم كمغلق', 'Mark as lost')}
+            {l.stage === 'lost' ? t(m.agent.markedAsLostReopenAs) : t(m.agent.markAsLost)}
           </Txt>
         </Pressable>
 
         {l.property ? (
           <>
             <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-              {t('الوحدة المهتم بيها', 'Interested in')}
+              {t(m.agent.interestedIn)}
             </Txt>
             <PropertyRow card={l.property} />
           </>
@@ -199,7 +199,7 @@ function Lead({ l }: { l: LeadDetail }) {
         {l.viewing ? (
           <>
             <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-              {t('المعاينة', 'Viewing')}
+              {t(m.agent.viewing)}
             </Txt>
             <View style={[styles.viewing, { backgroundColor: colors.ink }]}>
               <View style={[styles.viewingIcon, { backgroundColor: 'rgba(179, 137, 89, 0.2)' }]}>
@@ -210,7 +210,7 @@ function Lead({ l }: { l: LeadDetail }) {
                   {fmtDate(l.viewing.date, lang, 'long')}
                 </Txt>
                 <Txt size={12.5} style={{ color: colors.bg, opacity: 0.7 }}>
-                  {fmtTime(l.viewing.time, lang)} | {l.viewing.mode === 'video' ? t('فيديو لايف', 'Live video') : t('في الموقع', 'On site')}
+                  {fmtTime(l.viewing.time, lang)} | {l.viewing.mode === 'video' ? t(m.common.liveVideo) : t(m.common.onSite)}
                 </Txt>
               </View>
             </View>
@@ -218,14 +218,14 @@ function Lead({ l }: { l: LeadDetail }) {
         ) : null}
 
         <Txt accessibilityRole="header" size={15} weight="semibold" style={styles.heading}>
-          {t('ملاحظات', 'Notes')}
+          {t(m.agent.notes)}
         </Txt>
         <View style={styles.noteRow}>
           <TextInput
-            accessibilityLabel={t('ملاحظة جديدة', 'New note')}
+            accessibilityLabel={t(m.agent.newNote)}
             value={note}
             onChangeText={setNote}
-            placeholder={t('اكتب ملاحظة عن المكالمة…', 'Add a note about the call…')}
+            placeholder={t(m.agent.addANoteAboutThe)}
             placeholderTextColor={colors.ink3}
             maxLength={LEAD_NOTE_MAX}
             multiline
@@ -233,7 +233,7 @@ function Lead({ l }: { l: LeadDetail }) {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('احفظ الملاحظة', 'Save note')}
+            accessibilityLabel={t(m.agent.saveNote)}
             accessibilityState={{ disabled: !note.trim() || addNote.isPending }}
             disabled={!note.trim() || addNote.isPending}
             onPress={send}
@@ -256,10 +256,7 @@ function Lead({ l }: { l: LeadDetail }) {
         <View style={[styles.note, { backgroundColor: colors.surface2 }]}>
           <CalendarClock size={16} color={colors.ink2} />
           <Txt size={12.5} color="ink2" style={styles.flex}>
-            {t(
-              `أول تواصل ${relTime(new Date(l.createdAt), 'ar')} من خلال: ${LEAD_SOURCE_LABEL[l.source].ar}`,
-              `First touch ${relTime(new Date(l.createdAt), 'en')} via ${LEAD_SOURCE_LABEL[l.source].en}`,
-            )}
+            {t(m.agent.firstTouch(new Date(l.createdAt), LEAD_SOURCE_LABEL[l.source]))}
           </Txt>
         </View>
       </ScrollView>

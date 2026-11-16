@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { authErrorMessage } from '../auth-errors';
 import { useSignUp } from '../hooks/use-auth';
 
@@ -26,13 +26,13 @@ export function SignUpScreen() {
   const ready = name.trim().length >= 2 && email.trim() !== '' && password !== '' && !badPhone;
 
   return (
-    <Screen title={t('حساب جديد', 'Create an account')}>
+    <Screen title={t(m.auth.createAnAccount)}>
       <Txt color="ink2" style={styles.lead}>
-        {t('احفظ الوحدات، تابع الأسعار، واحجز معاينات.', 'Save homes, follow prices and book viewings.')}
+        {t(m.auth.saveHomesFollowPricesAnd)}
       </Txt>
-      <TextField label={t('الاسم', 'Name')} value={name} onChangeText={setName} autoComplete="name" textContentType="name" />
+      <TextField label={t(m.common.name)} value={name} onChangeText={setName} autoComplete="name" textContentType="name" />
       <TextField
-        label={t('الإيميل', 'Email')}
+        label={t(m.common.email)}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -41,27 +41,27 @@ export function SignUpScreen() {
         textContentType="emailAddress"
       />
       <TextField
-        label={t('رقم الموبايل', 'Mobile number')}
+        label={t(m.common.mobileNumber)}
         value={phone}
         onChangeText={setPhone}
         autoComplete="tel"
         keyboardType="phone-pad"
         textContentType="telephoneNumber"
-        placeholder={t('عشان المسؤول يقدر يكلمك', 'So your advisor can call you')}
+        placeholder={t(m.auth.soYourAdvisorCanCall)}
       />
-      {badPhone ? <Txt color="danger">{t('اكتب رقم موبايل صحيح', 'Enter a valid mobile number')}</Txt> : null}
+      {badPhone ? <Txt color="danger">{t(m.common.enterAValidMobileNumber)}</Txt> : null}
       <TextField
-        label={t('كلمة السر', 'Password')}
+        label={t(m.common.password)}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
-        placeholder={t('٨ حروف على الأقل، فيها حرف ورقم', '8+ characters, a letter and a digit')}
+        placeholder={t(m.auth.n8CharactersALetterAnd)}
       />
       <ErrorText message={signUp.isError ? t(authErrorMessage(signUp.error)) : undefined} trigger={signUp.submittedAt} />
       <Button
-        label={t('إنشاء حساب', 'Create account')}
+        label={t(m.auth.createAccount)}
         disabled={!ready}
         loading={signUp.isPending}
         onPress={() => {
@@ -69,7 +69,7 @@ export function SignUpScreen() {
           signUp.mutate({ name: name.trim(), email: email.trim(), password, lang, ...(mobile ? { phone: mobile } : {}) });
         }}
       />
-      <Button label={t('عندك حساب؟ ادخل', 'Have an account? Sign in')} variant="ghost" onPress={() => router.replace('/sign-in')} />
+      <Button label={t(m.auth.haveAnAccountSignIn)} variant="ghost" onPress={() => router.replace('/sign-in')} />
     </Screen>
   );
 }

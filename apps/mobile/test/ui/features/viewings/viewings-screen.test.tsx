@@ -90,11 +90,11 @@ describe('My viewings', () => {
     await renderWithProviders(<ViewingsScreen />);
     const homes = async () => (await screen.findAllByRole('button', { name: /فيلا|شقة|شاليه|تاون/ })).map((b) => b.props.accessibilityLabel);
     expect(await homes()).toEqual(['فيلا في التجمع', 'شقة في زايد']);
-    expect(screen.getByText('اتغير موعدها')).toBeOnTheScreen();
+    expect(screen.getByText('اتغير ميعادها')).toBeOnTheScreen();
     expect(screen.getByText('كانت ١٨ نوفمبر ٤:٠٠ م')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('radio', { name: 'السابقة والملغاة' }));
     expect(await homes()).toEqual(['شاليه ملغي', 'تاون هاوس فات']);
-    expect(screen.getByText('ملغاة')).toBeOnTheScreen();
+    expect(screen.getByText('اتلغت')).toBeOnTheScreen();
     expect(screen.getAllByRole('button', { name: 'احجز ميعاد جديد' })).toHaveLength(2);
   });
 

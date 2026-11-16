@@ -1,9 +1,9 @@
-import { type Bi, localDigits } from '@maqar/shared';
+import { type Bi } from '@maqar/shared';
 import { StyleSheet, View } from 'react-native';
 import { Card } from '@/components/card';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 
 /** A tab whose feature is built in a later phase (docs/phases.md). */
 export function Placeholder({ title, phase }: { title: Bi; phase: number }) {
@@ -13,7 +13,7 @@ export function Placeholder({ title, phase }: { title: Bi; phase: number }) {
       <Card>
         <View style={styles.body}>
           <Txt color="ink2" align="center">
-            {t(`الجزء ده هيتبني في المرحلة ${localDigits(String(phase), 'ar')}.`, `This part is built in phase ${phase}.`)}
+            {t(m.common.placeholderPhase(phase))}
           </Txt>
         </View>
       </Card>

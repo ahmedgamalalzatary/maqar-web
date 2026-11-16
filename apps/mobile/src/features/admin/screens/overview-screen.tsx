@@ -1,20 +1,20 @@
-import { type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewAgent, type OverviewRange } from '@maqar/shared';
+import { pickField, joinParts, type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewAgent, type OverviewRange } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Flag } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { ListingsError } from '@/features/listings/components/list-states';
 import { useOverview } from '../hooks/use-people';
 
 type Metric = 'clients' | 'leads' | 'viewings';
 const METRIC_LABEL: Record<Metric, { ar: string; en: string }> = {
-  clients: { ar: 'عملاء جداد', en: 'New clients' },
-  leads: { ar: 'عملاء محتملين', en: 'New leads' },
-  viewings: { ar: 'معاينات اتحجزت', en: 'Viewings booked' },
+  clients: m.admin.newClients,
+  leads: m.admin.newLeadsMetric,
+  viewings: m.admin.viewingsBooked,
 };
 
 /** The admin's first tab (phase 25): what happened in the last 7, 30 or 90 days, and each advisor against the target. */
@@ -32,20 +32,20 @@ export function OverviewScreen() {
       refreshControl={<RefreshControl refreshing={overview.isRefetching} onRefresh={() => void overview.refetch()} tintColor={colors.accent} />}
     >
       <Txt accessibilityRole="header" size={24} weight="semibold">
-        {t('نظرة عامة', 'Overview')}
+        {t(m.admin.overview)}
       </Txt>
       <View style={styles.chips}>
         {OVERVIEW_RANGES.map((d) => (
           <Pressable
             key={d}
             accessibilityRole="radio"
-            accessibilityLabel={t(`آخر ${fmtNum(d, 'ar')} يوم`, `Last ${d} days`)}
+            accessibilityLabel={t(m.admin.lastDays(d))}
             accessibilityState={{ checked: days === d }}
             onPress={() => setDays(d)}
             style={[styles.chip, { backgroundColor: days === d ? colors.ink : colors.surface, borderColor: colors.line }]}
           >
             <Txt size={13} weight="medium" style={{ color: days === d ? colors.bg : colors.ink }}>
-              {t(`${fmtNum(d, 'ar')} يوم`, `${d} days`)}
+              {t(m.common.days(d))}
             </Txt>
           </Pressable>
         ))}
@@ -75,35 +75,35 @@ function Body({ o }: { o: AdminOverview }) {
       {o.chats.openReports ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(`${fmtNum(o.chats.openReports, 'ar')} بلاغ مفتوح على الشات`, `${o.chats.openReports} open chat reports`)}
+          accessibilityLabel={t(m.admin.openChatReports(o.chats.openReports))}
           onPress={() => router.push('/admin/chats')}
           style={[styles.alert, { backgroundColor: colors.dangerSoft }]}
         >
           <Flag size={16} color={colors.danger} />
           <Txt size={13} color="danger" weight="medium">
-            {t(`${fmtNum(o.chats.openReports, 'ar')} بلاغ مفتوح على الشات`, `${o.chats.openReports} open chat reports`)}
+            {t(m.admin.openChatReports(o.chats.openReports))}
           </Txt>
         </Pressable>
       ) : null}
       <View style={styles.grid}>
-        <Tile label={t('عملاء جداد', 'New clients')} value={n(o.clients.new)} sub={t(`${fmtNum(o.clients.total, 'ar')} عميل في الكل`, `${o.clients.total} in all`)} />
-        <Tile label={t('عملاء محتملين جداد', 'New leads')} value={n(o.leads.new)} sub={t(`${fmtNum(o.leads.won, 'ar')} اتقفلوا بيع`, `${o.leads.won} won`)} />
+        <Tile label={t(m.admin.newClients)} value={n(o.clients.new)} sub={t(m.admin.clientsInAll(o.clients.total))} />
+        <Tile label={t(m.admin.newLeads)} value={n(o.leads.new)} sub={t(m.admin.wonCount(o.leads.won))} />
         <Tile
-          label={t('معاينات اتحجزت', 'Viewings booked')}
+          label={t(m.admin.viewingsBooked)}
           value={n(o.viewings.booked)}
-          sub={t(`${fmtNum(o.viewings.completed, 'ar')} خلصت | ${fmtNum(o.viewings.cancelled, 'ar')} اتلغت`, `${o.viewings.completed} done | ${o.viewings.cancelled} cancelled`)}
+          sub={t(m.admin.doneCancelled(o.viewings.completed, o.viewings.cancelled))}
         />
-        <Tile label={t('معاينات الأسبوع الجاي', 'Next 7 days')} value={n(o.viewings.next7Days)} sub={t('معاينة مؤكدة', 'confirmed viewings')} />
+        <Tile label={t(m.admin.next7Days)} value={n(o.viewings.next7Days)} sub={t(m.admin.confirmedViewings)} />
         <Tile
-          label={t('عقارات منشورة', 'Live listings')}
+          label={t(m.admin.liveListings)}
           value={n(o.listings.byStatus.approved)}
-          sub={t(`${fmtNum(o.listings.published, 'ar')} اتنشر | ${fmtNum(o.listings.closed, 'ar')} اتقفل`, `${o.listings.published} published | ${o.listings.closed} closed`)}
+          sub={t(m.admin.publishedClosed(o.listings.published, o.listings.closed))}
         />
-        <Tile label={t('شاتات جديدة', 'New chats')} value={n(o.chats.new)} sub={t(`${fmtNum(o.chats.messages, 'ar')} رسالة`, `${o.chats.messages} messages`)} />
+        <Tile label={t(m.admin.newChats)} value={n(o.chats.new)} sub={t(m.common.messageCount(o.chats.messages))} />
       </View>
       <DailyChart o={o} />
       <Txt size={16} weight="semibold">
-        {t('المسؤولين', 'Advisors')}
+        {t(m.admin.advisors)}
       </Txt>
       {o.agents.map((a) => (
         <AgentRow key={a.id} a={a} />
@@ -113,9 +113,10 @@ function Body({ o }: { o: AdminOverview }) {
 }
 
 function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
+  const lang = useLang();
   const { colors } = useTheme();
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}، ${sub}`} style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+    <View accessible accessibilityLabel={joinParts([`${label}: ${value}`, sub], lang)} style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       <Txt size={12} color="ink2">
         {label}
       </Txt>
@@ -157,7 +158,7 @@ function DailyChart({ o }: { o: AdminOverview }) {
         ))}
       </View>
       <Txt size={12} color="ink2">
-        {shown ? `${fmtDate(shown.date, lang)}: ${fmtNum(shown[metric], lang)}` : t('في اليوم، دوس على يوم', 'Per day: tap a day')}
+        {shown ? `${fmtDate(shown.date, lang)}: ${fmtNum(shown[metric], lang)}` : t(m.admin.perDayTapADay)}
       </Txt>
       <View style={[styles.bars, { borderBottomColor: colors.line2, gap: o.daily.length > 31 ? 1 : 2 }]}>
         {o.daily.map((d) => (
@@ -195,7 +196,7 @@ function AgentRow({ a }: { a: OverviewAgent }) {
       <View style={styles.line}>
         <View style={[styles.dot, { backgroundColor: a.colour }]} />
         <Txt weight="medium" style={styles.flex}>
-          {lang === 'ar' ? a.nameAr : a.nameEn}
+          {pickField(a, 'name', lang)}
         </Txt>
         <Txt size={13} weight="semibold">
           {a.monthlyTarget ? `${fmtNum(a.wonThisMonth, lang)} / ${fmtNum(a.monthlyTarget, lang)}` : fmtNum(a.wonThisMonth, lang)}
@@ -204,17 +205,14 @@ function AgentRow({ a }: { a: OverviewAgent }) {
       {a.monthlyTarget ? (
         <View
           accessible
-          accessibilityLabel={t(`اتقفل ${fmtNum(a.wonThisMonth, 'ar')} من هدف ${fmtNum(a.monthlyTarget, 'ar')} الشهر ده`, `${a.wonThisMonth} won of a target of ${a.monthlyTarget} this month`)}
+          accessibilityLabel={t(m.admin.wonOfTarget(a.wonThisMonth, a.monthlyTarget))}
           style={[styles.track, { backgroundColor: colors.surface2 }]}
         >
           <View style={[styles.fill, { width: `${pct * 100}%`, backgroundColor: pct >= 1 ? colors.sage : colors.accent }]} />
         </View>
       ) : null}
       <Txt size={12} color="ink2">
-        {t(
-          `${fmtNum(a.live, 'ar')} عقار منشور | ${fmtNum(a.openLeads, 'ar')} عميل مفتوح | ${fmtNum(a.viewings, 'ar')} معاينة اتحجزت`,
-          `${a.live} live | ${a.openLeads} open leads | ${a.viewings} viewings booked`,
-        )}
+        {t(m.admin.agentRowStats(a.live, a.openLeads, a.viewings))}
       </Txt>
     </View>
   );

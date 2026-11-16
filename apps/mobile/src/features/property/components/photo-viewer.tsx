@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { rubberband, shouldDismiss } from '@/core/motion/drag';
 import { SETTLE } from '@/core/motion/motion';
 
@@ -57,7 +57,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
               {`${fmtNum(index + 1, lang)} / ${fmtNum(images.length, lang)}`}
             </Txt>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('اقفل', 'Close')} onPress={onClose} hitSlop={8} style={styles.close}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.close)} onPress={onClose} hitSlop={8} style={styles.close}>
             <X size={22} color="#fff" />
           </Pressable>
         </Animated.View>

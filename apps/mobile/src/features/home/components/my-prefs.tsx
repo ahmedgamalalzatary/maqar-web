@@ -1,9 +1,9 @@
-import { CATEGORY_LABEL, FEATURE_LABEL, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from '@maqar/shared';
+import { pickField, CATEGORY_LABEL, FEATURE_LABEL, PROPERTY_TYPE_LABEL } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { SlidersHorizontal } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { useAreas } from '@/features/listings/hooks/use-listings';
@@ -28,20 +28,20 @@ export function MyPrefs() {
     return (
       <View testID="my-prefs" style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Txt size={15} weight="semibold">
-          {t('لسه مقولتلناش بتدور على إيه', 'You haven’t told us what you’re looking for')}
+          {t(m.home.youHaventToldUsWhat)}
         </Txt>
         <Txt size={13} color="ink2">
-          {t('جاوب على أسئلة سريعة ونرتب لك البيوت اللي تناسبك.', 'Answer a few quick questions and we’ll rank the homes that fit you.')}
+          {t(m.home.answerAFewQuickQuestions)}
         </Txt>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('قولنا بتدور على إيه', 'Tell us what you want')}
+          accessibilityLabel={t(m.common.tellUsWhatYouWant)}
           onPress={edit}
           style={({ pressed }) => [styles.cta, { backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
         >
           <SlidersHorizontal size={16} color={colors.accentInk} />
           <Txt size={13} weight="semibold" color="accentInk">
-            {t('قولنا بتدور على إيه', 'Tell us what you want')}
+            {t(m.common.tellUsWhatYouWant)}
           </Txt>
         </Pressable>
       </View>
@@ -51,16 +51,16 @@ export function MyPrefs() {
   const renter = prefs.purpose[0] === 'rent';
   const areaName = (id: string) => {
     const a = areas.data?.find((x) => x.id === id);
-    return a ? (lang === 'ar' ? a.nameAr : a.nameEn) : null;
+    return a ? (pickField(a, 'name', lang)) : null;
   };
   const chips = [
     ...prefs.purpose.map((c) => t(CATEGORY_LABEL[c])),
     renter
-      ? t(`لحد ${fmtMoney(prefs.budgetMax, 'ar')} في الشهر`, `Up to ${fmtMoney(prefs.budgetMax, 'en')} a month`)
-      : t(`لحد ${fmtMoney(prefs.budgetMax, 'ar')}`, `Up to ${fmtMoney(prefs.budgetMax, 'en')}`),
+      ? t(m.home.upToMonthly(prefs.budgetMax))
+      : t(m.home.upTo(prefs.budgetMax)),
     ...prefs.areas.map(areaName).filter((n): n is string => !!n),
     ...prefs.types.map((k) => t(PROPERTY_TYPE_LABEL[k])),
-    ...(prefs.beds > 0 ? [t(`${fmtNum(prefs.beds, 'ar')}+ غرف`, `${prefs.beds}+ bedrooms`)] : []),
+    ...(prefs.beds > 0 ? [t(m.home.bedsPlus(prefs.beds))] : []),
     ...prefs.interests.map((f) => t(FEATURE_LABEL[f])),
   ];
 
@@ -69,11 +69,11 @@ export function MyPrefs() {
       <View style={styles.head}>
         <SlidersHorizontal size={18} color={colors.accentInk} />
         <Txt accessibilityRole="header" size={16} weight="semibold" style={styles.flex}>
-          {t('اللي بتدور عليه', 'What you’re looking for')}
+          {t(m.home.whatYoureLookingFor)}
         </Txt>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('عدّل تفضيلاتك', 'Edit your preferences')} onPress={edit} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.editYourPreferences)} onPress={edit} hitSlop={8}>
           <Txt size={13} weight="medium" color="accentInk">
-            {t('تعديل', 'Edit')}
+            {t(m.home.edit)}
           </Txt>
         </Pressable>
       </View>

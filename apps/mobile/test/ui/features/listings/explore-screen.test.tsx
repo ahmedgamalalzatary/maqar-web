@@ -218,7 +218,7 @@ describe('ExploreScreen', () => {
     await fireEvent.press(screen.getByRole('checkbox', { name: 'فيلا' }));
     await fireEvent.press(screen.getByRole('checkbox', { name: `${fmtNum(5, 'ar')}+ غرف` }));
     // From the facets, for the picks so far: both villas have 5 or more bedrooms.
-    const show = await screen.findByRole('button', { name: `اعرض ${fmtNum(2, 'ar')} وحدة` });
+    const show = await screen.findByRole('button', { name: 'اعرض وحدتين' });
     expect(lastListQuery(fetchMock)).not.toHaveProperty('type'); // nothing applied yet
 
     await fireEvent.press(show);

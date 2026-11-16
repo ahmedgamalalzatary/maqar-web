@@ -3,7 +3,7 @@ import { Bell, BellRing } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 import { Toggle } from '@/components/toggle';
 import { Txt } from '@/components/text';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useRequireAuth } from '@/features/auth/hooks/use-require-auth';
 import { useSession } from '@/features/auth/store/session.store';
@@ -27,12 +27,12 @@ function FollowButton({ card }: { card: PropertyCard }) {
   const requireAuth = useRequireAuth();
   const { following, toggle } = useToggleAlert(card);
   const Icon = following ? BellRing : Bell;
-  const label = following ? t('متابع السعر', 'Following') : t('نبهني لو نزل', 'Alert on drop');
+  const label = following ? t(m.alerts.following) : t(m.alerts.alertOnDrop);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={t('تنبيه لو سعر الوحدة نزل', 'Get an alert if the price drops')}
+      accessibilityHint={t(m.alerts.getAnAlertIfThe)}
       accessibilityState={{ selected: following }}
       onPress={() => requireAuth(toggle)}
       style={({ pressed }) => [
@@ -52,7 +52,7 @@ function FollowButton({ card }: { card: PropertyCard }) {
 export function AlertSwitch({ card }: { card: PropertyCard }) {
   const t = useT();
   const { following, toggle } = useToggleAlert(card);
-  return <Toggle label={t('تنبيه السعر', 'Price alert')} value={following} onChange={toggle} />;
+  return <Toggle label={t(m.alerts.priceAlert)} value={following} onChange={toggle} />;
 }
 
 const styles = StyleSheet.create({

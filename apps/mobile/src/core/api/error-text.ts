@@ -1,4 +1,4 @@
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { ApiError } from './api';
 
 /**
@@ -7,10 +7,10 @@ import { ApiError } from './api';
  * valid input for a server failure.
  */
 export function errorText(e: unknown, t: ReturnType<typeof useT>): string {
-  if (!(e instanceof ApiError)) return t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again');
-  if (e.status === 0) return t('مفيش اتصال بالسيرفر، حاول تاني', 'Can’t reach the server, try again');
+  if (!(e instanceof ApiError)) return t(m.common.somethingWentWrongTryAgain);
+  if (e.status === 0) return t(m.common.cantReachTheServerTry);
   if (e.message && e.status !== 401) return e.message;
-  if (e.status === 401 || e.status === 403) return t('الجلسة خلصت أو ماعندكش صلاحية', 'Your session ended or you don’t have permission');
-  if (e.status === 429) return t('محاولات كتير، استنى شوية وجرب تاني', 'Too many attempts, wait a moment and try again');
-  return t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again');
+  if (e.status === 401 || e.status === 403) return t(m.common.yourSessionEndedOrYou);
+  if (e.status === 429) return t(m.common.tooManyAttemptsWaitA);
+  return t(m.common.somethingWentWrongTryAgain);
 }

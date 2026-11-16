@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { Bell } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { IconButton } from '@/components/icon-button';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
 import { useUnreadCount } from '../hooks/use-notifications';
 
@@ -12,7 +12,7 @@ export function NotificationBell() {
   const router = useRouter();
   const { colors } = useTheme();
   const unread = useUnreadCount();
-  const label = unread > 0 ? t(`التنبيهات، ${unread} جديد`, `Notifications, ${unread} new`) : t('التنبيهات', 'Notifications');
+  const label = unread > 0 ? t(m.notifications.bellNew(unread)) : t(m.common.notifications);
   return (
     <View>
       <IconButton label={label} onPress={() => router.push('/notifications')} icon={<Bell color={colors.ink} size={20} strokeWidth={1.8} />} />

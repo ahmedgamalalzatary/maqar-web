@@ -1,4 +1,4 @@
-import { fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from '@maqar/shared';
+import { joinParts, fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Building2, Plus, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Sty
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useDebounced } from '@/features/listings/hooks/use-listings';
@@ -46,29 +46,29 @@ export function AdminListingsScreen() {
           <View style={styles.titleRow}>
             <View style={styles.flex}>
               <Txt accessibilityRole="header" size={24} weight="semibold">
-                {t('العقارات', 'Listings')}
+                {t(m.admin.listings)}
               </Txt>
               {data ? (
                 <Txt size={13} color="ink2">
-                  {t(`${fmtNum(count('all'), 'ar')} عقار، ${fmtNum(counts?.approved ?? 0, 'ar')} منشور`, `${count('all')} listings, ${counts?.approved ?? 0} live`)}
+                  {t(m.admin.listingsAndLive(count('all'), counts?.approved ?? 0))}
                 </Txt>
               ) : null}
             </View>
-            <IconButton icon={<Plus size={20} color={colors.ink} />} label={t('أضف عقار', 'Add a listing')} onPress={() => router.push('/admin/new')} />
+            <IconButton icon={<Plus size={20} color={colors.ink} />} label={t(m.common.addAListing)} onPress={() => router.push('/admin/new')} />
           </View>
           <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
             <Search size={18} color={colors.ink3} />
             <TextInput
-              accessibilityLabel={t('ابحث بالعنوان أو المالك', 'Search by title or owner')}
+              accessibilityLabel={t(m.common.searchByTitleOrOwner)}
               value={q}
               onChangeText={setQ}
-              placeholder={t('ابحث بالعنوان أو المالك', 'Search by title or owner')}
+              placeholder={t(m.common.searchByTitleOrOwner)}
               placeholderTextColor={colors.ink3}
               autoCorrect={false}
               style={[styles.input, { color: colors.ink }]}
             />
             {q ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={t('امسح البحث', 'Clear search')} onPress={() => setQ('')} hitSlop={8}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.clearSearch)} onPress={() => setQ('')} hitSlop={8}>
                 <X size={16} color={colors.ink3} />
               </Pressable>
             ) : null}
@@ -76,12 +76,12 @@ export function AdminListingsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.chips}>
             {(['all', ...PROPERTY_STATUSES] as Filter[]).map((s) => {
               const on = filter === s;
-              const label = s === 'all' ? t('الكل', 'All') : t(PROPERTY_STATUS_LABEL[s]);
+              const label = s === 'all' ? t(m.common.all) : t(PROPERTY_STATUS_LABEL[s]);
               return (
                 <Pressable
                   key={s}
                   accessibilityRole="radio"
-                  accessibilityLabel={`${label}، ${fmtNum(count(s), lang)}`}
+                  accessibilityLabel={joinParts([label, fmtNum(count(s), lang)], lang)}
                   accessibilityState={{ checked: on }}
                   onPress={() => setFilter(s)}
                   style={[styles.chip, { backgroundColor: on ? colors.ink : colors.surface, borderColor: colors.line }]}
@@ -104,12 +104,12 @@ export function AdminListingsScreen() {
           <View style={styles.empty}>
             <Building2 size={32} color={colors.ink3} strokeWidth={1.6} />
             <Txt weight="medium" align="center">
-              {count('all') ? t('مفيش عقارات هنا', 'No listings here') : t('لسه مفيش عقارات', 'No listings yet')}
+              {count('all') ? t(m.common.noListingsHere) : t(m.admin.noListingsYet)}
             </Txt>
             <Txt size={13} color="ink2" align="center">
               {count('all')
-                ? t('جرّب حالة تانية أو امسح البحث.', 'Try another status or clear the search.')
-                : t('أضف أول عقار من زرار +.', 'Add the first one with the + button.')}
+                ? t(m.admin.tryAnotherStatusOrClear)
+                : t(m.admin.addTheFirstOneWith)}
             </Txt>
           </View>
         )

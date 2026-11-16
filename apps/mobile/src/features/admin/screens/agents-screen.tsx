@@ -1,4 +1,4 @@
-import { type AdminAgentItem, fmtNum } from '@maqar/shared';
+import { pickField, type AdminAgentItem } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Check, Plus, Users } from 'lucide-react-native';
 import { useState } from 'react';
@@ -10,7 +10,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
-import { initialsOf, useLang, useT } from '@/core/i18n';
+import { m, initialsOf, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { DayStrip, draftOf, nextDays, WeekEditor, type WeekDraft, weekOf } from '../components/week-editor';
@@ -21,7 +21,6 @@ const DEFAULT_WEEK = draftOf([0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, 
 /** The admin's Agents tab (phase 18): every agent; pick several to set their hours or days off at once. */
 export function AgentsScreen() {
   const t = useT();
-  const lang = useLang();
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -52,18 +51,18 @@ export function AgentsScreen() {
             <View style={styles.titleRow}>
               <View style={styles.flex}>
                 <Txt accessibilityRole="header" size={24} weight="semibold">
-                  {t('المسؤولين', 'Agents')}
+                  {t(m.admin.agents)}
                 </Txt>
                 {agents.isSuccess ? (
                   <Txt size={13} color="ink2">
-                    {t(`${fmtNum(list.filter((a) => a.active).length, 'ar')} شغالين`, `${list.filter((a) => a.active).length} active`)}
+                    {t(m.admin.activeCount(list.filter((a) => a.active).length))}
                   </Txt>
                 ) : null}
               </View>
-              <IconButton icon={<Plus size={20} color={colors.ink} />} label={t('أضف مسؤول', 'Add an agent')} onPress={() => router.push('/admin/agent/new')} />
+              <IconButton icon={<Plus size={20} color={colors.ink} />} label={t(m.admin.addAnAgent)} onPress={() => router.push('/admin/agent/new')} />
             </View>
             <Button
-              label={picking ? t('إلغاء الاختيار', 'Cancel') : t('اختار كذا مسؤول', 'Pick several agents')}
+              label={picking ? t(m.admin.cancel) : t(m.admin.pickSeveralAgents)}
               variant="secondary"
               onPress={() => {
                 setPicking(!picking);
@@ -80,7 +79,7 @@ export function AgentsScreen() {
           ) : (
             <View style={styles.empty}>
               <Users size={32} color={colors.ink3} strokeWidth={1.6} />
-              <Txt weight="medium">{t('لسه مفيش مسؤولين', 'No agents yet')}</Txt>
+              <Txt weight="medium">{t(m.admin.noAgentsYet)}</Txt>
             </View>
           )
         }
@@ -89,10 +88,10 @@ export function AgentsScreen() {
       {picking ? (
         <View style={[styles.bar, { paddingBottom: 10, borderTopColor: colors.line, backgroundColor: colors.surface }]}>
           <Txt size={13} color="ink2" style={styles.flex}>
-            {t(`${fmtNum(picked.length, lang)} مختارين`, `${picked.length} picked`)}
+            {t(m.admin.pickedCount(picked.length))}
           </Txt>
-          <Button label={t('المواعيد', 'Hours')} disabled={!picked.length} onPress={() => setSheet('hours')} />
-          <Button label={t('إجازة', 'Day off')} variant="secondary" disabled={!picked.length} onPress={() => setSheet('off')} />
+          <Button label={t(m.admin.hours)} disabled={!picked.length} onPress={() => setSheet('hours')} />
+          <Button label={t(m.common.dayOff)} variant="secondary" disabled={!picked.length} onPress={() => setSheet('off')} />
         </View>
       ) : null}
       <HoursSheet open={sheet === 'hours'} agentIds={picked} start={DEFAULT_WEEK} onClose={() => setSheet(null)} onDone={done} />
@@ -106,7 +105,7 @@ function AgentRow({ agent, picking: pick, picked: on, onPress }: { agent: AdminA
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
-  const name = lang === 'ar' ? agent.nameAr : agent.nameEn;
+  const name = pickField(agent, 'name', lang);
   return (
     <Pressable
       accessibilityRole={pick ? 'checkbox' : 'button'}
@@ -123,12 +122,12 @@ function AgentRow({ agent, picking: pick, picked: on, onPress }: { agent: AdminA
       <View style={styles.flex}>
         <Txt weight="medium">{name}</Txt>
         <Txt size={12} color="ink2" numberOfLines={1}>
-          {lang === 'ar' ? agent.roleTitleAr : agent.roleTitleEn}
+          {pickField(agent, 'roleTitle', lang)}
         </Txt>
         <Txt size={12} color="ink3">
           {agent.active
-            ? t(`${fmtNum(agent.live, 'ar')} عقار منشور | ${fmtNum(agent.openLeads, 'ar')} عميل مفتوح`, `${agent.live} live | ${agent.openLeads} open leads`)
-            : t('موقوف', 'Turned off')}
+            ? t(m.admin.liveAndLeads(agent.live, agent.openLeads))
+            : t(m.admin.turnedOff)}
         </Txt>
       </View>
       {pick ? <View style={[styles.check, { borderColor: on ? colors.accent : colors.line2, backgroundColor: on ? colors.accent : 'transparent' }]}>{on ? <Check size={14} color={colors.navy} /> : null}</View> : null}
@@ -148,13 +147,13 @@ export function HoursSheet({ open, agentIds, start, onClose, onDone }: { open: b
   const save = useSetHours();
   const days = weekOf(week);
   return (
-    <Sheet open={open} onClose={onClose} title={agentIds.length > 1 ? t('مواعيد المسؤولين المختارين', 'Hours of the picked agents') : t('مواعيد الشغل', 'Working hours')} scroll>
+    <Sheet open={open} onClose={onClose} title={agentIds.length > 1 ? t(m.admin.hoursOfThePickedAgents) : t(m.common.workingHours)} scroll>
       <Txt size={13} color="ink2">
-        {t('المعاينات ورد الشات الأوتوماتيك بيمشوا على المواعيد دي على طول.', 'Viewing slots and the chat’s away reply follow these hours at once.')}
+        {t(m.admin.viewingSlotsAndTheChats)}
       </Txt>
       <WeekEditor value={week} onChange={setWeek} />
       <Button
-        label={t('احفظ المواعيد', 'Save hours')}
+        label={t(m.admin.saveHours)}
         disabled={!days.length}
         loading={save.isPending}
         onPress={() =>
@@ -162,10 +161,10 @@ export function HoursSheet({ open, agentIds, start, onClose, onDone }: { open: b
             { agentIds, hours: days },
             {
               onSuccess: () => {
-                toast.show({ title: t('المواعيد اتحفظت', 'Hours saved'), tone: 'sage' });
+                toast.show({ title: t(m.admin.hoursSaved), tone: 'sage' });
                 onDone();
               },
-              onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }),
+              onError: () => toast.show({ title: t(m.common.somethingWentWrongTryAgain), tone: 'danger' }),
             },
           )
         }
@@ -184,15 +183,15 @@ export function DaysOffSheet({ open, agentIds, onClose, onDone }: { open: boolea
   const add = useAddDaysOff();
   const bad = !from || (to !== null && to < from);
   return (
-    <Sheet open={open} onClose={onClose} title={t('إجازة', 'Day off')} scroll>
-      <DayStrip label={t('من يوم', 'From')} days={days} value={from} onChange={(d) => {
+    <Sheet open={open} onClose={onClose} title={t(m.common.dayOff)} scroll>
+      <DayStrip label={t(m.admin.from)} days={days} value={from} onChange={(d) => {
           setFrom(d);
           if (to && to < d) setTo(null);
         }} />
-      <DayStrip label={t('لحد يوم (اختياري)', 'To (optional)')} days={from ? days.filter((d) => d >= from) : days} value={to} onChange={setTo} />
-      <TextField label={t('السبب (اختياري)', 'Reason (optional)')} value={reason} onChangeText={setReason} maxLength={100} />
+      <DayStrip label={t(m.admin.toOptional)} days={from ? days.filter((d) => d >= from) : days} value={to} onChange={setTo} />
+      <TextField label={t(m.admin.reasonOptional)} value={reason} onChangeText={setReason} maxLength={100} />
       <Button
-        label={t('احفظ الإجازة', 'Save day off')}
+        label={t(m.admin.saveDayOff)}
         disabled={bad}
         loading={add.isPending}
         onPress={() =>
@@ -202,8 +201,8 @@ export function DaysOffSheet({ open, agentIds, onClose, onDone }: { open: boolea
               onSuccess: (res) => {
                 const booked = res.booked.reduce((n, b) => n + b.viewings, 0);
                 toast.show({
-                  title: t(`اتضاف ${fmtNum(res.days, 'ar')} يوم إجازة`, `${res.days} days off added`),
-                  body: booked ? t(`فيه ${fmtNum(booked, 'ar')} معاينة محجوزة في الأيام دي، اتفق مع العملاء على ميعاد تاني.`, `${booked} viewings are booked on those days: agree another time with the clients.`) : undefined,
+                  title: t(m.admin.daysOffAdded(res.days)),
+                  body: booked ? t(m.admin.bookedOnDaysOff(booked)) : undefined,
                   tone: booked ? 'gold' : 'sage',
                 });
                 setFrom(null);
@@ -211,7 +210,7 @@ export function DaysOffSheet({ open, agentIds, onClose, onDone }: { open: boolea
                 setReason('');
                 onDone();
               },
-              onError: () => toast.show({ title: t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'), tone: 'danger' }),
+              onError: () => toast.show({ title: t(m.common.somethingWentWrongTryAgain), tone: 'danger' }),
             },
           )
         }

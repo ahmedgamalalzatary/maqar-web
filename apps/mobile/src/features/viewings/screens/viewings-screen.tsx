@@ -1,4 +1,4 @@
-import { fmtDate, fmtTime, canChangeViewing, isActiveViewing, isUpcoming, relTime, type ViewingItem, type ViewingStatus } from '@maqar/shared';
+import { pickField, fmtDate, fmtTime, canChangeViewing, isActiveViewing, isUpcoming, relTime, VIEWING_STATUS_LABEL, type ViewingItem, type ViewingStatus } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { mediaUrl } from '@/core/api/api';
-import { initialsOf, useLang, useT } from '@/core/i18n';
+import { m, initialsOf, useLang, useT } from '@/core/i18n';
 import { type Colors, radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
@@ -45,17 +45,17 @@ export function ViewingsScreen() {
     update.mutate(
       { id: v.id, body: { action: 'cancel' } },
       {
-        onSuccess: () => toast.show({ title: t('تم إلغاء المعاينة', 'Viewing cancelled'), tone: 'sage' }),
-        onError: () => toast.show({ title: t('مقدرناش نلغيها، حاول تاني', 'We couldn’t cancel it, try again'), tone: 'danger' }),
+        onSuccess: () => toast.show({ title: t(m.viewings.viewingCancelled), tone: 'sage' }),
+        onError: () => toast.show({ title: t(m.viewings.weCouldntCancelItTry), tone: 'danger' }),
       },
     );
   };
 
   const empty = !signedIn ? (
     <Message
-      title={t('سجّل دخولك عشان تحجز معاينة', 'Sign in to book viewings')}
-      body={t('اختار وحدة، حدد اليوم والساعة، وهتعرف مين هيقابلك.', 'Pick a home, choose the day and hour, and see who will meet you.')}
-      action={{ label: t('تسجيل الدخول', 'Sign in'), onPress: () => router.push('/sign-in') }}
+      title={t(m.viewings.signInToBookViewings)}
+      body={t(m.viewings.pickAHomeChooseThe)}
+      action={{ label: t(m.common.signIn), onPress: () => router.push('/sign-in') }}
     />
   ) : viewings.isPending ? (
     <CardSkeleton />
@@ -63,9 +63,9 @@ export function ViewingsScreen() {
     <ListingsError onRetry={() => void viewings.refetch()} />
   ) : (
     <Message
-      title={tab === 'up' ? t('مفيش معاينات جاية', 'No upcoming viewings') : t('لسه مفيش معاينات سابقة', 'No past viewings yet')}
-      body={t('اختار وحدة، حدد اليوم والساعة، وهتعرف مين هيقابلك. من غير مكالمات.', 'Pick a home, choose the day and hour, and see who will meet you. No phone calls.')}
-      action={{ label: t('استكشف الوحدات', 'Explore homes'), onPress: () => router.push('/explore') }}
+      title={tab === 'up' ? t(m.viewings.noUpcomingViewings) : t(m.viewings.noPastViewingsYet)}
+      body={t(m.viewings.pickAHomeChooseThe2)}
+      action={{ label: t(m.common.exploreHomes), onPress: () => router.push('/explore') }}
     />
   );
 
@@ -81,14 +81,14 @@ export function ViewingsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Txt accessibilityRole="header" size={24} weight="semibold">
-              {t('معايناتي', 'My viewings')}
+              {t(m.common.myViewings)}
             </Txt>
             <Segmented
               value={tab}
               onChange={setTab}
               options={[
-                { value: 'up', label: t('الجاية', 'Upcoming') },
-                { value: 'past', label: t('السابقة والملغاة', 'Past & cancelled') },
+                { value: 'up', label: t(m.viewings.upcoming) },
+                { value: 'past', label: t(m.viewings.pastCancelled) },
               ]}
             />
           </View>
@@ -98,24 +98,24 @@ export function ViewingsScreen() {
           signedIn ? <RefreshControl refreshing={viewings.isRefetching} onRefresh={() => void viewings.refetch()} tintColor={colors.accent} /> : undefined
         }
       />
-      <Sheet open={!!cancelling} onClose={() => setCancelling(null)} title={t('إلغاء المعاينة؟', 'Cancel this viewing?')}>
-        <Txt color="ink2">{t('لو الميعاد بس مش مناسب، تقدر تغيّره بدل ما تلغيه.', 'If the time just doesn’t suit you, you can reschedule instead.')}</Txt>
+      <Sheet open={!!cancelling} onClose={() => setCancelling(null)} title={t(m.viewings.cancelThisViewing)}>
+        <Txt color="ink2">{t(m.viewings.ifTheTimeJustDoesnt)}</Txt>
         <View style={styles.sheetActions}>
-          <Button label={t('إلغاء المعاينة', 'Cancel viewing')} variant="danger" onPress={cancel} />
-          <Button label={t('لا، خليها', 'Keep it')} variant="secondary" onPress={() => setCancelling(null)} />
+          <Button label={t(m.viewings.cancelViewing)} variant="danger" onPress={cancel} />
+          <Button label={t(m.viewings.keepIt)} variant="secondary" onPress={() => setCancelling(null)} />
         </View>
       </Sheet>
     </>
   );
 }
 
-const STATUS: Record<ViewingStatus, { ar: string; en: string; tone: (c: Colors) => [string, string] }> = {
-  confirmed: { ar: 'مؤكدة', en: 'Confirmed', tone: (c) => [c.successSoft, c.success] },
-  rescheduled: { ar: 'اتغير موعدها', en: 'Rescheduled', tone: (c) => [c.accentSoft, c.accentInk] },
-  cancelled: { ar: 'ملغاة', en: 'Cancelled', tone: (c) => [c.dangerSoft, c.danger] },
-  completed: { ar: 'تمت', en: 'Completed', tone: (c) => [c.sageSoft, c.sageInk] },
+const STATUS_TONE: Record<ViewingStatus, (c: Colors) => [string, string]> = {
+  confirmed: (c) => [c.successSoft, c.success],
+  rescheduled: (c) => [c.accentSoft, c.accentInk],
+  cancelled: (c) => [c.dangerSoft, c.danger],
+  completed: (c) => [c.sageSoft, c.sageInk],
   // Booked from a chat, waiting for the advisor (2026-11-14).
-  pending: { ar: 'مستنية التأكيد', en: 'Awaiting confirmation', tone: (c) => [c.accentSoft, c.accentInk] },
+  pending: (c) => [c.accentSoft, c.accentInk],
 };
 
 function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) {
@@ -124,10 +124,9 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
   const router = useRouter();
   const { colors } = useTheme();
   const p = v.property;
-  const title = lang === 'ar' ? p.titleAr : p.titleEn;
-  const agentName = lang === 'ar' ? v.agent.nameAr : v.agent.nameEn;
-  const status = STATUS[v.status];
-  const [bg, fg] = status.tone(colors);
+  const title = pickField(p, 'title', lang);
+  const agentName = pickField(v.agent, 'name', lang);
+  const [bg, fg] = STATUS_TONE[v.status](colors);
   const active = isActiveViewing(v) && isUpcoming(v);
   // Once it has started the server refuses a change or a cancel, so the card stops offering them.
   const changeable = canChangeViewing(v);
@@ -140,7 +139,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <View style={[styles.badge, { backgroundColor: bg }]}>
           <Txt size={11} weight="semibold" style={{ color: fg }}>
-            {t(status.ar, status.en)}
+            {t(VIEWING_STATUS_LABEL[v.status])}
           </Txt>
         </View>
         <View style={styles.photoText}>
@@ -150,7 +149,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
           <View style={styles.inline}>
             <MapPin size={14} color="#fff" />
             <Txt size={12} numberOfLines={1} style={[styles.white, styles.flex]}>
-              {`${lang === 'ar' ? p.compoundAr : p.compoundEn} | ${lang === 'ar' ? p.area.nameAr : p.area.nameEn}`}
+              {`${pickField(p, 'compound', lang)} | ${pickField(p.area, 'name', lang)}`}
             </Txt>
           </View>
         </View>
@@ -165,12 +164,12 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
             {fmtDate(v.date, lang, 'long')}
           </Txt>
           <Txt size={12.5} color="ink2">
-            {fmtTime(v.time, lang)} | {t('في الموقع', 'On site')}
+            {fmtTime(v.time, lang)} | {t(m.common.onSite)}
             {active ? <Txt size={12.5} color="accentInk">{` | ${relTime(new Date(v.startsAt), lang)}`}</Txt> : null}
           </Txt>
           {v.rescheduledFrom ? (
             <Txt size={11} color="ink3">
-              {t('كانت', 'Was')} {fmtDate(v.rescheduledFrom.date, lang)} {fmtTime(v.rescheduledFrom.time, lang)}
+              {t(m.viewings.was)} {fmtDate(v.rescheduledFrom.date, lang)} {fmtTime(v.rescheduledFrom.time, lang)}
             </Txt>
           ) : null}
         </View>
@@ -179,12 +178,12 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
       <View style={[styles.agent, { backgroundColor: colors.surface2 }]}>
         <View style={[styles.avatar, { backgroundColor: v.agent.colour }]}>
           <Txt size={14} weight="semibold" style={styles.white}>
-            {initialsOf(lang === 'ar' ? v.agent.nameAr : v.agent.nameEn, lang)}
+            {initialsOf(pickField(v.agent, 'name', lang), lang)}
           </Txt>
         </View>
         <View style={styles.flex}>
           <Txt size={11} color="ink3">
-            {t('مسؤول المبيعات', 'Sales advisor')}
+            {t(m.common.salesAdvisor)}
           </Txt>
           <Txt size={13} weight="semibold" numberOfLines={1}>
             {agentName}
@@ -192,7 +191,7 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(`اتصل بـ${agentName}`, `Call ${agentName}`)}
+          accessibilityLabel={t(m.viewings.callAgent(agentName))}
           onPress={() => void Linking.openURL(`tel:${v.agent.phone}`)}
           style={[styles.round, { backgroundColor: colors.surface, borderColor: colors.line }]}
         >
@@ -202,20 +201,20 @@ function ViewingCard({ v, onCancel }: { v: ViewingItem; onCancel: () => void }) 
 
       {active ? (
         <View style={styles.actions}>
-          {changeable ? <Action icon={RefreshCw} label={t('تغيير', 'Change')} onPress={() => router.push(`/property/${p.id}/book?reschedule=${v.id}`)} /> : null}
+          {changeable ? <Action icon={RefreshCw} label={t(m.viewings.change)} onPress={() => router.push(`/property/${p.id}/book?reschedule=${v.id}`)} /> : null}
           <Action
             icon={CalendarPlus}
-            label={t('للتقويم', 'Calendar')}
+            label={t(m.viewings.calendar)}
             onPress={() =>
-              addToCalendar(v.id).catch(() => toast.show({ title: t('مقدرناش نجهز ملف التقويم', 'We couldn’t prepare the calendar file'), tone: 'danger' }))
+              addToCalendar(v.id).catch(() => toast.show({ title: t(m.common.weCouldntPrepareTheCalendar), tone: 'danger' }))
             }
           />
-          {v.location ? <Action icon={Navigation} label={t('الاتجاهات', 'Directions')} onPress={() => void Linking.openURL(directionsUrl(v.location!))} /> : null}
-          {changeable ? <Action icon={XCircle} label={t('إلغاء', 'Cancel')} onPress={onCancel} danger /> : null}
+          {v.location ? <Action icon={Navigation} label={t(m.common.directions)} onPress={() => void Linking.openURL(directionsUrl(v.location!))} /> : null}
+          {changeable ? <Action icon={XCircle} label={t(m.common.cancel)} onPress={onCancel} danger /> : null}
         </View>
       ) : p.category !== 'stay' ? (
         <View style={styles.again}>
-          <Button label={t('احجز ميعاد جديد', 'Book again')} variant="secondary" onPress={() => router.push(`/property/${p.id}/book`)} />
+          <Button label={t(m.viewings.bookAgain)} variant="secondary" onPress={() => router.push(`/property/${p.id}/book`)} />
         </View>
       ) : null}
     </View>

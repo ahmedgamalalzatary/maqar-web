@@ -1,7 +1,7 @@
 import type { PropertyCard } from '@maqar/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/toast';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { useSession } from '@/features/auth/store/session.store';
 import { followRequest, getAlerts, unfollowRequest } from '../api/alerts.api';
 
@@ -43,13 +43,13 @@ export function useToggleAlert(card: PropertyCard) {
       queryClient.setQueryData<PropertyCard[]>(key, (cards) => withFollowed(cards, card, on));
       toast.show(
         on
-          ? { title: t('هنبلغك لو السعر نزل', 'We’ll tell you if the price drops'), tone: 'sage' }
-          : { title: t('تم إيقاف تنبيه السعر', 'Price alert off'), tone: 'sage' },
+          ? { title: t(m.alerts.wellTellYouIfThe), tone: 'sage' }
+          : { title: t(m.alerts.priceAlertOff), tone: 'sage' },
       );
     },
     onError: (_err, on) => {
       queryClient.setQueryData<PropertyCard[]>(key, (cards) => withFollowed(cards, card, !on));
-      toast.show({ title: t('مقدرناش نحفظ التغيير، حاول تاني', 'We couldn’t save that, try again'), tone: 'danger' });
+      toast.show({ title: t(m.common.weCouldntSaveThatTry), tone: 'danger' });
     },
     onSettled: () => {
       // Refresh after the last write only: an earlier answer must not undo a later tap on screen.

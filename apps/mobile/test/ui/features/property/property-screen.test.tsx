@@ -118,7 +118,7 @@ describe('PropertyScreen', () => {
     expect(await screen.findAllByTestId('gallery-video')).toHaveLength(2);
     expect(screen.getByText('١ / ٤')).toBeOnTheScreen();
     // The chip plays the first video; closing stops it.
-    await fireEvent.press(screen.getByRole('button', { name: '٢ فيديو، شغّل الأول' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'فيديوهين، شغّل الأول' }));
     expect(await screen.findByTestId('video-view')).toHaveProp('accessibilityLabel', expect.stringMatching(/\/uploads\/videos\/a\.mp4$/));
     await fireEvent.press(screen.getByRole('button', { name: 'اقفل الفيديو' }));
     expect(screen.queryByTestId('video-view')).toBeNull();

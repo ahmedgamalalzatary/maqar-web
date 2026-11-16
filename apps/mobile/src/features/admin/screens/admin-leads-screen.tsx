@@ -1,4 +1,4 @@
-import { type AdminLeadItem, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from '@maqar/shared';
+import { pickField, joinParts, type AdminLeadItem, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from '@maqar/shared';
 import { Check, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -7,7 +7,7 @@ import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useAdminAgents, useAdminLeads, useAssignLead } from '../hooks/use-admin';
@@ -40,16 +40,16 @@ export function AdminLeadsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Txt accessibilityRole="header" size={24} weight="semibold">
-              {t('العملاء', 'Leads')}
+              {t(m.admin.leads)}
             </Txt>
             <Txt size={13} color="ink2">
-              {t('دوس على عميل علشان تنقله لمسؤول تاني.', 'Tap a lead to move it to another agent.')}
+              {t(m.admin.tapALeadToMove)}
             </Txt>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.chips}>
               {[undefined, ...(agents.data ?? []).map((a) => a.id)].map((id) => {
                 const a = agents.data?.find((x) => x.id === id);
                 const on = agentId === id;
-                const label = a ? (lang === 'ar' ? a.nameAr : a.nameEn) : t('كل المسؤولين', 'All agents');
+                const label = a ? (pickField(a, 'name', lang)) : t(m.admin.allAgents);
                 return (
                   <Pressable
                     key={id ?? 'all'}
@@ -77,7 +77,7 @@ export function AdminLeadsScreen() {
           ) : (
             <View style={styles.empty}>
               <Users size={32} color={colors.ink3} strokeWidth={1.6} />
-              <Txt weight="medium">{t('مفيش عملاء هنا', 'No leads here')}</Txt>
+              <Txt weight="medium">{t(m.common.noLeadsHere)}</Txt>
             </View>
           )
         }
@@ -92,19 +92,19 @@ function LeadRow({ lead, onPress }: { lead: AdminLeadItem; onPress: () => void }
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
-  const agent = lang === 'ar' ? lead.agent.nameAr : lead.agent.nameEn;
-  const home = lead.property ? (lang === 'ar' ? lead.property.titleAr : lead.property.titleEn) : null;
+  const agent = pickField(lead.agent, 'name', lang);
+  const home = lead.property ? (pickField(lead.property, 'title', lang)) : null;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${lead.name || t('عميل', 'Client')}، ${agent}`}
+      accessibilityLabel={joinParts([lead.name || t(m.common.client), agent], lang)}
       onPress={onPress}
       style={({ pressed }) => [styles.row, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
     >
       <View style={styles.flex}>
         <View style={styles.top}>
           <Txt weight="medium" numberOfLines={1} style={styles.flex}>
-            {lead.name || t('عميل اتمسح حسابه', 'Deleted account')}
+            {lead.name || t(m.admin.deletedAccount)}
           </Txt>
           <View style={[styles.stage, { backgroundColor: `${LEAD_STAGE_COLOUR[lead.stage]}22` }]}>
             <Txt size={11} weight="semibold" style={{ color: LEAD_STAGE_COLOUR[lead.stage] }}>
@@ -139,25 +139,25 @@ function MoveSheet({ lead, onClose }: { lead: AdminLeadItem | null; onClose: () 
       { id: lead!.id, agentId },
       {
         onSuccess: (l) => {
-          toast.show({ title: t(`العميل اتنقل لـ ${l.agent.nameAr}`, `Moved to ${l.agent.nameEn}`), body: t('المسؤول الجديد وصله إشعار.', 'The new agent got a notification.'), tone: 'sage' });
+          toast.show({ title: t(m.admin.movedTo(l.agent)), body: t(m.admin.theNewAgentGotA), tone: 'sage' });
           onClose();
         },
         onError: (e) =>
           toast.show({
-            title: e instanceof ApiError && e.status === 409 ? t('العميل ده عنده ملف مع المسؤول ده بالفعل', 'This client already has a lead with that agent') : t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'),
+            title: e instanceof ApiError && e.status === 409 ? t(m.admin.thisClientAlreadyHasA) : t(m.common.somethingWentWrongTryAgain),
             tone: 'danger',
           }),
       },
     );
   return (
-    <Sheet open={lead !== null} onClose={onClose} title={t('انقل العميل لمسؤول تاني', 'Move the lead to another agent')} scroll>
+    <Sheet open={lead !== null} onClose={onClose} title={t(m.admin.moveTheLeadToAnother)} scroll>
       <Txt size={13} color="ink2">
-        {t('الشات والمعاينات بيفضلوا مع مسؤول العقار.', 'Chats and viewings stay with the home’s advisor.')}
+        {t(m.admin.chatsAndViewingsStayWith)}
       </Txt>
       {agents.isPending ? <ActivityIndicator color={colors.accent} /> : null}
       {(agents.data ?? []).map((a) => {
         const current = a.id === lead?.agent.id;
-        const name = lang === 'ar' ? a.nameAr : a.nameEn;
+        const name = pickField(a, 'name', lang);
         return (
           <Pressable
             key={a.id}
@@ -172,7 +172,7 @@ function MoveSheet({ lead, onClose }: { lead: AdminLeadItem | null; onClose: () 
             <View style={styles.flex}>
               <Txt weight="medium">{name}</Txt>
               <Txt size={12} color="ink2">
-                {t(`${fmtNum(a.live, 'ar')} عقار منشور`, `${a.live} live listings`)}
+                {t(m.common.liveListings(a.live))}
               </Txt>
             </View>
             {current ? <Check size={18} color={colors.accentInk} /> : null}

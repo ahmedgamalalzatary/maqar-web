@@ -6,7 +6,6 @@ import {
   type Feature,
   fmtMoney,
   fmtNum,
-  localDigits,
   PREFS_BEDS_MAX,
   type Prefs,
   PROPERTY_TYPE_LABEL,
@@ -28,7 +27,7 @@ import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
 import { ToggleChip } from '@/features/listings/components/chips';
@@ -126,7 +125,7 @@ export function OnboardingScreen() {
     <KeyboardAvoiding style={{ backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
       <View style={styles.top}>
         {step > 0 ? (
-          <IconButton label={t('رجوع', 'Back')} onPress={() => go(-1)} icon={<Back size={20} color={colors.ink} />} />
+          <IconButton label={t(m.common.back)} onPress={() => go(-1)} icon={<Back size={20} color={colors.ink} />} />
         ) : (
           <View style={styles.topSpace} />
         )}
@@ -138,13 +137,13 @@ export function OnboardingScreen() {
         {saved ? (
           <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={8}>
             <Txt size={13} weight="medium" color="ink2">
-              {t('إلغاء', 'Cancel')}
+              {t(m.common.cancel)}
             </Txt>
           </Pressable>
         ) : (
           <Pressable accessibilityRole="button" onPress={finish} disabled={save.isPending} hitSlop={8}>
             <Txt size={13} weight="medium" color="ink2">
-              {t('تخطي', 'Skip')}
+              {t(m.common.skip)}
             </Txt>
           </Pressable>
         )}
@@ -155,18 +154,18 @@ export function OnboardingScreen() {
         {step === 0 ? (
           <>
             <Title
-              title={saved ? t('عدّل تفضيلاتك', 'Edit your preferences') : t('أهلاً بيك في مقر', 'Welcome to Maqar')}
-              sub={t('أسئلة سريعة ونرشحلك العقارات اللي تناسبك فعلاً.', 'A few quick questions and we’ll suggest homes that actually fit you.')}
+              title={saved ? t(m.common.editYourPreferences) : t(m.prefs.welcomeToMaqar)}
+              sub={t(m.prefs.aFewQuickQuestionsAnd)}
             />
             <View style={styles.group}>
               <Txt size={13} weight="medium" color="ink2">
-                {t('اسمك (اختياري)', 'Your name (optional)')}
+                {t(m.common.yourNameOptional)}
               </Txt>
               <TextInput
-                accessibilityLabel={t('اسمك (اختياري)', 'Your name (optional)')}
+                accessibilityLabel={t(m.common.yourNameOptional)}
                 value={name}
                 onChangeText={setName}
-                placeholder={t('مثلاً: أحمد', 'e.g. Ahmed')}
+                placeholder={t(m.prefs.eGAhmed)}
                 placeholderTextColor={colors.ink3}
                 autoComplete="name"
                 style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.line, color: colors.ink, textAlign: rtl ? 'right' : 'left' }]}
@@ -174,7 +173,7 @@ export function OnboardingScreen() {
             </View>
             <View style={styles.group}>
               <Txt size={13} weight="medium" color="ink2">
-                {t('بتدور على إيه؟', 'What are you looking for?')}
+                {t(m.prefs.whatAreYouLookingFor)}
               </Txt>
               <View style={styles.grid}>
                 {PURPOSES.map((p) => {
@@ -216,20 +215,20 @@ export function OnboardingScreen() {
         {step === 1 ? (
           <>
             <Title
-              title={renter ? t('ميزانيتك الشهرية؟', 'Monthly budget?') : t('ميزانيتك القصوى؟', 'Your top budget?')}
-              sub={t('مش هنعرضها لحد. بنستخدمها بس عشان نرتب لك الأنسب.', 'Never shown to anyone. We only use it to rank what fits you.')}
+              title={renter ? t(m.prefs.monthlyBudget) : t(m.prefs.yourTopBudget)}
+              sub={t(m.prefs.neverShownToAnyoneWe)}
             />
             <View style={styles.budget}>
               <BudgetBox value={budget} onCommit={(v) => setBudget(Math.min(scale.max, Math.max(scale.min, v)))} />
               <Txt size={12} color="ink3" align="center">
-                {renter ? t('في الشهر', 'per month') : t('إجمالي سعر الوحدة', 'total unit price')}
+                {renter ? t(m.prefs.perMonth) : t(m.prefs.totalUnitPrice)}
               </Txt>
             </View>
             <BudgetSlider
               scale={scale}
               value={budget}
               onChange={setBudget}
-              label={t('الميزانية', 'Budget')}
+              label={t(m.prefs.budget)}
               valueText={fmtMoney(budget, lang)}
             />
             <View accessibilityRole="radiogroup" style={styles.presets}>
@@ -252,7 +251,7 @@ export function OnboardingScreen() {
 
         {step === 3 ? (
           <>
-            <Title title={t('نوع الوحدة؟', 'What kind of home?')} sub={t('اختار نوع أو أكتر، أو سيبها مفتوحة.', 'Pick one or more, or leave it open.')} />
+            <Title title={t(m.prefs.whatKindOfHome)} sub={t(m.prefs.pickOneOrMoreOr)} />
             <View style={styles.chips}>
               {PROPERTY_TYPES.map((k) => (
                 <ToggleChip key={k} label={t(PROPERTY_TYPE_LABEL[k])} selected={types.includes(k)} onPress={() => setTypes((x) => toggle(x, k))} />
@@ -263,18 +262,18 @@ export function OnboardingScreen() {
 
         {step === 4 ? (
           <>
-            <Title title={t('إيه اللي يهمك؟', 'What matters to you?')} />
+            <Title title={t(m.prefs.whatMattersToYou)} />
             <View style={styles.group}>
               <Txt size={13} weight="medium" color="ink2">
-                {t('أقل عدد غرف', 'Minimum bedrooms')}
+                {t(m.prefs.minimumBedrooms)}
               </Txt>
               <View accessibilityRole="radiogroup" style={styles.chips}>
                 {Array.from({ length: PREFS_BEDS_MAX + 1 }, (_, n) => (
                   <ToggleChip
                     key={n}
                     role="radio"
-                    label={n === 0 ? t('أي عدد', 'Any') : bedsLabel(n, lang)}
-                    text={n === 0 ? t('أي', 'Any') : n === PREFS_BEDS_MAX ? `${fmtNum(n, lang)}+` : fmtNum(n, lang)}
+                    label={n === 0 ? t(m.prefs.any) : t(m.prefs.bedsOrMore(n))}
+                    text={n === 0 ? t(m.prefs.any2) : n === PREFS_BEDS_MAX ? `${fmtNum(n, lang)}+` : fmtNum(n, lang)}
                     selected={beds === n}
                     onPress={() => setBeds(n)}
                   />
@@ -283,7 +282,7 @@ export function OnboardingScreen() {
             </View>
             <View style={styles.group}>
               <Txt size={13} weight="medium" color="ink2">
-                {t('مميزات لازم تكون موجودة', 'Must-haves')}
+                {t(m.prefs.mustHaves)}
               </Txt>
               <View style={styles.chips}>
                 {INTERESTS.map((f) => (
@@ -298,7 +297,7 @@ export function OnboardingScreen() {
                   {count.data ? fmtNum(count.data.count, lang) : '…'}
                 </Txt>
                 <Txt size={14} style={{ color: colors.bg }}>
-                  {t(`عقار يناسبك بنسبة ${localDigits('70', 'ar')}٪ أو أكتر`, 'homes match you 70% or more')}
+                  {t(m.prefs.homesMatch70)}
                 </Txt>
               </View>
             </View>
@@ -310,11 +309,11 @@ export function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         {save.isError ? (
           <Txt color="danger" align="center" accessibilityLiveRegion="polite">
-            {t('معرفناش نحفظ تفضيلاتك. جرّب تاني.', 'Couldn’t save your preferences. Try again.')}
+            {t(m.prefs.couldntSaveYourPreferencesTry)}
           </Txt>
         ) : null}
         <Button
-          label={last ? (saved ? t('احفظ تفضيلاتك', 'Save preferences') : t('اعرض ترشيحاتي', 'Show my picks')) : t('التالي', 'Next')}
+          label={last ? (saved ? t(m.prefs.savePreferences) : t(m.prefs.showMyPicks)) : t(m.common.next)}
           loading={last && save.isPending}
           onPress={last ? finish : () => go(1)}
         />
@@ -322,9 +321,6 @@ export function OnboardingScreen() {
     </KeyboardAvoiding>
   );
 }
-
-const bedsLabel = (n: number, lang: 'ar' | 'en') =>
-  lang === 'ar' ? (n === 1 ? 'غرفة أو أكتر' : `${fmtNum(n, 'ar')} غرف أو أكتر`) : `${n}+ bedrooms`;
 
 function Title({ title, sub }: { title: string; sub?: string }) {
   return (
@@ -354,7 +350,7 @@ function BudgetBox({ value, onCommit }: { value: number; onCommit: (v: number) =
   };
   return (
     <TextInput
-      accessibilityLabel={t('اكتب الميزانية', 'Type the budget')}
+      accessibilityLabel={t(m.prefs.typeTheBudget)}
       keyboardType="number-pad"
       returnKeyType="done"
       value={typing ?? fmtMoney(value, lang, false)}
@@ -373,7 +369,7 @@ function AreasStep({ picked, onToggle }: { picked: string[]; onToggle: (id: stri
   const areas = useAreas();
   return (
     <>
-      <Title title={t('بتدور فين؟', 'Where are you looking?')} sub={t('اختار منطقة أو أكتر، أو سيبها مفتوحة.', 'Pick one or more areas, or leave it open.')} />
+      <Title title={t(m.prefs.whereAreYouLooking)} sub={t(m.prefs.pickOneOrMoreAreas)} />
       <View style={styles.grid}>
         {(areas.data ?? []).map((a) => {
           const on = picked.includes(a.id);

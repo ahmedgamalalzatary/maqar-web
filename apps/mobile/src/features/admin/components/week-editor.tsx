@@ -3,7 +3,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
 import { Toggle } from '@/components/toggle';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
 /** Saturday first, as the week runs in Egypt. */
@@ -47,16 +47,16 @@ export function WeekEditor({ value, onChange }: { value: WeekDraft; onChange: (w
             {h ? (
               <View style={styles.hours}>
                 <Stepper
-                  label={t(`أول معاينة يوم ${name}`, `First viewing on ${name}`)}
+                  label={t(m.admin.firstViewingOn(name))}
                   text={fmtTime(hh(h.from), lang)}
                   onLess={h.from > 0 ? () => set(day, { ...h, from: h.from - 1 }) : undefined}
                   onMore={h.from < h.to ? () => set(day, { ...h, from: h.from + 1 }) : undefined}
                 />
                 <Txt size={12} color="ink3">
-                  {t('لحد', 'to')}
+                  {t(m.admin.to)}
                 </Txt>
                 <Stepper
-                  label={t(`آخر معاينة يوم ${name}`, `Last viewing on ${name}`)}
+                  label={t(m.admin.lastViewingOn(name))}
                   text={fmtTime(hh(h.to), lang)}
                   onLess={h.to > h.from ? () => set(day, { ...h, to: h.to - 1 }) : undefined}
                   onMore={h.to < 23 ? () => set(day, { ...h, to: h.to + 1 }) : undefined}
@@ -64,7 +64,7 @@ export function WeekEditor({ value, onChange }: { value: WeekDraft; onChange: (w
               </View>
             ) : (
               <Txt size={12} color="ink3">
-                {t('إجازة', 'Day off')}
+                {t(m.common.dayOff)}
               </Txt>
             )}
           </View>
@@ -95,11 +95,11 @@ function Stepper({ label, text, onLess, onMore }: { label: string; text: string;
   };
   return (
     <View style={styles.stepper} accessible={false}>
-      {btn(Minus, onLess, t('أبدر ساعة', 'an hour earlier'))}
+      {btn(Minus, onLess, t(m.admin.anHourEarlier))}
       <Txt size={13} weight="medium" accessibilityLabel={`${label} ${text}`} style={styles.time}>
         {text}
       </Txt>
-      {btn(Plus, onMore, t('أتأخر ساعة', 'an hour later'))}
+      {btn(Plus, onMore, t(m.admin.anHourLater))}
     </View>
   );
 }

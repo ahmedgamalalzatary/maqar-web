@@ -1,4 +1,4 @@
-import { canChangeOwnPassword, DEVELOPER, fmtNum, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
+import { canChangeOwnPassword, DEVELOPER, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -12,7 +12,7 @@ import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';
 import { Toggle } from '@/components/toggle';
 import { mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { useSignOut } from '@/features/auth/hooks/use-auth';
 import { useSession } from '@/features/auth/store/session.store';
@@ -35,7 +35,7 @@ export function MeScreen() {
   const reports = useOpenReports(user?.role === 'admin').data?.length ?? 0;
 
   return (
-    <Screen title={user?.role === 'admin' ? t('المزيد', 'More') : t('حسابي', 'My account')}>
+    <Screen title={user?.role === 'admin' ? t(m.account.more) : t(m.account.myAccount)}>
       {user ? (
         <Card style={styles.profile}>
           <View style={[styles.avatar, { backgroundColor: colors.navy }]}>
@@ -60,42 +60,42 @@ export function MeScreen() {
       ) : (
         <Card style={styles.guest}>
           <Txt size={17} weight="semibold">
-            {t('ضيف مقر', 'Maqar guest')}
+            {t(m.account.maqarGuest)}
           </Txt>
           <Txt color="ink2">
-            {t('سجّل دخولك عشان تحفظ البيوت وتحجز معاينات.', 'Sign in to save homes and book viewings.')}
+            {t(m.account.signInToSaveHomes)}
           </Txt>
-          <Button label={t('تسجيل الدخول', 'Sign in')} onPress={() => router.push('/sign-in')} />
-          <Button label={t('إنشاء حساب', 'Create an account')} variant="secondary" onPress={() => router.push('/sign-up')} />
+          <Button label={t(m.common.signIn)} onPress={() => router.push('/sign-in')} />
+          <Button label={t(m.common.createAnAccount)} variant="secondary" onPress={() => router.push('/sign-up')} />
         </Card>
       )}
 
       {user?.role === 'admin' ? (
         <>
           <Txt size={15} weight="semibold">
-            {t('إدارة', 'Manage')}
+            {t(m.account.manage)}
           </Txt>
           <Card style={styles.list}>
-            <LinkRow icon={<FileBarChart size={20} color={colors.accentInk} />} label={t('التقارير', 'Reports')} onPress={() => router.push('/admin/reports')} />
-            <LinkRow icon={<UsersRound size={20} color={colors.accentInk} />} label={t('حسابات العملاء', 'Client accounts')} onPress={() => router.push('/admin/clients')} />
-            <LinkRow icon={<CalendarCheck size={20} color={colors.accentInk} />} label={t('المعاينات', 'Viewings')} onPress={() => router.push('/admin/viewings')} />
+            <LinkRow icon={<FileBarChart size={20} color={colors.accentInk} />} label={t(m.common.reports)} onPress={() => router.push('/admin/reports')} />
+            <LinkRow icon={<UsersRound size={20} color={colors.accentInk} />} label={t(m.common.clientAccounts)} onPress={() => router.push('/admin/clients')} />
+            <LinkRow icon={<CalendarCheck size={20} color={colors.accentInk} />} label={t(m.common.viewings)} onPress={() => router.push('/admin/viewings')} />
             <LinkRow
               icon={<MessagesSquare size={20} color={colors.accentInk} />}
-              label={reports ? t(`الشاتات (${fmtNum(reports, 'ar')} بلاغ)`, `Chats (${reports} reports)`) : t('الشاتات', 'Chats')}
+              label={reports ? t(m.account.chatsWithReports(reports)) : t(m.common.chats)}
               onPress={() => router.push('/admin/chats')}
             />
-            <LinkRow icon={<MapPin size={20} color={colors.accentInk} />} label={t('المناطق', 'Areas')} onPress={() => router.push('/admin/areas')} />
-            <LinkRow icon={<ShieldUser size={20} color={colors.accentInk} />} label={t('حسابات الإدارة', 'Admin accounts')} onPress={() => router.push('/admin/admins')} />
-            <LinkRow icon={<Settings size={20} color={colors.accentInk} />} label={t('إعدادات التطبيق', 'App settings')} onPress={() => router.push('/admin/settings')} />
+            <LinkRow icon={<MapPin size={20} color={colors.accentInk} />} label={t(m.common.areas)} onPress={() => router.push('/admin/areas')} />
+            <LinkRow icon={<ShieldUser size={20} color={colors.accentInk} />} label={t(m.common.adminAccounts)} onPress={() => router.push('/admin/admins')} />
+            <LinkRow icon={<Settings size={20} color={colors.accentInk} />} label={t(m.common.appSettings)} onPress={() => router.push('/admin/settings')} />
           </Card>
         </>
       ) : null}
 
       <Txt size={15} weight="semibold">
-        {t('الإعدادات', 'Settings')}
+        {t(m.account.settings)}
       </Txt>
       <Card style={styles.list}>
-        <Row icon={<Languages size={20} color={colors.accentInk} />} label={t('اللغة', 'Language')}>
+        <Row icon={<Languages size={20} color={colors.accentInk} />} label={t(m.account.language)}>
           <View style={[styles.segment, { backgroundColor: colors.surface2 }]}>
             {(['ar', 'en'] as const).map((l) => (
               <Pressable
@@ -112,9 +112,9 @@ export function MeScreen() {
             ))}
           </View>
         </Row>
-        <Row icon={<Moon size={20} color={colors.accentInk} />} label={t('الوضع الداكن', 'Dark mode')}>
+        <Row icon={<Moon size={20} color={colors.accentInk} />} label={t(m.common.darkMode)}>
           <Toggle
-            label={t('الوضع الداكن', 'Dark mode')}
+            label={t(m.common.darkMode)}
             value={scheme === 'dark'}
             onChange={(on) => prefs.setTheme(on ? 'dark' : 'light')}
           />
@@ -123,25 +123,25 @@ export function MeScreen() {
         {user ? (
           <LinkRow
             icon={<UserPen size={20} color={colors.accentInk} />}
-            label={t('عدّل بياناتك', 'Edit profile')}
+            label={t(m.common.editProfile)}
             onPress={() => router.push('/profile/edit')}
           />
         ) : null}
         {/* Phase 31: clients and admins change their own password; an advisor asks the admin. */}
         {user && canChangeOwnPassword(user.role) ? (
-          <LinkRow icon={<KeyRound size={20} color={colors.accentInk} />} label={t('غيّر كلمة السر', 'Change password')} onPress={() => router.push('/profile/password')} />
+          <LinkRow icon={<KeyRound size={20} color={colors.accentInk} />} label={t(m.common.changePassword)} onPress={() => router.push('/profile/password')} />
         ) : null}
         {user?.role === 'client' ? (
           <LinkRow
             icon={<SlidersHorizontal size={20} color={colors.accentInk} />}
-            label={t('عدّل تفضيلاتك', 'Edit your preferences')}
+            label={t(m.common.editYourPreferences)}
             onPress={() => router.push('/onboarding')}
           />
         ) : null}
         {!user || user.role === 'client' ? (
           <LinkRow
             icon={<Calculator size={20} color={colors.accentInk} />}
-            label={t('حاسبة التقسيط', 'Installment calculator')}
+            label={t(m.common.installmentCalculator)}
             onPress={() => router.push('/calculator')}
           />
         ) : null}
@@ -149,30 +149,30 @@ export function MeScreen() {
 
       {/* Required by both stores (contract §15 privacy), for guests too. */}
       <Txt size={15} weight="semibold">
-        {t('عن مقر', 'About Maqar')}
+        {t(m.account.aboutMaqar)}
       </Txt>
       <Card style={styles.list}>
         <LinkRow
           icon={<ShieldCheck size={20} color={colors.accentInk} />}
-          label={t('سياسة الخصوصية', 'Privacy policy')}
+          label={t(m.account.privacyPolicy)}
           onPress={() => openPage(SITE_PAGES.privacy)}
         />
         <LinkRow
           icon={<FileText size={20} color={colors.accentInk} />}
-          label={t('الشروط والأحكام', 'Terms of use')}
+          label={t(m.account.termsOfUse)}
           onPress={() => openPage(SITE_PAGES.terms)}
         />
         {/* The admin fills it in (2026-11-14); it is also the contact Apple 1.2 and 1.5 want inside the app. */}
         {!user || user.role === 'client' ? (
-          <LinkRow icon={<Headset size={20} color={colors.accentInk} />} label={t('تواصل معنا', 'Contact us')} onPress={() => router.push('/contact')} />
+          <LinkRow icon={<Headset size={20} color={colors.accentInk} />} label={t(m.common.contactUs)} onPress={() => router.push('/contact')} />
         ) : null}
       </Card>
 
       {user ? (
         <View style={styles.actions}>
-          <Button label={t('تسجيل الخروج', 'Sign out')} variant="secondary" onPress={signOut} />
+          <Button label={t(m.account.signOut)} variant="secondary" onPress={signOut} />
           {selfDelete ? (
-            <Button label={t('امسح حسابي', 'Delete my account')} variant="ghost" onPress={() => setDeleting(true)} />
+            <Button label={t(m.account.deleteMyAccount)} variant="ghost" onPress={() => setDeleting(true)} />
           ) : null}
         </View>
       ) : null}
@@ -180,7 +180,7 @@ export function MeScreen() {
       <View style={styles.footer}>
         <Logo width={88} />
         <Txt size={11} color="ink3" align="center">
-          {t('الإصدار', 'Version')} {Constants.expoConfig?.version ?? '1.0.0'}
+          {t(m.account.version)} {Constants.expoConfig?.version ?? '1.0.0'}
         </Txt>
         <Txt size={12} color="ink3" align="center" style={styles.credit}>
           {DEVELOPER.credit}

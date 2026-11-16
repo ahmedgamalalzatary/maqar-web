@@ -1,4 +1,4 @@
-import { type AdminViewingItem, fmtDate, isActiveViewing, fmtTime, ltrPhone, VIEWING_WHENS, type ViewingWhen } from '@maqar/shared';
+import { pickField, joinParts, type AdminViewingItem, fmtDate, isActiveViewing, fmtTime, ltrPhone, VIEWING_STATUS_LABEL, VIEWING_WHENS, type ViewingWhen } from '@maqar/shared';
 import { CalendarCheck, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -8,7 +8,7 @@ import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError } from '@/core/api/api';
-import { useLang, useT } from '@/core/i18n';
+import { m, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { useDebounced } from '@/features/listings/hooks/use-listings';
@@ -16,14 +16,7 @@ import { useSlots } from '@/features/viewings/hooks/use-viewings';
 import { useAdminViewings, useUpdateAdminViewing } from '../hooks/use-people';
 import { BackBar } from './clients-screen';
 
-const WHEN_LABEL: Record<ViewingWhen, { ar: string; en: string }> = { upcoming: { ar: 'الجاية', en: 'Upcoming' }, past: { ar: 'اللي فاتت', en: 'Past' } };
-export const VIEWING_STATUS_LABEL = {
-  confirmed: { ar: 'مؤكدة', en: 'Confirmed' },
-  rescheduled: { ar: 'اتغير ميعادها', en: 'Rescheduled' },
-  cancelled: { ar: 'اتلغت', en: 'Cancelled' },
-  completed: { ar: 'خلصت', en: 'Completed' },
-  pending: { ar: 'مستنية التأكيد', en: 'Awaiting confirmation' },
-} as const;
+const WHEN_LABEL: Record<ViewingWhen, { ar: string; en: string }> = { upcoming: m.viewings.upcoming, past: m.admin.past };
 
 /** `/admin/viewings` (phase 23): every viewing; an upcoming one can be moved or cancelled. */
 export function AdminViewingsScreen() {
@@ -50,7 +43,7 @@ export function AdminViewingsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Txt accessibilityRole="header" size={24} weight="semibold">
-              {t('المعاينات', 'Viewings')}
+              {t(m.common.viewings)}
             </Txt>
             <View style={styles.chips}>
               {VIEWING_WHENS.map((w) => (
@@ -71,16 +64,16 @@ export function AdminViewingsScreen() {
             <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.line }]}>
               <Search size={18} color={colors.ink3} />
               <TextInput
-                accessibilityLabel={t('ابحث بالعميل أو العقار', 'Search by client or home')}
+                accessibilityLabel={t(m.common.searchByClientOrHome)}
                 value={q}
                 onChangeText={setQ}
-                placeholder={t('ابحث بالعميل أو العقار', 'Search by client or home')}
+                placeholder={t(m.common.searchByClientOrHome)}
                 placeholderTextColor={colors.ink3}
                 autoCorrect={false}
                 style={[styles.input, { color: colors.ink }]}
               />
               {q ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={t('امسح البحث', 'Clear search')} onPress={() => setQ('')} hitSlop={8}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(m.common.clearSearch)} onPress={() => setQ('')} hitSlop={8}>
                   <X size={16} color={colors.ink3} />
                 </Pressable>
               ) : null}
@@ -95,7 +88,7 @@ export function AdminViewingsScreen() {
           ) : (
             <View style={styles.empty}>
               <CalendarCheck size={32} color={colors.ink3} strokeWidth={1.6} />
-              <Txt weight="medium">{t('مفيش معاينات هنا', 'No viewings here')}</Txt>
+              <Txt weight="medium">{t(m.admin.noViewingsHere)}</Txt>
             </View>
           )
         }
@@ -117,11 +110,11 @@ function Row({ v, onPress }: { v: AdminViewingItem; onPress: () => void }) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
-  const title = lang === 'ar' ? v.property.titleAr : v.property.titleEn;
+  const title = pickField(v.property, 'title', lang);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${v.client?.name ?? t('حساب اتمسح', 'Deleted account')}، ${title}`}
+      accessibilityLabel={joinParts([v.client?.name ?? t(m.common.deletedAccount), title], lang)}
       onPress={onPress}
       disabled={!isActive(v)}
       style={({ pressed }) => [styles.row, { backgroundColor: colors.surface, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
@@ -136,13 +129,13 @@ function Row({ v, onPress }: { v: AdminViewingItem; onPress: () => void }) {
       </View>
       <View style={styles.flex}>
         <Txt weight="medium" numberOfLines={1}>
-          {v.client?.name ?? t('حساب اتمسح', 'Deleted account')}
+          {v.client?.name ?? t(m.common.deletedAccount)}
         </Txt>
         <Txt size={12} color="ink2" numberOfLines={1}>
           {title}
         </Txt>
         <Txt size={12} color="ink3">
-          {`${lang === 'ar' ? v.agent.nameAr : v.agent.nameEn} | ${t(VIEWING_STATUS_LABEL[v.status])}`}
+          {`${pickField(v.agent, 'name', lang)} | ${t(VIEWING_STATUS_LABEL[v.status])}`}
         </Txt>
       </View>
     </Pressable>
@@ -165,18 +158,18 @@ function ManageSheet({ v, onClose }: { v: AdminViewingItem; onClose: () => void 
 
   const failed = (e: unknown) =>
     toast.show({
-      title: e instanceof ApiError && e.status === 409 ? t('الميعاد ده مبقاش متاح، اختار تاني', 'That time is no longer free; pick another') : t('حصلت مشكلة، حاول تاني', 'Something went wrong, try again'),
+      title: e instanceof ApiError && e.status === 409 ? t(m.admin.thatTimeIsNoLonger) : t(m.common.somethingWentWrongTryAgain),
       tone: 'danger',
     });
   const done = (title: string) => () => {
-    toast.show({ title, body: t('العميل والمسؤول وصلهم إشعار.', 'The client and the advisor were notified.'), tone: 'sage' });
+    toast.show({ title, body: t(m.admin.theClientAndTheAdvisor), tone: 'sage' });
     onClose();
   };
 
   return (
-    <Sheet open onClose={onClose} title={v.client?.name ?? t('المعاينة', 'The viewing')} scroll>
+    <Sheet open onClose={onClose} title={v.client?.name ?? t(m.admin.theViewing)} scroll>
       <Txt size={13} color="ink2">
-        {`${lang === 'ar' ? v.property.titleAr : v.property.titleEn} | ${fmtDate(v.date, lang, 'weekday')} ${fmtTime(v.time, lang)}`}
+        {`${pickField(v.property, 'title', lang)} | ${fmtDate(v.date, lang, 'weekday')} ${fmtTime(v.time, lang)}`}
       </Txt>
       {v.client?.phone ? (
         <Txt size={13} color="ink2">
@@ -185,14 +178,14 @@ function ManageSheet({ v, onClose }: { v: AdminViewingItem; onClose: () => void 
       ) : null}
       {mode === null ? (
         <View style={styles.sheetActions}>
-          <Button label={t('غيّر الميعاد', 'Move it')} onPress={() => setMode('move')} />
-          <Button label={t('الغي المعاينة', 'Cancel it')} variant="secondary" onPress={() => setMode('cancel')} />
+          <Button label={t(m.admin.moveIt)} onPress={() => setMode('move')} />
+          <Button label={t(m.admin.cancelIt)} variant="secondary" onPress={() => setMode('cancel')} />
         </View>
       ) : null}
       {mode === 'move' ? (
         <>
           <Txt size={14} weight="semibold">
-            {t('اليوم', 'Day')}
+            {t(m.admin.day)}
           </Txt>
           {slots.isPending ? <ActivityIndicator color={colors.accent} /> : null}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -217,7 +210,7 @@ function ManageSheet({ v, onClose }: { v: AdminViewingItem; onClose: () => void 
           {day ? (
             <>
               <Txt size={14} weight="semibold">
-                {t('الساعة', 'Time')}
+                {t(m.common.time)}
               </Txt>
               <View style={styles.wrap}>
                 {day.slots
@@ -239,22 +232,22 @@ function ManageSheet({ v, onClose }: { v: AdminViewingItem; onClose: () => void 
               </View>
             </>
           ) : null}
-          <TextField label={t('السبب (العميل والمسؤول هيشوفوه)', 'Reason (the client and the advisor see it)')} value={reason} onChangeText={setReason} maxLength={300} />
+          <TextField label={t(m.common.reasonTheClientAndThe)} value={reason} onChangeText={setReason} maxLength={300} />
           <Button
-            label={t('احفظ الميعاد الجديد', 'Save the new time')}
+            label={t(m.admin.saveTheNewTime)}
             disabled={!date || !time}
             loading={update.isPending}
-            onPress={() => update.mutate({ action: 'reschedule', date: date!, time: time!, ...(reason.trim() ? { reason: reason.trim() } : {}) }, { onSuccess: done(t('الميعاد اتغير', 'Viewing moved')), onError: failed })}
+            onPress={() => update.mutate({ action: 'reschedule', date: date!, time: time!, ...(reason.trim() ? { reason: reason.trim() } : {}) }, { onSuccess: done(t(m.admin.viewingMoved)), onError: failed })}
           />
         </>
       ) : null}
       {mode === 'cancel' ? (
         <>
-          <TextField label={t('السبب (العميل والمسؤول هيشوفوه)', 'Reason (the client and the advisor see it)')} value={reason} onChangeText={setReason} maxLength={300} />
+          <TextField label={t(m.common.reasonTheClientAndThe)} value={reason} onChangeText={setReason} maxLength={300} />
           <Button
-            label={t('أكّد الإلغاء', 'Confirm the cancellation')}
+            label={t(m.admin.confirmTheCancellation)}
             loading={update.isPending}
-            onPress={() => update.mutate({ action: 'cancel', ...(reason.trim() ? { reason: reason.trim() } : {}) }, { onSuccess: done(t('المعاينة اتلغت', 'Viewing cancelled')), onError: failed })}
+            onPress={() => update.mutate({ action: 'cancel', ...(reason.trim() ? { reason: reason.trim() } : {}) }, { onSuccess: done(t(m.common.viewingCancelled)), onError: failed })}
           />
         </>
       ) : null}

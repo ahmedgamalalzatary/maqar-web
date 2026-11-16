@@ -10,6 +10,7 @@ import {
   fmtDuration,
   fmtMoney,
   fmtNum,
+  joinParts,
   emptyListingForm,
   hasPaymentPlan,
   LISTING_IMAGES_MAX,
@@ -31,6 +32,7 @@ import {
   PROPERTY_TYPES,
   TOUR_ROOMS_MAX,
   videoProblem,
+  pickField,
 } from '@maqar/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -46,7 +48,7 @@ import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
-import { useDir, useLang, useT } from '@/core/i18n';
+import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { type PhotoPart, preparePhotos } from '@/features/chat/photos';
 import * as SecureStore from 'expo-secure-store';
@@ -57,30 +59,30 @@ import { preparePanorama } from '../panorama';
 import { useAdminListing, usePublishListing, useSaveListing } from '../hooks/use-admin';
 
 const STEP_LABEL: Record<ListingStep, Bi> = {
-  type: { ar: 'النوع', en: 'Type' },
-  location: { ar: 'المكان', en: 'Location' },
-  details: { ar: 'التفاصيل', en: 'Details' },
-  photos: { ar: 'الصور', en: 'Photos' },
-  videos: { ar: 'الفيديوهات', en: 'Videos' },
-  tour: { ar: 'جولة ٣٦٠°', en: '360° tour' },
-  review: { ar: 'المراجعة', en: 'Review' },
+  type: m.common.type,
+  location: m.admin.location,
+  details: m.admin.details,
+  photos: m.admin.photos,
+  videos: m.admin.videos,
+  tour: m.common.n360Tour,
+  review: m.admin.review,
 };
 
 /** What each field's error says. */
 const ERROR: Partial<Record<ListingField, Bi>> = {
-  type: { ar: 'اختار نوع الوحدة', en: 'Pick the unit type' },
-  areaId: { ar: 'اختار المنطقة', en: 'Pick the area' },
-  beds: { ar: 'من ٠ لـ ٢٠', en: '0 to 20' },
-  baths: { ar: 'من ٠ لـ ٢٠', en: '0 to 20' },
-  sizeM2: { ar: 'المساحة بالمتر، من ١٠', en: 'Size in m², 10 or more' },
-  price: { ar: 'اكتب السعر بالجنيه', en: 'Enter the price in EGP' },
-  finishing: { ar: 'اختار التشطيب', en: 'Pick the finishing' },
-  downPct: { ar: 'من ٠ لـ ١٠٠٪', en: '0 to 100%' },
-  planYears: { ar: 'من ١ لـ ٣٠ سنة', en: '1 to 30 years' },
-  ownerPhone: { ar: 'رقم موبايل بالأرقام، مثلًا ٠١٠١٢٣٤٥٦٧٨', en: 'A phone number in digits, e.g. 01012345678' },
-  photos: { ar: 'ضيف صورة واحدة على الأقل، واستنى لحد ما الصور تترفع', en: 'Add at least one photo, and wait for the uploads' },
-  videos: { ar: 'استنى لحد ما الفيديوهات تترفع، أو امسح اللي ماترفعش', en: 'Wait for the videos to upload, or remove the ones that failed' },
-  tour: { ar: 'كل غرفة محتاجة اسمها بالعربي والإنجليزي، واستنى لحد ما الصور تترفع', en: 'Each room needs its Arabic and English name, and wait for the uploads' },
+  type: m.admin.pickTheUnitType,
+  areaId: m.admin.pickTheArea,
+  beds: m.admin.range0To20,
+  baths: m.admin.range0To20,
+  sizeM2: m.admin.sizeAtLeast10,
+  price: m.admin.enterThePriceInEgp,
+  finishing: m.admin.pickTheFinishing,
+  downPct: m.admin.range0To100Pct,
+  planYears: m.admin.range1To30Years,
+  ownerPhone: m.admin.phoneInDigits,
+  photos: m.admin.addAtLeastOnePhoto,
+  videos: m.admin.waitForTheVideosTo,
+  tour: m.admin.eachRoomNeedsItsArabic,
 };
 
 const thisYear = new Date().getFullYear();
@@ -101,8 +103,8 @@ export function ListingFormScreen({ id }: { id?: number }) {
     const gone = listing.error instanceof ApiError && listing.error.status === 404;
     return (
       <View style={[styles.fill, styles.center, styles.failed, { backgroundColor: colors.bg }]}>
-        <Txt align="center">{gone ? t('العقار ده مش موجود.', 'This listing does not exist.') : t('مقدرناش نجيب العقار', 'We couldn’t load the listing')}</Txt>
-        {gone ? null : <Button label={t('حاول تاني', 'Try again')} variant="secondary" onPress={() => void listing.refetch()} />}
+        <Txt align="center">{gone ? t(m.common.thisListingDoesNotExist) : t(m.admin.weCouldntLoadTheListing)}</Txt>
+        {gone ? null : <Button label={t(m.common.tryAgain)} variant="secondary" onPress={() => void listing.refetch()} />}
       </View>
     );
   }
@@ -174,7 +176,7 @@ function Form({ saved }: { saved?: AdminListing }) {
 
   const failed = (e: unknown) =>
     toast.show({
-      title: e instanceof ApiError && e.status === 0 ? t('مفيش إنترنت، حاول تاني', 'No connection, try again') : t('مقدرناش نحفظ العقار، راجع البيانات', 'We couldn’t save the listing; check the details'),
+      title: e instanceof ApiError && e.status === 0 ? t(m.common.noConnectionTryAgain) : t(m.admin.weCouldntSaveTheListing),
       tone: 'danger',
     });
   const submit = async (andPublish: boolean) => {
@@ -193,8 +195,8 @@ function Form({ saved }: { saved?: AdminListing }) {
     let published = andPublish;
     if (andPublish) published = await publish.mutateAsync(l.id).then(() => true, () => false);
     setPublishing(false);
-    if (andPublish && !published) toast.show({ title: t('اتحفظ كمسودة بس متنشرش، جرّب تنشره من صفحته', 'Saved as a draft but not published: try publishing from its page'), tone: 'danger' });
-    else toast.show({ title: andPublish ? t('العقار اتنشر', 'Published') : saved ? t('التعديلات اتحفظت', 'Changes saved') : t('العقار اتحفظ كمسودة', 'Saved as a draft'), tone: 'sage' });
+    if (andPublish && !published) toast.show({ title: t(m.admin.savedAsADraftBut), tone: 'danger' });
+    else toast.show({ title: andPublish ? t(m.admin.published) : saved ? t(m.admin.changesSaved) : t(m.admin.savedAsADraft), tone: 'sage' });
     if (saved) leave();
     else router.replace(`/admin/listing/${l.id}`);
   };
@@ -202,13 +204,13 @@ function Form({ saved }: { saved?: AdminListing }) {
   return (
     <KeyboardAvoiding style={[styles.fill, { backgroundColor: colors.bg }]}>
       <View style={[styles.top, { paddingTop: insets.top + 8, borderBottomColor: colors.line }]}>
-        <IconButton label={t('رجوع', 'Back')} icon={<BackIcon size={20} color={colors.ink} />} onPress={leave} />
+        <IconButton label={t(m.common.back)} icon={<BackIcon size={20} color={colors.ink} />} onPress={leave} />
         <View style={styles.flex}>
           <Txt accessibilityRole="header" size={18} weight="semibold">
-            {saved ? t('عدّل العقار', 'Edit listing') : t('أضف عقار', 'Add a listing')}
+            {saved ? t(m.admin.editListing) : t(m.common.addAListing)}
           </Txt>
           <Txt size={12} color="ink2">
-            {t(`الخطوة ${fmtNum(step + 1, 'ar')} من ${fmtNum(LISTING_STEPS.length, 'ar')}: ${STEP_LABEL[current].ar}`, `Step ${step + 1} of ${LISTING_STEPS.length}: ${STEP_LABEL[current].en}`)}
+            {t(m.admin.stepOf(step + 1, LISTING_STEPS.length, STEP_LABEL[current]))}
           </Txt>
         </View>
       </View>
@@ -227,15 +229,15 @@ function Form({ saved }: { saved?: AdminListing }) {
       </ScrollView>
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 10, borderTopColor: colors.line, backgroundColor: colors.surface }]}>
-        {step > 0 ? <Button label={t('السابق', 'Back')} variant="secondary" onPress={() => go(step - 1)} style={styles.flex} /> : null}
+        {step > 0 ? <Button label={t(m.admin.back)} variant="secondary" onPress={() => go(step - 1)} style={styles.flex} /> : null}
         {current !== 'review' ? (
-          <Button label={t('التالي', 'Next')} onPress={next} style={styles.flex} />
+          <Button label={t(m.common.next)} onPress={next} style={styles.flex} />
         ) : saved ? (
-          <Button label={t('احفظ التعديلات', 'Save changes')} loading={save.isPending} onPress={() => void submit(false)} style={styles.flex} />
+          <Button label={t(m.admin.saveChanges)} loading={save.isPending} onPress={() => void submit(false)} style={styles.flex} />
         ) : (
           <>
-            <Button label={t('احفظ مسودة', 'Save draft')} variant="secondary" loading={save.isPending && !publishing} disabled={save.isPending} onPress={() => void submit(false)} style={styles.flex} />
-            <Button label={t('احفظ وانشر', 'Save and publish')} loading={publishing} disabled={save.isPending} onPress={() => void submit(true)} style={styles.flex} />
+            <Button label={t(m.admin.saveDraft)} variant="secondary" loading={save.isPending && !publishing} disabled={save.isPending} onPress={() => void submit(false)} style={styles.flex} />
+            <Button label={t(m.admin.saveAndPublish)} loading={publishing} disabled={save.isPending} onPress={() => void submit(true)} style={styles.flex} />
           </>
         )}
       </View>
@@ -265,12 +267,12 @@ function TypeStep({ s, set, err }: StepProps) {
   const t = useT();
   return (
     <>
-      <Group label={t('بيع ولا إيجار؟', 'For sale or to rent?')}>
+      <Group label={t(m.admin.forSaleOrToRent)}>
         {CATEGORIES.map((c) => (
           <ToggleChip key={c} role="radio" label={t(CATEGORY_LABEL[c])} selected={s.category === c} onPress={() => set('category', c)} />
         ))}
       </Group>
-      <Group label={t('نوع الوحدة', 'Unit type')} error={err('type')}>
+      <Group label={t(m.common.unitType)} error={err('type')}>
         {PROPERTY_TYPES.map((p) => (
           <ToggleChip key={p} role="radio" label={t(PROPERTY_TYPE_LABEL[p])} selected={s.type === p} onPress={() => set('type', p)} />
         ))}
@@ -285,29 +287,29 @@ function LocationStep({ s, set, err }: StepProps) {
   const areas = useAreas();
   return (
     <>
-      <Group label={t('المنطقة', 'Area')} error={err('areaId')}>
+      <Group label={t(m.common.area)} error={err('areaId')}>
         {areas.isPending ? <ActivityIndicator /> : null}
         {(areas.data ?? []).map((a) => (
-          <ToggleChip key={a.id} role="radio" label={lang === 'ar' ? a.nameAr : a.nameEn} selected={s.areaId === a.id} onPress={() => set('areaId', a.id)} />
+          <ToggleChip key={a.id} role="radio" label={pickField(a, 'name', lang)} selected={s.areaId === a.id} onPress={() => set('areaId', a.id)} />
         ))}
       </Group>
-      <TextField label={t('الكمبوند (عربي)', 'Compound (Arabic)')} value={s.compoundAr} onChangeText={(v) => set('compoundAr', v)} />
-      <TextField label={t('الكمبوند (إنجليزي)', 'Compound (English)')} value={s.compoundEn} onChangeText={(v) => set('compoundEn', v)} />
-      <TextField label={t('المطور (عربي، اختياري)', 'Developer (Arabic, optional)')} value={s.developerAr} onChangeText={(v) => set('developerAr', v)} />
-      <TextField label={t('المطور (إنجليزي، اختياري)', 'Developer (English, optional)')} value={s.developerEn} onChangeText={(v) => set('developerEn', v)} />
-      <TextField label={t('الدور', 'Floor')} value={s.floor} onChangeText={(v) => set('floor', v)} keyboardType="number-pad" />
-      <TextField label={t('مصروف الصيانة (بالسنة)', 'Maintenance fee (a year)')} value={s.maintenanceFee} onChangeText={(v) => set('maintenanceFee', v)} keyboardType="number-pad" />
+      <TextField label={t(m.admin.compoundArabic)} value={s.compoundAr} onChangeText={(v) => set('compoundAr', v)} />
+      <TextField label={t(m.admin.compoundEnglish)} value={s.compoundEn} onChangeText={(v) => set('compoundEn', v)} />
+      <TextField label={t(m.admin.developerArabicOptional)} value={s.developerAr} onChangeText={(v) => set('developerAr', v)} />
+      <TextField label={t(m.admin.developerEnglishOptional)} value={s.developerEn} onChangeText={(v) => set('developerEn', v)} />
+      <TextField label={t(m.common.floor)} value={s.floor} onChangeText={(v) => set('floor', v)} keyboardType="number-pad" />
+      <TextField label={t(m.admin.maintenanceFeeAYear)} value={s.maintenanceFee} onChangeText={(v) => set('maintenanceFee', v)} keyboardType="number-pad" />
       <Txt size={12} color="ink3">
-        {t('العنوان اختياري: لو سبته فاضي هيبقى "النوع، الغرف | المنطقة".', 'The title is optional: left empty it becomes "type, beds | area".')}
+        {t(m.admin.theTitleIsOptionalLeft)}
       </Txt>
-      <TextField label={t('العنوان (عربي)', 'Title (Arabic)')} value={s.titleAr} onChangeText={(v) => set('titleAr', v)} maxLength={200} />
-      <TextField label={t('العنوان (إنجليزي)', 'Title (English)')} value={s.titleEn} onChangeText={(v) => set('titleEn', v)} maxLength={200} />
+      <TextField label={t(m.admin.titleArabic2)} value={s.titleAr} onChangeText={(v) => set('titleAr', v)} maxLength={200} />
+      <TextField label={t(m.admin.titleEnglish2)} value={s.titleEn} onChangeText={(v) => set('titleEn', v)} maxLength={200} />
       <View style={styles.group}>
         <Txt size={13} weight="medium" color="ink2">
-          {t('المالك (محدش بيشوفه غير فريق مقر)', 'Owner (only the Maqar team sees this)')}
+          {t(m.admin.ownerOnlyTheMaqarTeam)}
         </Txt>
-        <TextField label={t('اسم المالك', 'Owner’s name')} value={s.ownerName} onChangeText={(v) => set('ownerName', v)} maxLength={120} />
-        <TextField label={t('موبايل المالك', 'Owner’s phone')} value={s.ownerPhone} onChangeText={(v) => set('ownerPhone', v)} keyboardType="phone-pad" maxLength={24} error={err('ownerPhone')} />
+        <TextField label={t(m.admin.ownersName)} value={s.ownerName} onChangeText={(v) => set('ownerName', v)} maxLength={120} />
+        <TextField label={t(m.admin.ownersPhone)} value={s.ownerPhone} onChangeText={(v) => set('ownerPhone', v)} keyboardType="phone-pad" maxLength={24} error={err('ownerPhone')} />
       </View>
     </>
   );
@@ -315,32 +317,32 @@ function LocationStep({ s, set, err }: StepProps) {
 
 function DetailsStep({ s, set, err }: StepProps) {
   const t = useT();
-  const priceLabel = s.category === 'rent' ? t('الإيجار في الشهر (جنيه)', 'Rent per month (EGP)') : s.category === 'stay' ? t('السعر في الليلة (جنيه)', 'Price per night (EGP)') : t('السعر (جنيه)', 'Price (EGP)');
+  const priceLabel = s.category === 'rent' ? t(m.admin.rentPerMonthEgp) : s.category === 'stay' ? t(m.admin.pricePerNightEgp) : t(m.admin.priceEgp);
   const toggleFeature = (f: (typeof FEATURES)[number]) => set('features', s.features.includes(f) ? s.features.filter((x) => x !== f) : [...s.features, f]);
   return (
     <>
       <View style={styles.row}>
         <View style={styles.flex}>
-          <TextField label={t('الغرف', 'Bedrooms')} value={s.beds} onChangeText={(v) => set('beds', v)} keyboardType="number-pad" error={err('beds')} />
+          <TextField label={t(m.common.bedrooms)} value={s.beds} onChangeText={(v) => set('beds', v)} keyboardType="number-pad" error={err('beds')} />
         </View>
         <View style={styles.flex}>
-          <TextField label={t('الحمامات', 'Bathrooms')} value={s.baths} onChangeText={(v) => set('baths', v)} keyboardType="number-pad" error={err('baths')} />
+          <TextField label={t(m.common.bathrooms)} value={s.baths} onChangeText={(v) => set('baths', v)} keyboardType="number-pad" error={err('baths')} />
         </View>
       </View>
-      <TextField label={t('المساحة (م²)', 'Size (m²)')} value={s.sizeM2} onChangeText={(v) => set('sizeM2', v)} keyboardType="number-pad" error={err('sizeM2')} />
+      <TextField label={t(m.admin.sizeM)} value={s.sizeM2} onChangeText={(v) => set('sizeM2', v)} keyboardType="number-pad" error={err('sizeM2')} />
       <TextField label={priceLabel} value={s.price} onChangeText={(v) => set('price', v)} keyboardType="number-pad" error={err('price')} />
-      <Group label={t('التشطيب', 'Finishing')} error={err('finishing')}>
+      <Group label={t(m.common.finishing)} error={err('finishing')}>
         {FINISHINGS.map((f) => (
           <ToggleChip key={f} role="radio" label={t(FINISHING_LABEL[f])} selected={s.finishing === f} onPress={() => set('finishing', f)} />
         ))}
       </Group>
-      <Group label={t('التسليم', 'Handover')}>
-        <ToggleChip role="radio" label={t('استلام فوري', 'Ready now')} selected={s.delivery === 'ready'} onPress={() => set('delivery', 'ready')} />
+      <Group label={t(m.admin.handover)}>
+        <ToggleChip role="radio" label={t(m.admin.readyNow)} selected={s.delivery === 'ready'} onPress={() => set('delivery', 'ready')} />
         {YEARS.map((y) => (
-          <ToggleChip key={y} role="radio" label={fmtNum(y, 'ar', 0).replace(/٬/g, '')} text={t(fmtNum(y, 'ar', 0).replace(/٬/g, ''), String(y))} selected={s.delivery === y} onPress={() => set('delivery', y)} />
+          <ToggleChip key={y} role="radio" label={fmtNum(y, 'ar', 0).replace(/٬/g, '')} text={t(m.common.year(y))} selected={s.delivery === y} onPress={() => set('delivery', y)} />
         ))}
       </Group>
-      <Group label={t('المميزات', 'Amenities')}>
+      <Group label={t(m.common.amenities)}>
         {FEATURES.map((f) => (
           <ToggleChip key={f} label={t(FEATURE_LABEL[f])} selected={s.features.includes(f)} onPress={() => toggleFeature(f)} />
         ))}
@@ -348,20 +350,20 @@ function DetailsStep({ s, set, err }: StepProps) {
       {hasPaymentPlan(s.category) ? (
         <View style={styles.group}>
           <Txt size={13} weight="medium" color="ink2">
-            {t('خطة السداد (اختياري)', 'Payment plan (optional)')}
+            {t(m.admin.paymentPlanOptional)}
           </Txt>
           <View style={styles.row}>
             <View style={styles.flex}>
-              <TextField label={t('المقدم ٪', 'Down payment %')} value={s.downPct} onChangeText={(v) => set('downPct', v)} keyboardType="number-pad" error={err('downPct')} />
+              <TextField label={t(m.admin.downPayment)} value={s.downPct} onChangeText={(v) => set('downPct', v)} keyboardType="number-pad" error={err('downPct')} />
             </View>
             <View style={styles.flex}>
-              <TextField label={t('السنين', 'Years')} value={s.planYears} onChangeText={(v) => set('planYears', v)} keyboardType="number-pad" error={err('planYears')} />
+              <TextField label={t(m.admin.years)} value={s.planYears} onChangeText={(v) => set('planYears', v)} keyboardType="number-pad" error={err('planYears')} />
             </View>
           </View>
         </View>
       ) : null}
-      <TextField label={t('الوصف (عربي)', 'Description (Arabic)')} value={s.descAr} onChangeText={(v) => set('descAr', v)} multiline maxLength={5000} />
-      <TextField label={t('الوصف (إنجليزي)', 'Description (English)')} value={s.descEn} onChangeText={(v) => set('descEn', v)} multiline maxLength={5000} />
+      <TextField label={t(m.admin.descriptionArabic)} value={s.descAr} onChangeText={(v) => set('descAr', v)} multiline maxLength={5000} />
+      <TextField label={t(m.admin.descriptionEnglish)} value={s.descEn} onChangeText={(v) => set('descEn', v)} multiline maxLength={5000} />
     </>
   );
 }
@@ -399,7 +401,7 @@ function PhotosStep({
     if (res.canceled || !res.assets.length) return;
     const assets = res.assets.slice(0, room);
     const prepared = await preparePhotos(assets).catch(() => null);
-    if (!prepared) return toast.show({ title: t('مقدرناش نجهز الصور', 'We couldn’t prepare the photos'), tone: 'danger' });
+    if (!prepared) return toast.show({ title: t(m.common.weCouldntPrepareThePhotos), tone: 'danger' });
     const added = assets.map((a) => ({ key: `p${++photoKey}`, local: a.uri }));
     setS((cur) => ({ ...cur, photos: [...cur.photos, ...added] }));
     for (const [i, photo] of added.entries()) {
@@ -421,18 +423,18 @@ function PhotosStep({
   return (
     <>
       <Txt size={13} color="ink2">
-        {t('أول صورة هي الغلاف. الصور بتتصغر على الموبايل قبل ما تترفع.', 'The first photo is the cover. Photos are made smaller on the phone before they upload.')}
+        {t(m.admin.theFirstPhotoIsThe)}
       </Txt>
       {room > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('ضيف صور', 'Add photos')}
+          accessibilityLabel={t(m.admin.addPhotos)}
           onPress={() => void pick()}
           style={({ pressed }) => [styles.add, { borderColor: colors.accent, backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
         >
           <ImagePlus size={22} color={colors.accentInk} />
           <Txt weight="medium" style={{ color: colors.accentInk }}>
-            {t(`ضيف صور (لحد ${fmtNum(room, 'ar')})`, `Add photos (up to ${room})`)}
+            {t(m.admin.addPhotosUpTo(room))}
           </Txt>
         </Pressable>
       ) : null}
@@ -452,7 +454,7 @@ function PhotosStep({
                 <View style={[StyleSheet.absoluteFill, styles.veil]}>
                   {p.failed ? (
                     part ? (
-                      <IconButton label={t('حاول ترفعها تاني', 'Retry the upload')} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(p.key, part)} />
+                      <IconButton label={t(m.common.retryTheUpload)} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(p.key, part)} />
                     ) : null
                   ) : (
                     <ActivityIndicator color="#fff" />
@@ -462,17 +464,17 @@ function PhotosStep({
               {i === 0 ? (
                 <View style={[styles.coverTag, { backgroundColor: colors.accent }]}>
                   <Txt size={11} weight="semibold" style={{ color: colors.navy }}>
-                    {t('الغلاف', 'Cover')}
+                    {t(m.common.cover)}
                   </Txt>
                 </View>
               ) : null}
               <View style={styles.tileActions}>
                 {i > 0 ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t(`خلّي الصورة ${fmtNum(i + 1, 'ar')} الغلاف`, `Make photo ${i + 1} the cover`)} onPress={() => makeCover(p.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.makeCover(i + 1))} onPress={() => makeCover(p.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                     <Star size={14} color={colors.ink} />
                   </Pressable>
                 ) : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t(`امسح الصورة ${fmtNum(i + 1, 'ar')}`, `Remove photo ${i + 1}`)} onPress={() => remove(p.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.removePhoto(i + 1))} onPress={() => remove(p.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                   <Trash2 size={14} color={colors.danger} />
                 </Pressable>
               </View>
@@ -524,10 +526,10 @@ function VideosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
         toast.show({
           title:
             problem === 'long'
-              ? t('الفيديو أطول من ٣ دقايق', 'That video is longer than 3 minutes')
+              ? t(m.admin.thatVideoIsLongerThan)
               : problem === 'size'
-                ? t('الفيديو أكبر من ١٥٠ ميجا', 'That video is over 150 MB')
-                : t('الفيديو لازم يكون MP4 أو MOV', 'A video must be an MP4 or MOV'),
+                ? t(m.admin.thatVideoIsOver150)
+                : t(m.admin.aVideoMustBeAn),
           tone: 'danger',
         });
     }
@@ -551,20 +553,19 @@ function VideosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
     <>
       <Txt size={13} color="ink2">
         {t(
-          'اختياري. لحد ٥ فيديوهات، كل واحد لحد ٣ دقايق و١٥٠ ميجا. بتظهر بعد الصور. الفيديو بيتجهز على السيرفر بعد ما يترفع، وده ممكن ياخد كام دقيقة.',
-          'Optional. Up to 5 videos, each up to 3 minutes and 150 MB. They show after the photos. Each is prepared on the server after it uploads, which can take a few minutes.',
+          m.admin.optionalUpTo5Videos,
         )}
       </Txt>
       {room > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('ضيف فيديوهات', 'Add videos')}
+          accessibilityLabel={t(m.admin.addVideos)}
           onPress={() => void pick()}
           style={({ pressed }) => [styles.add, { borderColor: colors.accent, backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
         >
           <Clapperboard size={22} color={colors.accentInk} />
           <Txt weight="medium" style={{ color: colors.accentInk }}>
-            {t(`ضيف فيديوهات (لحد ${fmtNum(room, 'ar')})`, `Add videos (up to ${room})`)}
+            {t(m.admin.addVideosUpTo(room))}
           </Txt>
         </Pressable>
       ) : null}
@@ -590,13 +591,13 @@ function VideosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
                 <View style={[StyleSheet.absoluteFill, styles.veil, styles.videoState]}>
                   {v.failed ? (
                     v.local ? (
-                      <IconButton label={t('حاول ترفعه تاني', 'Retry the upload')} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(v.key, v.local!)} />
+                      <IconButton label={t(m.admin.retryTheUpload)} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(v.key, v.local!)} />
                     ) : null
                   ) : (
                     <>
                       <ActivityIndicator color="#fff" />
                       <Txt size={11} weight="medium" style={styles.white}>
-                        {progress !== undefined && progress < 1 ? `${fmtNum(Math.round(progress * 100), lang)}%` : t('بيتجهز…', 'Preparing…')}
+                        {progress !== undefined && progress < 1 ? `${fmtNum(Math.round(progress * 100), lang)}%` : t(m.admin.preparing)}
                       </Txt>
                     </>
                   )}
@@ -611,16 +612,16 @@ function VideosStep({ s, setS, err }: { s: ListingForm; setS: React.Dispatch<Rea
               ) : null}
               <View style={styles.tileActions}>
                 {i > 0 ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t(`قدّم الفيديو ${fmtNum(n, 'ar')}`, `Move video ${n} earlier`)} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.moveVideoEarlier(n))} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                     <ArrowUp size={14} color={colors.ink} />
                   </Pressable>
                 ) : null}
                 {i < s.videos.length - 1 ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t(`أخّر الفيديو ${fmtNum(n, 'ar')}`, `Move video ${n} later`)} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.moveVideoLater(n))} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                     <ArrowDown size={14} color={colors.ink} />
                   </Pressable>
                 ) : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t(`امسح الفيديو ${fmtNum(n, 'ar')}`, `Remove video ${n}`)} onPress={() => remove(v.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.removeVideo(n))} onPress={() => remove(v.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                   <Trash2 size={14} color={colors.danger} />
                 </Pressable>
               </View>
@@ -668,13 +669,13 @@ function TourStep({
       return toast.show({
         title:
           problem === 'ratio'
-            ? t('الصورة دي مش ٣٦٠°: لازم عرضها ضعف طولها (٢:١)', 'That is not a 360° photo: it must be twice as wide as it is high (2:1)')
-            : t('الصورة صغيرة: لازم ٤٠٩٦×٢٠٤٨ على الأقل', 'That photo is too small: it must be at least 4096×2048'),
+            ? t(m.admin.thatIsNotA360)
+            : t(m.admin.thatPhotoIsTooSmall),
         tone: 'danger',
       });
     }
     const part = await preparePanorama(asset).catch(() => null);
-    if (!part) return toast.show({ title: t('مقدرناش نجهز الصورة', 'We couldn’t prepare the photo'), tone: 'danger' });
+    if (!part) return toast.show({ title: t(m.admin.weCouldntPrepareThePhoto), tone: 'danger' });
     const room: ListingFormRoom = { key: `t${++photoKey}`, local: asset.uri, nameAr: '', nameEn: '' };
     setS((cur) => ({ ...cur, tour: [...cur.tour, room] }));
     setParts((cur) => ({ ...cur, [room.key]: part }));
@@ -701,20 +702,19 @@ function TourStep({
     <>
       <Txt size={13} color="ink2">
         {t(
-          'اختياري. صورة ٣٦٠° لكل غرفة (عرضها ضعف طولها، ٤٠٩٦×٢٠٤٨ على الأقل). الجولة بتفتح على أول غرفة.',
-          'Optional. One 360° photo per room (twice as wide as high, at least 4096×2048). The tour opens on the first room.',
+          m.admin.optionalOne360PhotoPer,
         )}
       </Txt>
       {s.tour.length < TOUR_ROOMS_MAX ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('ضيف غرفة', 'Add a room')}
+          accessibilityLabel={t(m.admin.addARoom)}
           onPress={() => void add()}
           style={({ pressed }) => [styles.add, { borderColor: colors.accent, backgroundColor: colors.accentSoft, opacity: pressed ? 0.8 : 1 }]}
         >
           <Rotate3d size={22} color={colors.accentInk} />
           <Txt weight="medium" style={{ color: colors.accentInk }}>
-            {t(`ضيف غرفة (لحد ${fmtNum(TOUR_ROOMS_MAX, 'ar')})`, `Add a room (up to ${TOUR_ROOMS_MAX})`)}
+            {t(m.admin.addRoomUpTo(TOUR_ROOMS_MAX))}
           </Txt>
         </Pressable>
       ) : null}
@@ -735,7 +735,7 @@ function TourStep({
                 <View style={[StyleSheet.absoluteFill, styles.veil]}>
                   {r.failed ? (
                     part ? (
-                      <IconButton label={t('حاول ترفعها تاني', 'Retry the upload')} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(r.key, part)} />
+                      <IconButton label={t(m.common.retryTheUpload)} icon={<RotateCcw size={18} color={colors.ink} />} onPress={() => void upload(r.key, part)} />
                     ) : null
                   ) : (
                     <ActivityIndicator color="#fff" />
@@ -744,22 +744,22 @@ function TourStep({
               ) : null}
               <View style={styles.tileActions}>
                 {i > 0 ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t(`طلّع الغرفة ${fmtNum(n, 'ar')} لفوق`, `Move room ${n} up`)} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.moveRoomUp(n))} onPress={() => move(i, -1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                     <ArrowUp size={14} color={colors.ink} />
                   </Pressable>
                 ) : null}
                 {i < s.tour.length - 1 ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t(`نزّل الغرفة ${fmtNum(n, 'ar')} لتحت`, `Move room ${n} down`)} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.moveRoomDown(n))} onPress={() => move(i, 1)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                     <ArrowDown size={14} color={colors.ink} />
                   </Pressable>
                 ) : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t(`امسح الغرفة ${fmtNum(n, 'ar')}`, `Remove room ${n}`)} onPress={() => remove(r.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(m.admin.removeRoom(n))} onPress={() => remove(r.key)} style={[styles.mini, { backgroundColor: colors.surface }]}>
                   <Trash2 size={14} color={colors.danger} />
                 </Pressable>
               </View>
             </View>
-            <TextField label={t(`اسم الغرفة ${fmtNum(n, 'ar')} (عربي)`, `Room ${n} name (Arabic)`)} value={r.nameAr} onChangeText={(v) => patch(r.key, { nameAr: v })} maxLength={80} />
-            <TextField label={t(`اسم الغرفة ${fmtNum(n, 'ar')} (إنجليزي)`, `Room ${n} name (English)`)} value={r.nameEn} onChangeText={(v) => patch(r.key, { nameEn: v })} maxLength={80} />
+            <TextField label={t(m.admin.roomNameAr(n))} value={r.nameAr} onChangeText={(v) => patch(r.key, { nameAr: v })} maxLength={80} />
+            <TextField label={t(m.admin.roomNameEn(n))} value={r.nameEn} onChangeText={(v) => patch(r.key, { nameEn: v })} maxLength={80} />
           </View>
         );
       })}
@@ -775,27 +775,27 @@ function ReviewStep({ s, errors, onEdit }: { s: ListingForm; errors: ListingFiel
   const area = areas.data?.find((a) => a.id === s.areaId);
   const price = readWholeNumber(s.price);
   const rows: [number, string, string][] = [
-    [0, t('النوع', 'Type'), `${t(CATEGORY_LABEL[s.category])} | ${s.type ? t(PROPERTY_TYPE_LABEL[s.type]) : '—'}`],
-    [1, t('المكان', 'Location'), `${area ? (lang === 'ar' ? area.nameAr : area.nameEn) : '—'}${(lang === 'ar' ? s.compoundAr : s.compoundEn) ? ` | ${lang === 'ar' ? s.compoundAr : s.compoundEn}` : ''}`],
-    [1, t('العنوان', 'Title'), (lang === 'ar' ? s.titleAr : s.titleEn) || t('العنوان الافتراضي', 'The default title')],
-    [1, t('المالك', 'Owner'), [s.ownerName, s.ownerPhone].filter(Boolean).join(' | ') || '—'],
-    [2, t('السعر', 'Price'), price ? fmtMoney(price, lang, false) : '—'],
-    [2, t('التفاصيل', 'Details'), t(`${s.beds || '—'} غرف | ${s.baths || '—'} حمام | ${s.sizeM2 || '—'} م²`, `${s.beds || '—'} beds | ${s.baths || '—'} baths | ${s.sizeM2 || '—'} m²`)],
-    [2, t('التشطيب', 'Finishing'), s.finishing ? t(FINISHING_LABEL[s.finishing]) : '—'],
-    [2, t('المميزات', 'Amenities'), s.features.map((f) => t(FEATURE_LABEL[f])).join('، ') || '—'],
-    [3, t('الصور', 'Photos'), t(`${fmtNum(s.photos.filter((p) => p.url).length, 'ar')} صورة`, `${s.photos.filter((p) => p.url).length} photos`)],
-    [4, t('الفيديوهات', 'Videos'), s.videos.length ? t(`${fmtNum(s.videos.length, 'ar')} فيديو`, `${s.videos.length} ${s.videos.length === 1 ? 'video' : 'videos'}`) : t('مفيش', 'None')],
-    [5, t('جولة ٣٦٠°', '360° tour'), s.tour.length ? t(`${fmtNum(s.tour.length, 'ar')} غرفة`, `${s.tour.length} ${s.tour.length === 1 ? 'room' : 'rooms'}`) : t('مفيش', 'None')],
+    [0, t(m.common.type), `${t(CATEGORY_LABEL[s.category])} | ${s.type ? t(PROPERTY_TYPE_LABEL[s.type]) : '—'}`],
+    [1, t(m.admin.location), `${area ? (pickField(area, 'name', lang)) : '—'}${(pickField(s, 'compound', lang)) ? ` | ${pickField(s, 'compound', lang)}` : ''}`],
+    [1, t(m.admin.title), (pickField(s, 'title', lang)) || t(m.admin.theDefaultTitle)],
+    [1, t(m.admin.owner), [s.ownerName, s.ownerPhone].filter(Boolean).join(' | ') || '—'],
+    [2, t(m.common.price), price ? fmtMoney(price, lang, false) : '—'],
+    [2, t(m.admin.details), t(m.admin.summaryFacts(s.beds || '—', s.baths || '—', s.sizeM2 || '—'))],
+    [2, t(m.common.finishing), s.finishing ? t(FINISHING_LABEL[s.finishing]) : '—'],
+    [2, t(m.common.amenities), joinParts(s.features.map((f) => t(FEATURE_LABEL[f])), lang) || '—'],
+    [3, t(m.admin.photos), t(m.admin.photoCount(s.photos.filter((p) => p.url).length))],
+    [4, t(m.admin.videos), s.videos.length ? t(m.common.videos(s.videos.length)) : t(m.common.none)],
+    [5, t(m.common.n360Tour), s.tour.length ? t(m.admin.rooms(s.tour.length)) : t(m.common.none)],
   ];
   return (
     <>
       <Txt size={13} color="ink2">
-        {t('راجع البيانات. العقار بيظهر للعملاء في استكشف لما تنشره بس.', 'Check the details. Clients see the listing in Explore only once you publish it.')}
+        {t(m.admin.checkTheDetailsClientsSee)}
       </Txt>
       {errors.length ? (
         <View style={[styles.alert, { backgroundColor: colors.dangerSoft }]}>
           <Txt size={13} color="danger">
-            {t('في بيانات ناقصة. دوس على السطر علشان تكمّلها.', 'Some details are missing. Tap a line to fill it in.')}
+            {t(m.admin.someDetailsAreMissingTap)}
           </Txt>
         </View>
       ) : null}

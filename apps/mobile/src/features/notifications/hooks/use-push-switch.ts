@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { toast } from '@/components/toast';
-import { useT } from '@/core/i18n';
+import { m, useT } from '@/core/i18n';
 import { updateMeRequest } from '@/features/account/api/me.api';
 import { useSession } from '@/features/auth/store/session.store';
 import { sendTestRequest } from '../api/notifications.api';
@@ -49,19 +49,19 @@ export function usePushSwitch() {
 
   const failed = () =>
     toast.show({
-      title: t('معرفناش نشغّل الإشعارات', 'Couldn’t turn notifications on'),
-      body: t('اتأكد إنك متصل بالإنترنت وجرّب تاني.', 'Check your connection and try again.'),
+      title: t(m.notifications.couldntTurnNotificationsOn),
+      body: t(m.notifications.checkYourConnectionAndTry),
       tone: 'danger',
     });
 
   const turnOff = async () => {
     if (!(await setPushEnabled(false))) {
-      toast.show({ title: t('معرفناش نقفلها', 'Couldn’t turn them off'), body: t('جرّب تاني.', 'Please try again.'), tone: 'danger' });
+      toast.show({ title: t(m.notifications.couldntTurnThemOff), body: t(m.notifications.pleaseTryAgain), tone: 'danger' });
       return;
     }
     toast.show({
-      title: t('اتقفلت إشعارات الموبايل', 'Phone notifications off'),
-      body: t('هتفضل توصلك التنبيهات جوه التطبيق.', 'You’ll still see alerts inside the app.'),
+      title: t(m.notifications.phoneNotificationsOff),
+      body: t(m.notifications.youllStillSeeAlertsInside),
       tone: 'sage',
     });
   };
@@ -71,8 +71,8 @@ export function usePushSwitch() {
     setPermission(p);
     if (p === 'denied') {
       toast.show({
-        title: t('الموبايل مانع الإشعارات', 'Notifications are blocked'),
-        body: t('اسمح بيها لمقر من إعدادات الموبايل وجرّب تاني.', 'Allow them for Maqar in your phone’s settings, then try again.'),
+        title: t(m.notifications.notificationsAreBlocked),
+        body: t(m.notifications.allowThemForMaqarIn),
         tone: 'danger',
       });
       return;
@@ -83,8 +83,8 @@ export function usePushSwitch() {
     await sendTestRequest().catch(() => {});
     void queryClient.invalidateQueries({ queryKey: notificationsKey(useSession.getState().user?.id ?? null) });
     toast.show({
-      title: t('الإشعارات شغالة', 'Notifications are on'),
-      body: t('هيوصلك تذكير المعاينات ونزول الأسعار.', 'You’ll get viewing reminders and price drops.'),
+      title: t(m.notifications.notificationsAreOn),
+      body: t(m.notifications.youllGetViewingRemindersAnd),
       tone: 'sage',
     });
   };
