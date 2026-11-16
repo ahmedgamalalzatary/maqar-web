@@ -2,18 +2,25 @@ import { fmtNum } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import Animated, { LinearTransition, ZoomOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
 import { useT } from '@/core/i18n';
+import { Entrance, useEntranceClock } from '@/core/motion/entrance';
+import { EASE_OUT } from '@/core/motion/motion';
 import { useTheme } from '@/core/theme';
 import { PriceAlerts } from '@/features/alerts/components/price-alerts';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { PropertyCardView } from '@/features/listings/components/property-card';
 import { useSaved } from '../hooks/use-saved';
+
+// Module scope: layout-animation builders made in render cost every re-render (2026-11-16).
+const CLOSE_UP = LinearTransition.duration(240).easing(EASE_OUT);
+const TAKEN_OFF = ZoomOut.duration(200).withInitialValues({ transform: [{ scale: 1 }] }).easing(EASE_OUT);
 
 /** The Saved tab (contract §8.9): saved homes (phase 7) and price alerts (phase 12), as two tabs like the demo. */
 export function SavedScreen() {
@@ -26,6 +33,7 @@ export function SavedScreen() {
   const cards = saved.data ?? [];
   const [tab, setTab] = useState<'saved' | 'alerts'>('saved');
   const onAlerts = tab === 'alerts';
+  const entrance = useEntranceClock();
 
   const empty = !signedIn ? (
     <Message
@@ -48,12 +56,17 @@ export function SavedScreen() {
   );
 
   return (
-    <FlatList
+    <Animated.FlatList
       style={{ backgroundColor: colors.bg }}
+      itemLayoutAnimation={CLOSE_UP}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       data={onAlerts ? [] : cards}
       keyExtractor={(c) => String(c.id)}
-      renderItem={({ item }) => <PropertyCardView card={item} />}
+      renderItem={({ item, index }) => (
+        <Entrance clock={entrance} index={index} exiting={TAKEN_OFF}>
+          <PropertyCardView card={item} />
+        </Entrance>
+      )}
       ItemSeparatorComponent={() => <View style={styles.gap} />}
       ListHeaderComponent={
         <View style={styles.header}>

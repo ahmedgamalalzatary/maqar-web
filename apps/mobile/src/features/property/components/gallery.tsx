@@ -4,29 +4,52 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Play } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang, useT } from '@/core/i18n';
 import { useTheme } from '@/core/theme';
+import { PhotoViewer } from './photo-viewer';
 import { VideoPlayerModal } from './video-player';
 
 /**
  * Full-width photos, one per swipe, with a "2 / 5" counter. Cover first. Videos (phase 26) follow
  * the photos as their poster frames; tapping one plays it full screen, and a chip plays the first.
+ * 2026-11-16: a photo opens full screen (pinch, swipe down to close); the cover carries the card's
+ * shared-element `tag`; with the page's `scrollY` the photos drift slower than the page and stretch
+ * when it is pulled down.
  */
-export function Gallery({ images, videos = [], label }: { images: string[]; videos?: ListingVideo[]; label: string }) {
+export function Gallery({
+  images,
+  videos = [],
+  label,
+  tag,
+  scrollY,
+}: {
+  images: string[];
+  videos?: ListingVideo[];
+  label: string;
+  tag?: string;
+  scrollY?: SharedValue<number>;
+}) {
   const t = useT();
   const lang = useLang();
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState<ListingVideo | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
   const height = Math.round(width * 0.9);
   const count = images.length + videos.length;
   // Whether scroll positions count down from the far end. Only known once scrolling starts.
   const fromFarEnd = useRef<boolean | null>(null);
   const reduceMotion = useReduceMotion();
+  const parallax = useAnimatedStyle(() => {
+    const y = reduceMotion || !scrollY ? 0 : scrollY.get();
+    // Pulled down (iOS): pinned to the top and stretched. Scrolled up: drifts at half the speed.
+    return y < 0 ? { transform: [{ translateY: y / 2 }, { scale: 1 - y / height }] } : { transform: [{ translateY: y * 0.5 }] };
+  });
 
   /**
    * Which page is showing. In a right-to-left layout the position depends on the platform: the web
@@ -42,13 +65,12 @@ export function Gallery({ images, videos = [], label }: { images: string[]; vide
   };
 
   return (
-    <View style={{ height, backgroundColor: colors.surface2 }}>
+    <Animated.View style={[{ height, backgroundColor: colors.surface2 }, parallax]}>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} testID="gallery" scrollEventThrottle={16} onScroll={onScroll}>
         {images.map((path, i) => {
           const uri = mediaUrl(path);
-          return uri ? (
+          const photo = uri ? (
             <Image
-              key={`${path}-${i}`}
               accessible
               accessibilityRole="image"
               accessibilityLabel={i === 0 ? label : undefined}
@@ -57,6 +79,22 @@ export function Gallery({ images, videos = [], label }: { images: string[]; vide
               contentFit="cover"
               transition={reduceMotion ? 0 : 200}
             />
+          ) : null;
+          return uri ? (
+            <Pressable
+              key={`${path}-${i}`}
+              accessibilityRole="button"
+              accessibilityLabel={t(`افتح صورة ${fmtNum(i + 1, 'ar')} من ${fmtNum(images.length, 'ar')}`, `Open photo ${i + 1} of ${images.length}`)}
+              onPress={() => setViewing(i)}
+            >
+              {i === 0 ? (
+                <Animated.View testID="gallery-cover" sharedTransitionTag={reduceMotion ? undefined : tag}>
+                  {photo}
+                </Animated.View>
+              ) : (
+                photo
+              )}
+            </Pressable>
           ) : null;
         })}
         {videos.map((v, i) => (
@@ -106,7 +144,8 @@ export function Gallery({ images, videos = [], label }: { images: string[]; vide
         </View>
       ) : null}
       <VideoPlayerModal video={playing} onClose={() => setPlaying(null)} />
-    </View>
+      {viewing !== null ? <PhotoViewer images={images} start={viewing} onClose={() => setViewing(null)} /> : null}
+    </Animated.View>
   );
 }
 

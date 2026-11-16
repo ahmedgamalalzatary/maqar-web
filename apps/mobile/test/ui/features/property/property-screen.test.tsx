@@ -194,3 +194,13 @@ describe('PropertyScreen', () => {
     expect(mockRouter.back).toHaveBeenCalled();
   });
 });
+
+// 2026-11-16: while the page loads it shows its own shape, shimmering, not a listing card.
+describe('The property page while it loads', () => {
+  it('shows the shape of the page', async () => {
+    mockFetch().mockImplementation(() => new Promise(() => undefined));
+    await renderWithProviders(<PropertyScreen id={1} />);
+    expect(screen.getByTestId('property-skeleton', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getAllByTestId('shimmer', { includeHiddenElements: true }).length).toBeGreaterThan(2);
+  });
+});

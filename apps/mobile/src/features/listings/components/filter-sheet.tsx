@@ -19,6 +19,10 @@ import { type ReactNode, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
+import { useTweenedNumber } from '@/core/motion/tween';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
+import { useDragToClose } from '@/components/drag-to-close';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
@@ -70,18 +74,31 @@ export function FilterSheet({
   const deliveries: Delivery[] = ['ready', ...years];
   const total = facets.data?.total;
   const reduceMotion = useReduceMotion();
+  const drag = useDragToClose(true, onClose);
+  // The count on the button rolls to each new total as filters change (2026-11-16).
+  const rolled = Math.round(useTweenedNumber(total ?? 0));
+  const showText = (n: number) => t(`اعرض ${fmtNum(n, 'ar')} وحدة`, `Show ${n} ${n === 1 ? 'home' : 'homes'}`);
 
   return (
     <Modal visible transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
-      <View style={styles.fill}>
-        <Pressable accessibilityLabel={t('إغلاق', 'Close')} style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { direction: dir, backgroundColor: colors.surface }]}>
-          <View style={styles.head}>
-            <Txt accessibilityRole="header" size={18} weight="semibold" style={styles.flex}>
-              {t('الفلاتر', 'Filters')}
-            </Txt>
-            <IconButton label={t('إغلاق', 'Close')} onPress={onClose} icon={<X size={20} color={colors.ink} />} />
-          </View>
+      {/* A modal is its own window on Android: the drag needs its own gesture root. */}
+      <GestureHandlerRootView style={styles.fill}>
+        <Animated.View style={[styles.backdrop, drag.backdrop]}>
+          <Pressable accessibilityLabel={t('إغلاق', 'Close')} style={styles.flex} onPress={onClose} />
+        </Animated.View>
+        <Animated.View onLayout={drag.onLayout} style={[styles.sheet, { direction: dir, backgroundColor: colors.surface }, drag.sheet]}>
+          {/* 2026-11-16: the handle and title drag the sheet down to close it. */}
+          <GestureDetector gesture={drag.pan}>
+            <View>
+              <View style={[styles.handle, { backgroundColor: colors.line2 }]} />
+              <View style={styles.head}>
+                <Txt accessibilityRole="header" size={18} weight="semibold" style={styles.flex}>
+                  {t('الفلاتر', 'Filters')}
+                </Txt>
+                <IconButton label={t('إغلاق', 'Close')} onPress={onClose} icon={<X size={20} color={colors.ink} />} />
+              </View>
+            </View>
+          </GestureDetector>
 
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Section
@@ -258,17 +275,14 @@ export function FilterSheet({
           <View style={[styles.footer, { borderTopColor: colors.line, paddingBottom: insets.bottom + 12 }]}>
             <Button label={t('مسح', 'Reset')} variant="secondary" onPress={() => setDraft(clearFilters(draft))} style={styles.reset} />
             <Button
-              label={
-                total === undefined
-                  ? t('اعرض الوحدات', 'Show homes')
-                  : t(`اعرض ${fmtNum(total, 'ar')} وحدة`, `Show ${total} ${total === 1 ? 'home' : 'homes'}`)
-              }
+              label={total === undefined ? t('اعرض الوحدات', 'Show homes') : showText(total)}
+              text={total === undefined ? undefined : showText(rolled)}
               onPress={() => onApply(draft)}
               style={styles.flex}
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -347,9 +361,10 @@ function NumberBox({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: 'flex-end' },
+  handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginTop: 10 },
   backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(4, 21, 37, 0.45)' },
   sheet: { maxHeight: '92%', borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, overflow: 'hidden' },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 4 },
   body: { paddingHorizontal: 20, paddingBottom: 24, gap: 24 },
   section: { gap: 12 },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },

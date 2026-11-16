@@ -57,3 +57,29 @@ describe('The gallery counter', () => {
     expect(screen.getByText('٢ / ٢')).toBeOnTheScreen();
   });
 });
+
+// 2026-11-16: a photo opens full screen, where it can be pinched and swiped down to close.
+describe('The full-screen photos', () => {
+  it('open on the photo tapped, and close again', async () => {
+    await renderWithProviders(<Gallery images={IMAGES} label="home" />, { lang: 'en' });
+    expect(screen.queryByTestId('photo-viewer')).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Open photo 2 of 4' }));
+    expect(screen.getByTestId('photo-viewer')).toBeOnTheScreen();
+    expect(screen.getByTestId('photo-viewer-counter')).toHaveTextContent('2 / 4');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByTestId('photo-viewer')).toBeNull();
+  });
+
+  it('count in Arabic digits in Arabic', async () => {
+    await renderWithProviders(<Gallery images={IMAGES} label="home" />);
+    await fireEvent.press(screen.getByRole('button', { name: 'افتح صورة ١ من ٤' }));
+    expect(screen.getByTestId('photo-viewer-counter')).toHaveTextContent('١ / ٤');
+  });
+
+  it('hand the first photo over from the card that opened the page', async () => {
+    await renderWithProviders(<Gallery images={IMAGES} label="home" tag="property-7" />);
+    expect(screen.getByTestId('gallery-cover', { includeHiddenElements: true }).props.sharedTransitionTag).toBe('property-7');
+  });
+});

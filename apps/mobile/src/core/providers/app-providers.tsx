@@ -10,7 +10,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '@/components/toast';
 import { useDir } from '@/core/i18n';
@@ -70,12 +71,13 @@ export function AppProviders({ children, boot, overlay }: { children: ReactNode;
           }}
         >
           {/* Layout direction is set here instead of I18nManager, so switching language needs no restart. */}
-          <View style={[styles.root, { direction: dir, backgroundColor: colors.bg }]}>
+          {/* The gesture root also holds the photo viewer's pinch and the sheets' drag (2026-11-16). */}
+          <GestureHandlerRootView style={[styles.root, { direction: dir, backgroundColor: colors.bg }]}>
             {booted ? children : null}
             <ToastHost />
             {/* Over everything: the opening screen (the root layout passes it, so core does not depend on a feature). */}
             <BootedContext.Provider value={booted}>{overlay}</BootedContext.Provider>
-          </View>
+          </GestureHandlerRootView>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>
       </QueryClientProvider>

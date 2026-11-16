@@ -14,6 +14,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Sty
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
 import { useLang, useT } from '@/core/i18n';
+import { Entrance, useEntranceClock } from '@/core/motion/entrance';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useIsClient } from '@/features/prefs/hooks/use-prefs';
 import { RemovableChip, ToggleChip } from '../components/chips';
@@ -46,6 +47,7 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const isClient = useIsClient();
+  const entrance = useEntranceClock();
   const [filters, setFilters] = useState<ExploreFilters>(() => ({
     sort: sort ?? 'newest',
     ...(category && { category }),
@@ -245,7 +247,11 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
         contentContainerStyle={styles.content}
         data={cards}
         keyExtractor={(c) => String(c.id)}
-        renderItem={({ item }) => <PropertyCardView card={item} />}
+        renderItem={({ item, index }) => (
+          <Entrance clock={entrance} index={index}>
+            <PropertyCardView card={item} />
+          </Entrance>
+        )}
         ItemSeparatorComponent={() => <View style={styles.gap} />}
         ListHeaderComponent={header}
         keyboardDismissMode="on-drag"

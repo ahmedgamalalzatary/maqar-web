@@ -1,18 +1,18 @@
 import { SearchX, WifiOff } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
+import { Skeleton } from '@/components/skeleton';
 import { Txt } from '@/components/text';
 import { useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 
-/** Grey blocks in the shape of a card, while listings load. */
+/** Shimmering blocks in the shape of a card, while listings load. */
 export function CardSkeleton({ width }: { width?: number }) {
-  const { colors } = useTheme();
   return (
     <View style={{ width }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={[styles.photo, { backgroundColor: colors.surface2 }]} />
-      <View style={[styles.line, { width: '35%', backgroundColor: colors.surface2 }]} />
-      <View style={[styles.line, { width: '70%', backgroundColor: colors.surface2 }]} />
+      <Skeleton style={styles.photo} />
+      <Skeleton style={[styles.line, { width: '35%' }]} />
+      <Skeleton style={[styles.line, { width: '70%' }]} />
     </View>
   );
 }

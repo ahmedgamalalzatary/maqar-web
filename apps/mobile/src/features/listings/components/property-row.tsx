@@ -2,7 +2,8 @@ import { fmtMoney, type PropertyCard } from '@maqar/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useLang, useT } from '@/core/i18n';
@@ -24,11 +25,11 @@ export function PropertyRow({ card, sub, right }: { card: PropertyCard; sub?: Re
   const cover = mediaUrl(card.cover);
   return (
     <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-      <Pressable
+      <PressableScale
         accessibilityRole="button"
         accessibilityLabel={title}
         onPress={() => router.push(`/property/${card.id}`)}
-        style={({ pressed }) => [styles.main, { opacity: pressed ? 0.8 : 1 }]}
+        style={styles.main}
       >
         <View style={[styles.photo, { backgroundColor: colors.surface2 }]}>
           {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
@@ -51,7 +52,7 @@ export function PropertyRow({ card, sub, right }: { card: PropertyCard; sub?: Re
           </Txt>
           {sub}
         </View>
-      </Pressable>
+      </PressableScale>
       {right}
     </View>
   );

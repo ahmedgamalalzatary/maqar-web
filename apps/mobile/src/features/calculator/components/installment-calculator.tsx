@@ -2,11 +2,14 @@ import { fmtMoney, fmtNum, fmtPct, installment, localDigits, minDownOf, yearsLim
 import { Info } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Segmented } from '@/components/segmented';
 import { Txt } from '@/components/text';
 import { TextField } from '@/components/text-field';
 import { useCalculatorLimits } from '@/core/app-config/store';
 import { useLang, useT } from '@/core/i18n';
+import { CSS_EASE_OUT } from '@/core/motion/motion';
+import { useTweenedNumber } from '@/core/motion/tween';
 import { radius, useTheme } from '@/core/theme';
 import { BudgetSlider } from '@/features/prefs/components/budget-slider';
 import { parseAmount, parseRate, parseYears } from '../rate';
@@ -150,11 +153,10 @@ export function InstallmentCalculator({
         <Txt size={12} style={faded}>
           {frequency === 'monthly' ? t('القسط الشهري', 'Monthly installment') : t('القسط الربع سنوي', 'Quarterly installment')}
         </Txt>
-        <Txt size={32} weight="semibold" style={{ color: colors.gold }} accessibilityLiveRegion="polite">
-          {fmtMoney(Math.round(plan.payment), lang, false)}
-        </Txt>
+        <Payment value={Math.round(plan.payment)} color={colors.gold} />
+        {/* The down payment's share of the total grows and shrinks instead of jumping (2026-11-16). */}
         <View style={styles.bar}>
-          <View style={[styles.barFill, { width: `${downShare}%`, backgroundColor: colors.gold }]} />
+          <Animated.View style={[styles.barFill, { width: `${downShare}%`, backgroundColor: colors.gold }]} />
         </View>
         <View style={styles.figures}>
           <Figure label={t('مقدمك', 'Your down payment')} value={fmtMoney(Math.round(plan.down), lang)} labelStyle={faded} valueStyle={cream} />
@@ -254,6 +256,21 @@ export function InstallmentCalculator({
   );
 }
 
+/**
+ * The installment, counting to each new value like an odometer (2026-11-16). Only this line
+ * re-renders while it counts; a screen reader hears the final number once.
+ */
+function Payment({ value, color }: { value: number; color: string }) {
+  const lang = useLang();
+  const shown = Math.round(useTweenedNumber(value));
+  const text = fmtMoney(value, lang, false);
+  return (
+    <Txt size={32} weight="semibold" style={{ color }} accessibilityLabel={text} accessibilityLiveRegion="polite">
+      {fmtMoney(shown, lang, false)}
+    </Txt>
+  );
+}
+
 function Figure({
   label,
   value,
@@ -282,7 +299,17 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   result: { borderRadius: radius.lg, padding: 20, gap: 4 },
   bar: { height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 12 },
-  barFill: { height: '100%', borderRadius: 4 },
+  // Out of the flow with no children, so easing its width re-lays-out nothing else.
+  barFill: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    start: 0,
+    borderRadius: 4,
+    transitionProperty: 'width',
+    transitionDuration: 300,
+    transitionTimingFunction: CSS_EASE_OUT,
+  },
   figures: { flexDirection: 'row', gap: 8, marginTop: 12 },
   years: { gap: 8 },
   downFields: { flexDirection: 'row', gap: 10, marginTop: 12 },

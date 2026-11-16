@@ -4,13 +4,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Bath, BedDouble, MapPin, Maximize2, Sparkles, TrendingDown } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
+
+/** The shared-element tag joining a card's photo to the property page's first photo. */
+export const propertyPhotoTag = (id: number) => `property-${id}`;
 
 /** Percent the price fell from the old price, rounded; 0 when it did not fall. */
 export const dropPct = (c: Pick<PropertyCard, 'price' | 'oldPrice'>) =>
@@ -29,17 +35,18 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
   const monthly = card.plan ? Math.round(installment(card.price, card.plan.downPct, card.plan.years).payment) : null;
   const cover = mediaUrl(card.cover);
   const icon = { size: 14, color: colors.ink3, strokeWidth: 1.8 };
+  const reduced = useReduceMotion();
 
   return (
     // The heart and the scale sit beside the card, not inside it: a screen reader cannot reach a button within a button.
     <View style={{ width }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        onPress={() => router.push(`/property/${card.id}`)}
-        style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-      >
-        <View style={[styles.photo, { backgroundColor: colors.surface2 }]}>
+      <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={() => router.push(`/property/${card.id}`)} scaleTo={0.98}>
+        {/* 2026-11-16: the photo grows into the property page's gallery, which carries the same tag. */}
+        <Animated.View
+          testID="card-photo"
+          sharedTransitionTag={reduced ? undefined : propertyPhotoTag(card.id)}
+          style={[styles.photo, { backgroundColor: colors.surface2 }]}
+        >
           {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
           <LinearGradient
             colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.55)']}
@@ -78,7 +85,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
               </Badge>
             ) : null}
           </View>
-        </View>
+        </Animated.View>
 
         <View style={styles.body}>
           <View style={styles.priceRow}>
@@ -120,7 +127,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
             ) : null}
           </View>
         </View>
-      </Pressable>
+      </PressableScale>
       <View style={styles.actions}>
         <CompareButton card={card} />
         <SaveButton card={card} />
