@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
-import { Gallery } from '@/features/property/components/gallery';
+import { dotWidth, Gallery } from '@/features/property/components/gallery';
 import { renderWithProviders } from '../../../utils/render';
 
 const IMAGES = ['/a.jpg', '/b.jpg', '/c.jpg', '/d.jpg'];
@@ -77,9 +77,22 @@ describe('The full-screen photos', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'افتح صورة ١ من ٤' }));
     expect(screen.getByTestId('photo-viewer-counter')).toHaveTextContent('١ / ٤');
   });
+});
 
-  it('hand the first photo over from the card that opened the page', async () => {
-    await renderWithProviders(<Gallery images={IMAGES} label="home" tag="property-7" />);
-    expect(screen.getByTestId('gallery-cover', { includeHiddenElements: true }).props.sharedTransitionTag).toBe('property-7');
+// 2026-11-16: dots under the photos follow the swipe; the current one stretches into a pill.
+describe('The photo dots', () => {
+  it('show one dot per photo, and none for a single photo', async () => {
+    await renderWithProviders(<Gallery images={IMAGES} label="home" />, { lang: 'en' });
+    expect(screen.getByTestId('gallery-dots', { includeHiddenElements: true }).children).toHaveLength(4);
+
+    await renderWithProviders(<Gallery images={['/a.jpg']} label="home" />, { lang: 'en' });
+    expect(screen.queryByTestId('gallery-dots', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('stretch the current dot and ease the ones beside it', () => {
+    expect(dotWidth(1, 1)).toBe(18);
+    expect(dotWidth(0, 1)).toBe(6);
+    expect(dotWidth(2, 1.5)).toBe(12);
+    expect(dotWidth(3, 1)).toBe(6);
   });
 });

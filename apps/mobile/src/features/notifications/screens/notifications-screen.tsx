@@ -12,9 +12,10 @@ import {
   TrendingDown,
   Users,
 } from 'lucide-react-native';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
+import { useLogoRefresh } from '@/components/logo-refresh';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { m, rtlLine, useDir, useLang, useT } from '@/core/i18n';
@@ -46,6 +47,7 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
   const insets = useSafeAreaInsets();
   const signedIn = useSession((s) => s.status === 'signedIn');
   const inbox = useNotifications();
+  const refresh = useLogoRefresh({ refreshing: inbox.isRefetching, onRefresh: () => void inbox.refetch(), top: insets.top + 8 });
   const markAll = useMarkAllRead();
   const markRead = useMarkRead();
   const items = inbox.data?.pages.flatMap((p) => p.items) ?? [];
@@ -77,6 +79,8 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
   );
 
   return (
+    <View style={styles.fill}>
+    {refresh.indicator}
     <FlatList
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
@@ -112,9 +116,10 @@ export function NotificationsScreen({ back = false }: { back?: boolean }) {
       }
       ListEmptyComponent={empty}
       refreshControl={
-        signedIn ? <RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} tintColor={colors.accent} /> : undefined
+        signedIn ? refresh.refreshControl : undefined
       }
     />
+    </View>
   );
 }
 
@@ -178,6 +183,7 @@ function Message({ title, body, action }: { title: string; body: string; action?
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, marginBottom: 16 },
   flex: { flex: 1 },
