@@ -44,11 +44,3 @@ describe('PropertyCardView', () => {
     expect(screen.getByText('Delivery 2028')).toBeOnTheScreen();
   });
 });
-
-// 2026-11-16: the card's photo grows into the property page's gallery (a shared element).
-describe('The card photo hand-off', () => {
-  it('tags the photo with the home, so the property page can take it over', async () => {
-    await renderWithProviders(<PropertyCardView card={makeCard({ id: 7 })} />);
-    expect(screen.getByTestId('card-photo', { includeHiddenElements: true }).props.sharedTransitionTag).toBe('property-7');
-  });
-});

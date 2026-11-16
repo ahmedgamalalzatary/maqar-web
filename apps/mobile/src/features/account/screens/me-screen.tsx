@@ -3,9 +3,10 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Calculator, CalendarCheck, ChevronLeft, ChevronRight, FileBarChart, FileText, Headset, KeyRound, Languages, MapPin, MessagesSquare, Moon, Settings, ShieldCheck, ShieldUser, SlidersHorizontal, UserPen, UsersRound } from 'lucide-react-native';
-import { type ReactNode, useState } from 'react';
+import { type ComponentRef, type ReactNode, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
+import { switchThemeFrom } from '@/components/theme-switch';
 import { Card } from '@/components/card';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
@@ -30,6 +31,9 @@ export function MeScreen() {
   const user = useSession((s) => s.user);
   const signOut = useSignOut();
   const prefs = usePreferences();
+  const themeSwitch = useRef<ComponentRef<typeof View>>(null);
+  // The switch moves at once; the theme follows once the new colour has spread (null: follow the theme).
+  const [darkSwitch, setDarkSwitch] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
   const selfDelete = user?.role === 'client';
   const reports = useOpenReports(user?.role === 'admin').data?.length ?? 0;
@@ -113,11 +117,20 @@ export function MeScreen() {
           </View>
         </Row>
         <Row icon={<Moon size={20} color={colors.accentInk} />} label={t(m.common.darkMode)}>
-          <Toggle
-            label={t(m.common.darkMode)}
-            value={scheme === 'dark'}
-            onChange={(on) => prefs.setTheme(on ? 'dark' : 'light')}
-          />
+          {/* 2026-11-16: the new colours spread from the switch over the screen. */}
+          <View ref={themeSwitch} collapsable={false}>
+            <Toggle
+              label={t(m.common.darkMode)}
+              value={darkSwitch ?? scheme === 'dark'}
+              onChange={(on) => {
+                setDarkSwitch(on);
+                switchThemeFrom(themeSwitch, on ? 'dark' : 'light', () => {
+                  prefs.setTheme(on ? 'dark' : 'light');
+                  setDarkSwitch(null);
+                });
+              }}
+            />
+          </View>
         </Row>
         {user ? <PushRow /> : null}
         {user ? (

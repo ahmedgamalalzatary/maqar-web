@@ -34,9 +34,10 @@ import {
   TrendingDown,
   Waves,
 } from 'lucide-react-native';
-import { type ReactNode, useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, useAnimatedRef, useScrollOffset } from 'react-native-reanimated';
+import { type ReactNode, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedRef, useScrollOffset } from 'react-native-reanimated';
 import { PressableScale } from '@/components/pressable-scale';
 import { Skeleton } from '@/components/skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,12 +45,14 @@ import { Button } from '@/components/button';
 import { FollowPriceButton } from '@/features/alerts/components/follow-price-button';
 import { BOOK_BAR_HEIGHT, BookBar, useShowsBookBar } from '@/features/viewings/components/book-bar';
 import { Txt } from '@/components/text';
-import { ApiError } from '@/core/api/api';
+import { ApiError, mediaUrl } from '@/core/api/api';
 import { m, useDir, useLang, useT } from '@/core/i18n';
 import { radius, useTheme } from '@/core/theme';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';
 import { ListingsError } from '@/features/listings/components/list-states';
-import { dropPct, PropertyCardView, propertyPhotoTag } from '@/features/listings/components/property-card';
+import { dropPct, PropertyCardView } from '@/features/listings/components/property-card';
+import { peekOrigin, propertyKey } from '@/core/motion/card-origin';
+import { useSession } from '@/features/auth/store/session.store';
 import { EASE_OUT } from '@/core/motion/motion';
 import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
@@ -57,6 +60,7 @@ import { AdvisorCard } from '../components/advisor-card';
 import { Gallery } from '../components/gallery';
 import { LocationMap } from '../components/location-map';
 import { directionsUrl } from '../directions';
+import { shareListing } from '../share';
 import { useProperty, useSimilar } from '../hooks/use-property';
 
 const FEATURE_ICON: Record<Feature, LucideIcon> = {
@@ -77,7 +81,9 @@ const DAY = 24 * 60 * 60 * 1000;
 // Module scope: layout-animation builders made in render cost every re-render.
 const STRIP_IN = FadeIn.duration(160).easing(EASE_OUT);
 const STRIP_OUT = FadeOut.duration(130).easing(EASE_OUT);
-const PAGE_IN = FadeIn.duration(220).easing(EASE_OUT);
+const TITLE_IN = FadeInDown.duration(220).easing(EASE_OUT);
+/** The bottom bar hides again this close to the end of the page. */
+const BAR_END_GAP = 40;
 
 /**
  * The property page (contract §8.5), phase 4, with price alerts (phase 12) and booking (phase 13).
@@ -90,7 +96,7 @@ export function PropertyScreen({ id }: { id: number }) {
   const property = useProperty(id);
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  if (property.isPending) return <PageSkeleton />;
+  if (property.isPending) return <PageSkeleton cover={peekOrigin(propertyKey(id))?.cover ?? null} />;
   if (property.isError) {
     const gone = property.error instanceof ApiError && (property.error.status === 404 || property.error.status === 400);
     return (
@@ -141,28 +147,36 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useScrollOffset(scrollRef);
 
-  const share = () =>
-    Share.share({
-      title,
-      // The deep link opens this exact listing in an installed app; without the app the text
-      // above still carries what was shared.
-      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t(m.property.onMaqar)}\nmaqar://property/${p.id}`.replace(/ \n/g, '\n'),
-    });
+  // 2026-11-16: the bottom bar rises once the price box has scrolled away, and steps aside again
+  // at the very end of the page. Where the price box ends, in the page's own scroll positions.
+  const [barShown, setBarShown] = useState(false);
+  const bodyY = useRef(0);
+  const priceEnd = useRef(Number.POSITIVE_INFINITY);
+  const staff = useSession((s) => !!s.user && s.user.role !== 'client');
+  // The top buttons at the end (share, and compare and save for guests and clients), to keep the title clear of.
+  const endButtons = staff ? 1 : 3;
+
+  const share = () => void shareListing(p, lang, t).catch(() => undefined);
 
   return (
-    <Animated.View entering={PAGE_IN} style={[styles.fill, { backgroundColor: colors.bg }]}>
+    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <Animated.ScrollView
         ref={scrollRef}
         testID="property-scroll"
         scrollEventThrottle={16}
         onScroll={(e) => {
-          const solid = e.nativeEvent.contentOffset.y > galleryHeight - topBarHeight;
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+          const y = contentOffset.y;
+          const solid = y > galleryHeight - topBarHeight;
           if (solid !== solidTop) setSolidTop(solid);
+          const atEnd = contentSize.height > 0 && y > contentSize.height - layoutMeasurement.height - BAR_END_GAP;
+          const shown = y > priceEnd.current - topBarHeight && !atEnd;
+          if (shown !== barShown) setBarShown(shown);
         }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 + (bookBar ? BOOK_BAR_HEIGHT : 0) }}
       >
         <View>
-          <Gallery images={p.images} videos={p.videos} label={title} tag={propertyPhotoTag(p.id)} scrollY={scrollY} />
+          <Gallery images={p.images} videos={p.videos} label={title} scrollY={scrollY} />
           {p.tourRooms.length ? (
             <Pressable
               accessibilityRole="button"
@@ -180,7 +194,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           ) : null}
         </View>
 
-        <View style={[styles.body, { backgroundColor: colors.bg }]}>
+        <View style={[styles.body, { backgroundColor: colors.bg }]} onLayout={(e) => (bodyY.current = e.nativeEvent.layout.y)}>
           <View style={styles.badges}>
             <Pill bg={colors.ink} fg={colors.bg} text={t(CATEGORY_LABEL[p.category])} />
             <Pill bg={colors.surface2} fg={colors.ink} text={t(PROPERTY_TYPE_LABEL[p.type])} />
@@ -212,7 +226,10 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
             ) : null}
           </View>
 
-          <View style={[styles.priceBox, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+          <View
+            style={[styles.priceBox, { backgroundColor: colors.surface, borderColor: colors.line }]}
+            onLayout={(e) => (priceEnd.current = bodyY.current + e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+          >
             <View style={styles.priceTop}>
               <View style={styles.priceText}>
                 <View style={styles.inline}>
@@ -353,7 +370,22 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           testID="property-top-fill"
           pointerEvents="none"
           style={[styles.topFill, { height: topBarHeight, backgroundColor: colors.bg, borderBottomColor: colors.line2 }]}
-        />
+        >
+          {/* 2026-11-16: the title and price move up into the bar. Screen readers keep the page's own heading. */}
+          <Animated.View
+            entering={TITLE_IN}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[styles.topTitle, { top: insets.top + 8, start: 16 + 44 + 12, end: 16 + endButtons * 44 + (endButtons - 1) * 8 + 12 }]}
+          >
+            <Txt size={14} weight="semibold" numberOfLines={1}>
+              {title}
+            </Txt>
+            <Txt size={12} weight="medium" color="accentInk" numberOfLines={1}>
+              {`${fmtMoney(p.price, lang, false)}${suffix ? ` ${suffix}` : ''}`}
+            </Txt>
+          </Animated.View>
+        </Animated.View>
       ) : null}
       <View style={[styles.topBar, { top: insets.top + 8 }]}>
         <Glass label={t(m.common.back)} onPress={onBack}>
@@ -367,13 +399,16 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
           <SaveButton card={p} size={44} />
         </View>
       </View>
-      {bookBar ? <BookBar card={p} /> : null}
-    </Animated.View>
+      {bookBar ? <BookBar card={p} shown={barShown} /> : null}
+    </View>
   );
 }
 
-/** The page's shape while it loads (2026-11-16): the photo, the title, the price box and the specs. */
-function PageSkeleton() {
+/**
+ * The page's shape while it loads (2026-11-16): the photo, the title, the price box and the specs.
+ * Opened from a card, the card's photo is already there, so the page grows with a real picture.
+ */
+function PageSkeleton({ cover }: { cover: string | null }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   return (
@@ -383,7 +418,11 @@ function PageSkeleton() {
       importantForAccessibility="no-hide-descendants"
       style={[styles.fill, { backgroundColor: colors.bg }]}
     >
-      <Skeleton style={{ height: Math.round(width * 0.9) }} />
+      {cover ? (
+        <Image testID="skeleton-cover" source={{ uri: mediaUrl(cover) ?? undefined }} style={{ height: Math.round(width * 0.9) }} contentFit="cover" />
+      ) : (
+        <Skeleton style={{ height: Math.round(width * 0.9) }} />
+      )}
       <View style={styles.skeletonBody}>
         <View style={styles.badges}>
           <Skeleton style={styles.skeletonPill} />
@@ -517,6 +556,7 @@ const styles = StyleSheet.create({
   tourIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   topBar: { position: 'absolute', start: 16, end: 16, flexDirection: 'row', justifyContent: 'space-between' },
   topFill: { position: 'absolute', top: 0, start: 0, end: 0, borderBottomWidth: StyleSheet.hairlineWidth },
+  topTitle: { position: 'absolute', height: 44, justifyContent: 'center' },
   topActions: { flexDirection: 'row', gap: 8 },
   glass: {
     width: 44,

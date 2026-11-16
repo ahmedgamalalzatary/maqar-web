@@ -1,11 +1,15 @@
+import type { PropertyCard } from '@maqar/shared';
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 import { useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition, ZoomOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
+import { useLogoRefresh } from '@/components/logo-refresh';
 import { Segmented } from '@/components/segmented';
+import { SwipeToRemove } from '@/components/swipe-to-remove';
+import { toast } from '@/components/toast';
 import { Txt } from '@/components/text';
 import { m, useT } from '@/core/i18n';
 import { Entrance, useEntranceClock } from '@/core/motion/entrance';
@@ -15,7 +19,7 @@ import { PriceAlerts } from '@/features/alerts/components/price-alerts';
 import { useSession } from '@/features/auth/store/session.store';
 import { CardSkeleton, ListingsError } from '@/features/listings/components/list-states';
 import { PropertyCardView } from '@/features/listings/components/property-card';
-import { useSaved } from '../hooks/use-saved';
+import { useSaved, useSetSaved } from '../hooks/use-saved';
 
 // Module scope: layout-animation builders made in render cost every re-render (2026-11-16).
 const CLOSE_UP = LinearTransition.duration(240).easing(EASE_OUT);
@@ -33,6 +37,13 @@ export function SavedScreen() {
   const [tab, setTab] = useState<'saved' | 'alerts'>('saved');
   const onAlerts = tab === 'alerts';
   const entrance = useEntranceClock();
+  const setSaved = useSetSaved();
+  const refresh = useLogoRefresh({ refreshing: saved.isRefetching, onRefresh: () => void saved.refetch(), top: insets.top + 8 });
+  // 2026-11-16: swiped off, a home leaves at once; the toast puts it back where it was.
+  const remove = (card: PropertyCard, at: number) => {
+    setSaved(card, false);
+    toast.show({ title: t(m.saved.removedFromSaved), body: t(m.saved.tapToUndo), tone: 'gold', onPress: () => setSaved(card, true, at) });
+  };
 
   const empty = !signedIn ? (
     <Message
@@ -55,6 +66,8 @@ export function SavedScreen() {
   );
 
   return (
+    <View style={styles.fill}>
+    {refresh.indicator}
     <Animated.FlatList
       style={{ backgroundColor: colors.bg }}
       itemLayoutAnimation={CLOSE_UP}
@@ -63,7 +76,9 @@ export function SavedScreen() {
       keyExtractor={(c) => String(c.id)}
       renderItem={({ item, index }) => (
         <Entrance clock={entrance} index={index} exiting={TAKEN_OFF}>
-          <PropertyCardView card={item} />
+          <SwipeToRemove label={t(m.saved.removeFromSaved)} onRemove={() => remove(item, index)}>
+            <PropertyCardView card={item} />
+          </SwipeToRemove>
         </Entrance>
       )}
       ItemSeparatorComponent={() => <View style={styles.gap} />}
@@ -86,10 +101,11 @@ export function SavedScreen() {
       ListEmptyComponent={onAlerts ? undefined : empty}
       refreshControl={
         signedIn ? (
-          <RefreshControl refreshing={saved.isRefetching} onRefresh={() => void saved.refetch()} tintColor={colors.accent} />
+          refresh.refreshControl
         ) : undefined
       }
     />
+    </View>
   );
 }
 
@@ -110,6 +126,7 @@ function Message({ title, body, action, onAction }: { title: string; body: strin
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   header: { gap: 16, marginBottom: 16 },
   gap: { height: 24 },

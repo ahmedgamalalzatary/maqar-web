@@ -11,11 +11,12 @@ import {
 } from '@maqar/shared';
 import { ArrowDownUp, KeyRound, type LucideIcon, Rotate3d, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from '@/components/text';
+import { useLogoRefresh } from '@/components/logo-refresh';
 import { m, useLang, useT } from '@/core/i18n';
-import { Entrance, useEntranceClock } from '@/core/motion/entrance';
+import { Entrance, useEntranceClock, useRevealOnScroll } from '@/core/motion/entrance';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useIsClient } from '@/features/prefs/hooks/use-prefs';
 import { RemovableChip, ToggleChip } from '../components/chips';
@@ -49,6 +50,8 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   const insets = useSafeAreaInsets();
   const isClient = useIsClient();
   const entrance = useEntranceClock();
+  // Cards further down rise in as they first scroll into view (2026-11-16).
+  const reveal = useRevealOnScroll(entrance);
   const [filters, setFilters] = useState<ExploreFilters>(() => ({
     sort: sort ?? 'newest',
     ...(category && { category }),
@@ -65,6 +68,7 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   const query = useMemo<ExploreFilters>(() => (q ? { ...shown, q } : shown), [shown, q]);
 
   const browse = useBrowse(query);
+  const refresh = useLogoRefresh({ refreshing: browse.isRefetching && !browse.isFetchingNextPage && !browse.isPlaceholderData, onRefresh: () => void browse.refetch() });
   const areas = useAreas();
   const cards = browse.data?.pages.flatMap((p) => p.items) ?? [];
   const total = browse.data?.pages[0]?.total;
@@ -242,14 +246,17 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       {top}
+      <View style={styles.fill}>
+      {refresh.indicator}
       <FlatList
         testID="explore-list"
         style={{ opacity: browse.isPlaceholderData ? 0.6 : 1 }}
         contentContainerStyle={styles.content}
         data={cards}
         keyExtractor={(c) => String(c.id)}
+        {...reveal}
         renderItem={({ item, index }) => (
-          <Entrance clock={entrance} index={index}>
+          <Entrance clock={entrance} index={index} id={String(item.id)}>
             <PropertyCardView card={item} />
           </Entrance>
         )}
@@ -292,9 +299,10 @@ export function ExploreScreen({ category, area, sort }: { category?: Category; a
         }}
         onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl refreshing={browse.isRefetching && !browse.isFetchingNextPage && !browse.isPlaceholderData} onRefresh={() => void browse.refetch()} tintColor={colors.accent} />
+          refresh.refreshControl
         }
       />
+      </View>
 
       {sheet === 'filters' ? (
         <FilterSheet

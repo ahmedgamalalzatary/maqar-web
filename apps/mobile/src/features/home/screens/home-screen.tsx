@@ -2,12 +2,13 @@ import { type Bi, pickField, type Category, fmtMoney, fmtPct, type HomeSection }
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Award, Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
-import { Fragment, type ReactNode } from 'react';
+import { type ComponentRef, Fragment, type ReactNode, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/button';
 import { IconButton } from '@/components/icon-button';
 import { Logo } from '@/components/logo';
 import { Screen } from '@/components/screen';
+import { switchThemeFrom } from '@/components/theme-switch';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
 import { useHomeOrder } from '@/core/app-config/store';
@@ -43,6 +44,7 @@ export function Home() {
   const router = useRouter();
   const { scheme, colors } = useTheme();
   const { setTheme } = usePreferences();
+  const themeButton = useRef<ComponentRef<typeof View>>(null);
   const signedIn = useSession((s) => s.status === 'signedIn');
   const { width } = useWindowDimensions();
   const areas = useAreas();
@@ -154,9 +156,14 @@ export function Home() {
       <View style={styles.header}>
         <Logo width={64} />
         <View style={styles.flex} />
+        {/* 2026-11-16: the new colours spread from this button over the screen. */}
+        <View ref={themeButton} collapsable={false}>
         <IconButton
           label={scheme === 'dark' ? t(m.home.lightMode) : t(m.common.darkMode)}
-          onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
+          onPress={() => {
+            const next = scheme === 'dark' ? 'light' : 'dark';
+            switchThemeFrom(themeButton, next, () => setTheme(next));
+          }}
           icon={
             scheme === 'dark' ? (
               <Sun color={colors.accent} size={20} strokeWidth={1.8} />
@@ -165,6 +172,7 @@ export function Home() {
             )
           }
         />
+        </View>
         {signedIn ? <NotificationBell /> : null}
       </View>
 
