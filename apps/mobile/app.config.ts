@@ -51,12 +51,29 @@ function storeBuildNumber(): number | undefined {
   return n;
 }
 
+/**
+ * Apple's required-reason APIs (2026-11-17). Libraries ship their own privacy manifests, but iOS
+ * links them statically, so those manifests do not reach the app; Expo writes this list into the
+ * app's own PrivacyInfo.xcprivacy instead. It is the union of what React Native, the expo-* modules,
+ * AsyncStorage and react-native-maps declare in node_modules (re-check after adding a native library).
+ * No tracking. The data the app collects is declared in App Store Connect, not here.
+ */
+const PRIVACY_MANIFEST = {
+  NSPrivacyTracking: false,
+  NSPrivacyAccessedAPITypes: [
+    { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] },
+    { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp', NSPrivacyAccessedAPITypeReasons: ['C617.1', '0A2A.1', '3B52.1'] },
+    { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime', NSPrivacyAccessedAPITypeReasons: ['35F9.1'] },
+    { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace', NSPrivacyAccessedAPITypeReasons: ['E174.1', '85F4.1'] },
+  ],
+};
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const build = storeBuildNumber();
   return {
     ...(config as ExpoConfig),
     android: { ...config.android, ...(googleServicesFile && { googleServicesFile }), ...(build && { versionCode: build }) },
-    ios: { ...config.ios, ...(build && { buildNumber: String(build) }) },
+    ios: { ...config.ios, privacyManifests: PRIVACY_MANIFEST, ...(build && { buildNumber: String(build) }) },
     plugins: [
       ...(config.plugins ?? []),
       // Android release builds refuse plain http:// unless allowed. Only needed while
