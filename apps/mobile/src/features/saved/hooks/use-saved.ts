@@ -21,38 +21,29 @@ export function useSaved<T = PropertyCard[]>(select?: (cards: PropertyCard[]) =>
   });
 }
 
-/** The list with `card` put in (at `at`, or first) or taken out. */
-export const withSaved = (cards: PropertyCard[] | undefined, card: PropertyCard, on: boolean, at = 0) => {
+const withSaved = (cards: PropertyCard[] | undefined, card: PropertyCard, on: boolean) => {
   const others = (cards ?? []).filter((c) => c.id !== card.id);
-  if (!on) return others;
-  const i = Math.min(Math.max(0, at), others.length);
-  return [...others.slice(0, i), card, ...others.slice(i)];
+  return on ? [card, ...others] : others;
 };
 
-type Change = { card: PropertyCard; on: boolean; at?: number };
-
-/**
- * Saving and taking off any home: the screen changes first, then the server. `at` puts a home
- * back where it was (the Saved list's undo, 2026-11-16).
- */
-export function useSetSaved() {
+/** The heart: whether this home is saved, and the switch. The screen changes first, then the server. */
+export function useToggleSaved(card: PropertyCard) {
   const t = useT();
   const queryClient = useQueryClient();
   const key = savedKey(useClientId());
+  const saved = useSaved((cards) => cards.some((c) => c.id === card.id)).data ?? false;
 
   const mutation = useMutation({
     mutationKey: ['saved'],
     // One at a time: a quick save then remove must reach the server in that order.
     scope: { id: 'saved' },
-    mutationFn: ({ card, on }: Change) => (on ? saveRequest(card.id) : unsaveRequest(card.id)),
-    onMutate: async ({ card, on, at }: Change) => {
+    mutationFn: (on: boolean) => (on ? saveRequest(card.id) : unsaveRequest(card.id)),
+    onMutate: async (on) => {
       await queryClient.cancelQueries({ queryKey: key });
-      const before = queryClient.getQueryData<PropertyCard[]>(key)?.findIndex((c) => c.id === card.id) ?? -1;
-      queryClient.setQueryData<PropertyCard[]>(key, (cards) => withSaved(cards, card, on, at));
-      return { before };
+      queryClient.setQueryData<PropertyCard[]>(key, (cards) => withSaved(cards, card, on));
     },
-    onError: (_err, { card, on }, ctx) => {
-      queryClient.setQueryData<PropertyCard[]>(key, (cards) => withSaved(cards, card, !on, ctx?.before ?? 0));
+    onError: (_err, on) => {
+      queryClient.setQueryData<PropertyCard[]>(key, (cards) => withSaved(cards, card, !on));
       toast.show({ title: t(m.common.weCouldntSaveThatTry), tone: 'danger' });
     },
     onSettled: () => {
@@ -61,12 +52,5 @@ export function useSetSaved() {
     },
   });
 
-  return (card: PropertyCard, on: boolean, at?: number) => mutation.mutate({ card, on, at });
-}
-
-/** The heart: whether this home is saved, and the switch. */
-export function useToggleSaved(card: PropertyCard) {
-  const set = useSetSaved();
-  const saved = useSaved((cards) => cards.some((c) => c.id === card.id)).data ?? false;
-  return { saved, toggle: () => set(card, !saved) };
+  return { saved, toggle: () => mutation.mutate(!saved) };
 }

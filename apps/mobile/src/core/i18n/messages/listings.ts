@@ -9,7 +9,6 @@ export const listings = {
   bestMatch: { ar: 'الأنسب ليك', en: 'Best match' },
   forSaleProjects: { ar: 'للبيع والمشروعات', en: 'for sale & projects' },
   highestPrice: { ar: 'الأعلى سعراً', en: 'Highest price' },
-  holdForQuickActions: { ar: 'دوس مطوّل عشان تحفظ أو تقارن أو تشارك', en: 'Hold to save, compare or share' },
   installments: { ar: 'تقسيط', en: 'Installments' },
   lowestPrice: { ar: 'الأقل سعراً', en: 'Lowest price' },
   max: { ar: 'إلى', en: 'Max' },

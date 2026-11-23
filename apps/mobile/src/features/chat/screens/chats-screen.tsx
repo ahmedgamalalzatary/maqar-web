@@ -2,10 +2,9 @@ import { pickField, joinParts, type ChatSender, type ChatThread, chatPreview, fm
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, CheckCheck, MessagesSquare } from 'lucide-react-native';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
-import { useLogoRefresh } from '@/components/logo-refresh';
 import { IconButton } from '@/components/icon-button';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
@@ -23,12 +22,9 @@ export function ChatsScreen({ side }: { side: ChatSender }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const chats = useChats();
-  const refresh = useLogoRefresh({ refreshing: chats.isRefetching, onRefresh: () => void chats.refetch(), top: insets.top + 8 });
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   return (
-    <View style={styles.fill}>
-    {refresh.indicator}
     <FlatList
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
@@ -64,9 +60,8 @@ export function ChatsScreen({ side }: { side: ChatSender }) {
           </View>
         )
       }
-      refreshControl={refresh.refreshControl}
+      refreshControl={<RefreshControl refreshing={chats.isRefetching} onRefresh={() => void chats.refetch()} tintColor={colors.accent} />}
     />
-    </View>
   );
 }
 
@@ -134,7 +129,6 @@ function Row({ c, side }: { c: ChatThread; side: ChatSender }) {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, minHeight: 44 },
   gap: { height: 8 },

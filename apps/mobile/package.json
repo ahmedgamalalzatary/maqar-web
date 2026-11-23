@@ -99,5 +99,10 @@
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
     },
     "resolver": "react-native-reanimated/jest/resolver"
+  },
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ENABLE_SHARED_ELEMENT_TRANSITIONS": true
+    }
   }
 }

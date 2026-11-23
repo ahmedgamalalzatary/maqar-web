@@ -22,8 +22,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, w
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { BOUNCE, CSS_EASE_OUT, EASE_OUT } from '@/core/motion/motion';
-import { m, useDir, useT } from '@/core/i18n';
-import { tabShift } from './transitions';
+import { m, useT } from '@/core/i18n';
 import { fonts, useTheme } from '@/core/theme';
 
 type Tab = { name: string; label: Bi; icon: LucideIcon };
@@ -65,7 +64,7 @@ export const TABS: Record<TabRole, Tab[]> = {
 
 /**
  * A tab's icon (2026-11-16). When the tab is picked, the icon dips and springs back and a gold dot
- * fades in under it. The screens cross-fade with a small slide (tabShift).
+ * fades in under it; the screens themselves switch with no slide, as tabs are side by side.
  */
 export function TabIcon({ icon: Icon, color, size, focused, dot }: { icon: LucideIcon; color: ColorValue; size: number; focused: boolean; dot: string }) {
   const reduced = useReduceMotion();
@@ -112,13 +111,10 @@ export function RoleTabs({ role, badges = {} }: { role: TabRole; badges?: Record
   const t = useT();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const dir = useDir();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        animation: 'shift',
-        sceneStyleInterpolator: tabShift(dir),
         tabBarActiveTintColor: colors.accentInk,
         tabBarInactiveTintColor: colors.ink3,
         // Arabic glyphs in Readex Pro sit lower than Latin ones: give the label a real line

@@ -3,20 +3,20 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Bath, BedDouble, MapPin, Maximize2, Sparkles, TrendingDown } from 'lucide-react-native';
-import { type ComponentRef, type ReactNode, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { PressableScale } from '@/components/pressable-scale';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
+import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { m, useLang, useT } from '@/core/i18n';
-import { propertyKey, rememberOrigin } from '@/core/motion/card-origin';
 import { radius, useTheme } from '@/core/theme';
 import { CompareButton } from '@/features/compare/components/compare-button';
 import { SaveButton } from '@/features/saved/components/save-button';
-import { openPeek } from './peek';
 
-/** The card's corner; the property page grows from it and shrinks back into it. */
-export const CARD_RADIUS = 26;
+/** The shared-element tag joining a card's photo to the property page's first photo. */
+export const propertyPhotoTag = (id: number) => `property-${id}`;
 
 /** Percent the price fell from the old price, rounded; 0 when it did not fall. */
 export const dropPct = (c: Pick<PropertyCard, 'price' | 'oldPrice'>) =>
@@ -35,24 +35,18 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
   const monthly = card.plan ? Math.round(installment(card.price, card.plan.downPct, card.plan.years).payment) : null;
   const cover = mediaUrl(card.cover);
   const icon = { size: 14, color: colors.ink3, strokeWidth: 1.8 };
-  const self = useRef<ComponentRef<typeof View>>(null);
+  const reduced = useReduceMotion();
 
   return (
     // The heart and the scale sit beside the card, not inside it: a screen reader cannot reach a button within a button.
-    <View ref={self} collapsable={false} style={{ width }}>
-      {/* 2026-11-16: the card notes where it sits as the finger lands, and the property page grows
-          out of it (CardGrow). Held down, it lifts into a preview with quick actions (peek). */}
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        accessibilityHint={t(m.listings.holdForQuickActions)}
-        onPressIn={() => rememberOrigin(self, propertyKey(card.id), { radius: CARD_RADIUS, cover: card.cover })}
-        onPress={() => router.push(`/property/${card.id}`)}
-        onLongPress={() => self.current?.measureInWindow((x, y, w, h) => openPeek(card, { x, y, width: w, height: h }))}
-        delayLongPress={350}
-        scaleTo={0.98}
-      >
-        <View testID="card-photo" style={[styles.photo, { backgroundColor: colors.surface2 }]}>
+    <View style={{ width }}>
+      <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={() => router.push(`/property/${card.id}`)} scaleTo={0.98}>
+        {/* 2026-11-16: the photo grows into the property page's gallery, which carries the same tag. */}
+        <Animated.View
+          testID="card-photo"
+          sharedTransitionTag={reduced ? undefined : propertyPhotoTag(card.id)}
+          style={[styles.photo, { backgroundColor: colors.surface2 }]}
+        >
           {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
           <LinearGradient
             colors={['rgba(0,0,0,0.1)', 'transparent', 'rgba(0,0,0,0.55)']}
@@ -91,7 +85,7 @@ export function PropertyCardView({ card, width }: { card: PropertyCard; width?: 
               </Badge>
             ) : null}
           </View>
-        </View>
+        </Animated.View>
 
         <View style={styles.body}>
           <View style={styles.priceRow}>
@@ -159,7 +153,7 @@ function Spec({ icon, text }: { icon: ReactNode; text: string }) {
 }
 
 const styles = StyleSheet.create({
-  photo: { aspectRatio: 4 / 3, borderRadius: CARD_RADIUS, overflow: 'hidden' },
+  photo: { aspectRatio: 4 / 3, borderRadius: 26, overflow: 'hidden' },
   top: { position: 'absolute', top: 12, start: 12, end: 104, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   actions: { position: 'absolute', top: 8, end: 8, flexDirection: 'row', gap: 6 },
   bottom: { position: 'absolute', bottom: 12, start: 12, end: 12, flexDirection: 'row', justifyContent: 'space-between', gap: 6 },

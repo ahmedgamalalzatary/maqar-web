@@ -11,8 +11,6 @@ export const expoRouterMock = {
   Link: ({ children }: { children: unknown }) => children,
   Redirect: () => null,
   Stack: { Screen: () => null },
-  // The property page holds its removal to shrink back into its card first.
-  usePreventRemove: () => () => undefined,
   // Screens in tests are always focused.
   useFocusEffect: (effect: () => void | (() => void)) => require('react').useEffect(effect, [effect]),
 };

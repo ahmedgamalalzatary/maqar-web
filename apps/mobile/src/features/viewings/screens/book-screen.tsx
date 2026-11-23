@@ -17,7 +17,6 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, Keyframe } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SuccessCheck } from '@/components/success-check';
 import { Button } from '@/components/button';
@@ -26,7 +25,6 @@ import { Txt } from '@/components/text';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
 import { m, initialsOf, useDir, useLang, useT } from '@/core/i18n';
-import { EASE_OUT } from '@/core/motion/motion';
 import { radius, useTheme } from '@/core/theme';
 import { useRequireAuth } from '@/features/auth/hooks/use-require-auth';
 import { useProperty } from '@/features/property/hooks/use-property';
@@ -40,15 +38,6 @@ const REMINDERS: { key: ReminderOffset; label: Bi }[] = [
 ];
 
 const hourOf = (time: string) => Number(time.slice(0, 2));
-
-// The booking card comes out from under the tick like a printed ticket, once the tick is drawn (2026-11-16).
-const TICKET_OUT = new Keyframe({
-  0: { opacity: 0, transform: [{ translateY: -28 }, { scaleY: 0.86 }] },
-  100: { opacity: 1, transform: [{ translateY: 0 }, { scaleY: 1 }], easing: EASE_OUT },
-})
-  .delay(520)
-  .duration(460);
-const NOTE_IN = FadeIn.delay(860).duration(300).easing(EASE_OUT);
 
 /**
  * `/property/:id/book` (contract §8.7): pick a day and an hour with the home's advisor, choose
@@ -408,8 +397,7 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
         {t(m.viewings.willMeetYou(agentName))}
       </Txt>
 
-      {/* 2026-11-16: after the tick, the booking slides out like a printed ticket, then the reminders. */}
-      <Animated.View entering={TICKET_OUT} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <View style={styles.cardTop}>
           <View style={[styles.thumb, { backgroundColor: colors.surface2 }]}>
             {cover ? <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
@@ -449,14 +437,14 @@ function Done({ v, rescheduled }: { v: ViewingItem; rescheduled: boolean }) {
             {t(m.common.onSite)}
           </Txt>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={NOTE_IN} style={[styles.note, { backgroundColor: colors.accentSoft }]}>
+      <View style={[styles.note, { backgroundColor: colors.accentSoft }]}>
         <BellRing size={16} color={colors.accentInk} />
         <Txt size={12.5} color="accentInk" style={styles.flex}>
           {reminderText}
         </Txt>
-      </Animated.View>
+      </View>
 
       <View style={styles.doneActions}>
         <Pressable

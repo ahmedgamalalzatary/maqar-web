@@ -2,7 +2,6 @@ import type { Lang } from '@maqar/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSettings } from '@/core/settings/store';
 
@@ -23,10 +22,7 @@ export function renderWithProviders(ui: ReactElement, opts: { lang?: Lang; theme
   });
   const Providers = ({ children }: { children: React.ReactNode }) => (
     <SafeAreaProvider initialMetrics={metrics}>
-      {/* The app's providers hold a gesture root too (swipes, drags). */}
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      </GestureHandlerRootView>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
     </SafeAreaProvider>
   );
   return render(ui, { wrapper: Providers });

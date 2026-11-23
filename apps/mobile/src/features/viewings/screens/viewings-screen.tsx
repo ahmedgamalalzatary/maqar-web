@@ -4,10 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { CalendarCheck, CalendarClock, CalendarPlus, type LucideIcon, MapPin, Navigation, Phone, RefreshCw, XCircle } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
-import { useLogoRefresh } from '@/components/logo-refresh';
 import { Segmented } from '@/components/segmented';
 import { Sheet } from '@/components/sheet';
 import { Txt } from '@/components/text';
@@ -29,7 +28,6 @@ export function ViewingsScreen() {
   const insets = useSafeAreaInsets();
   const signedIn = useSession((s) => s.status === 'signedIn');
   const viewings = useViewings();
-  const refresh = useLogoRefresh({ refreshing: viewings.isRefetching, onRefresh: () => void viewings.refetch(), top: insets.top + 8 });
   const update = useUpdateViewing();
   const [tab, setTab] = useState<'up' | 'past'>('up');
   const [cancelling, setCancelling] = useState<ViewingItem | null>(null);
@@ -73,7 +71,6 @@ export function ViewingsScreen() {
 
   return (
     <>
-      {refresh.indicator}
       <FlatList
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
@@ -98,7 +95,7 @@ export function ViewingsScreen() {
         }
         ListEmptyComponent={empty}
         refreshControl={
-          signedIn ? refresh.refreshControl : undefined
+          signedIn ? <RefreshControl refreshing={viewings.isRefetching} onRefresh={() => void viewings.refetch()} tintColor={colors.accent} /> : undefined
         }
       />
       <Sheet open={!!cancelling} onClose={() => setCancelling(null)} title={t(m.viewings.cancelThisViewing)}>

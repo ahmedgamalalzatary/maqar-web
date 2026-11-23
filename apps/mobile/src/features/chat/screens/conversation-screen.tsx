@@ -3,9 +3,8 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, BadgeCheck, Ban, Calculator, CalendarClock, Flag, Home, ImagePlus, Lock, MoreVertical, Phone, Rotate3d, SendHorizontal, ShieldCheck, X } from 'lucide-react-native';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { KeyboardAvoiding } from '@/components/keyboard-avoiding';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
@@ -16,8 +15,6 @@ import { TextField } from '@/components/text-field';
 import { toast } from '@/components/toast';
 import { ApiError, mediaUrl } from '@/core/api/api';
 import { isActive, useAppActive } from '@/core/app-active';
-import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
-import { EASE_IN_OUT, EASE_OUT } from '@/core/motion/motion';
 import { m, useDir, useLang, useT } from '@/core/i18n';
 import { fonts, radius, useTheme } from '@/core/theme';
 import { useSlots } from '@/features/viewings/hooks/use-viewings';
@@ -98,8 +95,6 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
   // The store clears it 4 seconds after the last keystroke.
   const otherTyping = typedAt > 0;
   const list = useMemo(() => newestFirst(messages.data), [messages.data]);
-  // Messages after this moment arrived while the chat was open (render must stay pure, so read once).
-  const [openedAt] = useState(Date.now);
   const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   const p = thread.property;
@@ -202,26 +197,20 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
     const newer = list[index - 1];
     const firstOfDay = !older || dayOf(older.createdAt) !== dayOf(item.createdAt);
     const tail = !newer || newer.sender !== item.sender;
-    // 2026-11-16: a message that arrives while the chat is open pops in from its sender's side. The
-    // one I send pops once, while it is sending; its saved copy (a new id) then just takes its place.
-    const pops = Date.parse(item.createdAt) > openedAt && (item.id < 0 || item.sender !== side);
-    const fromEnd = item.sender === side;
     return (
       <View style={tail ? styles.runEnd : styles.run}>
         {firstOfDay ? <DayPill iso={item.createdAt} /> : null}
-        <Pop on={pops} dx={(fromEnd ? 1 : -1) * (dir === 'rtl' ? -1 : 1) * 16} rightSide={fromEnd !== (dir === 'rtl')}>
-          <Bubble
-            m={item}
-            thread={thread}
-            side={side}
-            tail={tail}
-            onBook={onBook}
-            booking={booking?.messageId === item.id ? booking.time : null}
-            onImage={setViewer}
-            onAnswer={side === 'agent' ? onAnswer : undefined}
-            answering={answerBooking.isPending}
-          />
-        </Pop>
+        <Bubble
+          m={item}
+          thread={thread}
+          side={side}
+          tail={tail}
+          onBook={onBook}
+          booking={booking?.messageId === item.id ? booking.time : null}
+          onImage={setViewer}
+          onAnswer={side === 'agent' ? onAnswer : undefined}
+          answering={answerBooking.isPending}
+        />
       </View>
     );
   };
@@ -618,53 +607,16 @@ function DayPill({ iso }: { iso: string }) {
   );
 }
 
-/**
- * A bubble that pops in (2026-11-16): it grows from its sender's side with a small slide and
- * settles with a little bounce. `on` is decided once, when the message first shows.
- */
-function Pop({ on, dx, rightSide, children }: { on: boolean; dx: number; rightSide: boolean; children: ReactNode }) {
-  const reduced = useReduceMotion();
-  const [pop] = useState(on);
-  const p = useSharedValue(pop ? 0 : 1);
-  useEffect(() => {
-    if (pop) p.set(reduced ? 1 : withSpring(1, { duration: 380, dampingRatio: 0.7 }));
-  }, [pop, reduced, p]);
-  const style = useAnimatedStyle(() => ({
-    opacity: Math.min(1, p.get() * 2),
-    transform: [{ translateX: dx * (1 - p.get()) }, { scale: 0.85 + 0.15 * p.get() }],
-  }));
-  if (!pop) return <>{children}</>;
-  // Full width, so the bubble keeps its own alignment; it grows from the side its sender is on.
-  return <Animated.View style={[{ width: '100%', transformOrigin: rightSide ? 'right center' : 'left center' }, style]}>{children}</Animated.View>;
-}
-
-/** Three dots that rise one after another while the other side is typing (2026-11-16). */
 function TypingDots() {
   const t = useT();
   const { colors } = useTheme();
   return (
     <View accessible accessibilityLabel={t(m.common.typing)} style={[styles.typing, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       {[0, 1, 2].map((k) => (
-        <TypingDot key={k} index={k} color={colors.ink3} />
+        <View key={k} style={[styles.dot, { backgroundColor: colors.ink3 }]} />
       ))}
     </View>
   );
-}
-
-function TypingDot({ index, color }: { index: number; color: string }) {
-  const reduced = useReduceMotion();
-  const y = useSharedValue(0);
-  useEffect(() => {
-    if (reduced) return;
-    y.set(
-      withDelay(
-        index * 140,
-        withRepeat(withSequence(withTiming(-4, { duration: 260, easing: EASE_OUT }), withTiming(0, { duration: 260, easing: EASE_IN_OUT }), withTiming(0, { duration: 320 })), -1),
-      ),
-    );
-  }, [reduced, index, y]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }], opacity: 0.55 + (-y.get() / 4) * 0.45 }));
-  return <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />;
 }
 
 /** The server's reason when it has one the client can act on. */

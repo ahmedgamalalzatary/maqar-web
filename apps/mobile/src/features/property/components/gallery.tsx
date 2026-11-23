@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Play } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { type SharedValue, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useReduceMotion } from '@/core/hooks/use-reduce-motion';
 import { Txt } from '@/components/text';
 import { mediaUrl } from '@/core/api/api';
@@ -16,19 +16,21 @@ import { VideoPlayerModal } from './video-player';
 /**
  * Full-width photos, one per swipe, with a "2 / 5" counter. Cover first. Videos (phase 26) follow
  * the photos as their poster frames; tapping one plays it full screen, and a chip plays the first.
- * 2026-11-16: a photo opens full screen (pinch, swipe down to close); with the page's `scrollY` the
- * photos drift slower than the page, shrink a little as it scrolls, and stretch when it is pulled
- * down. Dots under the photos follow the swipe: the current one stretches into a pill.
+ * 2026-11-16: a photo opens full screen (pinch, swipe down to close); the cover carries the card's
+ * shared-element `tag`; with the page's `scrollY` the photos drift slower than the page and stretch
+ * when it is pulled down.
  */
 export function Gallery({
   images,
   videos = [],
   label,
+  tag,
   scrollY,
 }: {
   images: string[];
   videos?: ListingVideo[];
   label: string;
+  tag?: string;
   scrollY?: SharedValue<number>;
 }) {
   const t = useT();
@@ -46,12 +48,8 @@ export function Gallery({
   const parallax = useAnimatedStyle(() => {
     const y = reduceMotion || !scrollY ? 0 : scrollY.get();
     // Pulled down (iOS): pinned to the top and stretched. Scrolled up: drifts at half the speed.
-    return y < 0
-      ? { transform: [{ translateY: y / 2 }, { scale: 1 - y / height }] }
-      : { transform: [{ translateY: y * 0.5 }, { scale: 1 - 0.08 * Math.min(1, y / height) }] };
+    return y < 0 ? { transform: [{ translateY: y / 2 }, { scale: 1 - y / height }] } : { transform: [{ translateY: y * 0.5 }] };
   });
-  // The page being looked at, with the fraction of the swipe (1.5 = halfway from the 2nd to the 3rd).
-  const page = useSharedValue(0);
 
   /**
    * Which page is showing. In a right-to-left layout the position depends on the platform: the web
@@ -62,9 +60,8 @@ export function Gallery({
     const position = Math.abs(e.nativeEvent.contentOffset.x);
     const last = count - 1;
     fromFarEnd.current ??= position > (last * width) / 2;
-    const exact = Math.min(last, Math.max(0, fromFarEnd.current ? last - position / width : position / width));
-    page.set(exact);
-    setIndex(Math.round(exact));
+    const page = Math.round(position / width);
+    setIndex(Math.min(last, Math.max(0, fromFarEnd.current ? last - page : page)));
   };
 
   return (
@@ -90,7 +87,13 @@ export function Gallery({
               accessibilityLabel={t(m.property.openPhoto(i + 1, images.length))}
               onPress={() => setViewing(i)}
             >
-              {photo}
+              {i === 0 ? (
+                <Animated.View testID="gallery-cover" sharedTransitionTag={reduceMotion ? undefined : tag}>
+                  {photo}
+                </Animated.View>
+              ) : (
+                photo
+              )}
             </Pressable>
           ) : null;
         })}
@@ -133,13 +136,6 @@ export function Gallery({
           </Txt>
         </View>
       ) : null}
-      {count > 1 && count <= MAX_DOTS ? (
-        <View testID="gallery-dots" style={styles.dots} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {Array.from({ length: count }, (_, i) => (
-            <Dot key={i} i={i} page={page} />
-          ))}
-        </View>
-      ) : null}
       {count > 1 ? (
         <View style={styles.counter} pointerEvents="none">
           <Txt size={11} weight="medium" style={styles.white}>
@@ -153,27 +149,7 @@ export function Gallery({
   );
 }
 
-/** More photos than this and the dots would crowd; the counter alone says where you are. */
-const MAX_DOTS = 9;
-
-/** How wide dot `i` is with the swipe at `page`: a pill on the current page, easing to a dot beside it. */
-export function dotWidth(i: number, page: number) {
-  'worklet';
-  return 6 + 12 * Math.max(0, 1 - Math.abs(page - i));
-}
-
-function Dot({ i, page }: { i: number; page: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => {
-    const near = Math.max(0, 1 - Math.abs(page.get() - i));
-    return { width: dotWidth(i, page.get()), opacity: 0.5 + 0.5 * near };
-  });
-  return <Animated.View style={[styles.dot, style]} />;
-}
-
 const styles = StyleSheet.create({
-  // Above the tour button and the counter, which sit at the bottom corners.
-  dots: { position: 'absolute', bottom: 88, start: 0, end: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  dot: { height: 6, borderRadius: 3, backgroundColor: '#fff' },
   center: { alignItems: 'center', justifyContent: 'center' },
   play: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
   counter: {
