@@ -38,7 +38,7 @@ finish() {
   case "$STEP" in
     checks) echo "Nothing was sent to the server." ;;
     checkout) echo "The server's clone may be on the new commit, but nothing was built or restarted." ;;
-    dashboard-build) echo "The dashboard did not build on this PC; the server was not touched. See the build output above." ;;
+    dashboard-build) echo "The dashboard did not build on the server; nothing running was touched. See the build output above." ;;
     server) echo "See the SERVER STEP FAILED block above for what the server did and what still runs." ;;
     dashboard-swap) echo "The new API is live, but the dashboard swap failed: the previous dashboard may still be served." ;;
     site-swap) echo "The new API and dashboard are live; the public pages (privacy, terms…) did not update." ;;
@@ -81,14 +81,8 @@ fi
 # Build and validate every artifact BEFORE anything on the server changes (OPS-06): the dashboard
 # first, since a failed or wrong build here must leave the running API and dashboard untouched.
 STEP=dashboard-build
-echo "== Building the dashboard"
-pnpm --filter @maqar/shared build
-# MSYS_NO_PATHCONV: Git Bash on Windows would otherwise turn "/v1" into "C:/Program Files/Git/v1".
-MSYS_NO_PATHCONV=1 NEXT_PUBLIC_API_URL=/v1 pnpm --filter @maqar/web build
-if ! grep -rqF '"/v1"' apps/web/out/_next/static || grep -rqF 'Program Files' apps/web/out; then
-  echo "The dashboard was built with the wrong API address; nothing was deployed." >&2
-  exit 1
-fi
+echo "== Building the dashboard (on the server)"
+$SSH "sh $DIR/deploy/build-dashboard.sh"
 
 # Now the API: built on the server, backed up, migrated, started and health-checked with rollback
 # (deploy/server-deploy.sh). The dashboard build above targets this same commit's API surface.
@@ -100,14 +94,11 @@ $SSH "sh $DIR/deploy/server-deploy.sh $TAG"
 # /admin/ from /srv/maqar/web/admin, so an open page pointing at admin.old files still works).
 STEP=dashboard-swap
 echo "== Swapping in the dashboard"
-tar -C apps/web/out -cf - . | $SSH "set -eu
-  mkdir -p /srv/maqar/web
-  rm -rf /srv/maqar/web/admin.new /srv/maqar/web/admin.old.old
+$SSH "set -eu
+  rm -rf /srv/maqar/web/admin.old.old
   [ ! -d /srv/maqar/web/admin.old ] || mv /srv/maqar/web/admin.old /srv/maqar/web/admin.old.old
-  mkdir /srv/maqar/web/admin.new
-  tar -xf - -C /srv/maqar/web/admin.new
   if [ -d /srv/maqar/web/admin ]; then mv /srv/maqar/web/admin /srv/maqar/web/admin.old; fi
-  mv /srv/maqar/web/admin.new /srv/maqar/web/admin
+  mv /srv/maqar/web/admin.build /srv/maqar/web/admin
   rm -rf /srv/maqar/web/admin.old.old"
 
 # The public pages (privacy, terms, support, account deletion): plain files, swapped in at once.
