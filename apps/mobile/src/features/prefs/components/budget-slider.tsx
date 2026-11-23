@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     borderWidth: 2,
-    shadowColor: '#041525',
+    shadowColor: '#121c27',
     shadowOpacity: 0.18,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },

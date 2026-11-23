@@ -363,7 +363,7 @@ function NumberBox({
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: 'flex-end' },
   handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginTop: 10 },
-  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(4, 21, 37, 0.45)' },
+  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(18, 28, 39, 0.45)' },
   sheet: { maxHeight: '92%', borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 4 },
   body: { paddingHorizontal: 20, paddingBottom: 24, gap: 24 },

@@ -11,7 +11,7 @@ describe('the native launch screen', () => {
   const splash = app.expo.plugins.find((p): p is [string, { image: string; backgroundColor: string }] => Array.isArray(p) && p[0] === 'expo-splash-screen');
 
   it('is navy with a blank image, not the logo', () => {
-    expect(splash?.[1].backgroundColor).toBe('#041525');
+    expect(splash?.[1].backgroundColor).toBe('#121c27');
     expect(splash?.[1].image).toBe('./assets/brand/splash-blank.png');
   });
 

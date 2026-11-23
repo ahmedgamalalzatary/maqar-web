@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
   add: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: 'dashed' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: { width: '47%', aspectRatio: 4 / 3, borderRadius: radius.md, overflow: 'hidden', borderWidth: 2 },
-  veil: { backgroundColor: 'rgba(4, 21, 37, 0.45)', alignItems: 'center', justifyContent: 'center' },
+  veil: { backgroundColor: 'rgba(18, 28, 39, 0.45)', alignItems: 'center', justifyContent: 'center' },
   coverTag: { position: 'absolute', top: 6, start: 6, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
   tileActions: { position: 'absolute', bottom: 6, end: 6, flexDirection: 'row', gap: 6 },
   mini: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

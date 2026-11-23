@@ -76,7 +76,7 @@ export function Sheet({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(4, 21, 37, 0.45)' },
+  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(18, 28, 39, 0.45)' },
   sheet: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20, gap: 14 },
   handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
   grip: { gap: 14, marginTop: -20, paddingTop: 20 },

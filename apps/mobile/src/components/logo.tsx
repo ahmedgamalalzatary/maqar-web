@@ -4,7 +4,8 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { EASE_OUT } from '@/core/motion/motion';
 import { useTheme } from '@/core/theme';
 
-const RATIO = 269 / 349;
+// The colour lock-up from the brand book (assets/mqr-branding.pdf): مقر, MQR in gold, the tagline and the sage square.
+const RATIO = 351 / 460;
 const gold = require('../../assets/brand/logo-gold.png');
 const cream = require('../../assets/brand/logo-cream.png');
 const sage = require('../../assets/brand/logo-sage.png');

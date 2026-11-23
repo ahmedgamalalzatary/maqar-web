@@ -1,6 +1,6 @@
-// Colour tokens from contract §6.2, the same values as the demo's globals.css.
+// Colour tokens from contract §6.2. Navy and cream follow the brand book (assets/mqr-branding.pdf, 2026-11-23).
 
-const brand = { navy: '#041525', gold: '#b38959', cream: '#fbf6e9', sage: '#61766d' };
+const brand = { navy: '#121c27', gold: '#b38959', cream: '#f3efe7', sage: '#61766d' };
 
 export const light = {
   ...brand,
@@ -8,11 +8,11 @@ export const light = {
   surface: '#ffffff',
   surface2: '#efe9dc',
   surface3: '#e6dfcf',
-  ink: '#041525',
+  ink: '#121c27',
   ink2: '#56616c',
   ink3: '#8a929a',
-  line: 'rgba(4, 21, 37, 0.08)',
-  line2: 'rgba(4, 21, 37, 0.14)',
+  line: 'rgba(18, 28, 39, 0.08)',
+  line2: 'rgba(18, 28, 39, 0.14)',
   accent: '#b38959',
   accentInk: '#87633a',
   accentSoft: 'rgba(179, 137, 89, 0.14)',
@@ -23,22 +23,22 @@ export const light = {
   success: '#3f7d5c',
   successSoft: 'rgba(63, 125, 92, 0.13)',
   /** The cream layer of the logo turns navy on light backgrounds. */
-  logoCream: '#041525',
+  logoCream: '#121c27',
 };
 
 export type Colors = typeof light;
 
 export const dark: Colors = {
   ...brand,
-  bg: '#030f1b',
-  surface: '#0a1d2f',
-  surface2: '#10273c',
-  surface3: '#173149',
-  ink: '#f4eedf',
+  bg: '#121c27',
+  surface: '#1a2634',
+  surface2: '#223041',
+  surface3: '#2b3a4c',
+  ink: '#f3efe7',
   ink2: '#a4adb6',
   ink3: '#6f7b87',
-  line: 'rgba(244, 238, 223, 0.07)',
-  line2: 'rgba(244, 238, 223, 0.14)',
+  line: 'rgba(243, 239, 231, 0.07)',
+  line2: 'rgba(243, 239, 231, 0.14)',
   accent: '#c9a06e',
   accentInk: '#d8b483',
   accentSoft: 'rgba(201, 160, 110, 0.14)',
@@ -48,7 +48,7 @@ export const dark: Colors = {
   dangerSoft: 'rgba(226, 118, 107, 0.14)',
   success: '#6dbb8f',
   successSoft: 'rgba(109, 187, 143, 0.14)',
-  logoCream: '#fbf6e9',
+  logoCream: '#f3efe7',
 };
 
 export const radius = { sm: 10, md: 16, lg: 24, full: 999 };
