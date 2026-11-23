@@ -1,6 +1,6 @@
-# Maqar in production (contract §4). The server is shared with another live project, so everything
-# here is Maqar's own: project name, network, volume, and a host port on loopback only (nginx is
-# the way in). Memory is capped so Maqar cannot starve its neighbour.
+# Maqar in production (contract §4). Everything here is Maqar's own: project name, network, volume,
+# and a host port on loopback only (nginx is the way in). Memory is capped so a runaway container
+# cannot take the whole server down.
 name: maqar
 
 services:

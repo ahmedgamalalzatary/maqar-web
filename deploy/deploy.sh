@@ -8,9 +8,9 @@
 # The database backup the server takes before migrating is deleted only when every step and the
 # final live check are green.
 set -eu
-KEY="$HOME/.ssh/other-project-ssh"
-SERVER=root@203.0.113.10
-HOST=https://old-host.invalid
+KEY="$HOME/.ssh/maqar-ssh"
+SERVER=root@2.24.152.130
+HOST=https://mqr.systems
 REPO=https://github.com/ahmedgamalalzatary/maqar-web.git
 DIR=/root/maqar
 SSH="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes $SERVER"
@@ -121,7 +121,7 @@ tar -C deploy/site -cf - . | $SSH "set -eu
   mv /srv/maqar/web/site.new /srv/maqar/web/site
   rm -rf /srv/maqar/web/site.old"
 
-# Maqar's nginx site, only when this commit changed it. nginx is shared with other-project, so the new
+# Maqar's nginx site, only when this commit changed it. A broken file would take nginx down, so the new
 # file must pass nginx -t before any reload; if it does not, the previous file is put back.
 STEP=nginx
 $SSH "set -eu

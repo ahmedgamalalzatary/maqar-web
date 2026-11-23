@@ -47,7 +47,7 @@ Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`dep
 | Target API level: Android 16 (API 36) for new apps and updates from 2026-08-31 | ✅ | React Native 0.88: `targetSdk 36`, `compileSdk 37`, `minSdk 24`. |
 | 16 KB memory pages (required for apps targeting Android 15+ since 2025-11-01) | ✅ ⚠️ | React Native ≥ 0.77 and NDK 27 support it. Check the first upload in Play Console → App bundle explorer, which flags any native library that fails ("Does not support 16 KB"). |
 | App Bundle (.aab), signed | ✅ | `android-aab.yml`, started by hand. |
-| HTTPS only | ✅ | The release API is `https://old-host.invalid/v1`, so cleartext stays off. |
+| HTTPS only | ✅ | The release API is `https://mqr.systems/v1`, so cleartext stays off. |
 | **Permissions the app doesn't use** | ✅ fixed in Phase 20 (was ❌) | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
 | Push (FCM) | ✅ | Firebase project `maqar-app-notification-354f3`; the APK and AAB workflows write the file from the secret (2026-11-15). |
@@ -158,8 +158,8 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 
 ## 4. Review readiness (both stores)
 
-- **The server.** The API runs on the temporary server at `old-host.invalid`. It must stay up, with HTTPS valid, for the whole review: Apple takes about 1 to 2 days, Google's first review up to a week. If the API is down, the app shows errors and gets rejected under 2.1. No backups and no automatic deploys (⏸ OPS-04 and OPS-05) are fine for review. Just don't redeploy or reset the database while a review is in progress.
-- **A real domain** is not required. But the privacy, deletion and support pages need public URLs, and an `sslip.io` address in a privacy policy looks unfinished. One small static page on a real domain (or on the free domain from the Hostinger plan, contract §4) serves all three.
+- **The server.** The API runs on the production server at `mqr.systems`. It must stay up, with HTTPS valid, for the whole review: Apple takes about 1 to 2 days, Google's first review up to a week. If the API is down, the app shows errors and gets rejected under 2.1. No backups and no automatic deploys (⏸ OPS-04 and OPS-05) are fine for review. Just don't redeploy or reset the database while a review is in progress.
+- **Domain:** `mqr.systems` (since 2026-11-23). The store pages: `https://mqr.systems/privacy`, `/terms`, `/support`, `/delete-account`.
 - **Reviewer accounts.** Use a client demo account with saved homes, one chat and one upcoming viewing, so the reviewer sees the app working straight away. Give an agent account too if the staff side should be reviewed. Apple and Google both test from the US or EU, so check that sign-in and browsing work from outside Egypt (no IP blocks).
 - **Phone checks** (⏸ QA-04): the pending push and on-device checks are scheduled after Phase 20. They must pass before submitting.
 

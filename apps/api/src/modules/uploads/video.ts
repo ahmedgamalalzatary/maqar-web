@@ -48,7 +48,7 @@ type ProbeJson = {
   format?: { duration?: string; format_name?: string };
 };
 
-/** Runs a tool at the lowest CPU priority: the server is shared, and a conversion must never slow the neighbour. */
+/** Runs a tool at the lowest CPU priority: a conversion must never slow the live API. */
 export function run(file: string, args: string[], timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = execFile(file, args, { timeout: timeoutMs, killSignal: 'SIGKILL', maxBuffer: 4 * 1024 * 1024, windowsHide: true }, (err, stdout) =>

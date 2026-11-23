@@ -31,7 +31,7 @@ const CONVERT_TIMEOUT_MS = 10 * 60_000;
 @Injectable()
 export class UploadsService {
   private readonly ff: { ffmpeg: string; ffprobe: string };
-  /** Videos are converted one at a time: the server has one core and a neighbour. */
+  /** Videos are converted one at a time, so a conversion never takes every core. */
   private videoQueue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly config: ConfigService<Env, true>) {

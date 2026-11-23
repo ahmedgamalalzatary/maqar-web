@@ -1,8 +1,8 @@
 #!/bin/sh
-# One-time setup, safe to run again. The server also runs another live project: this script only
-# adds Maqar's own folders, secrets, build helper and site. It changes nothing else.
+# One-time setup, safe to run again. This script only adds Maqar's own folders, secrets, build
+# helper and site. It changes nothing else on the server.
 set -eu
-HOST=old-host.invalid
+HOST=mqr.systems
 SRC=/root/maqar
 
 mkdir -p /srv/maqar/uploads /var/www/maqar-acme
@@ -32,11 +32,11 @@ EOF
   echo "Created $ENV_FILE"
 fi
 
-# Builds run at half a CPU, so the other project keeps responding during a build.
+# Builds run at half a CPU, so the live API keeps responding during a build.
 docker buildx inspect maqar-builder >/dev/null 2>&1 || docker buildx create --name maqar-builder \
   --driver docker-container --driver-opt cpu-period=100000,cpu-quota=50000,memory=1500m,memory-swap=2500m >/dev/null
 
-# Installs a site file; a config nginx refuses is taken out again, so the other sites stay up.
+# Installs a site file; a config nginx refuses is taken out again, so nginx stays up.
 install_site() {
   ln -sf "$1" /etc/nginx/sites-enabled/zz-maqar
   if ! nginx -t 2>/dev/null; then
@@ -54,13 +54,13 @@ if [ ! -f "/etc/letsencrypt/live/$HOST/fullchain.pem" ]; then
 server {
     listen 80;
     listen [::]:80;
-    server_name $HOST;
+    server_name $HOST www.$HOST;
     location /.well-known/acme-challenge/ { root /var/www/maqar-acme; }
     location / { return 404; }
 }
 EOF
   install_site /etc/nginx/sites-available/maqar-acme
-  certbot certonly --webroot -w /var/www/maqar-acme -d "$HOST" --non-interactive --agree-tos \
+  certbot certonly --webroot -w /var/www/maqar-acme -d "$HOST" -d "www.$HOST" --non-interactive --agree-tos \
     --register-unsafely-without-email --deploy-hook 'nginx -t && systemctl reload nginx'
 fi
 cp "$SRC/deploy/nginx-maqar.conf" /etc/nginx/sites-available/maqar

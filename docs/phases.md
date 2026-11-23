@@ -182,10 +182,10 @@ Contract §4 (production database) and §5 (production server rules).
 
 **Done when** a push to `main` deploys by itself, the app signs in against `https://api.<domain>` on mobile data (not the home Wi-Fi), and a backup has been restored once.
 
-**Status (2026-11-09): in progress, on a temporary server.** The API and MySQL run on `203.0.113.10` at `https://old-host.invalid`, so testing does not need this PC. It differs from the plan above until the real server exists:
-- The server is shared with another live project (other-project), so Maqar only adds its own parts: compose project `maqar`, port `127.0.0.1:4010`, capped memory, builds at half a CPU, and the nginx site `zz-maqar`. That name keeps it after the other site, which stays the default for unknown hosts. HTTP/2 stays off because it is set per port.
-- No domain: `sslip.io` gives the IP a name, with a real Let's Encrypt certificate.
-- No backups, by decision, because the server is temporary and holds only demo data.
+**Status (2026-11-23): in progress, on the production server.** The API and MySQL run at `https://mqr.systems` (from 2026-11-09 to 2026-11-23 they ran on a temporary server). It differs from the plan above:
+- Maqar's parts: compose project `maqar`, port `127.0.0.1:4010`, capped memory, builds at half a CPU, and the nginx site `zz-maqar`. HTTP/2 stays off.
+- The domain is `mqr.systems` (and `www.`), with a Let's Encrypt certificate.
+- No backups yet, by decision, while the server holds only demo data.
 - Deploys are by hand: `sh deploy/deploy.sh` makes the server's Git clone build the exact commit on `origin/main`, migrate, start and health-check, rolling back if the new API is not healthy. The nightly image clean-up on this server can remove an older image, so a rollback may not always have one to go to.
 - The seeded demo accounts are test data, with a random password in `/root/maqar/.env.production` on the server. Remove them before a real release.
 - Behind nginx the API reads the client's address from the proxy (`TRUST_PROXY_HOPS=1`), so the sign-in limit stays per client.
@@ -708,7 +708,7 @@ Contract §9.2 and §11 (to be updated to match).
 
 **Done when** an admin creates a listing with real photos on the web dashboard or in the app, publishes it, and it appears in Explore.
 
-**Status (2026-11-11): in progress.** Code and tests are green. Deployed 2026-11-11 (`964efb7`, migration `0011`, with Phase 18), with the nginx `/admin/` and `/v1/uploads` blocks; the dashboard is at `https://old-host.invalid/admin/`. The phone check (rule 6) is left. Notes:
+**Status (2026-11-11): in progress.** Code and tests are green. Deployed 2026-11-11 (`964efb7`, migration `0011`, with Phase 18), with the nginx `/admin/` and `/v1/uploads` blocks; the dashboard is at `https://mqr.systems/admin/` (since 2026-11-23). The phone check (rule 6) is left. Notes:
 - Decided: the web dashboard is `apps/web` (`@maqar/web`): Next.js 16 and Tailwind like the demo, a static export served by nginx at `/admin/` on the API's host, so it calls `/v1` on the same origin with no CORS. `deploy.sh` builds it from the same clean commit and swaps it in at `/srv/maqar/web/admin`. Admins sign in with their account; any other role is signed out at once.
 - Migration `0011`: `owner_name` and `owner_phone` on the listing (admins only ever see them), `agent_id` empty until the listing is published, and the review statuses (`pending`, `changes`) are gone: any listing in them becomes a draft. Statuses are now draft, approved (live), unpublished, sold and rented.
 - `POST /uploads` (admins, one photo in `photo`): turned upright, at most 2000 px, JPEG, under `uploads/listings`. Photos are made smaller on the phone or in the browser first. nginx takes 12 MB on that route; the API refuses over 10 MB.
@@ -785,7 +785,7 @@ Contract §11 (moved there from §9.1).
 
 - Public pages (`store-readiness.md` §5 items 4, 6, 7): privacy policy, terms, support and account deletion in Arabic and English at `/privacy`, `/terms`, `/support`, `/delete-account`, deployed with `deploy.sh`; the Me screen links them for everyone.
 
-- Deployed (`5fd13b6`): the pages, the nginx change and the per-account limits are live; other-project checked unaffected.
+- Deployed (`5fd13b6`): the pages, the nginx change and the per-account limits are live.
 - Phone check (POCO F3, Android 13, release APK; final build `c800a8f`, APK/AAB/IPA in `apk-out/c800a8f/`). Found and fixed: the 360° tour crashed (R8 removed the `(Context, AppContext)` constructor of expo-gl's view, then renamed `GLContext.flush()` that expo-gl's C++ calls by name) and, once open, drew a grey grid (the panorama was uploaded as RGB while expo-gl decodes photos to RGBA); the keyboard covered the chat box and form fields (edge to edge, so `KeyboardAvoidingView` pads on Android too); "Add to calendar" offered no calendar app (Android now opens the file with a view intent); scrolled content showed under the status bar (a backdrop strip); the insights chart opened on its oldest days (it fits the width now); phone numbers lost their leading `+` in Arabic text (left-to-right marks); unused overlay, activity, biometric permissions blocked. Verified on the phone afterwards: all of these, plus sign-in, booking and cancelling, chat, About Maqar links, the requested permissions (internet, notifications, vibrate, wake lock, boot, foreground service).
 
 Still to do: the store consoles (`store-readiness.md` §2.3–2.5, §3.3–3.4); the deferred items (contract §17.2); the full regression on phones.
