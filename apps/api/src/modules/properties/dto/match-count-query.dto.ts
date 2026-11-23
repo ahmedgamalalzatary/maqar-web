@@ -8,7 +8,7 @@ import {
   type Prefs,
   PROPERTY_TYPES,
   type PropertyType,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 import { AREA_ID, BUDGET_MAX } from '../../users/dto/prefs.dto.js';

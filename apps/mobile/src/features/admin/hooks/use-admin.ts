@@ -1,4 +1,4 @@
-import type { AdminListing, AgentBody, AppSettings, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@maqar/shared';
+import type { AdminListing, AgentBody, AppSettings, AreaBody, DaysOffBody, HoursBody, InsightRange, ListingBody } from '@mqr/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppConfig } from '@/core/app-config/store';
 import { useSession } from '@/features/auth/store/session.store';

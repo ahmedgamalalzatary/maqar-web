@@ -18,7 +18,7 @@ These are the items that would get a submission rejected or stop it from uploadi
 | B1 | Both | **Privacy policy:** a public web page, linked in the store listing **and** inside the app | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B2 | Google Play | **Web link for account deletion:** a public page where a user can ask for their account to be deleted, without the app | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B3 | Both | **Permissions the app never uses:** Android ships camera, microphone, calendar and old storage permissions; iOS ships calendar, reminders and Face ID texts | ✅ fixed in Phase 20 (was ❌) see §2.2 and §3.2 |
-| B4 | App Store | **Vague iOS permission texts** ("Allow Maqar to access your device motion"); Apple rejects these under 5.1.1 | ✅ fixed in Phase 20 (was ❌) see §3.2 |
+| B4 | App Store | **Vague iOS permission texts** ("Allow MQR to access your device motion"); Apple rejects these under 5.1.1 | ✅ fixed in Phase 20 (was ❌) see §3.2 |
 | B5 | App Store | **Support URL and contact details** (Apple requires a support URL; guideline 1.2 asks for published contact details when users can message) | ✅ Phase 20: `/privacy`, `/terms`, `/support`, `/delete-account` (live after the next deploy) |
 | B6 | App Store | **Paid Apple Developer account, signed build, APNs key** | ⏸ OPS-02 |
 | B7 | Google Play | **Firebase `google-services.json`** (no Android push without it). In the GitHub secret `GOOGLE_SERVICES_JSON_CONTENT`; the FCM V1 key is uploaded to the Expo project (2026-11-15). | ✅ |
@@ -26,7 +26,7 @@ These are the items that would get a submission rejected or stop it from uploadi
 | B9 | Google Play | **New personal developer account:** a closed test with **12 testers opted in for 14 days in a row** before production can be requested | 📝 an account choice (see §2.1) |
 | B10 | Both | **A working review account and a server that stays up** throughout review | 📝 demo accounts exist ✅; the server is temporary, see §4 |
 
-Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`deploy.sh` copies `deploy/site` and installs the nginx change after `nginx -t`). Their URLs, for the store consoles: `https://<host>/privacy`, `/terms`, `/support`, `/delete-account`; support e-mail `maqarcompany@gmail.com`.
+Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`deploy.sh` copies `deploy/site` and installs the nginx change after `nginx -t`). Their URLs, for the store consoles: `https://<host>/privacy`, `/terms`, `/support`, `/delete-account`; support e-mail `maqarcompany1@gmail.com`.
 
 ---
 
@@ -51,7 +51,7 @@ Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`dep
 | **Permissions the app doesn't use** | ✅ fixed in Phase 20 (was ❌) | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
 | Push (FCM) | ✅ | Firebase project `maqar-app-notification-354f3`; the APK and AAB workflows write the file from the secret (2026-11-15). |
-| **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.maqar.app` and the upload and Play signing SHA-1s. |
+| **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.mqr.app` and the upload and Play signing SHA-1s. |
 | versionCode goes up on each upload | ✅ | The commit count on main, set by the AAB workflow (2026-11-15). Build each upload from a newer commit. |
 
 ### 2.3 App content (Play Console → Policy → App content)
@@ -61,7 +61,7 @@ All 📝: answers to fill in, and none needs code except the two URLs.
 | Declaration | Our answer |
 |---|---|
 | Privacy policy URL | ❌ needs B1 |
-| App access | "Some functions are restricted": give a **client** demo account (e-mail and password) plus a short note. Agents and admins are Maqar staff accounts. Give one of those as well if the staff screens should be reviewed. |
+| App access | "Some functions are restricted": give a **client** demo account (e-mail and password) plus a short note. Agents and admins are MQR staff accounts. Give one of those as well if the staff screens should be reviewed. |
 | Ads | No ads. |
 | Content rating (IARC questionnaire) | Category "Utility / productivity" or "Shopping". Answer **yes** to "users can interact / exchange messages" (the client ↔ advisor chat) and "shares … info" (photos in chat). |
 | Target audience | 18+ only. Not for children, so the Families policy doesn't apply. |
@@ -79,7 +79,7 @@ All 📝: answers to fill in, and none needs code except the two URLs.
 | Phone number | Yes | Account, and the agent calls back | Optional | |
 | Messages (in-app chat) | Yes | App functionality | Optional | |
 | Photos (sent in chat) | Yes | App functionality | Optional | Chat photos are public to anyone who has the URL (SEC-04, documented). The privacy policy should say so. |
-| App activity (views, saves, follows, viewings booked) | Yes | App functionality (matches, listing insights) | | Insights are shown to Maqar admins. |
+| App activity (views, saves, follows, viewings booked) | Yes | App functionality (matches, listing insights) | | Insights are shown to MQR admins. |
 | Device or other IDs (push token) | Yes | Notifications | Optional | Sent to Expo's push service, then FCM/APNs. These count as **service providers**, not "sharing". |
 | Location | **No** | | | The app never asks for location ✅ |
 | Encrypted in transit | Yes (HTTPS) | | | |
@@ -106,7 +106,7 @@ What account deletion does is solid. `UsersRepository.softDelete` blanks the nam
 | Item | Status | Notes |
 |---|---|---|
 | Apple Developer Program ($99 a year), as an individual or an organization (an organization needs D-U-N-S) | ⏸ | OPS-02 |
-| Register the bundle ID `com.maqar.app` | 📝 ⚠️ | Check that it's free. If another team already owns it, the ID has to change before the first build. |
+| Register the bundle ID `com.mqr.app` | 📝 ⚠️ | Check that it's free. If another team already owns it, the ID has to change before the first build. |
 | Signing, provisioning profile, **Push Notifications capability and APNs key** (uploaded to Expo for Expo push) | ⏸ | OPS-02. `ios-ipa.yml` builds unsigned on purpose today. |
 | Built with **Xcode 26 / iOS 26 SDK** (required for uploads since 2026-04-28) | ⚠️ | `macos-latest` should be on Xcode 26 by now. Print `xcodebuild -version` in the workflow to prove it. Uploads must also target iOS 13 or later; Expo SDK 58 targets much higher ✅. |
 | Build number goes up on each upload | ✅ | The commit count on main, set by the iOS workflow (2026-11-15). |
@@ -120,14 +120,14 @@ From the final `Info.plist`:
 
 | Key | Text now | Used? | Fix |
 |---|---|---|---|
-| `NSPhotoLibraryUsageDescription` | "Maqar uses your photos only when you choose some to send in a chat with your sales advisor." | Yes | ✅ Good; Arabic and English texts in `locales/` (Phase 20). |
-| `NSMotionUsageDescription` | "Allow $(PRODUCT_NAME) to access your device motion" | Yes, the 360° tour gyroscope | ✅ fixed in Phase 20 (was ❌) Too vague. Say what it's for, e.g. "Maqar uses motion so you can look around a 360° tour by moving your phone." Set it through the `expo-sensors` plugin (`motionPermission`). |
+| `NSPhotoLibraryUsageDescription` | "MQR uses your photos only when you choose some to send in a chat with your sales advisor." | Yes | ✅ Good; Arabic and English texts in `locales/` (Phase 20). |
+| `NSMotionUsageDescription` | "Allow $(PRODUCT_NAME) to access your device motion" | Yes, the 360° tour gyroscope | ✅ fixed in Phase 20 (was ❌) Too vague. Say what it's for, e.g. "MQR uses motion so you can look around a 360° tour by moving your phone." Set it through the `expo-sensors` plugin (`motionPermission`). |
 | `NSCalendarsUsageDescription`, `NSCalendarsFullAccessUsageDescription`, `NSRemindersUsageDescription`, `NSRemindersFullAccessUsageDescription` | Generic | **No** (`expo-calendar` is never imported) | ✅ fixed in Phase 20 (was ❌) Remove the `expo-calendar` package. Asking for calendar access and never using it is a 5.1.1 rejection. |
 | `NSFaceIDUsageDescription` | Generic | **No** (`requireAuthentication` is never used) | ✅ fixed in Phase 20 (was ❌) Add the `expo-secure-store` plugin option `faceIDPermission: false`. |
 
 The app's main language is Arabic, so add **Arabic** permission texts too. Use Expo's `locales` (`ios.infoPlist` per language), so an Arabic phone shows them in Arabic.
 
-### 3.3 Review guidelines that apply to Maqar
+### 3.3 Review guidelines that apply to MQR
 
 | Guideline | What Apple checks | Status |
 |---|---|---|
@@ -139,7 +139,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 | 5.1.1(ii) Don't force sign-up | Features that don't need an account must work without one. | ✅ Guests can browse |
 | 5.1.1(v) Account deletion | Must be possible from inside the app, not just "e-mail us". | ✅ `DeleteAccountSheet`, which deletes the data straight away |
 | 5.1.1 Purpose strings | Specific and accurate. | ❌ §3.2 |
-| 1.2 User-generated content | Apps where users send content need: filtering, a report option, blocking, and published contact details. | ⚠️ Our chat is client ↔ Maqar staff only (no client-to-client), so the risk is low. Cheap insurance: let an agent **report or block** an abusive client in the chat, and put a support e-mail or WhatsApp in the Me screen. |
+| 1.2 User-generated content | Apps where users send content need: filtering, a report option, blocking, and published contact details. | ⚠️ Our chat is client ↔ MQR staff only (no client-to-client), so the risk is low. Cheap insurance: let an agent **report or block** an abusive client in the chat, and put a support e-mail or WhatsApp in the Me screen. |
 | 4.5.4 Push | Push must not be required to use the app, and must not be used for ads without consent. | ✅ Push is a switch the user turns on. Pushes are only reminders, chat and price alerts. |
 | Age rating (new questionnaire, with 13+/16+/18+ levels) | Answer it in App Store Connect before submitting. | 📝 Messaging = yes, unrestricted web = no. The likely result is 13+ or 16+. |
 | App Privacy ("nutrition label") | The same data as §2.4. Nothing is used for tracking. | 📝 Tracking = no, so **no App Tracking Transparency prompt** is needed ✅ |
@@ -152,7 +152,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 | Name (≤ 30 characters), subtitle (≤ 30), keywords (≤ 100), description, promotional text, in Arabic and English | 📝 |
 | Screenshots: **6.9-inch iPhone**, 1320 × 2868 (or 1290 × 2796). Smaller iPhones are scaled from these. No iPad set (iPhone only). | ❌ to make |
 | Support URL (required), marketing URL (optional), privacy policy URL (required) | ❌ B1 and B5 |
-| Category: Lifestyle (or Business). Copyright line. Review notes in English that explain the roles: "clients sign up; agents and admins are Maqar staff". | 📝 |
+| Category: Lifestyle (or Business). Copyright line. Review notes in English that explain the roles: "clients sign up; agents and admins are MQR staff". | 📝 |
 
 ---
 
@@ -176,7 +176,7 @@ The app's main language is Arabic, so add **Arabic** permission texts too. Use E
 
 **Web: one static page set:**
 6. ✅ Done (Phase 20): A privacy policy (AR/EN): what we collect (§2.4), why, who handles it (Expo push, Google/Apple push, Google Maps), what deletion removes and what it keeps, that chat photos are public by link, and a contact.
-7. ✅ Done (Phase 20): An account-deletion page (Maqar name, steps in the app, and a request form or an e-mail address), plus a support page.
+7. ✅ Done (Phase 20): An account-deletion page (MQR name, steps in the app, and a request form or an e-mail address), plus a support page.
 
 **Store consoles (no code):**
 8. The Play app content forms (§2.3, §2.4), the listing (§2.5), and the closed test with 12 testers for 14 days if the account is personal.

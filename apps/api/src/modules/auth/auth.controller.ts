@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
-import type { AuthResponse } from '@maqar/shared';
+import type { AuthResponse } from '@mqr/shared';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { AuthService } from './auth.service.js';
 import { ForgotPasswordDto, RefreshDto, ResetPasswordDto, SignInDto, SignUpDto } from './dto/auth.dto.js';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { LeadStage } from '@maqar/shared';
+import type { LeadStage } from '@mqr/shared';
 import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';

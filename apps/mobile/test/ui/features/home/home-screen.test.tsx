@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react-native';
-import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, homeSectionOrder } from '@maqar/shared';
+import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, homeSectionOrder } from '@mqr/shared';
 import { useAppConfig } from '@/core/app-config/store';
 import { useSettings } from '@/core/settings/store';
 import { useSession } from '@/features/auth/store/session.store';
@@ -68,7 +68,7 @@ describe('Home', () => {
     expect(screen.queryByRole('header', { name: 'السعر نزل' })).toBeNull();
   });
 
-  it('shows the homes the Maqar team featured, and no such row when there are none', async () => {
+  it('shows the homes the MQR team featured, and no such row when there are none', async () => {
     api([], [featured]);
     const view = await renderWithProviders(<Home />);
     expect(await screen.findByRole('header', { name: 'مميزة من مقر' })).toBeOnTheScreen();

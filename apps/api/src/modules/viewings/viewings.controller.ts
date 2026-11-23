@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Header, Param, ParseIntPipe, Patch, Post, Query, StreamableFile } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiProduces, ApiTags } from '@nestjs/swagger';
-import type { AdminViewingItem, AdminViewingsPage, SlotsResponse, UpdateViewingBody, ViewingItem } from '@maqar/shared';
+import type { AdminViewingItem, AdminViewingsPage, SlotsResponse, UpdateViewingBody, ViewingItem } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -55,7 +55,7 @@ export class ViewingsController {
   @Roles('client', 'agent')
   @ApiProduces('text/calendar')
   @Header('Content-Type', 'text/calendar; charset=utf-8')
-  @Header('Content-Disposition', 'attachment; filename="maqar-viewing.ics"')
+  @Header('Content-Disposition', 'attachment; filename="mqr-viewing.ics"')
   async ics(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
     return new StreamableFile(Buffer.from(await this.viewings.ics(user, id), 'utf8'));
   }

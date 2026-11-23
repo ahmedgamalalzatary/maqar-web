@@ -1,4 +1,4 @@
-import { pickField, CATEGORY_LABEL, FEATURE_LABEL, PROPERTY_TYPE_LABEL } from '@maqar/shared';
+import { pickField, CATEGORY_LABEL, FEATURE_LABEL, PROPERTY_TYPE_LABEL } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { SlidersHorizontal } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';

@@ -71,7 +71,7 @@ export function insightsSummary(s: ListingStats, title: string, lang: Lang): str
       `من أول ما اتنشر: ${n(t.views)} مشاهدة، ${n(t.interested)} عميل مهتم، ${n(t.saves)} حافظينه دلوقتي، ${n(t.chats)} محادثة، ${n(t.viewings)} معاينة.`,
     ].join('\n');
   return [
-    `Your listing on Maqar: ${title}`,
+    `Your listing on MQR: ${title}`,
     `In the last ${n(s.days.length)} days: ${n(r.views)} views, ${n(r.saves)} saves, ${n(r.interested)} new interested clients.`,
     `Since it went up: ${n(t.views)} views, ${n(t.interested)} interested clients, ${n(t.saves)} saved now, ${n(t.chats)} chats, ${n(t.viewings)} viewings.`,
   ].join('\n');

@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminAgentDetail, type AgentBody, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from "@maqar/shared";
+import { type AdminAgentDetail, type AgentBody, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from "@mqr/shared";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";

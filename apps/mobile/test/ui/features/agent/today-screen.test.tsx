@@ -1,4 +1,4 @@
-import type { AgentToday } from '@maqar/shared';
+import type { AgentToday } from '@mqr/shared';
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { TodayScreen } from '@/features/agent/screens/today-screen';

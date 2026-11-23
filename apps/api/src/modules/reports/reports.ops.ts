@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CHAT_REPORT_REASON_LABEL, CHAT_REPORT_REASONS, REPORT_OUTCOME_LABEL, type ReportRow, VIEWING_CANCELLER_LABEL, VIEWING_CANCELLERS } from '@maqar/shared';
+import { CHAT_REPORT_REASON_LABEL, CHAT_REPORT_REASONS, REPORT_OUTCOME_LABEL, type ReportRow, VIEWING_CANCELLER_LABEL, VIEWING_CANCELLERS } from '@mqr/shared';
 import { firstReplies } from './chat-times.js';
 import { type Built, type Ctx, bi, NO_ADVISOR, since, titleOf, UNKNOWN } from './reports.context.js';
 import { ReportsRepository, type ViewingFact } from './reports.repository.js';

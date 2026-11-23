@@ -1,4 +1,4 @@
-import type { LeadDetail } from '@maqar/shared';
+import type { LeadDetail } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { ToastHost } from '@/components/toast';

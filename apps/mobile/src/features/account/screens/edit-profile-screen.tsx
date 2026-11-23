@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { readMobile } from '@maqar/shared';
+import { readMobile } from '@mqr/shared';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
 import { Txt } from '@/components/text';

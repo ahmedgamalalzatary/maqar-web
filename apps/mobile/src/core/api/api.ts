@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from '@maqar/shared';
+import type { ApiErrorBody } from '@mqr/shared';
 import Constants from 'expo-constants';
 import { File, UploadType } from 'expo-file-system';
 import { mediaUrlFrom, resolveApiUrl } from './api-url';
@@ -131,7 +131,7 @@ export async function renewAccess(): Promise<boolean> {
   return ok;
 }
 
-/** JSON request to the Maqar API. `path` starts with "/", e.g. "/health". */
+/** JSON request to the MQR API. `path` starts with "/", e.g. "/health". */
 export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
   const sentWith = opts.anonymous ? null : auth?.getAccessToken();
   let res = await send(path, opts, sentWith);

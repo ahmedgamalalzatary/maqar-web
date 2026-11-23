@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type PriceChange, applyPriceChange } from '@maqar/shared';
+import { type PriceChange, applyPriceChange } from '@mqr/shared';
 import { and, desc, eq } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { properties } from '../properties/properties.schema.js';

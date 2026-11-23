@@ -26,8 +26,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - { abis: 'arm64-v8a,armeabi-v7a', artifact: maqar-android-apk, suffix: '' }
-          - { abis: x86_64, artifact: maqar-android-emulator, suffix: -emulator }
+          - { abis: 'arm64-v8a,armeabi-v7a', artifact: mqr-android-apk, suffix: '' }
+          - { abis: x86_64, artifact: mqr-android-emulator, suffix: -emulator }
     env:
       EXPO_PUBLIC_API_URL: ${{ inputs.api_url || vars.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4000/v1' }}
       # Optional: without it this build leaves the property map out (Expo Go is fine).
@@ -62,7 +62,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the shared package
-        run: pnpm --filter @maqar/shared build
+        run: pnpm --filter @mqr/shared build
 
       # OPS-01: the Firebase app file, so Android gets push tokens. Without the secret the build has no push.
       - name: Put the Firebase file in place
@@ -88,7 +88,7 @@ jobs:
       - name: Name the APK
         run: |
           mkdir -p out
-          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/maqar-${GITHUB_SHA::7}${{ matrix.suffix }}.apk"
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/mqr-${GITHUB_SHA::7}${{ matrix.suffix }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:

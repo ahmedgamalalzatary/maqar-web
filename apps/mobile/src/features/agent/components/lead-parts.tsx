@@ -1,4 +1,4 @@
-import { joinParts, type AgentViewing, fmtDate, fmtMoney, fmtTime, LEAD_SOURCE_LABEL, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, type LeadCard, type LeadStage, relTime } from '@maqar/shared';
+import { joinParts, type AgentViewing, fmtDate, fmtMoney, fmtTime, LEAD_SOURCE_LABEL, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, type LeadCard, type LeadStage, relTime } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Flame, MapPin, Video } from 'lucide-react-native';

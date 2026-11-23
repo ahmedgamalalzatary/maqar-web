@@ -1,4 +1,4 @@
-import type { AreaItem, AuthResponse, Me, Page, PropertyCard } from '@maqar/shared';
+import type { AreaItem, AuthResponse, Me, Page, PropertyCard } from '@mqr/shared';
 
 /**
  * A fetch mock that answers by path (after /v1, without the query). A handler gets the
@@ -86,7 +86,7 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
     id: 1,
     role: 'client',
     name: 'Mona Adel',
-    email: 'mona@test.maqar',
+    email: 'mona@test.mqr',
     phone: null,
     lang: 'ar',
     theme: 'system',

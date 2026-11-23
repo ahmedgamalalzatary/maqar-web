@@ -1,4 +1,4 @@
-import { pickField, type AdminArea, areaSlug } from '@maqar/shared';
+import { pickField, type AdminArea, areaSlug } from '@mqr/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';

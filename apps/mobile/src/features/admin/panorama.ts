@@ -1,4 +1,4 @@
-import { PANO_SIZE } from '@maqar/shared';
+import { PANO_SIZE } from '@mqr/shared';
 import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';

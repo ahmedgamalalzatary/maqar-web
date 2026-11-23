@@ -36,7 +36,7 @@ jest.mock('expo-sensors', () => ({ DeviceMotion: { setUpdateInterval: jest.fn(),
 // On phones expo-gl always decodes a photo to 4 bytes a pixel. Uploaded as RGB (3 bytes), every
 // row was read out of step and the tour showed a grey grid instead of the room (seen on a phone).
 it('uploads the panorama as RGBA, the layout expo-gl decodes photos into', async () => {
-  render(<PanoView uri="https://maqar.test/pano.jpg" hotspots={[]} onHotspot={jest.fn()} gyro={false} />);
+  render(<PanoView uri="https://mqr.test/pano.jpg" hotspots={[]} onHotspot={jest.fn()} gyro={false} />);
   await waitFor(() => expect(mockGl.texImage2D).toHaveBeenCalled());
   expect(mockGl.texImage2D).toHaveBeenCalledWith('TEXTURE_2D', 0, 'RGBA', 'RGBA', 'UNSIGNED_BYTE', expect.anything());
 });

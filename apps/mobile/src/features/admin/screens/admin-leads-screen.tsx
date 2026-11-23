@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminLeadItem, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from '@maqar/shared';
+import { pickField, joinParts, type AdminLeadItem, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from '@mqr/shared';
 import { Check, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';

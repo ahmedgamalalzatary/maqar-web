@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { SavedScreen } from '@/features/saved/screens/saved-screen';

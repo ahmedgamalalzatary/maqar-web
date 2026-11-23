@@ -1,6 +1,6 @@
 import { Body, ConflictException, Controller, Get, Injectable, NotFoundException, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import { CHAT_PAGE, type AdminChatDetail, type AdminChatItem, type AdminChatsPage, type AdminReportItem, type ChatPage, type ChatReport } from '@maqar/shared';
+import { CHAT_PAGE, type AdminChatDetail, type AdminChatItem, type AdminChatsPage, type AdminReportItem, type ChatPage, type ChatReport } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { PeopleService } from '../people/people.service.js';

@@ -1,4 +1,4 @@
-import type { ViewingItem } from '@maqar/shared';
+import type { ViewingItem } from '@mqr/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import * as Sharing from 'expo-sharing';
 import { Linking } from 'react-native';

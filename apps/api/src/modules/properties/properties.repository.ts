@@ -17,7 +17,7 @@ import {
   priceCategories,
   type Scale,
   type Sort,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import {
   and,
   asc,

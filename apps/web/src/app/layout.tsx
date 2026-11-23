@@ -6,8 +6,8 @@ import "./globals.css";
 const readex = Readex_Pro({ subsets: ["arabic", "latin"], variable: "--font-readex", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "لوحة إدارة مقر | Maqar admin",
-  description: "The Maqar team's dashboard: listings for owners, published to the app.",
+  title: "لوحة إدارة مقر | MQR admin",
+  description: "The MQR team's dashboard: listings for owners, published to the app.",
   icons: { icon: "/admin/brand/icon.svg" },
   robots: { index: false, follow: false },
 };

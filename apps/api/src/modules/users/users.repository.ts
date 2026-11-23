@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prefs } from '@maqar/shared';
+import type { Prefs } from '@mqr/shared';
 import { and, eq, gt, inArray, isNotNull, isNull, ne, or, type SQL } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type AgentRow, agents } from '../agents/agents.schema.js';

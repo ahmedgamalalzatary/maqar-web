@@ -1,4 +1,4 @@
-import { fmtNum } from '@maqar/shared';
+import { fmtNum } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { MessageCircle } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';

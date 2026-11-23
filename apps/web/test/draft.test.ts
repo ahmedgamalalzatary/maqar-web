@@ -21,7 +21,7 @@ describe("the local form draft", () => {
 
   it("returns null when there is no draft, or it cannot be read", () => {
     expect(loadDraft("listing:new")).toBeNull();
-    localStorage.setItem("maqar-draft:listing:new", "{not json");
+    localStorage.setItem("mqr-draft:listing:new", "{not json");
     expect(loadDraft("listing:new")).toBeNull();
   });
 

@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { HISTOGRAM_BINS, type ListingFacets, type Page, type PropertyCard } from '@maqar/shared';
+import { HISTOGRAM_BINS, type ListingFacets, type Page, type PropertyCard } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';

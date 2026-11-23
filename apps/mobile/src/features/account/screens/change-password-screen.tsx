@@ -1,5 +1,5 @@
 import { ErrorText } from '@/components/error-text';
-import { passwordOk } from '@maqar/shared';
+import { passwordOk } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/button';

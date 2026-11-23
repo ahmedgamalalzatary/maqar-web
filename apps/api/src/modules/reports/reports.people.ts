@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Bi, type Category, LANGS, PUSH_PLATFORMS, type ReportRow } from '@maqar/shared';
+import { type Bi, type Category, LANGS, PUSH_PLATFORMS, type ReportRow } from '@mqr/shared';
 import { type Built, type Ctx, bi, since, sinceDay } from './reports.context.js';
 import { ReportsRepository } from './reports.repository.js';
 import { bandOf, dayWithin, kpi, median, perDay, PRICE_BANDS, ratio, type Win, within } from './reports.util.js';

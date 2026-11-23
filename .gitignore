@@ -30,7 +30,7 @@ npm-debug.log*
 *.pem
 
 # signing keys: never commit
-maqar-keys/
+mqr-keys/
 *.keystore
 *.jks
 coverage/

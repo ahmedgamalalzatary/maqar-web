@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatThread, SlotsResponse } from '@maqar/shared';
+import type { ChatMessage, ChatThread, SlotsResponse } from '@mqr/shared';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native';

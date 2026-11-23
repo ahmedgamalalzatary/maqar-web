@@ -1,4 +1,4 @@
-import type { PropertyCard, PropertyDetail } from '@maqar/shared';
+import type { PropertyCard, PropertyDetail } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const getProperty = (id: number, signal?: AbortSignal) => apiFetch<PropertyDetail>(`/properties/${id}`, { signal });

@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, NotificationsResponse, Page, PropertyCard, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { AuthResponse, NotificationsResponse, Page, PropertyCard, SlotsResponse, ViewingItem } from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';

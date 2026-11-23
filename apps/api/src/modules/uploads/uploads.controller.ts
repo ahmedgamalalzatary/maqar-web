@@ -2,7 +2,7 @@ import { BadRequestException, Controller, Post, Query, UploadedFile, UseIntercep
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiPayloadTooLargeResponse, ApiTags } from '@nestjs/swagger';
 import { tmpdir } from 'node:os';
-import { SPLASH_VIDEO_MAX_SECONDS, type UploadResponse, VIDEO_MAX_BYTES, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@maqar/shared';
+import { SPLASH_VIDEO_MAX_SECONDS, type UploadResponse, VIDEO_MAX_BYTES, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@mqr/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';
 import { UploadsService } from './uploads.service.js';

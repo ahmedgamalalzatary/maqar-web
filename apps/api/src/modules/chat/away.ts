@@ -1,4 +1,4 @@
-import type { ChatSender } from '@maqar/shared';
+import type { ChatSender } from '@mqr/shared';
 import { cairoClock, type WeekHours } from '../viewings/slots.js';
 
 // The out-of-hours reply (contract §16.1 #12). Pure, so the rules are tested without a clock.

@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminAccount, relTime } from "@maqar/shared";
+import { type AdminAccount, relTime } from "@mqr/shared";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";

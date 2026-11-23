@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { type AdminAgentDetail, type AdminAgentItem, type AgentListingOption, daysBetween, type DaysOffResult, weekProblem } from '@maqar/shared';
+import { type AdminAgentDetail, type AdminAgentItem, type AgentListingOption, daysBetween, type DaysOffResult, weekProblem } from '@mqr/shared';
 import { hashPassword } from '../auth/password.js';
 import { cairoClock, cairoInstant, DEFAULT_HOURS } from '../viewings/slots.js';
 import type { CreateAgentDto, DaysOffDto, HoursDto, UpdateAgentDto } from './dto/agents.dto.js';

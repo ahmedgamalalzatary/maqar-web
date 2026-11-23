@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AreaItem, Page, PropertyCard } from '@maqar/shared';
+import type { AreaItem, Page, PropertyCard } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';

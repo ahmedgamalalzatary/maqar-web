@@ -1,4 +1,4 @@
-# Maqar: build phases
+# MQR: build phases
 
 This file is the build plan. **One phase is one feature, built as a vertical slice**: database, API, mobile screens and tests together, finished and green before the next phase starts.
 
@@ -85,7 +85,7 @@ The skeleton every feature plugs into. The only feature in this phase is that th
 - `GET /v1/health` reports whether the API and the database are up.
 
 **Database**
-- Local MySQL 8.0 (`localhost:3306`, database `maqar`; already created and connected).
+- Local MySQL 8.0 (`localhost:3306`, database `mqr`; already created and connected).
 - First migration and the seed script (`db:seed`): moved to Phase 1, where the first tables (users) arrive. An empty schema has nothing to migrate.
 
 **Shared**
@@ -143,7 +143,7 @@ Contract §2 and §8.14.
 **Done when** a client, an owner and an agent can each sign in and land on their own home screen.
 
 **Status (2026-11-08): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
-- The first migration (`users`, `agents`, `refresh_tokens`) and `pnpm --filter @maqar/api db:seed` arrived here. The seed adds the 4 demo agents, 1 admin, and a demo client and owner (`client@maqar.app`, `owner@maqar.app`), all with `SEED_PASSWORD` from `.env`.
+- The first migration (`users`, `agents`, `refresh_tokens`) and `pnpm --filter @mqr/api db:seed` arrived here. The seed adds the 4 demo agents, 1 admin, and a demo client and owner (`client@mqr.app`, `owner@mqr.app`), all with `SEED_PASSWORD` from `.env`.
 - Mobile keeps the refresh token in the phone's secure storage and the access token in memory. A 401 triggers one shared refresh and a retry; a failed refresh signs the user out.
 - An admin lands on `/admin`, which shows their account until the admin tools are decided (§16.1 #6).
 - Checked by hand: every seeded role signed in against the running API and got its own profile. The phone run is for the owner to do in Expo Go.
@@ -152,7 +152,7 @@ Contract §2 and §8.14.
 
 ## Phase 2: Production server and deploys
 
-**Decided (§16.1 #7):** Maqar gets its own new Hostinger KVM2 VPS (2 CPUs, 8 GB memory, about 100 GB disk). Nothing else runs on it. The domain is the free one that comes with the Hostinger plan; any domain works, because the HTTPS certificate is free from Let's Encrypt.
+**Decided (§16.1 #7):** MQR gets its own new Hostinger KVM2 VPS (2 CPUs, 8 GB memory, about 100 GB disk). Nothing else runs on it. The domain is the free one that comes with the Hostinger plan; any domain works, because the HTTPS certificate is free from Let's Encrypt.
 
 **Waits for:** the server to be bought. Until then, Phase 3 onwards is built and tested locally.
 
@@ -169,7 +169,7 @@ Contract §4 (production database) and §5 (production server rules).
 - Configuration comes from **`.env.production`** on the server (git-ignored). `deploy/setup-server.sh` writes it, with the secrets it generates (the repo's example file was removed on 2026-11-15).
 
 **Every deploy (a GitHub Action on push to `main`, after the checks are green)**
-1. Back up the database (`mysqldump`) and the images folder into `/root/maqar-backups`, named by date and commit.
+1. Back up the database (`mysqldump`) and the images folder into `/root/mqr-backups`, named by date and commit.
 2. Build the new API image.
 3. Run the database migrations (`db:migrate`) against the production database. If they fail, the deploy stops and the old API keeps running.
 4. Start the new API and wait for `GET /v1/health` to answer. If it does not, roll back to the previous image.
@@ -183,11 +183,11 @@ Contract §4 (production database) and §5 (production server rules).
 **Done when** a push to `main` deploys by itself, the app signs in against `https://api.<domain>` on mobile data (not the home Wi-Fi), and a backup has been restored once.
 
 **Status (2026-11-23): in progress, on the production server.** The API and MySQL run at `https://mqr.systems` (from 2026-11-09 to 2026-11-23 they ran on a temporary server). It differs from the plan above:
-- Maqar's parts: compose project `maqar`, port `127.0.0.1:4010`, capped memory, builds at half a CPU, and the nginx site `zz-maqar`. HTTP/2 stays off.
+- MQR's parts: compose project `mqr`, port `127.0.0.1:4010`, capped memory, builds at half a CPU, and the nginx site `zz-mqr`. HTTP/2 stays off.
 - The domain is `mqr.systems` (and `www.`), with a Let's Encrypt certificate.
 - No backups yet, by decision, while the server holds only demo data.
 - Deploys are by hand: `sh deploy/deploy.sh` makes the server's Git clone build the exact commit on `origin/main`, migrate, start and health-check, rolling back if the new API is not healthy. The nightly image clean-up on this server can remove an older image, so a rollback may not always have one to go to.
-- The seeded demo accounts are test data, with a random password in `/root/maqar/.env.production` on the server. Remove them before a real release.
+- The seeded demo accounts are test data, with a random password in `/root/mqr/.env.production` on the server. Remove them before a real release.
 - Behind nginx the API reads the client's address from the proxy (`TRUST_PROXY_HOPS=1`), so the sign-in limit stays per client.
 - Still to do on the real server: everything above, plus the deploy on push, backups and a restore test.
 
@@ -406,7 +406,7 @@ Contract §8.10.
 **Status (2026-11-09): in progress.** Code and tests are green; only the phone check (rule 6) is left. Notes:
 - The rules are in `packages/shared` (`winner`, `compareMonthly`, `compareVerdict`). Checked against the demo's own code on all 240 ordered pairs of its 16 homes, in Arabic and English: every row's better value and every verdict line match. The only differences are invisible spacing characters, "K" where the demo's browser writes "k", and the monthly difference rounded to whole pounds where the demo showed fractions.
 - Added beyond the plan: `GET /v1/properties/compare?ids=4,9` (one or two ids, public). It returns the property page's details in the order asked, leaves out missing or unapproved homes, and counts no view. `GET /properties/:id` counts a view on every call, so using it would have inflated views each time the compare screen opened.
-- Mobile: the scale button sits next to the heart on every card and on the property page, for guests and clients (not owners or agents). The third pick replaces the oldest, with the demo's toasts; the "ready" toast opens `/compare`. The tray sits above the client tab bar. `/compare` has the column heads with Change and Remove, a "Pick a home" sheet (search; saved homes first, then the other home's category), the verdict, and the rows. The better value is tinted gold with a crown, and screen readers hear "better". Signed-in clients also get the "better fit" line from their match score. The list is kept on the device (`maqar.compare`), and homes no longer listed drop out of it.
+- Mobile: the scale button sits next to the heart on every card and on the property page, for guests and clients (not owners or agents). The third pick replaces the oldest, with the demo's toasts; the "ready" toast opens `/compare`. The tray sits above the client tab bar. `/compare` has the column heads with Change and Remove, a "Pick a home" sheet (search; saved homes first, then the other home's category), the verdict, and the rows. The better value is tinted gold with a crown, and screen readers hear "better". Signed-in clients also get the "better fit" line from their match score. The list is kept on the device (`mqr.compare`), and homes no longer listed drop out of it.
 - Left for later phases: the "interested" demand row (12, 13 and 16 bring follows, bookings and chats), the 360° tour amenity row (10), the "Book viewing" buttons (13), and lifting the chat button above the tray (16).
 - Checked by hand in the web preview (390 px wide, Arabic dark) against the local API: picking from Explore cards, the tray, and the compare screen.
 
@@ -430,8 +430,8 @@ Contract §8.6.
 - A full-screen panorama viewer: drag with inertia, pinch zoom, gyroscope, hotspots, room list, cross-fade.
 - Rooms load one at a time.
 
-**Owner role removed (2026-11-09 decision).** Owners deal with Maqar directly, and admins create and manage every listing. In this phase:
-- The `owner` role goes from `packages/shared`, sign-up (clients only), the API's role checks, the seed (`owner@maqar.app`) and any owner accounts in the database (a migration moves the role enum).
+**Owner role removed (2026-11-09 decision).** Owners deal with MQR directly, and admins create and manage every listing. In this phase:
+- The `owner` role goes from `packages/shared`, sign-up (clients only), the API's role checks, the seed (`owner@mqr.app`) and any owner accounts in the database (a migration moves the role enum).
 - The owner tab area in the app (`src/app/owner`) and its screens go.
 - Anything built for owners that admins can use moves to the admin side instead of being deleted.
 
@@ -447,7 +447,7 @@ Contract §8.6.
 - Left out: the demo's "Like it? Book a real viewing" button waits for booking (Phase 13); the demo's fullscreen button is web-only.
 - Owner role removed: `owner` is gone from `packages/shared`, sign-up (clients only; `role` is now optional and only `client` is accepted, so older apps still work), the seed, the role guards' tests, and the database. Migration `0005` deletes owner accounts (their sessions, saved homes and preferences go with them) before removing `owner` from the role list, and drops `properties.owner_id`. In the app, the owner tabs are gone, sign-up has no role choice, and admins get their own tab bar (Listings and Add a property, built in Phase 17, plus Me), which is where the owner's planned screens moved.
 - Checked by hand in the web preview (390 px, Arabic) against the local API: the button, the panorama, dragging, the dots, changing rooms and the cross-fade. The test browser draws without a GPU, so its frame rate says nothing about phones.
-- Deployed 2026-11-09 (`e0664c1`): migration `0005` ran, and the seed was run again with the demo's `img` and `pano` folders mounted (`docker compose run --rm --no-deps -T -v /root/maqar/apps/demo/public/img:/app/apps/demo/public/img:ro -v /root/maqar/apps/demo/public/pano:/app/apps/demo/public/pano:ro api node dist/core/db/seed.js`), which copied the 6 panoramas to `/srv/maqar/uploads/seed/pano` and added the tour rooms. 13 homes have tours on the server.
+- Deployed 2026-11-09 (`e0664c1`): migration `0005` ran, and the seed was run again with the demo's `img` and `pano` folders mounted (`docker compose run --rm --no-deps -T -v /root/mqr/apps/demo/public/img:/app/apps/demo/public/img:ro -v /root/mqr/apps/demo/public/pano:/app/apps/demo/public/pano:ro api node dist/core/db/seed.js`), which copied the 6 panoramas to `/srv/mqr/uploads/seed/pano` and added the tour rooms. 13 homes have tours on the server.
 
 ---
 
@@ -479,12 +479,12 @@ Contract §8.13.
 **Status (2026-11-09): in progress.** Code and tests are green. The phone check (rule 6) is left, and real pushes first need two things only the project owner can set up (see the last note). Notes:
 - Database (migration `0006`): `notifications` (text in both languages, `href`, `read_at`) and `push_tokens` (one row per phone; the token is unique, so it moves to whoever signs in on that phone). Deleting an account deletes both.
 - API: `NotificationsService.notify(userId, …)` is the one way other modules tell someone something: it saves the inbox entry, then, unless the account turned phone notifications off, pushes it to every phone of the account in the account's language, with `{ id, href }` as data and the unread count as the badge. Expo's push service is called over HTTPS (`EXPO_ACCESS_TOKEN` is optional, for Expo's "enhanced security"); a token Expo reports as `DeviceNotRegistered` is deleted, and a failed push is logged, never thrown. The e2e tests swap the sender for one that records messages. Routes: `GET /notifications` (newest first, at most 50, plus the unread count), `POST /notifications/read-all`, `POST /notifications/:id/read`, `POST /notifications/test` (a "Notifications are on" entry for yourself), `POST` and `DELETE /me/push-tokens`.
-- Kinds: `approval` is gone with the owner role; `system` is new, for Maqar's own messages such as the test one. Nothing else sends notifications yet: price drops come in Phase 12, bookings and reminders in 13, chat in 14.
+- Kinds: `approval` is gone with the owner role; `system` is new, for MQR's own messages such as the test one. Nothing else sends notifications yet: price drops come in Phase 12, bookings and reminders in 13, chat in 14.
 - Mobile: the inbox at `/notifications` (the bell on Home, with a dot while something is unread) and as the agent's Alerts tab (with a count badge). Unread entries are tinted with a dot; "Mark all read"; a tap marks it read and opens its screen; pull to refresh; designed empty, guest and error states. It refreshes every minute while the app is open, when the app comes back to the front, and when a push lands. Me has the "Phone notifications" switch: on asks the phone (once), sends this phone's token, saves the choice and sends the test notification; off keeps the permission but stops pushes to the account; when the phone blocks them it says so and links to the phone's settings. Tapping a push opens its screen, also when the tap starts the app, and only for the app's own paths. Signing out removes the phone's token first, and every sign-in sends it (even with the switch off), so it always belongs to whoever is signed in. The app icon's badge follows the unread count.
 - Not on the web: phone pushes, and the switch says "Not available on this device". Found while checking: signing in has never worked in the web preview, because `expo-secure-store` has no web version (not new; earlier previews ran as a guest). The inbox was checked by the UI tests instead.
 - Expo project: `@alzatary/maqar` (https://expo.dev/accounts/alzatary/projects/maqar), created 2026-11-09; its id is in `apps/mobile/app.json` (`extra.eas.projectId`).
 - ⚑ **Accounts needed before a real push can arrive (owner's action):**
-  - **Android: a Firebase project** (free, any Google account; no Play Console needed). Add an Android app with package `com.maqar.app`, download its `google-services.json` (path in `GOOGLE_SERVICES_JSON`), and upload its FCM v1 service-account key to the Expo project (Credentials → Android). Hand-installed APKs then get pushes.
+  - **Android: a Firebase project** (free, any Google account; no Play Console needed). Add an Android app with package `com.mqr.app`, download its `google-services.json` (path in `GOOGLE_SERVICES_JSON`), and upload its FCM v1 service-account key to the Expo project (Credentials → Android). Hand-installed APKs then get pushes.
   - **iOS: the Apple Developer Program** ($99 a year). Apple sends every iPhone push, and the APNs key can only be made in a paid account; a free Apple ID cannot receive pushes. Upload the key to the Expo project (Credentials → iOS). The store publisher's account can be used if they have one.
   - **Store accounts are for publishing only:** the Google Play Console ($25 once) for the Play Store, and the same Apple membership for the App Store and TestFlight.
   - Expo Go cannot receive pushes on Android since SDK 53, so the check needs a build. Without these the app still runs; the switch then says it could not turn notifications on.
@@ -677,7 +677,7 @@ Contract §8.12 and §10.3.
 **Done when** a client and an agent on two phones chat in real time, and the client books from a times card the agent sent.
 
 **Status (2026-11-10): done, except the push.** Deployed 2026-11-10 (`89afb44`), with the nginx socket and photo blocks. Checked on two sides (the phone as the client, a script as the agent): live messages, typing, read ticks, every card, booking from a times card, photos, the away rules and the lead. Fixed on the phone after: photo sending (Expo's fetch needs parts that carry their bytes), the agent's own bubbles in dark mode, Arabic lines that start with an English name, and sheets taller than the screen. Pushes need Firebase (Phase 11). Notes:
-- Decided (#12, earlier): outside working hours, one automatic reply says to contact Maqar during working hours, until the agent answers in person. Working hours are the agent's viewing hours to the end of the last hour (10 to 20 means 10:00 to 20:59), and days off count.
+- Decided (#12, earlier): outside working hours, one automatic reply says to contact MQR during working hours, until the agent answers in person. Working hours are the agent's viewing hours to the end of the last hour (10 to 20 means 10:00 to 20:59), and days off count.
 - Migration `0010`: `chat_threads` (one per client and home, with `last_message_at`) and `chat_messages` (`body` is JSON).
 - Messages go over HTTP; the Socket.IO gateway at `/v1/socket.io` (behind the same `/v1/` proxy) signs in with the access token and brings `message`, `updated`, `typing` and `read` to the other side. The app tells it which conversation is `open`, so those messages send no notification. A refused token is renewed and the socket reconnects.
 - Found and fixed: the global HTTP guards also ran on socket events and failed on them; they now handle HTTP only, and the gateway checks sockets when they connect (clients and agents only).
@@ -685,7 +685,7 @@ Contract §8.12 and §10.3.
 - Starting a conversation adds the client to the advisor's leads (source `chat`); the lead page's Chat button opens it. Deleting an account deletes the client's conversations.
 - Photos: picked with `expo-image-picker` (added to `app.json` with its photo-library text; no camera), resized on the phone with `expo-image-manipulator`, then resized again and stored as JPEG by the API. **A new build is needed** for the picker, as it is a native module.
 - App: the Messages list (`/chat`), the conversation screen (shared by both sides), the floating chat button above the client's tabs (above the compare tray when it shows), the Chats tab badge, and a Chat button in the property page's bottom bar.
-- **For the deploy:** copy `deploy/nginx-maqar.conf` to the server's `/etc/nginx/sites-available/maqar` (it adds the WebSocket upgrade for `/v1/socket.io/` and 12 MB uploads for chat photos), run `nginx -t`, then reload. Without it the socket falls back to HTTP polling and photos over 1 MB are refused.
+- **For the deploy:** copy `deploy/nginx-mqr.conf` to the server's `/etc/nginx/sites-available/mqr` (it adds the WebSocket upgrade for `/v1/socket.io/` and 12 MB uploads for chat photos), run `nginx -t`, then reload. Without it the socket falls back to HTTP polling and photos over 1 MB are refused.
 - Checked by hand against the local API and database with two sockets (a client and Omar): the message, typing and read receipt arrived live, the times card arrived live, the client booked 11:00 from it, Omar saw the card marked, and the confirmation card followed (the test viewing was cancelled after). No web preview: signing in does not work on the web (Phase 11).
 - Tests: API e2e (`chat.e2e-spec.ts`, 18, including the socket), unit tests for the away rules and `chatPreview`, and UI tests for the conversation, the list, the chat button, the property page's Chat button and the lead page's.
 
@@ -693,7 +693,7 @@ Contract §8.12 and §10.3.
 
 ## Phase 17: Admin listings
 
-**Decided (2026-11-09):** there are no owner accounts. An owner talks to Maqar, and an admin creates and manages the listing for them. The owner's name and phone are kept on the listing, visible to admins only. Listings go live when the admin publishes them; there is no review step and no "Verified owner listing" badge.
+**Decided (2026-11-09):** there are no owner accounts. An owner talks to MQR, and an admin creates and manages the listing for them. The owner's name and phone are kept on the listing, visible to admins only. Listings go live when the admin publishes them; there is no review step and no "Verified owner listing" badge.
 
 Contract §9.2 and §11 (to be updated to match).
 
@@ -709,7 +709,7 @@ Contract §9.2 and §11 (to be updated to match).
 **Done when** an admin creates a listing with real photos on the web dashboard or in the app, publishes it, and it appears in Explore.
 
 **Status (2026-11-11): in progress.** Code and tests are green. Deployed 2026-11-11 (`964efb7`, migration `0011`, with Phase 18), with the nginx `/admin/` and `/v1/uploads` blocks; the dashboard is at `https://mqr.systems/admin/` (since 2026-11-23). The phone check (rule 6) is left. Notes:
-- Decided: the web dashboard is `apps/web` (`@maqar/web`): Next.js 16 and Tailwind like the demo, a static export served by nginx at `/admin/` on the API's host, so it calls `/v1` on the same origin with no CORS. `deploy.sh` builds it from the same clean commit and swaps it in at `/srv/maqar/web/admin`. Admins sign in with their account; any other role is signed out at once.
+- Decided: the web dashboard is `apps/web` (`@mqr/web`): Next.js 16 and Tailwind like the demo, a static export served by nginx at `/admin/` on the API's host, so it calls `/v1` on the same origin with no CORS. `deploy.sh` builds it from the same clean commit and swaps it in at `/srv/mqr/web/admin`. Admins sign in with their account; any other role is signed out at once.
 - Migration `0011`: `owner_name` and `owner_phone` on the listing (admins only ever see them), `agent_id` empty until the listing is published, and the review statuses (`pending`, `changes`) are gone: any listing in them becomes a draft. Statuses are now draft, approved (live), unpublished, sold and rented.
 - `POST /uploads` (admins, one photo in `photo`): turned upright, at most 2000 px, JPEG, under `uploads/listings`. Photos are made smaller on the phone or in the browser first. nginx takes 12 MB on that route; the API refuses over 10 MB.
 - `/admin/listings`: the list (every status, a count per status, words in the title, compound, owner or phone), create (a draft; an empty title becomes "<type>, <beds> beds | <area>"), get, edit (a new price goes through the price history, so a drop alerts followers), publish (the advisor picked, the one it had, or the active one with the fewest live listings), unpublish, and close (sold for sale and projects, rented for rent and stays). `GET /admin/agents` lists the advisors to pick from. A listing's photos are only ones uploaded to this server.
@@ -744,7 +744,7 @@ Contract §11.
 - Days off (`POST /admin/agents/days-off`): one day or a stretch of up to 60, for one agent or several, with an optional reason; adding a day that is already off keeps it. Viewings already booked on them are not cancelled: the answer says how many, so the admin can agree other times. `DELETE /admin/agents/:id/days-off/:date` takes one back.
 - Leads (`/admin/leads`): every agent's leads with full phones, by agent or stage; `PATCH /admin/leads/:id/assign` moves one to another active agent, who gets a notification and sees it as new. A client cannot have two leads with one agent (409). The client's chats and viewings stay with the home's advisor.
 - Areas (`/admin/areas`): add (the id is made from the English name), edit, and delete one no listing uses.
-- Featured: `PATCH /admin/listings/:id` takes `featured`; cards carry `featured`, `GET /properties?featured=true` lists them, and Home shows "Featured by Maqar" first when there are some.
+- Featured: `PATCH /admin/listings/:id` takes `featured`; cards carry `featured`, `GET /properties?featured=true` lists them, and Home shows "Featured by MQR" first when there are some.
 - Found and fixed: on a query of one table Drizzle writes column names bare, so a count subquery that names the outer table's column compared the inner table with itself. The area counts were wrong (and Phase 17's live count per advisor worked only by luck); the outer column is now written with its table.
 - App: the admin's tabs are now Listings, Agents, Leads, Areas and Me (Add a listing is the + on Listings). Agents can be picked several at a time for hours or a day off. Web: the same pages.
 - Tests: API e2e (`admin-tools.e2e-spec.ts`, 16), shared unit tests (area ids, day ranges, a valid week), mobile UI tests for the agents, agent page, new agent, leads and new area screens and Home's featured row.
@@ -786,7 +786,7 @@ Contract §11 (moved there from §9.1).
 - Public pages (`store-readiness.md` §5 items 4, 6, 7): privacy policy, terms, support and account deletion in Arabic and English at `/privacy`, `/terms`, `/support`, `/delete-account`, deployed with `deploy.sh`; the Me screen links them for everyone.
 
 - Deployed (`5fd13b6`): the pages, the nginx change and the per-account limits are live.
-- Phone check (POCO F3, Android 13, release APK; final build `c800a8f`, APK/AAB/IPA in `apk-out/c800a8f/`). Found and fixed: the 360° tour crashed (R8 removed the `(Context, AppContext)` constructor of expo-gl's view, then renamed `GLContext.flush()` that expo-gl's C++ calls by name) and, once open, drew a grey grid (the panorama was uploaded as RGB while expo-gl decodes photos to RGBA); the keyboard covered the chat box and form fields (edge to edge, so `KeyboardAvoidingView` pads on Android too); "Add to calendar" offered no calendar app (Android now opens the file with a view intent); scrolled content showed under the status bar (a backdrop strip); the insights chart opened on its oldest days (it fits the width now); phone numbers lost their leading `+` in Arabic text (left-to-right marks); unused overlay, activity, biometric permissions blocked. Verified on the phone afterwards: all of these, plus sign-in, booking and cancelling, chat, About Maqar links, the requested permissions (internet, notifications, vibrate, wake lock, boot, foreground service).
+- Phone check (POCO F3, Android 13, release APK; final build `c800a8f`, APK/AAB/IPA in `apk-out/c800a8f/`). Found and fixed: the 360° tour crashed (R8 removed the `(Context, AppContext)` constructor of expo-gl's view, then renamed `GLContext.flush()` that expo-gl's C++ calls by name) and, once open, drew a grey grid (the panorama was uploaded as RGB while expo-gl decodes photos to RGBA); the keyboard covered the chat box and form fields (edge to edge, so `KeyboardAvoidingView` pads on Android too); "Add to calendar" offered no calendar app (Android now opens the file with a view intent); scrolled content showed under the status bar (a backdrop strip); the insights chart opened on its oldest days (it fits the width now); phone numbers lost their leading `+` in Arabic text (left-to-right marks); unused overlay, activity, biometric permissions blocked. Verified on the phone afterwards: all of these, plus sign-in, booking and cancelling, chat, About MQR links, the requested permissions (internet, notifications, vibrate, wake lock, boot, foreground service).
 
 Still to do: the store consoles (`store-readiness.md` §2.3–2.5, §3.3–3.4); the deferred items (contract §17.2); the full regression on phones.
 
@@ -798,7 +798,7 @@ Contract §15.
 - **Performance:** paging everywhere, image sizes, app start time.
 - **Security:** rate limits, upload checks, secrets, and a review of every role guard.
 - **Production:** deploys are still manual (Phase 2's automatic deploy on push, daily backups and the restore test are not done yet); whatever ships must state its version and the backups/restore have to be checked before release.
-- **Mobile:** signed store builds for Android (the `store-build` GitHub Action) and iOS, store listings, app icons and splash in Maqar branding.
+- **Mobile:** signed store builds for Android (the `store-build` GitHub Action) and iOS, store listings, app icons and splash in MQR branding.
 - **Full regression:** every phase's "done when" is run again.
 
 **Done when** production builds are installed from the stores, or as internal builds, and work against the production API.
@@ -823,7 +823,7 @@ Contract §8.6, §11.
 **Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
 - Panoramas are stored at exactly 4096×2048, not sharper: that is the size the seed tours prove on phones, and a bigger texture can be more than an older phone's GPU loads. The app and the web check the size before uploading and scale the photo themselves, so a large camera file uploads quickly; the server checks again and re-encodes, which drops the camera's metadata (such as where it was taken).
 - The tour step sits between Photos and Review, so the form now has six steps. Rooms can be renamed, reordered and removed; an edit sends the whole tour, so removing every room removes it.
-- nginx: `/v1/uploads/panoramas` takes 32 MB (`deploy/nginx-maqar.conf`); `deploy.sh` checks it with `nginx -t` before reloading.
+- nginx: `/v1/uploads/panoramas` takes 32 MB (`deploy/nginx-mqr.conf`); `deploy.sh` checks it with `nginx -t` before reloading.
 - Checked by hand on the web dashboard against the local API: a normal photo is refused with the 2:1 message, a 4096×2048 panorama uploads, and the saved room shows in the public listing.
 - Tests: API e2e `admin-tours.e2e-spec.ts` (8), shared unit tests (the tour step, the body, `panoramaProblem`), mobile UI test for the tour step; the route-access table has the new route.
 
@@ -876,7 +876,7 @@ Contract §8.7, §11.
 
 **Status (2026-11-12): built, not deployed.** Code and tests are green. Left: the deploy and the phone check (rule 6). Notes:
 - The admin's move and cancel run through the same step as the client's (`ViewingsService.change`): only active, future viewings; the booking rules for the new hour; the write carries the expected state, so it races safely with the client. Reminders the client chose follow the new time.
-- The reason, when given, is added under the usual notice to both the client and the advisor ("From Maqar: …").
+- The reason, when given, is added under the usual notice to both the client and the advisor ("From MQR: …").
 - App: Viewings under More (Upcoming and Past, search; an upcoming one opens a sheet to move it with a day and time picker, or cancel it). Web: Viewings in the menu, with the same actions in the row.
 - Checked by hand on the web dashboard against the local API: a demo client's viewing moved to another day and hour, and shows as rescheduled.
 - Tests: API e2e `admin-viewings.e2e-spec.ts` (5), mobile UI tests `viewings.test.tsx` (2); the route-access table has the new routes.
@@ -1026,7 +1026,7 @@ Contract §8.1, §8.11, §11, §13.
 - *Web drawer:* focus moves into it, the page behind is inert, and focus goes back to the menu button.
 - Not changed: creating an agent who is off cannot happen (the create body has no `active`).
 
-**Deploy script (2026-11-14):** `deploy/server-deploy.sh` dumps the database to `/root/maqar-backups/pre-deploy-<commit>.sql.gz` before the migrations, and checks the dump. `deploy/deploy.sh` checks the live site through nginx at the end and deletes that backup only when every step is green. Everything it prints also goes to `.dev-logs/deploy.log`, and a failure ends with the step, what is still running, the kept backup and how to restore it.
+**Deploy script (2026-11-14):** `deploy/server-deploy.sh` dumps the database to `/root/mqr-backups/pre-deploy-<commit>.sql.gz` before the migrations, and checks the dump. `deploy/deploy.sh` checks the live site through nginx at the end and deletes that backup only when every step is green. Everything it prints also goes to `.dev-logs/deploy.log`, and a failure ends with the step, what is still running, the kept backup and how to restore it.
 
 **Phone check (2026-11-14, owner):** everything worked. Two changes asked: the least down payment is typed by hand (11, 12, 9…), and the web top bar puts the menu button opposite the logo and title.
 

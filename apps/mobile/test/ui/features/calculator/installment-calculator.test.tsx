@@ -1,4 +1,4 @@
-import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, installment } from '@maqar/shared';
+import { DEFAULT_APP_SETTINGS, fmtMoney, fmtNum, installment } from '@mqr/shared';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useAppConfig } from '@/core/app-config/store';
 import { InstallmentCalculator } from '@/features/calculator/components/installment-calculator';

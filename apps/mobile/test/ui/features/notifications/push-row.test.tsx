@@ -65,7 +65,7 @@ describe('The phone notifications switch', () => {
       'PATCH /me {"pushEnabled":true}',
       'POST /notifications/test',
     ]);
-    expect(await AsyncStorage.getItem('maqar.pushToken')).toBe(PHONE_TOKEN);
+    expect(await AsyncStorage.getItem('mqr.pushToken')).toBe(PHONE_TOKEN);
     expect(screen.getByText('مفعّلة')).toBeOnTheScreen();
     expect(await screen.findByText('الإشعارات شغالة')).toBeOnTheScreen();
   });

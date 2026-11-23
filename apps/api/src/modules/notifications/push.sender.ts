@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { PushData } from '@maqar/shared';
+import type { PushData } from '@mqr/shared';
 
 /** One phone push, in the receiver's language. */
 export type PushMessage = { to: string; title: string; body: string; data: PushData; badge: number };

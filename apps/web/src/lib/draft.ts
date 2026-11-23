@@ -3,7 +3,7 @@
  * restored when they come back, cleared when the form is saved for real. An empty form is not a
  * draft: nothing lingers after a save or a manual clear.
  */
-const PREFIX = "maqar-draft:";
+const PREFIX = "mqr-draft:";
 
 export function saveDraft(key: string, value: unknown): void {
   if (!value || typeof value !== "object" || !Object.keys(value as object).length) return;

@@ -1,9 +1,9 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { arNum, enPlural } from './forms';
 
 export const account = {
-  aboutMaqar: { ar: 'عن مقر', en: 'About Maqar' },
+  aboutMqr: { ar: 'عن مقر', en: 'About MQR' },
   contactDetails: { ar: 'بيانات التواصل', en: 'Contact details' },
   currentPassword: { ar: 'كلمة السر الحالية', en: 'Current password' },
   deleteForGood: { ar: 'امسح الحساب نهائيًا', en: 'Delete for good' },
@@ -11,7 +11,7 @@ export const account = {
   deleteYourAccount: { ar: 'تمسح حسابك؟', en: 'Delete your account?' },
   language: { ar: 'اللغة', en: 'Language' },
   manage: { ar: 'إدارة', en: 'Manage' },
-  maqarGuest: { ar: 'ضيف مقر', en: 'Maqar guest' },
+  mqrGuest: { ar: 'ضيف مقر', en: 'MQR guest' },
   more: { ar: 'المزيد', en: 'More' },
   myAccount: { ar: 'حسابي', en: 'My account' },
   noContactDetailsYet: { ar: 'لسه مفيش بيانات تواصل.', en: 'No contact details yet.' },

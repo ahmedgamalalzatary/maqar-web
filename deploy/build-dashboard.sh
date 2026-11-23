@@ -1,10 +1,10 @@
 #!/bin/sh
 # Builds the admin dashboard (apps/web) ON THE SERVER, in a throwaway Node container, from the commit
-# deploy.sh just checked out in /root/maqar. The result goes to /srv/maqar/web/admin.build; deploy.sh
+# deploy.sh just checked out in /root/mqr. The result goes to /srv/mqr/web/admin.build; deploy.sh
 # swaps it in only after the new API is healthy. Nothing running is touched here.
 set -eu
-SRC=/root/maqar
-OUT=/srv/maqar/web/admin.build
+SRC=/root/mqr
+OUT=/srv/mqr/web/admin.build
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -14,7 +14,7 @@ mkdir -p "$OUT"
 docker run --rm --cpus 1 --memory 2g \
   -v "$SRC":/src:ro \
   -v "$OUT":/out \
-  -v maqar-pnpm-store:/pnpm-store \
+  -v mqr-pnpm-store:/pnpm-store \
   -e NEXT_PUBLIC_API_URL=/v1 \
   -e NEXT_TELEMETRY_DISABLED=1 \
   node:22-slim sh -euc '
@@ -25,9 +25,9 @@ docker run --rm --cpus 1 --memory 2g \
         --exclude=./apps/web/.next --exclude=./apps/web/out --exclude=./.git -cf - . | tar -xf - -C /build
     cd /build
     pnpm config set store-dir /pnpm-store >/dev/null
-    pnpm install --frozen-lockfile --filter @maqar/web... --reporter=silent
-    pnpm --filter @maqar/shared build
-    pnpm --filter @maqar/web build
+    pnpm install --frozen-lockfile --filter @mqr/web... --reporter=silent
+    pnpm --filter @mqr/shared build
+    pnpm --filter @mqr/web build
     cp -r apps/web/out/. /out/
   '
 

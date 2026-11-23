@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminClientDetail, type AdminClientItem, CLIENT_STATUSES, type ClientStatus, fmtDate, fmtNum, LEAD_STAGE_LABEL, ltrPhone, VIEWING_STATUS_LABEL } from '@maqar/shared';
+import { pickField, joinParts, type AdminClientDetail, type AdminClientItem, CLIENT_STATUSES, type ClientStatus, fmtDate, fmtNum, LEAD_STAGE_LABEL, ltrPhone, VIEWING_STATUS_LABEL } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Phone, Search, UsersRound, X } from 'lucide-react-native';
 import { useState } from 'react';

@@ -12,7 +12,7 @@ import {
   type LeadStage,
   relTime,
   ltrPhone,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, CalendarClock, Flame, MessageCircle, MessagesSquare, Phone, Send, StickyNote, Video, Wallet } from 'lucide-react-native';
 import { useState } from 'react';

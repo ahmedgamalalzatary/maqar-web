@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { daysOf, previousRange, rangeDays, type ReportFilter, type ReportId, type ReportResult, reportPresetRange, reportRangeProblem, reportSpec } from '@maqar/shared';
+import { daysOf, previousRange, rangeDays, type ReportFilter, type ReportId, type ReportResult, reportPresetRange, reportRangeProblem, reportSpec } from '@mqr/shared';
 import { cairoClock, cairoInstant } from '../viewings/slots.js';
 import { AdvisorReport } from './reports.advisor.js';
 import type { Built, Ctx } from './reports.context.js';

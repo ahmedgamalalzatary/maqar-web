@@ -1,4 +1,4 @@
-import { pickField, joinParts, type ChatSender, type ChatThread, chatPreview, fmtNum, relTime } from '@maqar/shared';
+import { pickField, joinParts, type ChatSender, type ChatThread, chatPreview, fmtNum, relTime } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, CheckCheck, MessagesSquare } from 'lucide-react-native';

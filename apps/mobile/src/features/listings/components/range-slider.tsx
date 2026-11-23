@@ -1,4 +1,4 @@
-import type { Scale } from '@maqar/shared';
+import type { Scale } from '@mqr/shared';
 import { useMemo, useRef, useState } from 'react';
 import { type AccessibilityActionEvent, type GestureResponderEvent, type LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { thumbResponder, thumbStyle } from '@/components/slider-thumb';

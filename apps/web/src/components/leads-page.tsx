@@ -1,6 +1,6 @@
 "use client";
 
-import { LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from "@maqar/shared";
+import { LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, relTime } from "@mqr/shared";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { useAgents, useAssignLead, useLeads } from "@/lib/admin";

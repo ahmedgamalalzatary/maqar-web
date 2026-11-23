@@ -10,7 +10,7 @@ apps/*/uploads
 .github
 .env
 .env.*
-maqar-keys
+mqr-keys
 apk-out
 .playwright-mcp
 docs

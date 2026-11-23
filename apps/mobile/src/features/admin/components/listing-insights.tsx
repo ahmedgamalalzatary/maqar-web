@@ -9,7 +9,7 @@ import {
   type ListingDay,
   rangeTotals,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Phone } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Pressable, Share, StyleSheet, View } from 'react-native';

@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { Bell, BellRing } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 import { Toggle } from '@/components/toggle';

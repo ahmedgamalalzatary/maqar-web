@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminAgentDetail, fmtDate, fmtNum, weekdayName } from "@maqar/shared";
+import { type AdminAgentDetail, fmtDate, fmtNum, weekdayName } from "@mqr/shared";
 import { ArrowLeft, ArrowRight, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

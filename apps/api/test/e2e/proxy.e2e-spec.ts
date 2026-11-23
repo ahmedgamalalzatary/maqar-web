@@ -24,7 +24,7 @@ describe('Client address behind a proxy (e2e)', () => {
     request(app.getHttpServer())
       .post('/v1/auth/sign-in')
       .set('X-Forwarded-For', forwardedFor)
-      .send({ email: 'nobody@test.maqar', password: 'Secret123' });
+      .send({ email: 'nobody@test.mqr', password: 'Secret123' });
 
   const limit = process.env.AUTH_RATE_LIMIT;
 

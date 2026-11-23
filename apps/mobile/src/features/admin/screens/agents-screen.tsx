@@ -1,4 +1,4 @@
-import { pickField, type AdminAgentItem } from '@maqar/shared';
+import { pickField, type AdminAgentItem } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Check, Plus, Users } from 'lucide-react-native';
 import { useState } from 'react';

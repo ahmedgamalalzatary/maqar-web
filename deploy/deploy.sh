@@ -12,7 +12,7 @@ KEY="$HOME/.ssh/maqar-ssh"
 SERVER=root@2.24.152.130
 HOST=https://mqr.systems
 REPO=https://github.com/ahmedgamalalzatary/maqar-web.git
-DIR=/root/maqar
+DIR=/root/mqr
 SSH="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes $SERVER"
 
 cd "$(git rev-parse --show-toplevel)"
@@ -20,10 +20,10 @@ LOG=.dev-logs/deploy.log
 
 # Run once more with the output copied to the log; the inner run's exit code comes back by file,
 # since a pipe in sh only reports tee's.
-if [ -z "${MAQAR_DEPLOY_INNER:-}" ]; then
+if [ -z "${MQR_DEPLOY_INNER:-}" ]; then
   mkdir -p .dev-logs
   rm -f "$LOG.status"
-  MAQAR_DEPLOY_INNER=1 sh deploy/deploy.sh "$@" 2>&1 | tee "$LOG"
+  MQR_DEPLOY_INNER=1 sh deploy/deploy.sh "$@" 2>&1 | tee "$LOG"
   exit "$(cat "$LOG.status" 2>/dev/null || echo 1)"
 fi
 
@@ -42,7 +42,7 @@ finish() {
     server) echo "See the SERVER STEP FAILED block above for what the server did and what still runs." ;;
     dashboard-swap) echo "The new API is live, but the dashboard swap failed: the previous dashboard may still be served." ;;
     site-swap) echo "The new API and dashboard are live; the public pages (privacy, terms…) did not update." ;;
-    nginx) echo "The new API and dashboard are live; nginx refused the new Maqar site, so the old one stays." ;;
+    nginx) echo "The new API and dashboard are live; nginx refused the new MQR site, so the old one stays." ;;
     live-check) echo "Every step ran, but the live check through nginx failed (see above)." ;;
   esac
   [ -z "$BACKUP" ] || echo "Database backup kept on the server: $BACKUP (if the server got as far as taking it)"
@@ -61,7 +61,7 @@ if [ "$COMMIT" != "$(git rev-parse origin/main)" ]; then
   echo "HEAD is not origin/main. Push it first." >&2
   exit 1
 fi
-BACKUP="/root/maqar-backups/pre-deploy-$TAG.sql.gz"
+BACKUP="/root/mqr-backups/pre-deploy-$TAG.sql.gz"
 echo "== Deploying $TAG"
 
 # The project is the folder itself. .env.production sits in it too: Git ignores it, so it stays.
@@ -91,44 +91,44 @@ $SSH "sh $DIR/deploy/server-deploy.sh $TAG"
 
 # Swap the dashboard in only after the new API is healthy. The previous generation of assets is
 # kept once: a dashboard opened before the swap keeps loading its old hashed files (nginx serves
-# /admin/ from /srv/maqar/web/admin, so an open page pointing at admin.old files still works).
+# /admin/ from /srv/mqr/web/admin, so an open page pointing at admin.old files still works).
 STEP=dashboard-swap
 echo "== Swapping in the dashboard"
 $SSH "set -eu
-  rm -rf /srv/maqar/web/admin.old.old
-  [ ! -d /srv/maqar/web/admin.old ] || mv /srv/maqar/web/admin.old /srv/maqar/web/admin.old.old
-  if [ -d /srv/maqar/web/admin ]; then mv /srv/maqar/web/admin /srv/maqar/web/admin.old; fi
-  mv /srv/maqar/web/admin.build /srv/maqar/web/admin
-  rm -rf /srv/maqar/web/admin.old.old"
+  rm -rf /srv/mqr/web/admin.old.old
+  [ ! -d /srv/mqr/web/admin.old ] || mv /srv/mqr/web/admin.old /srv/mqr/web/admin.old.old
+  if [ -d /srv/mqr/web/admin ]; then mv /srv/mqr/web/admin /srv/mqr/web/admin.old; fi
+  mv /srv/mqr/web/admin.build /srv/mqr/web/admin
+  rm -rf /srv/mqr/web/admin.old.old"
 
 # The public pages (privacy, terms, support, account deletion): plain files, swapped in at once.
 STEP=site-swap
 tar -C deploy/site -cf - . | $SSH "set -eu
-  rm -rf /srv/maqar/web/site.new
-  mkdir -p /srv/maqar/web/site.new
-  tar -xf - -C /srv/maqar/web/site.new
-  rm -rf /srv/maqar/web/site.old
-  if [ -d /srv/maqar/web/site ]; then mv /srv/maqar/web/site /srv/maqar/web/site.old; fi
-  mv /srv/maqar/web/site.new /srv/maqar/web/site
-  rm -rf /srv/maqar/web/site.old"
+  rm -rf /srv/mqr/web/site.new
+  mkdir -p /srv/mqr/web/site.new
+  tar -xf - -C /srv/mqr/web/site.new
+  rm -rf /srv/mqr/web/site.old
+  if [ -d /srv/mqr/web/site ]; then mv /srv/mqr/web/site /srv/mqr/web/site.old; fi
+  mv /srv/mqr/web/site.new /srv/mqr/web/site
+  rm -rf /srv/mqr/web/site.old"
 
-# Maqar's nginx site, only when this commit changed it. A broken file would take nginx down, so the new
+# MQR's nginx site, only when this commit changed it. A broken file would take nginx down, so the new
 # file must pass nginx -t before any reload; if it does not, the previous file is put back.
 STEP=nginx
 $SSH "set -eu
-  NEW=$DIR/deploy/nginx-maqar.conf
-  LIVE=/etc/nginx/sites-available/maqar
+  NEW=$DIR/deploy/nginx-mqr.conf
+  LIVE=/etc/nginx/sites-available/mqr
   if ! cmp -s \"\$NEW\" \"\$LIVE\"; then
     cp \"\$LIVE\" \"\$LIVE.previous\"
     cp \"\$NEW\" \"\$LIVE\"
     if nginx -t 2>/dev/null; then
       systemctl reload nginx
       rm -f \"\$LIVE.previous\"
-      echo 'nginx: Maqar site updated'
+      echo 'nginx: MQR site updated'
     else
       mv \"\$LIVE.previous\" \"\$LIVE\"
       nginx -t
-      echo 'nginx refused the new Maqar site; the previous one is back and nothing was reloaded' >&2
+      echo 'nginx refused the new MQR site; the previous one is back and nothing was reloaded' >&2
       exit 1
     fi
   fi"
@@ -150,4 +150,4 @@ STEP=cleanup
 $SSH "rm -f $BACKUP"
 echo "Backup removed: $BACKUP"
 STEP=done
-echo "Deployed maqar-api:$COMMIT, the admin dashboard at /admin/ and the public pages"
+echo "Deployed mqr-api:$COMMIT, the admin dashboard at /admin/ and the public pages"

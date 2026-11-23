@@ -1,4 +1,4 @@
-import { PANO_SIZE, panoramaProblem } from "@maqar/shared";
+import { PANO_SIZE, panoramaProblem } from "@mqr/shared";
 
 /** The longest side photos are sent at (the server keeps at most 2000). */
 const MAX_PX = 2000;

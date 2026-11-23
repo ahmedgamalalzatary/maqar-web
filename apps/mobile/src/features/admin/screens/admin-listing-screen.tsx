@@ -1,4 +1,4 @@
-import { pickField, type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDuration, fmtMoney, type ListingVideo, PROPERTY_TYPE_LABEL, ltrPhone } from '@maqar/shared';
+import { pickField, type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FINISHING_LABEL, fmtDuration, fmtMoney, type ListingVideo, PROPERTY_TYPE_LABEL, ltrPhone } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, Phone, Play } from 'lucide-react-native';
@@ -151,7 +151,7 @@ function Body({ l }: { l: AdminListing }) {
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Txt size={12} color="ink3">
-          {t(m.admin.ownerMaqarTeamOnly)}
+          {t(m.admin.ownerMqrTeamOnly)}
         </Txt>
         <View style={styles.ownerRow}>
           <View style={styles.flex}>

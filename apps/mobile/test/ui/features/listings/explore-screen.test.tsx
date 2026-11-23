@@ -1,4 +1,4 @@
-import { type ListingFacets, fmtNum, type PropertyCard, priceScale, SIZE_SCALE } from '@maqar/shared';
+import { type ListingFacets, fmtNum, type PropertyCard, priceScale, SIZE_SCALE } from '@mqr/shared';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { ExploreScreen } from '@/features/listings/screens/explore-screen';

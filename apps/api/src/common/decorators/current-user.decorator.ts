@@ -1,5 +1,5 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
-import type { Role } from '@maqar/shared';
+import type { Role } from '@mqr/shared';
 
 /** The signed-in account, set by the access-token guard. */
 export type AuthUser = { id: number; role: Role };

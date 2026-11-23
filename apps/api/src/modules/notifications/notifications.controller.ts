@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { NotificationItem, NotificationsResponse } from '@maqar/shared';
+import type { NotificationItem, NotificationsResponse } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';
 import { DeletePushTokenDto, NotificationsQueryDto, PushTokenDto } from './dto/notifications.dto.js';

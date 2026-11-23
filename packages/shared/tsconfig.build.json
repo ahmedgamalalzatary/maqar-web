@@ -1,5 +1,5 @@
 {
-  "extends": "@maqar/tsconfig/node.json",
+  "extends": "@mqr/tsconfig/node.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",

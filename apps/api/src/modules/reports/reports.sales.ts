@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Bi, localDigits, LEAD_SOURCE_LABEL, LEAD_SOURCES, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, CATEGORY_LABEL, PROPERTY_STATUS_LABEL, type ReportRow } from '@maqar/shared';
+import { type Bi, localDigits, LEAD_SOURCE_LABEL, LEAD_SOURCES, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, CATEGORY_LABEL, PROPERTY_STATUS_LABEL, type ReportRow } from '@mqr/shared';
 import { firstReplies } from './chat-times.js';
 import { type Built, type Ctx, bi, NO_ADVISOR, since, titleOf } from './reports.context.js';
 import { type LeadFact, type ListingFact, ReportsRepository } from './reports.repository.js';

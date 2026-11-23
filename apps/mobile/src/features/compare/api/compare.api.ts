@@ -1,4 +1,4 @@
-import type { PropertyDetail } from '@maqar/shared';
+import type { PropertyDetail } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 /** Both homes in one call, in the order asked. Unlike the property page, it counts no view. */

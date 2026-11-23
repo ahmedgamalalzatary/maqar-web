@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConflictResponse, ApiConsumes, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import { type AnswerBookingBody, CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatReport, type ChatThread, type SendChatBody, type ViewingItem } from '@maqar/shared';
+import { type AnswerBookingBody, CHAT_IMAGES_MAX, type ChatMessage, type ChatPage, type ChatReport, type ChatThread, type SendChatBody, type ViewingItem } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RateLimited } from '../../common/rate-limit.js';

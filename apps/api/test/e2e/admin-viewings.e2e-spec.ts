@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AdminViewingItem, AdminViewingsPage, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { AdminViewingItem, AdminViewingsPage, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';
@@ -40,8 +40,8 @@ describe('Admin viewings (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     omarId = ((await http().get('/v1/me').set(as(agent)).expect(200)).body as { id: number }).id;
     const homes = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((h) => h.category !== 'stay');
     for (const h of homes) {

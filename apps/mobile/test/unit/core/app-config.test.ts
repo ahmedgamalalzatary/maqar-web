@@ -1,4 +1,4 @@
-import { type AppSettings, DEFAULT_APP_SETTINGS } from '@maqar/shared';
+import { type AppSettings, DEFAULT_APP_SETTINGS } from '@mqr/shared';
 import { useAppConfig } from '@/core/app-config/store';
 import { jsonResponse, mockFetch } from '../../utils/api';
 

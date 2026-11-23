@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthResponse } from "@maqar/shared";
+import type { AuthResponse } from "@mqr/shared";
 import { ApiError, createApi, REQUEST_TIMEOUT_MS, type TokenStore } from "@/lib/api";
 
 const auth = (n: number, role: "admin" | "client" = "admin"): AuthResponse => ({
-  user: { id: 1, role, name: "Admin", email: "admin@maqar.app", phone: null, lang: "ar", theme: "system", pushEnabled: false, prefs: null } as unknown as AuthResponse["user"],
+  user: { id: 1, role, name: "Admin", email: "admin@mqr.app", phone: null, lang: "ar", theme: "system", pushEnabled: false, prefs: null } as unknown as AuthResponse["user"],
   accessToken: `access-${n}`,
   refreshToken: `refresh-${n}`,
   expiresIn: 900,
@@ -26,7 +26,7 @@ describe("the dashboard's API client", () => {
     const fetch = vi.fn(async (url: RequestInfo | URL) => (String(url).endsWith("/auth/sign-in") ? json(200, auth(1)) : json(200, { ok: true })));
     const store = memoryStore();
     const api = createApi({ base: "https://api.test/v1", fetch, store });
-    await api.signIn("admin@maqar.app", "secret");
+    await api.signIn("admin@mqr.app", "secret");
     expect(store.saved?.accessToken).toBe("access-1");
     await api.request("/admin/listings");
     const [url, init] = fetch.mock.calls[1] as unknown as [string, RequestInit];
@@ -129,7 +129,7 @@ describe("the dashboard's API client", () => {
     };
     const tabA = createApi({ base: "/v1", fetch, store: makeStore(), refreshLock });
     const tabB = createApi({ base: "/v1", fetch, store: makeStore(), refreshLock });
-    await tabA.signIn("admin@maqar.app", "secret");
+    await tabA.signIn("admin@mqr.app", "secret");
     // Tab B sees the session tab A saved (as through a storage event).
     await expect(Promise.all([tabA.request("/a"), tabB.request("/b")])).resolves.toEqual([{ ok: true }, { ok: true }]);
     // Only tab A renewed; tab B found tab A's fresh token in the shared store and never

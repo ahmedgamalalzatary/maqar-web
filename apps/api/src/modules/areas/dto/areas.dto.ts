@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import type { AreaBody } from '@maqar/shared';
+import type { AreaBody } from '@mqr/shared';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
 

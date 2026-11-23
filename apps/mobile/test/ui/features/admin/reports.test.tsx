@@ -1,4 +1,4 @@
-import { cairoToday, reportPresetRange, type ReportResult } from '@maqar/shared';
+import { cairoToday, reportPresetRange, type ReportResult } from '@mqr/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import * as Sharing from 'expo-sharing';
 import { useSession } from '@/features/auth/store/session.store';
@@ -134,7 +134,7 @@ it('shows rows as cards that open the listing, 25 at a time, and shares a table 
   await fireEvent.press(screen.getByRole('button', { name: 'شارك الصفقات كملف CSV' }));
   await waitFor(() => expect(Sharing.shareAsync).toHaveBeenCalled());
   const [uri, opts] = jest.mocked(Sharing.shareAsync).mock.calls[0]!;
-  expect(uri).toMatch(/^file:\/\/\/cache\/maqar-deals-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
+  expect(uri).toMatch(/^file:\/\/\/cache\/mqr-deals-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
   expect(opts).toMatchObject({ mimeType: 'text/csv' });
   expect(written[0]!.split('\r\n')[0]).toBe('﻿العقار,سعر العرض (ج.م)');
   expect(written[0]!.split('\r\n')).toHaveLength(31);

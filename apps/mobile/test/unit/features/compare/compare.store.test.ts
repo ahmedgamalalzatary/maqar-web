@@ -36,6 +36,6 @@ describe('the compare list', () => {
   });
 
   it('is kept on the device', () => {
-    expect(useCompare.persist.getOptions().name).toBe('maqar.compare');
+    expect(useCompare.persist.getOptions().name).toBe('mqr.compare');
   });
 });

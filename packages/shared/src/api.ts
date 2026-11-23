@@ -163,7 +163,7 @@ export type PropertyCard = {
   cover: string | null;
   /** Has a 360° tour (phase 10). */
   tour: boolean;
-  /** Picked by the Maqar team (phase 18). */
+  /** Picked by the MQR team (phase 18). */
   featured: boolean;
   publishedAt: string;
   /** How well it fits the signed-in client: with sort=match and in recommendations (phase 6). */

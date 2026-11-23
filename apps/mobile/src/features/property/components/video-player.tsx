@@ -1,4 +1,4 @@
-import type { ListingVideo } from '@maqar/shared';
+import type { ListingVideo } from '@mqr/shared';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { X } from 'lucide-react-native';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';

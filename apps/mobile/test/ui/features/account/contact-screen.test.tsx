@@ -1,4 +1,4 @@
-import { type AppSettings, DEFAULT_APP_SETTINGS } from '@maqar/shared';
+import { type AppSettings, DEFAULT_APP_SETTINGS } from '@mqr/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { useAppConfig } from '@/core/app-config/store';
@@ -23,18 +23,18 @@ beforeEach(() => {
 describe('Contact us', () => {
   it('shows only the details the admin filled in, and each one opens', async () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
-    const settings = withContact({ ...empty, email: 'info@maqar.app', phone: '01012345678', whatsapp: '01012345678', facebook: 'https://facebook.com/maqar' });
+    const settings = withContact({ ...empty, email: 'info@mqr.app', phone: '01012345678', whatsapp: '01012345678', facebook: 'https://facebook.com/mqr' });
     useAppConfig.setState({ config: settings });
     serve(settings);
     await renderWithProviders(<ContactScreen />);
 
-    expect(screen.getByText('info@maqar.app')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('link', { name: 'الإيميل: info@maqar.app' }));
-    expect(open).toHaveBeenLastCalledWith('mailto:info@maqar.app');
+    expect(screen.getByText('info@mqr.app')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('link', { name: 'الإيميل: info@mqr.app' }));
+    expect(open).toHaveBeenLastCalledWith('mailto:info@mqr.app');
     await fireEvent.press(screen.getByRole('link', { name: 'رقم التليفون: 01012345678' }));
     expect(open).toHaveBeenLastCalledWith('tel:01012345678');
     await fireEvent.press(screen.getByRole('link', { name: 'فيسبوك' }));
-    expect(open).toHaveBeenLastCalledWith('https://facebook.com/maqar');
+    expect(open).toHaveBeenLastCalledWith('https://facebook.com/mqr');
     await fireEvent.press(screen.getByRole('button', { name: 'تواصل بالواتساب' }));
     expect(open).toHaveBeenLastCalledWith('https://wa.me/201012345678');
     expect(screen.queryByRole('link', { name: 'إنستجرام' })).toBeNull();
@@ -42,10 +42,10 @@ describe('Contact us', () => {
   });
 
   it('asks the server for the latest details when it opens', async () => {
-    serve(withContact({ ...empty, email: 'new@maqar.app' }));
+    serve(withContact({ ...empty, email: 'new@mqr.app' }));
     await renderWithProviders(<ContactScreen />);
-    expect(await screen.findByText('new@maqar.app')).toBeOnTheScreen();
-    expect(screen.queryByText('maqarcompany@gmail.com')).toBeNull();
+    expect(await screen.findByText('new@mqr.app')).toBeOnTheScreen();
+    expect(screen.queryByText('maqarcompany1@gmail.com')).toBeNull();
   });
 
   it('says so when there is nothing to show', async () => {

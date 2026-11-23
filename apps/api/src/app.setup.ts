@@ -39,8 +39,8 @@ export function configureApp(app: INestApplication): void {
   app.enableShutdownHooks();
 
   const doc = new DocumentBuilder()
-    .setTitle('Maqar API')
-    .setDescription('REST API for the Maqar mobile app. Errors use the standard NestJS shape.')
+    .setTitle('MQR API')
+    .setDescription('REST API for the MQR mobile app. Errors use the standard NestJS shape.')
     .setVersion('1')
     .addBearerAuth()
     .build();

@@ -1,6 +1,6 @@
 "use client";
 
-import { PROPERTY_STATUS_LABEL, type PropertyStatus } from "@maqar/shared";
+import { PROPERTY_STATUS_LABEL, type PropertyStatus } from "@mqr/shared";
 import { Loader2 } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 import { useId } from "react";

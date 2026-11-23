@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, NotificationsResponse, Page, PropertyCard, PropertyDetail } from '@maqar/shared';
+import type { AuthResponse, NotificationsResponse, Page, PropertyCard, PropertyDetail } from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -40,7 +40,7 @@ describe('Price drop alerts (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items;
     // A home with no old price yet, not a stay (stays are priced per night).
     home = all.find((c) => c.oldPrice === null && c.category === 'sale')!;
@@ -58,7 +58,7 @@ describe('Price drop alerts (e2e)', () => {
   it('refuses guests, and is for clients only', async () => {
     await http().get('/v1/alerts').expect(401);
     await http().put(`/v1/alerts/${home.id}`).expect(401);
-    const agent = await signInSeeded(app, 'omar@maqar.app');
+    const agent = await signInSeeded(app, 'omar@mqr.app');
     await http().get('/v1/alerts').set(bearer(agent)).expect(403);
     await follow(agent, home.id).expect(403);
   });
@@ -160,7 +160,7 @@ describe('Price drop alerts (e2e)', () => {
 
   it('only an admin changes a price, to a whole positive number, of a listing that exists', async () => {
     await setPrice(home.id, 1, client.accessToken).expect(403);
-    await setPrice(home.id, 1, await signInSeeded(app, 'omar@maqar.app')).expect(403);
+    await setPrice(home.id, 1, await signInSeeded(app, 'omar@mqr.app')).expect(403);
     await http().patch(`/v1/admin/listings/${home.id}/price`).send({ price: 1 }).expect(401);
     await setPrice(home.id, 0).expect(400);
     await setPrice(home.id, 1.5).expect(400);

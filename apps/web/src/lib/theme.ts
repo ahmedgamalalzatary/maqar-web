@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 
-const KEY = "maqar-admin-theme";
+const KEY = "mqr-admin-theme";
 const listeners = new Set<() => void>();
 
 function read(): boolean {

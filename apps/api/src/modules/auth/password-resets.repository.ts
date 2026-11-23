@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, gt, lt, sql } from 'drizzle-orm';
-import { RESET_CODE_TRIES } from '@maqar/shared';
+import { RESET_CODE_TRIES } from '@mqr/shared';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { type PasswordResetRow, passwordResets } from './password-resets.schema.js';
 

@@ -1,4 +1,4 @@
-import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, OverviewRange, ReportId, ReportOutcome, ReportQuery, ViewingWhen } from '@maqar/shared';
+import type { AdminAccountBody, AdminAccountUpdate, AdminViewingUpdate, ClientStatus, ClientUpdateBody, OverviewRange, ReportId, ReportOutcome, ReportQuery, ViewingWhen } from '@mqr/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAdminRequest,

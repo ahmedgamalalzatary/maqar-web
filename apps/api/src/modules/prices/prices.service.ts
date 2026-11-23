@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { type PriceChangeResponse, type PropertyCard, priceDropText } from '@maqar/shared';
+import { type PriceChangeResponse, type PropertyCard, priceDropText } from '@mqr/shared';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { ListingCounter } from '../insights/insights.service.js';
 import { PropertiesService } from '../properties/properties.service.js';

@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewAgent, type OverviewRange } from '@maqar/shared';
+import { pickField, joinParts, type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewAgent, type OverviewRange } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Flag } from 'lucide-react-native';
 import { useState } from 'react';

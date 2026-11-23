@@ -2,7 +2,7 @@ import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Me, Prefs, UpdateMeBody } from '@maqar/shared';
+import type { Me, Prefs, UpdateMeBody } from '@mqr/shared';
 import type { Env } from '../../core/config/env.js';
 import { verifyPassword } from '../auth/password.js';
 import type { AgentRow } from '../agents/agents.schema.js';

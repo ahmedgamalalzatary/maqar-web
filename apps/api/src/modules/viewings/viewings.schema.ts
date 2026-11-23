@@ -1,4 +1,4 @@
-import { REMINDER_OFFSETS, VIEWING_CANCELLERS, VIEWING_MODES, VIEWING_STATUSES } from '@maqar/shared';
+import { REMINDER_OFFSETS, VIEWING_CANCELLERS, VIEWING_MODES, VIEWING_STATUSES } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, datetime, index, mysqlEnum, mysqlTable, primaryKey, timestamp, tinyint, unique, varchar } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';

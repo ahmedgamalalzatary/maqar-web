@@ -5,7 +5,7 @@ import { Building2, CalendarCheck, FileBarChart, KeyRound, Languages, LayoutDash
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { passwordOk, readResetCode, RESET_CODE_MINUTES } from "@maqar/shared";
+import { passwordOk, readResetCode, RESET_CODE_MINUTES } from "@mqr/shared";
 import { createContext, type FormEvent, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { api, useSession } from "@/lib/client";
@@ -128,7 +128,7 @@ function Menu({ name }: { name: string }) {
         }`}
       >
         <div className="flex h-16 shrink-0 items-center gap-2 px-4">
-          <Link href="/" onClick={close} className="flex min-w-0 flex-1 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "Maqar admin")}>
+          <Link href="/" onClick={close} className="flex min-w-0 flex-1 items-center gap-2" aria-label={t("مقر، لوحة الإدارة", "MQR admin")}>
             <Image src="/admin/brand/icon.svg" alt="" width={32} height={32} />
             <span className="truncate text-sm font-semibold">{t("لوحة الإدارة", "Admin")}</span>
           </Link>
@@ -195,7 +195,7 @@ function SignIn() {
         status === 401
           ? t("الإيميل أو كلمة السر غلط", "Wrong email or password")
           : status === 403
-            ? t("اللوحة دي لفريق مقر بس", "This dashboard is for the Maqar team only")
+            ? t("اللوحة دي لفريق مقر بس", "This dashboard is for the MQR team only")
             : status === 429
               ? t("محاولات كتير، استنى دقيقة", "Too many tries, wait a minute")
               : t("مفيش اتصال بالسيرفر، حاول تاني", "Can’t reach the server, try again"),
@@ -208,8 +208,8 @@ function SignIn() {
   return (
     <main className="grid min-h-dvh place-items-center bg-navy px-4">
       <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-surface p-6 shadow-float">
-        <Image src="/admin/brand/logo-gold.png" alt={t("مقر", "Maqar")} width={140} height={56} className="mx-auto h-14 w-auto" priority />
-        <h1 className="text-center text-lg font-semibold">{t("لوحة إدارة مقر", "Maqar admin")}</h1>
+        <Image src="/admin/brand/logo-gold.png" alt={t("مقر", "MQR")} width={140} height={56} className="mx-auto h-14 w-auto" priority />
+        <h1 className="text-center text-lg font-semibold">{t("لوحة إدارة مقر", "MQR admin")}</h1>
         <Field label={t("الإيميل", "Email")} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
         <Field label={t("كلمة السر", "Password")} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         <button type="button" onClick={() => setForgot(true)} className="-mt-2 self-end text-sm text-accent-ink underline-offset-4 hover:underline">
@@ -251,7 +251,7 @@ function ForgotPassword({ email: typed, onBack }: { email: string; onBack: () =>
     return status === 400
       ? t("الكود غلط أو وقته خلص. اطلب كود جديد لو محتاج.", "The code is wrong or has expired. Ask for a new one if you need to.")
       : status === 403
-        ? t("كلمة السر اتغيرت، بس اللوحة دي لفريق مقر بس", "Your password was changed, but this dashboard is for the Maqar team only")
+        ? t("كلمة السر اتغيرت، بس اللوحة دي لفريق مقر بس", "Your password was changed, but this dashboard is for the MQR team only")
         : status === 429
           ? t("محاولات كتير، استنى دقيقة", "Too many tries, wait a minute")
           : t("مفيش اتصال بالسيرفر، حاول تاني", "Can’t reach the server, try again");

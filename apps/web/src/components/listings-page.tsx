@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminListingItem, fmtMoney, fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from "@maqar/shared";
+import { type AdminListingItem, fmtMoney, fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from "@mqr/shared";
 import { Building2, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";

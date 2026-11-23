@@ -51,7 +51,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the shared package
-        run: pnpm --filter @maqar/shared build
+        run: pnpm --filter @mqr/shared build
 
       # OPS-01: the Firebase app file, so Android gets push tokens. Without the secret the build has no push.
       - name: Put the Firebase file in place
@@ -90,7 +90,7 @@ jobs:
       - name: Name the bundle and show who signed it
         run: |
           mkdir -p out
-          cp apps/mobile/android/app/build/outputs/bundle/release/app-release.aab "out/maqar-${GITHUB_SHA::7}.aab"
+          cp apps/mobile/android/app/build/outputs/bundle/release/app-release.aab "out/mqr-${GITHUB_SHA::7}.aab"
           keytool -printcert -jarfile out/*.aab | grep -E "Owner|SHA1|SHA256"
 
       - name: Remove the key
@@ -99,6 +99,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: maqar-android-aab
+          name: mqr-android-aab
           path: out/*.aab
           retention-days: 14

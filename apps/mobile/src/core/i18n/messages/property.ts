@@ -1,4 +1,4 @@
-import { count, fmtMoney, type Bi } from '@maqar/shared';
+import { count, fmtMoney, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS, counted, arNum } from './forms';
 
@@ -8,7 +8,7 @@ export const property = {
   beds: { ar: 'غرف', en: 'Beds' },
   closeTheVideo: { ar: 'اقفل الفيديو', en: 'Close the video' },
   listedToday: { ar: 'اتعرضت النهارده', en: 'Listed today' },
-  onMaqar: { ar: 'على مقر', en: 'On Maqar' },
+  onMqr: { ar: 'على مقر', en: 'On MQR' },
   share: { ar: 'مشاركة', en: 'Share' },
   similarHomes: { ar: 'وحدات مشابهة', en: 'Similar homes' },
   thisHomeIsNoLonger: { ar: 'الوحدة دي مش متاحة دلوقتي.', en: 'This home is no longer available.' },

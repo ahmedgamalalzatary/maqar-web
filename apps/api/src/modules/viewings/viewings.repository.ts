@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ReminderOffset, ViewingCanceller } from '@maqar/shared';
+import type { ReminderOffset, ViewingCanceller } from '@mqr/shared';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agentDaysOff, agentHours, agents } from '../agents/agents.schema.js';

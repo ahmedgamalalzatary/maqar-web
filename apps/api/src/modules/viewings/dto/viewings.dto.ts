@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { REMINDER_OFFSETS, type ReminderOffset, VIEWING_STATUSES, VIEWING_WHENS, type ViewingStatus, type ViewingWhen } from '@maqar/shared';
+import { REMINDER_OFFSETS, type ReminderOffset, VIEWING_STATUSES, VIEWING_WHENS, type ViewingStatus, type ViewingWhen } from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 

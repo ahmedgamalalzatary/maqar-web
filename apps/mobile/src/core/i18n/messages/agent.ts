@@ -1,4 +1,4 @@
-import { relTime, type Bi } from '@maqar/shared';
+import { relTime, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { arNum } from './forms';
 

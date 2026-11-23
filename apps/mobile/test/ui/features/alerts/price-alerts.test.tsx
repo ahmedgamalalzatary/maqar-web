@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { FollowPriceButton } from '@/features/alerts/components/follow-price-button';
 import { useAuthPrompt } from '@/features/auth/components/auth-prompt';

@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { Heart } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';

@@ -16,7 +16,7 @@ import {
   SPLASH_VIDEO_MAX_SECONDS,
   type SplashKind,
   VIDEO_TYPES,
-} from "@maqar/shared";
+} from "@mqr/shared";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Video } from "lucide-react";
 import { useRef, useState } from "react";
 import { uploadPhoto, uploadVideo, useSaveSettings, useSettings, videoDuration } from "@/lib/admin";

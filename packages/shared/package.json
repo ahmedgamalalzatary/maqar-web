@@ -1,5 +1,5 @@
 {
-  "name": "@maqar/shared",
+  "name": "@mqr/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -24,7 +24,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@maqar/tsconfig": "workspace:*",
+    "@mqr/tsconfig": "workspace:*",
     "oxlint": "^1.91.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.12"

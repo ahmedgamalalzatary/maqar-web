@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { type AssignLeadBody, LEAD_NOTE_MAX, LEAD_STAGES, type LeadStage } from '@maqar/shared';
+import { type AssignLeadBody, LEAD_NOTE_MAX, LEAD_STAGES, type LeadStage } from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 

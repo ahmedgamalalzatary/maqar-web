@@ -14,7 +14,7 @@ import {
   type Scale,
   SIZE_SCALE,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { X } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';

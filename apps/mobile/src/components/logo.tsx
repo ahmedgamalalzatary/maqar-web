@@ -21,7 +21,7 @@ export function Logo({ width = 120, onDark = false, animated = false }: { width?
   const size = { width, height: width * RATIO };
   const layer = [StyleSheet.absoluteFill, size];
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel="مقر MAQAR | لكل طموح مقر" style={size}>
+    <View accessible accessibilityRole="image" accessibilityLabel="مقر MQR | لكل طموح مقر" style={size}>
       <Animated.View entering={animated ? GOLD_IN : undefined} style={layer}>
         <Image source={gold} style={size} tintColor={colors.gold} contentFit="fill" />
       </Animated.View>

@@ -1,4 +1,4 @@
-import { type ArForms, type Bi, count, fmtNum } from '@maqar/shared';
+import { type ArForms, type Bi, count, fmtNum } from '@mqr/shared';
 
 /**
  * Counted nouns (2026-11-16): the Arabic one, two, 3–10 and 0/11+ forms, and the English singular

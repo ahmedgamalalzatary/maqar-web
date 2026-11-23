@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { Injectable } from '@nestjs/common';
-import type { HealthResponse } from '@maqar/shared';
+import type { HealthResponse } from '@mqr/shared';
 import { HealthRepository } from './health.repository.js';
 
 // apps/api/package.json is three levels up from both src/modules/health and dist/modules/health.

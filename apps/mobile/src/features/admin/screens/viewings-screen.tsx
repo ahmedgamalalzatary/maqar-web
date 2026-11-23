@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminViewingItem, fmtDate, isActiveViewing, fmtTime, ltrPhone, VIEWING_STATUS_LABEL, VIEWING_WHENS, type ViewingWhen } from '@maqar/shared';
+import { pickField, joinParts, type AdminViewingItem, fmtDate, isActiveViewing, fmtTime, ltrPhone, VIEWING_STATUS_LABEL, VIEWING_WHENS, type ViewingWhen } from '@mqr/shared';
 import { CalendarCheck, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';

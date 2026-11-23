@@ -2,7 +2,7 @@
 // Days and hours are Cairo time; Egypt has summer time, so instants go through @date-fns/tz.
 
 import { TZDate } from '@date-fns/tz';
-import { BOOKING_DAYS, type Slot, type SlotDay, type SlotState } from '@maqar/shared';
+import { BOOKING_DAYS, type Slot, type SlotDay, type SlotState } from '@mqr/shared';
 
 export const ZONE = 'Africa/Cairo';
 

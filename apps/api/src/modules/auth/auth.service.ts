@@ -12,7 +12,7 @@ import {
   type ResetPasswordBody,
   type SignInBody,
   type SignUpBody,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import type { Env } from '../../core/config/env.js';
 import { Mailer } from '../../core/mail/mailer.js';
 import { UsersRepository } from '../users/users.repository.js';

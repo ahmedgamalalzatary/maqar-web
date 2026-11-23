@@ -1,4 +1,4 @@
-import { type AppSettings, DEFAULT_APP_SETTINGS } from '@maqar/shared';
+import { type AppSettings, DEFAULT_APP_SETTINGS } from '@mqr/shared';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';
@@ -76,18 +76,18 @@ describe('App settings (admin)', () => {
   it('sets the Contact us details; one filled in wrong is named before anything is sent (2026-11-14)', async () => {
     const puts = serve();
     await renderWithProviders(ui);
-    expect((await screen.findByLabelText('الإيميل')).props.value).toBe('maqarcompany@gmail.com');
+    expect((await screen.findByLabelText('الإيميل')).props.value).toBe('maqarcompany1@gmail.com');
     await fireEvent.changeText(screen.getByLabelText('واتساب'), '٠١٠١٢٣٤٥٦٧٨');
-    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'facebook.com/maqar');
+    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'facebook.com/mqr');
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ بيانات التواصل' }));
     expect(screen.getByText('رابط فيسبوك لازم يكون كامل ويبدأ بـ https://')).toBeOnTheScreen();
     expect(puts).toEqual([]);
 
-    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'https://facebook.com/maqar');
+    await fireEvent.changeText(screen.getByLabelText('فيسبوك (رابط)'), 'https://facebook.com/mqr');
     await fireEvent.press(screen.getByRole('button', { name: 'احفظ بيانات التواصل' }));
     await waitFor(() =>
       expect(puts).toEqual([
-        { contact: { email: 'maqarcompany@gmail.com', phone: '', whatsapp: '01012345678', facebook: 'https://facebook.com/maqar', instagram: '', tiktok: '' } },
+        { contact: { email: 'maqarcompany1@gmail.com', phone: '', whatsapp: '01012345678', facebook: 'https://facebook.com/mqr', instagram: '', tiktok: '' } },
       ]),
     );
     expect(await screen.findByText('اتحفظ، وهيظهر في التطبيق مع أول فتح')).toBeOnTheScreen();

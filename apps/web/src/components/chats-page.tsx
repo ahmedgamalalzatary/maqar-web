@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminChatDetail, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, type ReportOutcome } from "@maqar/shared";
+import { type AdminChatDetail, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, type ReportOutcome } from "@mqr/shared";
 import { Flag, Lock } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -152,7 +152,7 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
           <Card className="flex flex-col gap-3">
             <p className="flex items-center gap-2 text-sm">
               <Lock className="size-4 text-ink-2" aria-hidden />
-              {c.blocked.by === "admin" ? t("فريق مقر قفل المحادثة.", "The Maqar team closed it.") : c.blocked.by === "agent" ? t("المسؤول قفل المحادثة.", "The advisor closed it.") : t("العميل قفل المحادثة.", "The client closed it.")}
+              {c.blocked.by === "admin" ? t("فريق مقر قفل المحادثة.", "The MQR team closed it.") : c.blocked.by === "agent" ? t("المسؤول قفل المحادثة.", "The advisor closed it.") : t("العميل قفل المحادثة.", "The client closed it.")}
             </p>
             <Button variant="secondary" loading={unblock.isPending} onClick={() => unblock.mutate(undefined, { onSuccess: () => notice({ text: t("المحادثة اتفتحت", "Conversation opened"), tone: "ok" }) })}>
               {t("افتح المحادثة تاني", "Open it again")}

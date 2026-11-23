@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AuthResponse } from "@maqar/shared";
+import type { AuthResponse } from "@mqr/shared";
 import { createApi, type TokenStore } from "@/lib/api";
 
 const auth = (n: number, role: "admin" | "client" = "admin"): AuthResponse => ({
-  user: { id: 1, role, name: "Admin", email: "admin@maqar.app" } as unknown as AuthResponse["user"],
+  user: { id: 1, role, name: "Admin", email: "admin@mqr.app" } as unknown as AuthResponse["user"],
   accessToken: `access-${n}`,
   refreshToken: `refresh-${n}`,
   expiresIn: 900,
@@ -47,16 +47,16 @@ describe("passwords on the dashboard", () => {
   it("asks for a code without a session", async () => {
     const fetch = vi.fn(async () => json(204));
     const api = createApi({ base: "/v1", fetch, store: memoryStore() });
-    await api.forgotPassword("admin@maqar.app");
-    expect(sent(fetch)).toEqual({ url: "/v1/auth/forgot-password", method: "POST", body: { email: "admin@maqar.app" }, auth: null });
+    await api.forgotPassword("admin@mqr.app");
+    expect(sent(fetch)).toEqual({ url: "/v1/auth/forgot-password", method: "POST", body: { email: "admin@mqr.app" }, auth: null });
   });
 
   it("the code and a new password sign an admin in", async () => {
     const fetch = vi.fn(async () => json(200, auth(3)));
     const store = memoryStore();
     const api = createApi({ base: "/v1", fetch, store });
-    await api.resetPassword("admin@maqar.app", "123456", "Fresh4567");
-    expect(sent(fetch).body).toEqual({ email: "admin@maqar.app", code: "123456", newPassword: "Fresh4567" });
+    await api.resetPassword("admin@mqr.app", "123456", "Fresh4567");
+    expect(sent(fetch).body).toEqual({ email: "admin@mqr.app", code: "123456", newPassword: "Fresh4567" });
     expect(store.saved?.accessToken).toBe("access-3");
   });
 
@@ -64,7 +64,7 @@ describe("passwords on the dashboard", () => {
     const fetch = vi.fn(async () => json(200, auth(4, "client")));
     const store = memoryStore();
     const api = createApi({ base: "/v1", fetch, store });
-    await expect(api.resetPassword("c@test.maqar", "123456", "Fresh4567")).rejects.toMatchObject({ status: 403 });
+    await expect(api.resetPassword("c@test.mqr", "123456", "Fresh4567")).rejects.toMatchObject({ status: 403 });
     expect(store.saved).toBeUndefined();
     expect(sent(fetch, 1)).toMatchObject({ url: "/v1/auth/sign-out", body: { refreshToken: "refresh-4" } });
   });

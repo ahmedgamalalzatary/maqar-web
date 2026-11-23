@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AgentToday, AuthResponse, LeadCard, LeadDetail, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { AgentToday, AuthResponse, LeadCard, LeadDetail, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -52,9 +52,9 @@ describe('Sales agent (e2e)', () => {
     await seedAreas(db);
     await seedProperties(db);
     await seedSampleLeads(db);
-    omar = await signInSeeded(app, 'omar@maqar.app');
-    mariam = await signInSeeded(app, 'mariam@maqar.app');
-    omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@maqar.app')))[0]!.id;
+    omar = await signInSeeded(app, 'omar@mqr.app');
+    mariam = await signInSeeded(app, 'mariam@mqr.app');
+    omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@mqr.app')))[0]!.id;
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');
     const details = await Promise.all(all.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
     omarHomes = all.filter((_, i) => details[i]!.agent.id === omarId);
@@ -69,7 +69,7 @@ describe('Sales agent (e2e)', () => {
   it('is for agents only', async () => {
     await http().get('/v1/agent/today').expect(401);
     await http().get('/v1/agent/today').set(bearer(client.accessToken)).expect(403);
-    const admin = await signInSeeded(app, 'admin@maqar.app');
+    const admin = await signInSeeded(app, 'admin@mqr.app');
     await http().get('/v1/agent/leads').set(bearer(admin)).expect(403);
   });
 

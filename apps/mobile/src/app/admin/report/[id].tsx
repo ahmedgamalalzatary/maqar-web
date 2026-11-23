@@ -1,4 +1,4 @@
-import { REPORT_IDS, type ReportId } from '@maqar/shared';
+import { REPORT_IDS, type ReportId } from '@mqr/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { Txt } from '@/components/text';

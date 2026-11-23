@@ -1,4 +1,4 @@
-import { NOTIFICATION_KINDS, PUSH_PLATFORMS } from '@maqar/shared';
+import { NOTIFICATION_KINDS, PUSH_PLATFORMS } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, index, mysqlEnum, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
 import { users } from '../users/users.schema.js';

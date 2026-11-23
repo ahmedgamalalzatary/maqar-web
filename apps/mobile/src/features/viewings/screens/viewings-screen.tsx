@@ -1,4 +1,4 @@
-import { pickField, fmtDate, fmtTime, canChangeViewing, isActiveViewing, isUpcoming, relTime, VIEWING_STATUS_LABEL, type ViewingItem, type ViewingStatus } from '@maqar/shared';
+import { pickField, fmtDate, fmtTime, canChangeViewing, isActiveViewing, isUpcoming, relTime, VIEWING_STATUS_LABEL, type ViewingItem, type ViewingStatus } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

@@ -1,6 +1,6 @@
 "use client";
 
-import { passwordOk } from "@maqar/shared";
+import { passwordOk } from "@mqr/shared";
 import { type FormEvent, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { api } from "@/lib/client";

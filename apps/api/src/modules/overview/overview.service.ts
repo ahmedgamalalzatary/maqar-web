@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type AdminOverview, LEAD_STAGES, type LeadStage, type OverviewRange, PROPERTY_STATUSES, type PropertyStatus } from '@maqar/shared';
+import { type AdminOverview, LEAD_STAGES, type LeadStage, type OverviewRange, PROPERTY_STATUSES, type PropertyStatus } from '@mqr/shared';
 import { OverviewRepository } from './overview.repository.js';
 import { bucketByCairoDay, overviewWindow } from './overview.window.js';
 

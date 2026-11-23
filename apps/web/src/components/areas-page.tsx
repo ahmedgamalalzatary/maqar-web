@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminArea, areaSlug, fmtNum } from "@maqar/shared";
+import { type AdminArea, areaSlug, fmtNum } from "@mqr/shared";
 import { ImagePlus, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";

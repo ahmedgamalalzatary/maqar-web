@@ -11,7 +11,7 @@ import type {
   Page,
   PropertyCard,
   PropertyDetail,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import { io, type Socket } from 'socket.io-client';
 import request from 'supertest';
@@ -67,9 +67,9 @@ describe('Chat report, block and admin oversight (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    omar = await signInSeeded(app, 'omar@maqar.app');
-    const omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@maqar.app')))[0]!.id;
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    omar = await signInSeeded(app, 'omar@mqr.app');
+    const omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@mqr.app')))[0]!.id;
     // Always in working hours, so no away reply joins the conversations.
     await db.update(agentHours).set({ fromHour: 0, toHour: 23 }).where(eq(agentHours.agentId, omarId));
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');

@@ -8,7 +8,7 @@ import {
   type Prefs,
   type PropertyCard,
   type PropertyDetail,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';
@@ -53,7 +53,7 @@ describe('Preferences and smart picks (e2e)', () => {
     await seedAreas(db);
     await seedProperties(db);
     client = (await signUp(app)).accessToken;
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     const all = (await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>;
     details = await Promise.all(all.items.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
   });
@@ -72,7 +72,7 @@ describe('Preferences and smart picks (e2e)', () => {
     });
 
     it('comes back on sign-in, so the app knows them after a restart', async () => {
-      const email = `prefs-${Date.now()}@test.maqar`;
+      const email = `prefs-${Date.now()}@test.mqr`;
       const fresh = await signUp(app, { email, password: 'Secret123' });
       await putPrefs(fresh.accessToken, renter).expect(200);
       const res = await http().post('/v1/auth/sign-in').send({ email, password: 'Secret123' }).expect(200);

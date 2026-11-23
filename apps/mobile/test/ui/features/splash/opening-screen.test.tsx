@@ -1,4 +1,4 @@
-import { DEFAULT_APP_SETTINGS, type SplashSettings } from '@maqar/shared';
+import { DEFAULT_APP_SETTINGS, type SplashSettings } from '@mqr/shared';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useAppConfig } from '@/core/app-config/store';
 import { BootedContext } from '@/core/providers/booted';
@@ -53,16 +53,16 @@ describe('The opening screen', () => {
     const { unmount } = await renderWithProviders(<OpeningScreen splash={image} onDone={jest.fn()} />);
     expect(screen.getByText('Powered by Bit Technologies')).toBeOnTheScreen();
     expect(screen.getByText('01501053600')).toBeOnTheScreen();
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
     await unmount();
 
     const vid = await renderWithProviders(<OpeningScreen splash={video} onDone={jest.fn()} />);
     expect(screen.getByText('Powered by Bit Technologies')).toBeOnTheScreen();
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
     await vid.unmount();
 
     await renderWithProviders(<OpeningScreen splash={{ ...DEFAULT_APP_SETTINGS.splash, textAr: 'أهلا' }} onDone={jest.fn()} />);
-    expect(screen.getByLabelText('مقر MAQAR | لكل طموح مقر')).toBeOnTheScreen();
+    expect(screen.getByLabelText('مقر MQR | لكل طموح مقر')).toBeOnTheScreen();
     expect(screen.queryByText('Powered by Bit Technologies')).toBeNull();
   });
 
@@ -74,14 +74,14 @@ describe('The opening screen', () => {
         <OpeningHost />
       </BootedContext.Provider>,
     );
-    expect(screen.getByLabelText('مقر MAQAR | لكل طموح مقر')).toBeOnTheScreen();
+    expect(screen.getByLabelText('مقر MQR | لكل طموح مقر')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'تخطي' })).toBeNull();
     await rerender(
       <BootedContext.Provider value>
         <OpeningHost />
       </BootedContext.Provider>,
     );
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
   });
 
   it('keeps the picture up until the app has started, never the logo after it', async () => {
@@ -91,10 +91,10 @@ describe('The opening screen', () => {
         <OpeningHost />
       </BootedContext.Provider>,
     );
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
     await act(async () => jest.advanceTimersByTime(5000));
     expect(screen.getByTestId('opening-image')).toBeOnTheScreen();
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
     await rerender(
       <BootedContext.Provider value>
         <OpeningHost />
@@ -107,7 +107,7 @@ describe('The opening screen', () => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(200, { ...DEFAULT_APP_SETTINGS, splash: image }));
     await renderWithProviders(<OpeningHost />);
     expect(screen.queryByRole('button', { name: 'تخطي' })).toBeNull();
-    expect(screen.queryByLabelText('مقر MAQAR | لكل طموح مقر')).toBeNull();
+    expect(screen.queryByLabelText('مقر MQR | لكل طموح مقر')).toBeNull();
     await act(async () => jest.runOnlyPendingTimers());
     expect(fetchMock).toHaveBeenCalled();
     // What arrives is for the next start: nothing pops up in the middle of this one.

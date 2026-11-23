@@ -1,4 +1,4 @@
-import { type Lang, type ReportId, type ReportQuery, type ReportResult, reportCsv, reportFileName, type ReportTable } from "@maqar/shared";
+import { type Lang, type ReportId, type ReportQuery, type ReportResult, reportCsv, reportFileName, type ReportTable } from "@mqr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useKey } from "./admin";
 import { api } from "./client";

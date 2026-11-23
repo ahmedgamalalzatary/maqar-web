@@ -9,11 +9,11 @@ describe('settings store', () => {
 
     useSettings.getState().setLang('en');
     useSettings.getState().setTheme('dark');
-    const saved = await AsyncStorage.getItem('maqar.settings');
+    const saved = await AsyncStorage.getItem('mqr.settings');
 
     // Restart: memory is back to the defaults, and only what was saved on the phone remains.
     useSettings.setState(useSettings.getInitialState());
-    await AsyncStorage.setItem('maqar.settings', saved!);
+    await AsyncStorage.setItem('mqr.settings', saved!);
     await useSettings.persist.rehydrate();
 
     expect(useSettings.getState()).toMatchObject({ lang: 'en', theme: 'dark' });

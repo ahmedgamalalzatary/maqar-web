@@ -1,6 +1,6 @@
 "use client";
 
-import { type DayHours, fmtNum, weekdayName } from "@maqar/shared";
+import { type DayHours, fmtNum, weekdayName } from "@mqr/shared";
 import { useState } from "react";
 import { useAddDaysOff, useSetHours } from "@/lib/admin";
 import { useLang, useT } from "@/lib/i18n";

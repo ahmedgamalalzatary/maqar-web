@@ -1,4 +1,4 @@
-import { CHAT_BLOCKERS, CHAT_MESSAGE_KINDS, CHAT_REPORT_REASONS, CHAT_SENDERS, type ChatBody, REPORT_OUTCOMES } from '@maqar/shared';
+import { CHAT_BLOCKERS, CHAT_MESSAGE_KINDS, CHAT_REPORT_REASONS, CHAT_SENDERS, type ChatBody, REPORT_OUTCOMES } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, index, json, mysqlEnum, mysqlTable, timestamp, unique, varchar } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';

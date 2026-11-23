@@ -22,13 +22,13 @@ describe('SignUpScreen', () => {
     // There are no owner accounts (2026-11-09): sign-up offers no choice of role.
     expect(screen.queryByRole('radio')).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.mqr');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
     await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
 
     expect(requestOf(fetchMock)).toMatchObject({
       path: '/auth/sign-up',
-      body: { name: 'Mona Adel', email: 'mona@test.maqar', password: 'Secret123', lang: 'ar' },
+      body: { name: 'Mona Adel', email: 'mona@test.mqr', password: 'Secret123', lang: 'ar' },
     });
     expect(requestOf(fetchMock).body).not.toHaveProperty('role');
     expect(requestOf(fetchMock).body).not.toHaveProperty('phone');
@@ -38,7 +38,7 @@ describe('SignUpScreen', () => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client' })));
     await renderWithProviders(<SignUpScreen />);
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.mqr');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
     expect(screen.queryByText(/اختياري/)).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('رقم الموبايل'), '٠١٠');
@@ -53,7 +53,7 @@ describe('SignUpScreen', () => {
     mockFetch().mockResolvedValue(jsonResponse(201, makeAuth({ role: 'client', prefs: null })));
     await renderWithProviders(<SignUpScreen />);
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.mqr');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
     await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/onboarding');
@@ -65,7 +65,7 @@ describe('SignUpScreen', () => {
     setPendingAction(resume);
     await renderWithProviders(<SignUpScreen />);
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona Adel');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.maqar');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@test.mqr');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Secret123');
     await fireEvent.press(screen.getByRole('button', { name: 'إنشاء حساب' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/onboarding');

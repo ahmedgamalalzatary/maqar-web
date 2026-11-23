@@ -1,4 +1,4 @@
-import { LEAD_STAGES } from '@maqar/shared';
+import { LEAD_STAGES } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, boolean, index, mysqlEnum, mysqlTable, timestamp, unique, varchar } from 'drizzle-orm/mysql-core';
 import { agents } from '../agents/agents.schema.js';

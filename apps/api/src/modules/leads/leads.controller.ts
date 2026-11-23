@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AdminLeadItem, AgentToday, LeadCard, LeadDetail, LeadNote } from '@maqar/shared';
+import type { AdminLeadItem, AgentToday, LeadCard, LeadDetail, LeadNote } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AddLeadNoteDto, AdminLeadsQueryDto, AssignLeadDto, LeadsQueryDto, UpdateLeadDto } from './dto/leads.dto.js';

@@ -1,4 +1,4 @@
-import { canChangeOwnPassword, DEVELOPER, ROLE_LABEL, SITE_PAGES } from '@maqar/shared';
+import { canChangeOwnPassword, DEVELOPER, ROLE_LABEL, SITE_PAGES } from '@mqr/shared';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -60,7 +60,7 @@ export function MeScreen() {
       ) : (
         <Card style={styles.guest}>
           <Txt size={17} weight="semibold">
-            {t(m.account.maqarGuest)}
+            {t(m.account.mqrGuest)}
           </Txt>
           <Txt color="ink2">
             {t(m.account.signInToSaveHomes)}
@@ -149,7 +149,7 @@ export function MeScreen() {
 
       {/* Required by both stores (contract §15 privacy), for guests too. */}
       <Txt size={15} weight="semibold">
-        {t(m.account.aboutMaqar)}
+        {t(m.account.aboutMqr)}
       </Txt>
       <Card style={styles.list}>
         <LinkRow

@@ -1,4 +1,4 @@
-import type { ThemePref } from '@maqar/shared';
+import type { ThemePref } from '@mqr/shared';
 import { useColorScheme } from 'react-native';
 import { useSettings } from '@/core/settings/store';
 import { type Colors, dark, light } from './tokens';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { PropertiesService } from '../properties/properties.service.js';
 import { FavoritesRepository } from './favorites.repository.js';
 

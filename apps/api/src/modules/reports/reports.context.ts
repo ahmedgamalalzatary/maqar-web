@@ -1,4 +1,4 @@
-import type { Bi, ReportResult } from '@maqar/shared';
+import type { Bi, ReportResult } from '@mqr/shared';
 import type { ListingFact } from './reports.repository.js';
 import type { Filters, Win } from './reports.util.js';
 

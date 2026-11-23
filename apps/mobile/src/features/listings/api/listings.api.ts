@@ -1,4 +1,4 @@
-import type { AreaItem, ListingFacets, Page, PropertiesQuery, PropertyCard } from '@maqar/shared';
+import type { AreaItem, ListingFacets, Page, PropertiesQuery, PropertyCard } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 import { listingParams } from '../filters';
 

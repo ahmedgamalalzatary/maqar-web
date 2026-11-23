@@ -1,4 +1,4 @@
-import { type Category, type Feature, LANGS, type PropertyType, ROLES, THEMES } from '@maqar/shared';
+import { type Category, type Feature, LANGS, type PropertyType, ROLES, THEMES } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { bigint, boolean, json, mysqlEnum, mysqlTable, timestamp, tinyint, varchar } from 'drizzle-orm/mysql-core';
 

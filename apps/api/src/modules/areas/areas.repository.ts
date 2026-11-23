@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AdminArea } from '@maqar/shared';
+import type { AdminArea } from '@mqr/shared';
 import { asc, eq, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { properties } from '../properties/properties.schema.js';

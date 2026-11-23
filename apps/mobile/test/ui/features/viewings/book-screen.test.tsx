@@ -1,4 +1,4 @@
-import type { PropertyDetail, SlotDay, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { PropertyDetail, SlotDay, SlotsResponse, ViewingItem } from '@mqr/shared';
 import { focusManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';

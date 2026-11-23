@@ -29,7 +29,7 @@ import {
   viewRows,
   weekdayName,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { type Href, useRouter } from 'expo-router';
 import { ArrowDownRight, ArrowUpRight, ChevronDown, FileBarChart, Search, Share2, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';

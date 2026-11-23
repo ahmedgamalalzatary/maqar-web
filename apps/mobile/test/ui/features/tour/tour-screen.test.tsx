@@ -1,4 +1,4 @@
-import type { PropertyDetail } from '@maqar/shared';
+import type { PropertyDetail } from '@mqr/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { TourScreen } from '@/features/tour/screens/tour-screen';
 import { makeCard, routeFetch } from '../../../utils/api';

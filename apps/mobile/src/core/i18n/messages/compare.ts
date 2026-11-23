@@ -1,4 +1,4 @@
-import { count, fmtPct, type Bi } from '@maqar/shared';
+import { count, fmtPct, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS } from './forms';
 

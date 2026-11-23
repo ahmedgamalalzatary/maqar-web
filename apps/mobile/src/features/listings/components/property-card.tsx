@@ -1,4 +1,4 @@
-import { pickField, CATEGORY_LABEL, fmtMoney, fmtNum, fmtPct, installment, type PropertyCard } from '@maqar/shared';
+import { pickField, CATEGORY_LABEL, fmtMoney, fmtNum, fmtPct, installment, type PropertyCard } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

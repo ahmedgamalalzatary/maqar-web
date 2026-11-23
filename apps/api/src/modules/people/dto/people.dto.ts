@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { type AdminAccountBody, type AdminAccountUpdate, CLIENT_STATUSES, type ClientStatus, type ClientUpdateBody, PASSWORD_MIN } from '@maqar/shared';
+import { type AdminAccountBody, type AdminAccountUpdate, CLIENT_STATUSES, type ClientStatus, type ClientUpdateBody, PASSWORD_MIN } from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, Length, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 

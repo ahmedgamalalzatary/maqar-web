@@ -1,4 +1,4 @@
-import type { AnswerBookingBody, ChatBody, ChatMessage, ChatReportBody, ChatSender, SendChatBody } from '@maqar/shared';
+import type { AnswerBookingBody, ChatBody, ChatMessage, ChatReportBody, ChatSender, SendChatBody } from '@mqr/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useSession } from '@/features/auth/store/session.store';

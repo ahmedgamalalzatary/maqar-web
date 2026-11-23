@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotDay, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { AuthResponse, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotDay, SlotsResponse, ViewingItem } from '@mqr/shared';
 import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -173,7 +173,7 @@ describe('Viewings (e2e)', () => {
       const home = aHome();
       const [at] = await freeHours(home.id);
       await http().post('/v1/viewings').send({ propertyId: home.id, ...at, reminders: [] }).expect(401);
-      const agent = await signInSeeded(app, 'omar@maqar.app');
+      const agent = await signInSeeded(app, 'omar@mqr.app');
       await book(agent, { propertyId: home.id, ...at, reminders: [] }).expect(403);
     });
   });
@@ -222,7 +222,7 @@ describe('Viewings (e2e)', () => {
       const v = (await book(client.accessToken, { propertyId: home.id, ...a, reminders: [] }).expect(201)).body as ViewingItem;
       const other = await signUp(app);
       await patch(other.accessToken, v.id, { action: 'cancel' }).expect(404);
-      await patch(await signInSeeded(app, 'omar@maqar.app'), v.id, { action: 'cancel' }).expect(403);
+      await patch(await signInSeeded(app, 'omar@mqr.app'), v.id, { action: 'cancel' }).expect(403);
       await patch(client.accessToken, 999999, { action: 'cancel' }).expect(404);
       expect(await mine(other.accessToken)).toEqual([]);
     });
@@ -232,7 +232,7 @@ describe('Viewings (e2e)', () => {
     it('shows an agent the viewings they meet, with who is coming', async () => {
       const home = aHome();
       const detail = (await http().get(`/v1/properties/${home.id}`).expect(200)).body as PropertyDetail;
-      const agentEmail = { 'عمر': 'omar@maqar.app', 'مريم': 'mariam@maqar.app', 'يوسف': 'youssef@maqar.app', 'سلمى': 'salma@maqar.app' };
+      const agentEmail = { 'عمر': 'omar@mqr.app', 'مريم': 'mariam@mqr.app', 'يوسف': 'youssef@mqr.app', 'سلمى': 'salma@mqr.app' };
       const email = Object.entries(agentEmail).find(([n]) => detail.agent.nameAr.startsWith(n))![1];
       const [a] = await freeHours(home.id);
       const v = (await book(client.accessToken, { propertyId: home.id, ...a, reminders: [] }).expect(201)).body as ViewingItem;

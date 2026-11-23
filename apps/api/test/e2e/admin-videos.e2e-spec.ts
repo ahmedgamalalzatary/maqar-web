@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { INestApplication } from '@nestjs/common';
-import type { AdminListing, ListingBody, PropertyDetail, UploadResponse, VideoUploadResponse } from '@maqar/shared';
+import type { AdminListing, ListingBody, PropertyDetail, UploadResponse, VideoUploadResponse } from '@mqr/shared';
 import sharp from 'sharp';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -62,7 +62,7 @@ describe('Admin listing videos (e2e)', () => {
   };
 
   beforeAll(async () => {
-    dir = await mkdtemp(path.join(tmpdir(), 'maqar-videos-'));
+    dir = await mkdtemp(path.join(tmpdir(), 'mqr-videos-'));
     const tone = (s: number) => ['-f', 'lavfi', '-i', `sine=frequency=440:duration=${s}`];
     // What an Android phone records: H.264 with AAC sound, and where it was filmed.
     files.h264 = await make('h264.mp4', [
@@ -84,8 +84,8 @@ describe('Admin listing videos (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     client = (await signUp(app)).accessToken;
     const jpeg = await sharp({ create: { width: 800, height: 600, channels: 3, background: '#789' } }).jpeg().toBuffer();
     photo = ((await http().post('/v1/uploads').set(bearer(admin)).attach('photo', jpeg, { filename: 'p.jpg', contentType: 'image/jpeg' })).body as UploadResponse).url;

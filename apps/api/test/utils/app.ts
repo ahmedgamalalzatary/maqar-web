@@ -4,7 +4,7 @@ import type { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/app.setup.js';
 
-/** The real app, configured exactly like main.ts, against the maqar_test database. */
+/** The real app, configured exactly like main.ts, against the mqr_test database. */
 export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>({ logger: false });

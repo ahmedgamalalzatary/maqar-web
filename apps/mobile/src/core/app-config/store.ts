@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { type AppSettings, DEFAULT_APP_SETTINGS, homeSectionOrder } from '@maqar/shared';
+import { type AppSettings, DEFAULT_APP_SETTINGS, homeSectionOrder } from '@mqr/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { apiFetch } from '@/core/api/api';
@@ -38,8 +38,8 @@ export const useAppConfig = create<AppConfig>()(
       },
     }),
     {
-      name: 'maqar.app-config',
-      onRehydrateStorage: trackLoad('maqar.app-config'),
+      name: 'mqr.app-config',
+      onRehydrateStorage: trackLoad('mqr.app-config'),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ config }) => ({ config }),
       merge: (stored, current) => ({ ...current, config: complete((stored as { config?: Partial<AppSettings> } | undefined)?.config) }),

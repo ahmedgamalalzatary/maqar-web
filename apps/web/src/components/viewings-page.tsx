@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminViewingItem, fmtDate, fmtNum, isActiveViewing, fmtTime, type SlotsResponse, VIEWING_WHENS, type ViewingWhen } from "@maqar/shared";
+import { type AdminViewingItem, fmtDate, fmtNum, isActiveViewing, fmtTime, type SlotsResponse, VIEWING_WHENS, type ViewingWhen } from "@mqr/shared";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";

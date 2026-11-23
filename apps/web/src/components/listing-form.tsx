@@ -32,7 +32,7 @@ import {
   TOUR_ROOMS_MAX,
   VIDEO_TYPES,
   videoProblem,
-} from "@maqar/shared";
+} from "@mqr/shared";
 import { Clapperboard, Film, ImagePlus, Loader2, MoveLeft, MoveRight, Play, Rotate3d, RotateCcw, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -289,7 +289,7 @@ function LocationStep({ s, set, err }: StepProps) {
         <Field label={t("العنوان (إنجليزي)", "Title (English)")} value={s.titleEn} onChange={(e) => set("titleEn", e.target.value)} dir="ltr" maxLength={200} />
       </div>
       <fieldset className="flex flex-col gap-4 rounded-xl border border-line p-4">
-        <legend className="px-1 text-sm font-medium text-ink-2">{t("المالك (محدش بيشوفه غير فريق مقر)", "Owner (only the Maqar team sees this)")}</legend>
+        <legend className="px-1 text-sm font-medium text-ink-2">{t("المالك (محدش بيشوفه غير فريق مقر)", "Owner (only the MQR team sees this)")}</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("اسم المالك", "Owner’s name")} value={s.ownerName} onChange={(e) => set("ownerName", e.target.value)} maxLength={120} />
           <Field label={t("موبايل المالك", "Owner’s phone")} type="tel" value={s.ownerPhone} onChange={(e) => set("ownerPhone", e.target.value)} dir="ltr" maxLength={24} error={err("ownerPhone")} />

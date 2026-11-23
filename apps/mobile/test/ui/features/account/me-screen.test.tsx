@@ -90,7 +90,7 @@ describe('MeScreen', () => {
   });
 
   it('signing out first stops this phone getting the account’s pushes', async () => {
-    await AsyncStorage.setItem('maqar.pushToken', 'ExponentPushToken[phone-1234567890]');
+    await AsyncStorage.setItem('mqr.pushToken', 'ExponentPushToken[phone-1234567890]');
     await useSession.getState().setSession(makeAuth());
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(204));
     await renderWithProviders(<MeScreen />);
@@ -100,7 +100,7 @@ describe('MeScreen', () => {
       { method: 'DELETE', path: '/me/push-tokens', body: { token: 'ExponentPushToken[phone-1234567890]' } },
       { method: 'POST', path: '/auth/sign-out', body: { refreshToken: 'refresh-token-1234567890' } },
     ]);
-    expect(await AsyncStorage.getItem('maqar.pushToken')).toBeNull();
+    expect(await AsyncStorage.getItem('mqr.pushToken')).toBeNull();
   });
 
   it('shows the phone notifications switch to a signed-in user only', async () => {
@@ -138,7 +138,7 @@ describe('MeScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'الشروط والأحكام' }));
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith(`${origin}/terms`);
     // Contact us carries it now (Apple 1.2 and 1.5).
-    expect(screen.queryByText(/maqarcompany@gmail.com/)).toBeNull();
+    expect(screen.queryByText(/maqarcompany1@gmail.com/)).toBeNull();
   });
 
   it('ends with the developer credit, whose number can be called', async () => {

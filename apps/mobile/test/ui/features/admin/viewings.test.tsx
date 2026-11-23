@@ -1,4 +1,4 @@
-import { type AdminViewingItem, fmtDate, fmtTime, type SlotsResponse } from '@maqar/shared';
+import { type AdminViewingItem, fmtDate, fmtTime, type SlotsResponse } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';
 import { useSession } from '@/features/auth/store/session.store';
@@ -18,7 +18,7 @@ const V: AdminViewingItem = {
   rescheduledFrom: null,
   property: { id: 1, titleAr: 'فيلا بحمام سباحة', titleEn: 'Pool villa' },
   agent: { id: 3, nameAr: 'عمر حسن', nameEn: 'Omar Hassan', colour: '#b38959' },
-  client: { id: 21, name: 'كريم محمود', phone: '+201014124412', email: 'karim@test.maqar' },
+  client: { id: 21, name: 'كريم محمود', phone: '+201014124412', email: 'karim@test.mqr' },
   createdAt: new Date().toISOString(),
 };
 const SLOTS: SlotsResponse = {

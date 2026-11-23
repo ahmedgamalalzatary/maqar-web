@@ -1,11 +1,11 @@
 {
-  "name": "@maqar/mobile",
+  "name": "@mqr/mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/readex-pro": "^0.4.1",
     "@expo/ui": "~58.0.27",
-    "@maqar/shared": "workspace:*",
+    "@mqr/shared": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@tanstack/react-query": "^5.105.3",
     "expo": "~58.0.23",

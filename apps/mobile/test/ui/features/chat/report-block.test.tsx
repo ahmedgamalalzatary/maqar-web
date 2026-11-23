@@ -1,4 +1,4 @@
-import type { ChatThread } from '@maqar/shared';
+import type { ChatThread } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { ToastHost } from '@/components/toast';

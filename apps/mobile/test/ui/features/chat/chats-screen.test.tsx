@@ -1,4 +1,4 @@
-import type { ChatThread } from '@maqar/shared';
+import type { ChatThread } from '@mqr/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useAuthPrompt } from '@/features/auth/components/auth-prompt';
 import { useSession } from '@/features/auth/store/session.store';

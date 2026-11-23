@@ -1,4 +1,4 @@
-import { DEFAULT_PREFS, fmtMoney, type Prefs } from '@maqar/shared';
+import { DEFAULT_PREFS, fmtMoney, type Prefs } from '@mqr/shared';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { OnboardingScreen } from '@/features/prefs/screens/onboarding-screen';

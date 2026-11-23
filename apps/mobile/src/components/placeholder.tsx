@@ -1,4 +1,4 @@
-import { type Bi } from '@maqar/shared';
+import { type Bi } from '@mqr/shared';
 import { StyleSheet, View } from 'react-native';
 import { Card } from '@/components/card';
 import { Screen } from '@/components/screen';

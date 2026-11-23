@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { type AgentBody, type DayHours, type DaysOffBody, type HoursBody, PASSWORD_MIN } from '@maqar/shared';
+import { type AgentBody, type DayHours, type DaysOffBody, type HoursBody, PASSWORD_MIN } from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,

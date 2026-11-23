@@ -12,7 +12,7 @@ import {
   maskPhone,
   type PropertyCard,
   type UpdateLeadBody,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { ChatRepository } from '../chat/chat.repository.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PropertiesService } from '../properties/properties.service.js';

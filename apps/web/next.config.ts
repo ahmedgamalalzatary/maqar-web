@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 /**
  * The admin dashboard (contract §16.1 #6). A static export: nginx serves it at /admin/ on the
- * API's host, so it calls the API on the same origin and needs no CORS (deploy/nginx-maqar.conf).
+ * API's host, so it calls the API on the same origin and needs no CORS (deploy/nginx-mqr.conf).
  */
 const nextConfig: NextConfig = {
   output: "export",

@@ -33,7 +33,7 @@ import {
   TOUR_ROOMS_MAX,
   videoProblem,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -142,7 +142,7 @@ function Form({ saved }: { saved?: AdminListing }) {
   const draftKey = saved ? null : 'listing:new';
   useEffect(() => {
     if (!draftKey) return;
-    SecureStore.getItemAsync(`maqar-draft-${draftKey}`)
+    SecureStore.getItemAsync(`mqr-draft-${draftKey}`)
       .then((raw) => {
         const draft = raw ? (JSON.parse(raw) as ListingForm) : null;
         if (draft && Object.keys(draft).length) setS((cur) => ({ ...cur, ...draft }));
@@ -153,7 +153,7 @@ function Form({ saved }: { saved?: AdminListing }) {
   useEffect(() => {
     if (!draftKey) return;
     const id = setTimeout(() => {
-      void SecureStore.setItemAsync(`maqar-draft-${draftKey}`, JSON.stringify(s)).catch(() => undefined);
+      void SecureStore.setItemAsync(`mqr-draft-${draftKey}`, JSON.stringify(s)).catch(() => undefined);
     }, 600);
     return () => clearTimeout(id);
   }, [s, draftKey]);
@@ -191,7 +191,7 @@ function Form({ saved }: { saved?: AdminListing }) {
     }
     // The listing is saved now. A failed publish leaves a draft: open it rather than stay on a
     // new form, which would save the same listing again.
-    if (draftKey) void SecureStore.deleteItemAsync(`maqar-draft-${draftKey}`).catch(() => undefined);
+    if (draftKey) void SecureStore.deleteItemAsync(`mqr-draft-${draftKey}`).catch(() => undefined);
     let published = andPublish;
     if (andPublish) published = await publish.mutateAsync(l.id).then(() => true, () => false);
     setPublishing(false);
@@ -306,7 +306,7 @@ function LocationStep({ s, set, err }: StepProps) {
       <TextField label={t(m.admin.titleEnglish2)} value={s.titleEn} onChangeText={(v) => set('titleEn', v)} maxLength={200} />
       <View style={styles.group}>
         <Txt size={13} weight="medium" color="ink2">
-          {t(m.admin.ownerOnlyTheMaqarTeam)}
+          {t(m.admin.ownerOnlyTheMqrTeam)}
         </Txt>
         <TextField label={t(m.admin.ownersName)} value={s.ownerName} onChangeText={(v) => set('ownerName', v)} maxLength={120} />
         <TextField label={t(m.admin.ownersPhone)} value={s.ownerPhone} onChangeText={(v) => set('ownerPhone', v)} keyboardType="phone-pad" maxLength={24} error={err('ownerPhone')} />

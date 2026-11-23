@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Bi, CATEGORIES, CATEGORY_LABEL, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, PROPERTY_TYPE_LABEL, PROPERTY_TYPES, type ReportRow } from '@maqar/shared';
+import { type Bi, CATEGORIES, CATEGORY_LABEL, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, PROPERTY_TYPE_LABEL, PROPERTY_TYPES, type ReportRow } from '@mqr/shared';
 import { type Built, type Ctx, bi, NO_ADVISOR, since, sinceDay, titleOf, UNKNOWN } from './reports.context.js';
 import { type ListingFact, ReportsRepository } from './reports.repository.js';
 import { average, bandOf, countBy, dayWithin, daysBetween, kpi, passes, PRICE_BANDS, ratio, type Win, within } from './reports.util.js';

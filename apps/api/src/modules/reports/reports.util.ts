@@ -1,4 +1,4 @@
-import type { Bi, Category, CellFormat, ReportKpi } from '@maqar/shared';
+import type { Bi, Category, CellFormat, ReportKpi } from '@mqr/shared';
 import { type SQL, and, eq } from 'drizzle-orm';
 import { properties } from '../properties/properties.schema.js';
 import { cairoClock } from '../viewings/slots.js';

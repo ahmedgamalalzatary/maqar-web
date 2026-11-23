@@ -15,7 +15,7 @@ import {
   type PropertyType,
   SORTS,
   type Sort,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -116,7 +116,7 @@ export class ListingFiltersDto {
   @ApiPropertyOptional({ description: 'Has a 360° tour' }) @IsOptional() @Transform(toBool) @IsBoolean()
   tour?: boolean;
 
-  @ApiPropertyOptional({ description: 'Picked by the Maqar team' }) @IsOptional() @Transform(toBool) @IsBoolean()
+  @ApiPropertyOptional({ description: 'Picked by the MQR team' }) @IsOptional() @Transform(toBool) @IsBoolean()
   featured?: boolean;
 }
 

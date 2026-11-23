@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Patch, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
-import type { Me, Prefs } from '@maqar/shared';
+import type { Me, Prefs } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AuthRepository } from '../auth/auth.repository.js';

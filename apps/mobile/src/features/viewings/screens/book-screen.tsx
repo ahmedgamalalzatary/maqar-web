@@ -1,4 +1,4 @@
-import { type Bi, pickField, joinParts, fmtDate, fmtNum, fmtTime, type PropertyDetail, type ReminderOffset, type Slot, type ViewingItem } from '@maqar/shared';
+import { type Bi, pickField, joinParts, fmtDate, fmtNum, fmtTime, type PropertyDetail, type ReminderOffset, type Slot, type ViewingItem } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { type Href, useRouter } from 'expo-router';
 import {

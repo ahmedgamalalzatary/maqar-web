@@ -1,4 +1,4 @@
-import { fmtMoney, type PropertyCard } from '@maqar/shared';
+import { fmtMoney, type PropertyCard } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { MessageCircle } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';

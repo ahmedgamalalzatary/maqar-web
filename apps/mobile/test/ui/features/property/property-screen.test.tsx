@@ -1,5 +1,5 @@
-import type { PropertyDetail } from '@maqar/shared';
-import { fmtMoney, installment } from '@maqar/shared';
+import type { PropertyDetail } from '@mqr/shared';
+import { fmtMoney, installment } from '@mqr/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { Linking, Share } from 'react-native';
 import { PropertyScreen } from '@/features/property/screens/property-screen';

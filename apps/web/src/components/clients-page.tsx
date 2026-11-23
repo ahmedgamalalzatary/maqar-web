@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminClientDetail, CLIENT_STATUSES, type ClientStatus, fmtDate, fmtNum, LEAD_STAGE_LABEL, relTime } from "@maqar/shared";
+import { type AdminClientDetail, CLIENT_STATUSES, type ClientStatus, fmtDate, fmtNum, LEAD_STAGE_LABEL, relTime } from "@mqr/shared";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

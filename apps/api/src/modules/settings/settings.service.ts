@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { type AppSettings, calculatorProblem, contactProblem, DEFAULT_APP_SETTINGS, homeSectionOrder, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings, splashProblem } from '@maqar/shared';
+import { type AppSettings, calculatorProblem, contactProblem, DEFAULT_APP_SETTINGS, homeSectionOrder, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings, splashProblem } from '@mqr/shared';
 import { eq, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { propertyVideos } from '../properties/properties.schema.js';

@@ -1,4 +1,4 @@
-import type { AuthResponse, ChangePasswordBody, Me, UpdateMeBody } from '@maqar/shared';
+import type { AuthResponse, ChangePasswordBody, Me, UpdateMeBody } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const updateMeRequest = (body: UpdateMeBody) => apiFetch<Me>('/me', { method: 'PATCH', body });

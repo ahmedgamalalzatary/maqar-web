@@ -1,4 +1,4 @@
-import { DEVELOPER, SPLASH_IMAGE_SECONDS, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings } from '@maqar/shared';
+import { DEVELOPER, SPLASH_IMAGE_SECONDS, SPLASH_VIDEO_MAX_SECONDS, type SplashSettings } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';

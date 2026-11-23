@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AdminAgentDetail, AdminAgentItem, AgentListingOption, DaysOffResult } from '@maqar/shared';
+import type { AdminAgentDetail, AdminAgentItem, AgentListingOption, DaysOffResult } from '@mqr/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { DatePipe } from './date.pipe.js';
 import { AgentsQueryDto, CreateAgentDto, DaysOffDto, HoursDto, ReassignDto, UpdateAgentDto } from './dto/agents.dto.js';

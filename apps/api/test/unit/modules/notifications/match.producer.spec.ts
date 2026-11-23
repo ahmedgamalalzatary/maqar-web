@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { GOOD_MATCH } from '@maqar/shared';
+import { GOOD_MATCH } from '@mqr/shared';
 import { NotificationsService } from '../../../../src/modules/notifications/notifications.service.js';
 
 const listing = {

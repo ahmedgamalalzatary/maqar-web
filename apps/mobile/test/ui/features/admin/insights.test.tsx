@@ -1,5 +1,5 @@
-import type { AdminListing, InterestedClient, ListingStats } from '@maqar/shared';
-import { fmtDate, lastDays } from '@maqar/shared';
+import type { AdminListing, InterestedClient, ListingStats } from '@mqr/shared';
+import { fmtDate, lastDays } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Linking, Share } from 'react-native';
 import { useSession } from '@/features/auth/store/session.store';

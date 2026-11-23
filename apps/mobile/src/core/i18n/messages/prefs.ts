@@ -1,4 +1,4 @@
-import { count, type Bi } from '@maqar/shared';
+import { count, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS } from './forms';
 
@@ -20,7 +20,7 @@ export const prefs = {
   showMyPicks: { ar: 'اعرض ترشيحاتي', en: 'Show my picks' },
   totalUnitPrice: { ar: 'إجمالي سعر الوحدة', en: 'total unit price' },
   typeTheBudget: { ar: 'اكتب الميزانية', en: 'Type the budget' },
-  welcomeToMaqar: { ar: 'أهلاً بيك في مقر', en: 'Welcome to Maqar' },
+  welcomeToMqr: { ar: 'أهلاً بيك في مقر', en: 'Welcome to MQR' },
   whatAreYouLookingFor: { ar: 'بتدور على إيه؟', en: 'What are you looking for?' },
   whatKindOfHome: { ar: 'نوع الوحدة؟', en: 'What kind of home?' },
   whatMattersToYou: { ar: 'إيه اللي يهمك؟', en: 'What matters to you?' },

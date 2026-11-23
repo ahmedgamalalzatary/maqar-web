@@ -44,7 +44,7 @@ import type {
   ReportId,
   ReportQuery,
   ReportResult,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { apiFetch, apiUpload } from '@/core/api/api';
 import type { PhotoPart } from '@/features/chat/photos';
 

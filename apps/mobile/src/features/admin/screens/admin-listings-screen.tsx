@@ -1,4 +1,4 @@
-import { joinParts, fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from '@maqar/shared';
+import { joinParts, fmtNum, PROPERTY_STATUS_LABEL, PROPERTY_STATUSES, type PropertyStatus } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Building2, Plus, Search, X } from 'lucide-react-native';
 import { useState } from 'react';

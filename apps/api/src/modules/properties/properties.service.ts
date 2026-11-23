@@ -14,7 +14,7 @@ import {
   type PropertyDetail,
   priceScale,
   SIZE_SCALE,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import type { AgentRow } from '../agents/agents.schema.js';
 import { UsersService } from '../users/users.service.js';

@@ -8,7 +8,7 @@ import {
   PROPERTY_TYPE_LABEL,
   type Sort,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { ArrowDownUp, KeyRound, type LucideIcon, Rotate3d, Search, SlidersHorizontal, Sparkles, TrendingDown, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';

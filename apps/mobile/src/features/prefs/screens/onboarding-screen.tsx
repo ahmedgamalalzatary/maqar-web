@@ -11,7 +11,7 @@ import {
   PROPERTY_TYPE_LABEL,
   PROPERTY_TYPES,
   type PropertyType,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -154,7 +154,7 @@ export function OnboardingScreen() {
         {step === 0 ? (
           <>
             <Title
-              title={saved ? t(m.common.editYourPreferences) : t(m.prefs.welcomeToMaqar)}
+              title={saved ? t(m.common.editYourPreferences) : t(m.prefs.welcomeToMqr)}
               sub={t(m.prefs.aFewQuickQuestionsAnd)}
             />
             <View style={styles.group}>

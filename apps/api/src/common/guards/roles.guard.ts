@@ -1,6 +1,6 @@
 import { type CanActivate, type ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { Role } from '@maqar/shared';
+import type { Role } from '@mqr/shared';
 import type { AuthUser } from '../decorators/current-user.decorator.js';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 

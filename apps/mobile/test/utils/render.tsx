@@ -1,4 +1,4 @@
-import type { Lang } from '@maqar/shared';
+import type { Lang } from '@mqr/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement } from 'react';

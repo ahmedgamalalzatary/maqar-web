@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiNotFoundResponse, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { INSIGHT_RANGES, type InterestedClient, type ListingStats } from '@maqar/shared';
+import { INSIGHT_RANGES, type InterestedClient, type ListingStats } from '@mqr/shared';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator.js';

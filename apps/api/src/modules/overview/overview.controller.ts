@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { type AdminOverview, OVERVIEW_RANGES, type OverviewRange } from '@maqar/shared';
+import { type AdminOverview, OVERVIEW_RANGES, type OverviewRange } from '@mqr/shared';
 import { Type } from 'class-transformer';
 import { IsIn, IsOptional } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator.js';

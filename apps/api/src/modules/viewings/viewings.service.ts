@@ -15,7 +15,7 @@ import {
   type ViewingItem,
   type ViewingCanceller,
   isActiveViewing,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { ListingCounter } from '../insights/insights.service.js';
@@ -367,7 +367,7 @@ export class ViewingsService {
     }[what];
     // An admin's reason, under the usual line.
     const withNote = (text: string, lang: Lang) => (note ? `${text}
-${lang === 'ar' ? 'من مقر' : 'From Maqar'}: ${note}` : text);
+${lang === 'ar' ? 'من مقر' : 'From MQR'}: ${note}` : text);
     forClient[2] = withNote(forClient[2]!, 'ar');
     forClient[3] = withNote(forClient[3]!, 'en');
     await Promise.all([
@@ -432,11 +432,11 @@ export function icsFor(v: ViewingItem, lang: Lang): string {
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Maqar//Viewings//EN',
+    'PRODID:-//MQR//Viewings//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:viewing-${v.id}@maqar.app`,
+    `UID:viewing-${v.id}@mqr.app`,
     `DTSTAMP:${icsTime(new Date())}`,
     `DTSTART:${icsTime(start)}`,
     `DTEND:${icsTime(end)}`,

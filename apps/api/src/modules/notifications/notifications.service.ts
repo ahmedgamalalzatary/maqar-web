@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { GOOD_MATCH, matchScore, type MatchListing, type NotificationItem, type NotificationKind, NOTIFICATIONS_LIMIT, type NotificationsResponse, type PushPlatform } from '@maqar/shared';
+import { GOOD_MATCH, matchScore, type MatchListing, type NotificationItem, type NotificationKind, NOTIFICATIONS_LIMIT, type NotificationsResponse, type PushPlatform } from '@mqr/shared';
 import { UsersRepository } from '../users/users.repository.js';
 import type { UserRow } from '../users/users.schema.js';
 import { NotificationsRepository } from './notifications.repository.js';

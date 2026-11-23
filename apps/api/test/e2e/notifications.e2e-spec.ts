@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, NotificationItem, NotificationsResponse } from '@maqar/shared';
+import type { AuthResponse, NotificationItem, NotificationsResponse } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { NotificationsService } from '../../src/modules/notifications/notifications.service.js';
@@ -202,7 +202,7 @@ describe('Notifications (e2e)', () => {
 
   it('is the same inbox for staff', async () => {
     // Agents get leads and chats (contract §8.13).
-    const agent = await signInSeeded(app, 'omar@maqar.app');
+    const agent = await signInSeeded(app, 'omar@mqr.app');
     const me = (await http().get('/v1/me').set(bearer(agent)).expect(200)).body as { id: number };
     await notifications.notify(me.id, { ...priceDrop(), kind: 'lead' });
     expect((await inbox(agent)).items[0]!.kind).toBe('lead');

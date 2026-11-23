@@ -1,4 +1,4 @@
-import { fmtMoney, type Bi } from '@maqar/shared';
+import { fmtMoney, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { arNum } from './forms';
 
@@ -9,7 +9,7 @@ export const home = {
   browseByArea: { ar: 'تصفح حسب المنطقة', en: 'Browse by area' },
   downPaymentYearsInstallmentInstantly: { ar: 'المقدم + عدد السنين = القسط في ثانية', en: 'Down payment + years = installment, instantly' },
   edit: { ar: 'تعديل', en: 'Edit' },
-  featuredByMaqar: { ar: 'مميزة من مقر', en: 'Featured by Maqar' },
+  featuredByMqr: { ar: 'مميزة من مقر', en: 'Featured by MQR' },
   findYourHome: { ar: 'لاقي بيتك،', en: 'Find your home,' },
   getYourPicks: { ar: 'ابدأ ترشيحاتك', en: 'Get your picks' },
   lightMode: { ar: 'الوضع الفاتح', en: 'Light mode' },

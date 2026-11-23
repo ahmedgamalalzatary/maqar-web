@@ -113,7 +113,7 @@ export class Env {
   @IsString()
   SMTP_PASS?: string;
 
-  /** The sender shown, e.g. "Maqar <maqarcompany@gmail.com>". Defaults to SMTP_USER. */
+  /** The sender shown, e.g. "MQR <maqarcompany1@gmail.com>". Defaults to SMTP_USER. */
   @IsOptional()
   @IsString()
   MAIL_FROM?: string;

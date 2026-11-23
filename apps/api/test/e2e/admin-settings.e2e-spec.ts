@@ -16,7 +16,7 @@ import {
   type PropertyDetail,
   type UploadResponse,
   type VideoUploadResponse,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
 import request from 'supertest';
@@ -60,18 +60,18 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
       .attach('video', buf, { filename: 'clip.mp4', contentType: 'video/mp4' });
 
   beforeAll(async () => {
-    dir = await mkdtemp(path.join(tmpdir(), 'maqar-settings-'));
+    dir = await mkdtemp(path.join(tmpdir(), 'mqr-settings-'));
     await resetDb();
     app = await createTestApp();
     db = app.get<Db>(DB);
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    omar = await signInSeeded(app, 'omar@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    omar = await signInSeeded(app, 'omar@mqr.app');
     client = (await signUp(app)).accessToken;
-    omarId = await idOf('omar@maqar.app');
-    mariamId = await idOf('mariam@maqar.app');
+    omarId = await idOf('omar@mqr.app');
+    mariamId = await idOf('mariam@mqr.app');
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items;
     const details = await Promise.all(all.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
     mariamHome = all.find((_, i) => details[i]!.agent.id === mariamId)!;
@@ -114,16 +114,16 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
 
     it('keeps the Contact us details, trimmed, and refuses one filled in wrong (2026-11-14)', async () => {
       const contact = {
-        email: ' info@maqar.app ',
+        email: ' info@mqr.app ',
         phone: '01012345678',
         whatsapp: '+20 101 234 5678',
-        facebook: 'https://facebook.com/maqar',
+        facebook: 'https://facebook.com/mqr',
         instagram: '',
-        tiktok: 'https://www.tiktok.com/@maqar',
+        tiktok: 'https://www.tiktok.com/@mqr',
       };
       const before = await settings();
       const saved = (await put({ contact }).expect(200)).body as AppSettings;
-      expect(saved.contact).toEqual({ ...contact, email: 'info@maqar.app' });
+      expect(saved.contact).toEqual({ ...contact, email: 'info@mqr.app' });
       expect(saved.calculator).toEqual(before.calculator);
       expect((await settings()).contact.whatsapp).toBe('+20 101 234 5678');
 
@@ -132,7 +132,7 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
       await put({ contact: { ...contact, facebook: 'javascript:alert(1)' } }).expect(400);
       await put({ contact: { ...contact, instagram: undefined } }).expect(400);
       await put({ contact }, client).expect(403);
-      expect((await settings()).contact.email).toBe('info@maqar.app');
+      expect((await settings()).contact.email).toBe('info@mqr.app');
     });
 
     it('takes a picture or a video of at most 3 seconds for the opening screen, with text', async () => {
@@ -220,7 +220,7 @@ describe('Admin settings and the owner’s changes (e2e)', () => {
     const agentBody = (over: Partial<AgentBody> = {}): AgentBody => ({
       nameAr: 'هنا عادل',
       nameEn: 'Hana Adel',
-      email: `hana-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@maqar.app`,
+      email: `hana-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@mqr.app`,
       password: 'Starting123',
       phone: '+201005550199',
       roleTitleAr: 'مستشارة مبيعات',

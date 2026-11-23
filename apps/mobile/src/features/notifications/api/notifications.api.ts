@@ -1,5 +1,5 @@
-import type { NotificationItem, NotificationsResponse, PushTokenBody } from '@maqar/shared';
-import { NOTIFICATIONS_LIMIT } from '@maqar/shared';
+import type { NotificationItem, NotificationsResponse, PushTokenBody } from '@mqr/shared';
+import { NOTIFICATIONS_LIMIT } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const listNotifications = (before?: number, signal?: AbortSignal) =>

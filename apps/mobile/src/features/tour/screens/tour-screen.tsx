@@ -1,5 +1,5 @@
-import { pickField } from '@maqar/shared';
-import type { PropertyDetail } from '@maqar/shared';
+import { pickField } from '@mqr/shared';
+import type { PropertyDetail } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

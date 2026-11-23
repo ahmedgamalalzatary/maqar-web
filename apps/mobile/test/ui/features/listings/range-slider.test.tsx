@@ -1,4 +1,4 @@
-import type { Lang, Scale } from '@maqar/shared';
+import type { Lang, Scale } from '@mqr/shared';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { RangeSlider } from '@/features/listings/components/range-slider';

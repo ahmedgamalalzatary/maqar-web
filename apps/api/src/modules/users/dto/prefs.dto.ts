@@ -8,7 +8,7 @@ import {
   type Prefs,
   PROPERTY_TYPES,
   type PropertyType,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, Matches, Max, Min } from 'class-validator';
 

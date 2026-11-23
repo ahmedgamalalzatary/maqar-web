@@ -8,7 +8,7 @@ import {
   PROPERTY_TYPE_LABEL,
   type PropertyDetail,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -146,7 +146,7 @@ function Details({ p, onBack }: { p: PropertyDetail; onBack: () => void }) {
       title,
       // The deep link opens this exact listing in an installed app; without the app the text
       // above still carries what was shared.
-      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t(m.property.onMaqar)}\nmaqar://property/${p.id}`.replace(/ \n/g, '\n'),
+      message: `${title}\n${fmtMoney(p.price, lang, false)} ${suffix}\n${place}\n${t(m.property.onMqr)}\nmqr://property/${p.id}`.replace(/ \n/g, '\n'),
     });
 
   return (

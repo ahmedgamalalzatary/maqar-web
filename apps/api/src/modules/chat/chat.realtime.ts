@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatEvents } from '@maqar/shared';
+import type { ChatEvents } from '@mqr/shared';
 import type { Server } from 'socket.io';
 
 /** Each user's sockets join this room, so a message reaches every phone they are signed in on. */

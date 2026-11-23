@@ -1,4 +1,4 @@
-import { REMINDER_OFFSETS, type ReminderOffset } from '@maqar/shared';
+import { REMINDER_OFFSETS, type ReminderOffset } from '@mqr/shared';
 
 // Viewing reminder timing (contract §8.7). Pure, so the rules are tested without a clock or a database.
 

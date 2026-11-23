@@ -1,4 +1,4 @@
-import { LEAD_STAGES, type LeadStage } from '@maqar/shared';
+import { LEAD_STAGES, type LeadStage } from '@mqr/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { LeadsScreen } from '@/features/agent/screens/leads-screen';
 

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { type ListingVideo, PANO_SIZE, panoramaProblem, type UploadResponse, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@maqar/shared';
+import { type ListingVideo, PANO_SIZE, panoramaProblem, type UploadResponse, VIDEO_MAX_SECONDS, type VideoUploadResponse } from '@mqr/shared';
 import sharp from 'sharp';
 import type { Env } from '../../core/config/env.js';
 import { convertArgs, ffTools, posterArgs, probe, run } from './video.js';

@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminListingItem, fmtMoney, PROPERTY_STATUS_LABEL, type PropertyStatus } from '@maqar/shared';
+import { pickField, joinParts, type AdminListingItem, fmtMoney, PROPERTY_STATUS_LABEL, type PropertyStatus } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';

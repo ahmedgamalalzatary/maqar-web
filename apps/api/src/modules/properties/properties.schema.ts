@@ -1,4 +1,4 @@
-import { CATEGORIES, FEATURES, FINISHINGS, PROPERTY_STATUSES, PROPERTY_TYPES } from '@maqar/shared';
+import { CATEGORIES, FEATURES, FINISHINGS, PROPERTY_STATUSES, PROPERTY_TYPES } from '@mqr/shared';
 import {
   bigint,
   boolean,

@@ -1,5 +1,5 @@
 import { ErrorText } from '@/components/error-text';
-import { readMobile } from '@maqar/shared';
+import { readMobile } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';

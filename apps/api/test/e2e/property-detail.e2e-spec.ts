@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { Page, PropertyCard, PropertyDetail } from '@maqar/shared';
+import type { Page, PropertyCard, PropertyDetail } from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';

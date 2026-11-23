@@ -6,12 +6,12 @@ import { Platform } from 'react-native';
 import { deletePushTokenRequest, savePushTokenRequest } from './api/notifications.api';
 
 /**
- * Whether this phone may show Maqar's notifications. `denied` means the phone blocks them and
+ * Whether this phone may show MQR's notifications. `denied` means the phone blocks them and
  * will not ask again, so only its settings can allow them. `unsupported` is the web and simulators.
  */
 export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unsupported';
 
-const TOKEN_KEY = 'maqar.pushToken';
+const TOKEN_KEY = 'mqr.pushToken';
 
 export const pushSupported = () => Platform.OS !== 'web' && Device.isDevice;
 
@@ -29,7 +29,7 @@ export async function pushPermission(): Promise<PushPermission> {
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'Maqar',
+    name: 'MQR',
     importance: AndroidImportance.HIGH,
     lightColor: '#b38959',
   });

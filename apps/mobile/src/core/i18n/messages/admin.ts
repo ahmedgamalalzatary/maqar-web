@@ -1,4 +1,4 @@
-import { count, fmtCell, fmtDate, fmtNum, relTime, type CellFormat, type ReportCell, type Bi } from '@maqar/shared';
+import { count, fmtCell, fmtDate, fmtNum, relTime, type CellFormat, type ReportCell, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS, counted, arNum, enPlural } from './forms';
 
@@ -150,8 +150,8 @@ export const admin = {
   optionalUpTo5Videos: { ar: 'اختياري. لحد ٥ فيديوهات، كل واحد لحد ٣ دقايق و١٥٠ ميجا. بتظهر بعد الصور. الفيديو بيتجهز على السيرفر بعد ما يترفع، وده ممكن ياخد كام دقيقة.', en: 'Optional. Up to 5 videos, each up to 3 minutes and 150 MB. They show after the photos. Each is prepared on the server after it uploads, which can take a few minutes.' },
   overview: { ar: 'نظرة عامة', en: 'Overview' },
   owner: { ar: 'المالك', en: 'Owner' },
-  ownerMaqarTeamOnly: { ar: 'المالك (لفريق مقر بس)', en: 'Owner (Maqar team only)' },
-  ownerOnlyTheMaqarTeam: { ar: 'المالك (محدش بيشوفه غير فريق مقر)', en: 'Owner (only the Maqar team sees this)' },
+  ownerMqrTeamOnly: { ar: 'المالك (لفريق مقر بس)', en: 'Owner (MQR team only)' },
+  ownerOnlyTheMqrTeam: { ar: 'المالك (محدش بيشوفه غير فريق مقر)', en: 'Owner (only the MQR team sees this)' },
   ownersName: { ar: 'اسم المالك', en: 'Owner’s name' },
   ownersPhone: { ar: 'موبايل المالك', en: 'Owner’s phone' },
   passItOnToThe: { ar: 'ابعتها للعميل. اتعمله خروج من كل الأجهزة.', en: 'Pass it on to the client. They were signed out everywhere.' },
@@ -236,7 +236,7 @@ export const admin = {
   theirs: { ar: 'معاه', en: 'theirs' },
   theLeastDownPaymentAnd: { ar: 'أقل مقدم وأقل وأكتر سنين العميل يقدر يختارهم. العقار اللي له خطة تقسيط خاصة بيتحسب بخطته.', en: 'The least down payment and the fewest and most years a client can pick. A listing with its own payment plan keeps its plan.' },
   theLogoOnly: { ar: 'اللوجو بس', en: 'The logo only' },
-  theMaqarTeamClosedIt: { ar: 'فريق مقر قفل المحادثة.', en: 'The Maqar team closed it.' },
+  theMqrTeamClosedIt: { ar: 'فريق مقر قفل المحادثة.', en: 'The MQR team closed it.' },
   theNewAgentGotA: { ar: 'المسؤول الجديد وصله إشعار.', en: 'The new agent got a notification.' },
   theOneWithTheFewest: { ar: 'اللي عنده أقل عدد عقارات منشورة', en: 'The one with the fewest live listings' },
   theOpeningScreen: { ar: 'شاشة الفتح', en: 'The opening screen' },

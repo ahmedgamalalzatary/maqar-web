@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewRange } from "@maqar/shared";
+import { type AdminOverview, fmtDate, fmtNum, OVERVIEW_RANGES, type OverviewRange } from "@mqr/shared";
 import { Flag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";

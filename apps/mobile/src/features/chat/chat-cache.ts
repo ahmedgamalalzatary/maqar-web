@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatPage, ChatSender } from '@maqar/shared';
+import type { ChatMessage, ChatPage, ChatSender } from '@mqr/shared';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 // The chat caches, shared by the screens and the socket. Keyed by the user, so no account ever sees another's.

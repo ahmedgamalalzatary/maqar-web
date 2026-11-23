@@ -10,7 +10,7 @@ import {
   PROPERTY_STATUS_LABEL,
   PROPERTY_STATUSES,
   type PropertyStatus,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { PricesService } from '../prices/prices.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { NewPropertyRow } from '../properties/properties.schema.js';

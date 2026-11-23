@@ -1,4 +1,4 @@
-# Maqar (مقر)
+# MQR (مقر)
 
 Real-estate platform for buyers, owners and sales agents. pnpm + Turborepo monorepo.
 
@@ -8,11 +8,11 @@ Real-estate platform for buyers, owners and sales agents. pnpm + Turborepo monor
 
 | Path | Package | What |
 |---|---|---|
-| `apps/mobile` | `@maqar/mobile` | Expo (SDK 58, Expo Router) app for iOS and Android |
-| `apps/api` | `@maqar/api` | NestJS 12 API, MySQL through Drizzle ORM |
-| `apps/web` | `@maqar/web` | Admin web dashboard (Next.js, static export served at `/admin/`) |
-| `packages/shared` | `@maqar/shared` | Enums, labels, API types and formatters used by api, mobile and web |
-| `packages/tsconfig` | `@maqar/tsconfig` | Shared TypeScript configs |
+| `apps/mobile` | `@mqr/mobile` | Expo (SDK 58, Expo Router) app for iOS and Android |
+| `apps/api` | `@mqr/api` | NestJS 12 API, MySQL through Drizzle ORM |
+| `apps/web` | `@mqr/web` | Admin web dashboard (Next.js, static export served at `/admin/`) |
+| `packages/shared` | `@mqr/shared` | Enums, labels, API types and formatters used by api, mobile and web |
+| `packages/tsconfig` | `@mqr/tsconfig` | Shared TypeScript configs |
 
 ## Requirements
 
@@ -31,15 +31,15 @@ pnpm build
 pnpm lint
 pnpm typecheck
 pnpm test         # unit + UI tests (api: vitest, mobile: Jest + Testing Library)
-pnpm test:e2e     # api e2e against the maqar_test database
+pnpm test:e2e     # api e2e against the mqr_test database
 ```
 
 One app:
 
 ```sh
-pnpm --filter @maqar/mobile dev    # Expo dev server
-pnpm --filter @maqar/api dev       # NestJS in watch mode, http://localhost:4000/v1 (docs at /docs)
-NEXT_PUBLIC_API_URL=http://localhost:4000/v1 pnpm --filter @maqar/web dev   # http://localhost:3220/admin/
+pnpm --filter @mqr/mobile dev    # Expo dev server
+pnpm --filter @mqr/api dev       # NestJS in watch mode, http://localhost:4000/v1 (docs at /docs)
+NEXT_PUBLIC_API_URL=http://localhost:4000/v1 pnpm --filter @mqr/web dev   # http://localhost:3220/admin/
 ```
 
 ## Environment
@@ -55,14 +55,14 @@ Create `.env.test` next to it with the same variables and test values:
 ```sh
 NODE_ENV=test
 PORT=4001
-DATABASE_URL=mysql://root:<password>@localhost:3306/maqar_test
+DATABASE_URL=mysql://root:<password>@localhost:3306/mqr_test
 EXPO_PUBLIC_API_URL=http://localhost:4001/v1
 ```
 
 ## API database
 
 ```sh
-pnpm --filter @maqar/api db:generate     # SQL migrations from src/core/db/schema.ts
-pnpm --filter @maqar/api db:migrate
-pnpm --filter @maqar/api db:studio
+pnpm --filter @mqr/api db:generate     # SQL migrations from src/core/db/schema.ts
+pnpm --filter @mqr/api db:migrate
+pnpm --filter @mqr/api db:studio
 ```

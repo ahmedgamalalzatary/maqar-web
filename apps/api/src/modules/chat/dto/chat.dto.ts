@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatReportBody, type ChatReportReason, REPORT_OUTCOMES, type ReportOutcome, type ReportResolveBody } from '@maqar/shared';
+import { CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatReportBody, type ChatReportReason, REPORT_OUTCOMES, type ReportOutcome, type ReportResolveBody } from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 

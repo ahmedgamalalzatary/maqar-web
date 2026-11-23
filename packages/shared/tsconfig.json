@@ -1,5 +1,5 @@
 {
-  "extends": "@maqar/tsconfig/node.json",
+  "extends": "@mqr/tsconfig/node.json",
   "compilerOptions": {
     "noEmit": true,
     "types": ["vitest/globals"]

@@ -1,4 +1,4 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import { Tabs } from 'expo-router';
 import {
   Bell,

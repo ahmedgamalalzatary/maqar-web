@@ -1,4 +1,4 @@
-import { pickField, type NotificationItem, type NotificationKind, relTime } from '@maqar/shared';
+import { pickField, type NotificationItem, type NotificationKind, relTime } from '@mqr/shared';
 import { type Href, useRouter } from 'expo-router';
 import {
   ArrowLeft,

@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AdminListing, ListingBody, PropertyDetail, TourRoomBody, UploadResponse } from '@maqar/shared';
+import type { AdminListing, ListingBody, PropertyDetail, TourRoomBody, UploadResponse } from '@mqr/shared';
 import sharp from 'sharp';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -52,8 +52,8 @@ describe('Admin 360° tours (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     client = (await signUp(app)).accessToken;
     const up = await http().post('/v1/uploads').set(bearer(admin)).attach('photo', await jpeg(800, 600), { filename: 'p.jpg', contentType: 'image/jpeg' });
     photo = (up.body as UploadResponse).url;

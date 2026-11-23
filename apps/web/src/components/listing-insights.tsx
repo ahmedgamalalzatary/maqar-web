@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminListing, fmtDate, fmtNum, INSIGHT_RANGES, type InsightRange, INTEREST_LABEL, insightsSummary, type ListingDay, rangeTotals, relTime } from "@maqar/shared";
+import { type AdminListing, fmtDate, fmtNum, INSIGHT_RANGES, type InsightRange, INTEREST_LABEL, insightsSummary, type ListingDay, rangeTotals, relTime } from "@mqr/shared";
 import { Copy, Phone } from "lucide-react";
 import { useState } from "react";
 import { useInterested, useListingStats } from "@/lib/admin";

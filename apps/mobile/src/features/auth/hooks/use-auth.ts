@@ -1,4 +1,4 @@
-import type { AuthResponse, ResetPasswordBody, SignInBody, SignUpBody } from '@maqar/shared';
+import type { AuthResponse, ResetPasswordBody, SignInBody, SignUpBody } from '@mqr/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/core/settings/store';

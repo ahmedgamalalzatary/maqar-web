@@ -31,7 +31,7 @@ describe('session refresh', () => {
     mockFetch().mockRejectedValue(new TypeError('Network request failed'));
     await expect(useSession.getState().refresh()).rejects.toMatchObject({ status: 0 });
     expect(useSession.getState().user).not.toBeNull();
-    expect(await SecureStore.getItemAsync('maqar.refreshToken')).toBe('refresh-token-1234567890');
+    expect(await SecureStore.getItemAsync('mqr.refreshToken')).toBe('refresh-token-1234567890');
   });
 
   it('reports the session as over when the server rejects the refresh token', async () => {
@@ -52,7 +52,7 @@ describe('session refresh', () => {
     await expect(pending).resolves.toBe(false);
     expect(useSession.getState().status).toBe('guest');
     expect(useSession.getState().refreshToken).toBeNull();
-    expect(await SecureStore.getItemAsync('maqar.refreshToken')).toBeNull();
+    expect(await SecureStore.getItemAsync('mqr.refreshToken')).toBeNull();
   });
 
   it('does not overwrite a newer session when a slow refresh finishes after another sign-in', async () => {

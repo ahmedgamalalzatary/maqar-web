@@ -45,7 +45,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the shared package
-        run: pnpm --filter @maqar/shared build
+        run: pnpm --filter @mqr/shared build
 
       - name: Generate the native iOS project
         working-directory: apps/mobile
@@ -58,21 +58,21 @@ jobs:
       - name: Archive the app, unsigned
         working-directory: apps/mobile/ios
         run: |
-          xcodebuild archive -workspace Maqar.xcworkspace -scheme Maqar -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Maqar.xcarchive" \
+          xcodebuild archive -workspace MQR.xcworkspace -scheme MQR -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/MQR.xcarchive" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
           test "${PIPESTATUS[0]}" -eq 0
 
       - name: Package the archive and the .ipa
         run: |
           mkdir -p out/Payload
-          cp -R "$RUNNER_TEMP"/Maqar.xcarchive/Products/Applications/*.app out/Payload/
-          (cd out && zip -qry "maqar-${GITHUB_SHA::7}-unsigned.ipa" Payload && rm -rf Payload)
-          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Maqar.xcarchive" "out/maqar-${GITHUB_SHA::7}-unsigned.xcarchive.zip"
+          cp -R "$RUNNER_TEMP"/MQR.xcarchive/Products/Applications/*.app out/Payload/
+          (cd out && zip -qry "mqr-${GITHUB_SHA::7}-unsigned.ipa" Payload && rm -rf Payload)
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/MQR.xcarchive" "out/mqr-${GITHUB_SHA::7}-unsigned.xcarchive.zip"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: maqar-ios
+          name: mqr-ios
           path: out/*
           retention-days: 14
 
@@ -103,7 +103,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the shared package
-        run: pnpm --filter @maqar/shared build
+        run: pnpm --filter @mqr/shared build
 
       - name: Generate the native iOS project
         working-directory: apps/mobile
@@ -117,7 +117,7 @@ jobs:
       - name: Build a Release app for the simulator
         working-directory: apps/mobile/ios
         run: |
-          xcodebuild -workspace Maqar.xcworkspace -scheme Maqar -configuration Release \
+          xcodebuild -workspace MQR.xcworkspace -scheme MQR -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
           test "${PIPESTATUS[0]}" -eq 0
@@ -126,10 +126,10 @@ jobs:
       - name: Package the simulator app
         run: |
           mkdir -p out
-          ditto -c -k --sequesterRsrc --keepParent apps/mobile/ios/build/Build/Products/Release-iphonesimulator/Maqar.app out/Maqar-simulator.zip
+          ditto -c -k --sequesterRsrc --keepParent apps/mobile/ios/build/Build/Products/Release-iphonesimulator/MQR.app out/MQR-simulator.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: maqar-ios-simulator
-          path: out/Maqar-simulator.zip
+          name: mqr-ios-simulator
+          path: out/MQR-simulator.zip
           retention-days: 14

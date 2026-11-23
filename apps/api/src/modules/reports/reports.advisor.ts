@@ -9,7 +9,7 @@ import {
   PROPERTY_STATUS_LABEL,
   VIEWING_CANCELLER_LABEL,
   VIEWING_STATUS_LABEL,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { firstReplies } from './chat-times.js';
 import { type Built, type Ctx, bi, since, titleOf, UNKNOWN } from './reports.context.js';
 import { type LeadFact, type ListingFact, ReportsRepository } from './reports.repository.js';

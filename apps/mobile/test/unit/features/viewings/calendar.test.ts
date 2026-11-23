@@ -7,7 +7,7 @@ jest.mock('expo-file-system', () => ({
   Paths: { cache: '/cache' },
   File: jest.fn().mockImplementation(() => ({ exists: false, create: jest.fn(), write: jest.fn(), delete: jest.fn(), uri: 'file:///cache/v.ics' })),
 }));
-jest.mock('expo-file-system/legacy', () => ({ getContentUriAsync: jest.fn(async () => 'content://com.maqar.app/cache/v.ics') }));
+jest.mock('expo-file-system/legacy', () => ({ getContentUriAsync: jest.fn(async () => 'content://com.mqr.app/cache/v.ics') }));
 jest.mock('expo-intent-launcher', () => ({ startActivityAsync: jest.fn(async () => ({ resultCode: 0 })) }));
 jest.mock('expo-sharing', () => ({ shareAsync: jest.fn(async () => undefined) }));
 jest.mock('@/features/viewings/api/viewings.api', () => ({ getIcs: jest.fn(async () => 'BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n') }));
@@ -27,7 +27,7 @@ describe('addToCalendar', () => {
     setOs('android');
     await addToCalendar(2);
     expect(IntentLauncher.startActivityAsync).toHaveBeenCalledWith('android.intent.action.VIEW', {
-      data: 'content://com.maqar.app/cache/v.ics',
+      data: 'content://com.mqr.app/cache/v.ics',
       type: 'text/calendar',
       flags: 1,
     });

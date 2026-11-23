@@ -10,7 +10,7 @@ import type {
   PropertyCard,
   PropertyDetail,
   SlotsResponse,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';
@@ -54,9 +54,9 @@ describe('Admin clients and admins (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
     adminId = ((await http().get('/v1/me').set(as()).expect(200)).body as { id: number }).id;
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     homes = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((h) => h.category !== 'stay');
     const omarId = ((await http().get('/v1/me').set(as(agent)).expect(200)).body as { id: number }).id;
     for (const h of homes) {
@@ -85,7 +85,7 @@ describe('Admin clients and admins (e2e)', () => {
       await http().patch('/v1/me').set(as(a.accessToken)).send({ phone: '+201112223334' }).expect(200);
       await http().put(`/v1/favorites/${homes[0]!.id}`).set(as(a.accessToken)).expect(204);
       const page = await list();
-      expect(page.items.every((i) => i.email !== 'admin@maqar.app' && i.email !== 'omar@maqar.app')).toBe(true);
+      expect(page.items.every((i) => i.email !== 'admin@mqr.app' && i.email !== 'omar@mqr.app')).toBe(true);
       expect(page.items[0]!.id).toBe(a.user.id);
       expect(page.items[0]).toMatchObject({ name: 'Nour Hesham', saved: 1, suspendedAt: null });
       // Seen just now (it signed up a moment ago), not hours off by a time zone.
@@ -157,8 +157,8 @@ describe('Admin clients and admins (e2e)', () => {
   describe('admins', () => {
     it('lists admins, marks the one asking, and creates one with a starting password', async () => {
       const before = (await http().get('/v1/admin/admins').set(as()).expect(200)).body as AdminAccount[];
-      expect(before.find((a) => a.id === adminId)).toMatchObject({ you: true, email: 'admin@maqar.app' });
-      const email = `second-${Date.now()}@maqar.app`;
+      expect(before.find((a) => a.id === adminId)).toMatchObject({ you: true, email: 'admin@mqr.app' });
+      const email = `second-${Date.now()}@mqr.app`;
       await http().post('/v1/admin/admins').set(as()).send({ name: 'Second', email, password: 'nodigits' }).expect(400);
       const made = (await http().post('/v1/admin/admins').set(as()).send({ name: 'Second Admin', email, password: 'Starting123' }).expect(201)).body as AdminAccount;
       expect(made).toMatchObject({ name: 'Second Admin', email, you: false, suspendedAt: null });
@@ -168,7 +168,7 @@ describe('Admin clients and admins (e2e)', () => {
     });
 
     it('suspends another admin at once, but never oneself (so one admin always stays active)', async () => {
-      const email = `third-${Date.now()}@maqar.app`;
+      const email = `third-${Date.now()}@mqr.app`;
       const made = (await http().post('/v1/admin/admins').set(as()).send({ name: 'Third', email, password: 'Starting123' }).expect(201)).body as AdminAccount;
       const token = ((await signIn(email, 'Starting123').expect(200)).body as AuthResponse).accessToken;
       await http().patch(`/v1/admin/admins/${adminId}`).set(as()).send({ suspended: true }).expect(409);

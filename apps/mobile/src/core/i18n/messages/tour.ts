@@ -1,4 +1,4 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import type { Message } from './types';
 
 export const tour = {

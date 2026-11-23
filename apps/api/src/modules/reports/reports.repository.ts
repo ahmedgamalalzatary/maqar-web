@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Category, ChatReportReason, LeadSource, LeadStage, PropertyStatus, PropertyType, PushPlatform, ReportOutcome, ViewingCanceller, ViewingStatus } from '@maqar/shared';
+import type { Category, ChatReportReason, LeadSource, LeadStage, PropertyStatus, PropertyType, PushPlatform, ReportOutcome, ViewingCanceller, ViewingStatus } from '@mqr/shared';
 import { and, asc, count, eq, gte, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';

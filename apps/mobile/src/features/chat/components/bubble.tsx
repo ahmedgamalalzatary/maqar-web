@@ -1,4 +1,4 @@
-import { pickField, joinParts, type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtPct, fmtTime } from '@maqar/shared';
+import { pickField, joinParts, type ChatMessage, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtPct, fmtTime } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bot, Calculator, CalendarCheck, CalendarClock, CalendarX, Check, CheckCheck, Clock, Hourglass, Rotate3d } from 'lucide-react-native';

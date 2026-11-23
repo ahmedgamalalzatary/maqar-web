@@ -1,4 +1,4 @@
-import type { Role } from '@maqar/shared';
+import type { Role } from '@mqr/shared';
 import { Redirect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { homeFor, useSession } from '../store/session.store';

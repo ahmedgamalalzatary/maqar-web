@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import type { AdminListing, AdminListingsPage } from '@maqar/shared';
+import type { AdminListing, AdminListingsPage } from '@mqr/shared';
 import { type AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AdminListingsQueryDto, ListingDto, PublishDto, UpdateListingDto } from './dto/listing.dto.js';

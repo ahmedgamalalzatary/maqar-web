@@ -1,4 +1,4 @@
-import type { ApiErrorBody, AuthResponse } from "@maqar/shared";
+import type { ApiErrorBody, AuthResponse } from "@mqr/shared";
 
 /** An HTTP error from the API. `status` is 0 when the server could not be reached. */
 export class ApiError extends Error {
@@ -213,7 +213,7 @@ export function createApi({ base, fetch, store, onSignedOut, refreshLock, upload
   async function keepAdmin(auth: AuthResponse): Promise<AuthResponse> {
     if (auth.user.role !== "admin") {
       await send("/auth/sign-out", { method: "POST", body: { refreshToken: auth.refreshToken } }, undefined).catch(() => undefined);
-      throw new ApiError(403, "This dashboard is for the Maqar team");
+      throw new ApiError(403, "This dashboard is for the MQR team");
     }
     store.save(auth);
     return auth;

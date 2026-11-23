@@ -1,4 +1,4 @@
-import { pickField, joinParts, fmtDate, fmtTime } from '@maqar/shared';
+import { pickField, joinParts, fmtDate, fmtTime } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { CalendarClock } from 'lucide-react-native';

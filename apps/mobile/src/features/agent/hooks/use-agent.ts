@@ -1,4 +1,4 @@
-import type { LeadDetail, UpdateLeadBody } from '@maqar/shared';
+import type { LeadDetail, UpdateLeadBody } from '@mqr/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';
 import { addNoteRequest, getLead, getLeads, getToday, updateLeadRequest } from '../api/agent.api';

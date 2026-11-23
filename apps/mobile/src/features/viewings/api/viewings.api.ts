@@ -1,4 +1,4 @@
-import type { BookViewingBody, SlotsResponse, UpdateViewingBody, ViewingItem } from '@maqar/shared';
+import type { BookViewingBody, SlotsResponse, UpdateViewingBody, ViewingItem } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 /** The next 14 days of hours. `reschedule`: the viewing being moved, whose own hour shows free. */

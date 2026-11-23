@@ -337,9 +337,9 @@ export function reportCsv(table: ReportTable, lang: Lang): string {
   return `﻿${[head.join(','), ...rows].join('\r\n')}`;
 }
 
-/** A file name for a table's CSV: `maqar-deals-2026-10-14-2026-11-12.csv`. */
+/** A file name for a table's CSV: `mqr-deals-2026-10-14-2026-11-12.csv`. */
 export const reportFileName = (r: Pick<ReportResult, 'id' | 'range'>, table: string): string =>
-  `maqar-${r.id}${table === r.id ? '' : `-${table}`}${r.range ? `-${r.range.from}-${r.range.to}` : ''}.csv`;
+  `mqr-${r.id}${table === r.id ? '' : `-${table}`}${r.range ? `-${r.range.from}-${r.range.to}` : ''}.csv`;
 
 // ---- Search, filters and sorting inside a table (phase 29) ----
 

@@ -1,4 +1,4 @@
-import { CATEGORIES, type Category, SORTS, type Sort } from '@maqar/shared';
+import { CATEGORIES, type Category, SORTS, type Sort } from '@mqr/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { ExploreScreen } from '@/features/listings/screens/explore-screen';
 

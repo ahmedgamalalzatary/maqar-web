@@ -1,4 +1,4 @@
-import type { Bi, Lang } from '@maqar/shared';
+import type { Bi, Lang } from '@mqr/shared';
 import { useCallback } from 'react';
 import { useSettings } from '@/core/settings/store';
 

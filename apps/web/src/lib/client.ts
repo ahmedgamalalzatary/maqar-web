@@ -1,6 +1,6 @@
 "use client";
 
-import type { AuthResponse } from "@maqar/shared";
+import type { AuthResponse } from "@mqr/shared";
 import { useSyncExternalStore } from "react";
 import { createApi, type TokenStore } from "./api";
 
@@ -14,7 +14,7 @@ export function mediaUrl(path: string | null | undefined): string | undefined {
   return API_URL.startsWith("http") ? new URL(path, API_URL).toString() : path;
 }
 
-const KEY = "maqar-admin-session";
+const KEY = "mqr-admin-session";
 const listeners = new Set<() => void>();
 let cached: AuthResponse | null | undefined;
 
@@ -53,7 +53,7 @@ const store: TokenStore = {
 
 /** One renewal at a time across all tabs, so the rotating refresh token is never replayed. */
 const refreshLock = <T>(fn: () => Promise<T>): Promise<T> =>
-  typeof navigator !== "undefined" && navigator.locks ? (navigator.locks.request("maqar-refresh", fn) as Promise<T>) : fn();
+  typeof navigator !== "undefined" && navigator.locks ? (navigator.locks.request("mqr-refresh", fn) as Promise<T>) : fn();
 
 export const api = createApi({ base: API_URL, fetch: (...a) => fetch(...a), store, refreshLock });
 

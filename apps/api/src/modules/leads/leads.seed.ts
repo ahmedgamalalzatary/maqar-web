@@ -1,4 +1,4 @@
-import type { LeadSource, LeadStage } from '@maqar/shared';
+import type { LeadSource, LeadStage } from '@mqr/shared';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import type { Db } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';

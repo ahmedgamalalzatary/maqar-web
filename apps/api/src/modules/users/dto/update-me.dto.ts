@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { LANGS, type Lang, THEMES, type ThemePref, type UpdateMeBody } from '@maqar/shared';
+import { LANGS, type Lang, THEMES, type ThemePref, type UpdateMeBody } from '@mqr/shared';
 import { IsBoolean, IsIn, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
 
 /** A PATCH key left out means "not provided": validation runs only when it is. An explicit null fails. */

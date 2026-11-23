@@ -1,4 +1,4 @@
-import type { MatchCount, Prefs, PropertyCard } from '@maqar/shared';
+import type { MatchCount, Prefs, PropertyCard } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const savePrefsRequest = (prefs: Prefs) => apiFetch<Prefs>('/me/prefs', { method: 'PUT', body: prefs });

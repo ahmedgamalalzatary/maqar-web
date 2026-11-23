@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Scale } from 'lucide-react-native';
 import { type ComponentRef, useRef } from 'react';
@@ -9,7 +9,7 @@ import { m, useT } from '@/core/i18n';
 import { haptic } from '@/core/motion/haptics';
 import { useTheme } from '@/core/theme';
 import { useSession } from '@/features/auth/store/session.store';
-import { COMPARE_MAX } from '@maqar/shared';
+import { COMPARE_MAX } from '@mqr/shared';
 import { useCompare } from '../store/compare.store';
 import { useCompareFlight } from '../store/compare-flight';
 

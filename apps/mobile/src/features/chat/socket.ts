@@ -1,4 +1,4 @@
-import type { ChatEvents } from '@maqar/shared';
+import type { ChatEvents } from '@mqr/shared';
 import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
 import { accessToken, apiBaseUrl, renewAccess } from '@/core/api/api';

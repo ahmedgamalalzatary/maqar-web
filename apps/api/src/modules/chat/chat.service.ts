@@ -20,7 +20,7 @@ import {
   installment,
   type SendChatBody,
   type ViewingItem,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import sharp from 'sharp';
 import type { AuthUser } from '../../common/decorators/current-user.decorator.js';
 import type { Env } from '../../core/config/env.js';
@@ -38,7 +38,7 @@ import type { ChatMessageRow, ChatReportRow, ChatThreadRow } from './chat.schema
 /** The out-of-hours reply (contract §16.1 #12), in the client's language. */
 const AWAY = {
   ar: 'أهلاً بيك! إحنا دلوقتي برّه مواعيد الشغل. سيب رسالتك وهنرد عليك أول ما نرجع، أو كلّم مقر في مواعيد العمل.',
-  en: 'Hi! We’re outside working hours right now. Leave your message and we’ll reply as soon as we’re back, or contact Maqar during working hours.',
+  en: 'Hi! We’re outside working hours right now. Leave your message and we’ll reply as soon as we’re back, or contact MQR during working hours.',
 };
 
 /** Photos are resized to this on their longest side. */
@@ -321,7 +321,7 @@ export class ChatService {
   private async notify(thread: ChatThreadRow, sender: ChatSender, to: number, body: ChatBody): Promise<void> {
     const [agents, from] = await Promise.all([this.properties.agentsById([thread.agentId]), this.users.findActiveById(thread.clientId)]);
     const agent = agents.get(thread.agentId);
-    const name = sender === 'agent' ? { ar: agent?.nameAr ?? 'مقر', en: agent?.nameEn ?? 'Maqar' } : { ar: from?.name || 'عميل', en: from?.name || 'Client' };
+    const name = sender === 'agent' ? { ar: agent?.nameAr ?? 'مقر', en: agent?.nameEn ?? 'MQR' } : { ar: from?.name || 'عميل', en: from?.name || 'Client' };
     await this.notifications.notify(to, {
       kind: 'chat',
       titleAr: name.ar,

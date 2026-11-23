@@ -2,7 +2,7 @@ import { resolveApiUrl } from '@/core/api/api-url';
 
 describe('resolveApiUrl', () => {
   it('keeps a real host as it is', () => {
-    expect(resolveApiUrl('https://api.maqar.app/v1', '192.168.1.5:8081')).toBe('https://api.maqar.app/v1');
+    expect(resolveApiUrl('https://api.mqr.app/v1', '192.168.1.5:8081')).toBe('https://api.mqr.app/v1');
   });
 
   it('points localhost at the dev machine, so a phone or emulator can reach the API', () => {

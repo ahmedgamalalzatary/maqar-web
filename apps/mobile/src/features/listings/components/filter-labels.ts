@@ -1,4 +1,4 @@
-import { BATHS_OPTIONS, BEDS_OPTIONS, type Bi, type Category, type Delivery, fmtMoney, fmtNum, type Lang, localDigits, SIZE_SCALE } from '@maqar/shared';
+import { BATHS_OPTIONS, BEDS_OPTIONS, type Bi, type Category, type Delivery, fmtMoney, fmtNum, type Lang, localDigits, SIZE_SCALE } from '@mqr/shared';
 import { m } from '@/core/i18n';
 
 type T = (msg: Bi) => string;

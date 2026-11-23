@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AgentListingOption, DayHours } from '@maqar/shared';
+import type { AgentListingOption, DayHours } from '@mqr/shared';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, notInArray, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { refreshTokens } from '../auth/auth.schema.js';

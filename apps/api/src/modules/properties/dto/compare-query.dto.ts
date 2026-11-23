@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { COMPARE_MAX } from '@maqar/shared';
+import { COMPARE_MAX } from '@mqr/shared';
 import { Transform } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsInt, Min } from 'class-validator';
 import { toList } from './properties-query.dto.js';

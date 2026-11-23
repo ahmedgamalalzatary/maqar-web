@@ -1,4 +1,4 @@
-import { fmtMoney, installment } from '@maqar/shared';
+import { fmtMoney, installment } from '@mqr/shared';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { PropertyCardView } from '@/features/listings/components/property-card';
 import { makeCard } from '../../../utils/api';

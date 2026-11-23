@@ -1,4 +1,4 @@
-import { type BookViewingBody, isUpcoming, type UpdateViewingBody, type ViewingItem } from '@maqar/shared';
+import { type BookViewingBody, isUpcoming, type UpdateViewingBody, type ViewingItem } from '@mqr/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';
 import { notificationsKey } from '@/features/notifications/hooks/use-notifications';

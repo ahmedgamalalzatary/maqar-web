@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { AdminAccount, AdminClientDetail, AdminClientItem, AdminClientsPage, ClientUpdateResult } from '@maqar/shared';
+import type { AdminAccount, AdminClientDetail, AdminClientItem, AdminClientsPage, ClientUpdateResult } from '@mqr/shared';
 import { hashPassword } from '../auth/password.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { UsersService } from '../users/users.service.js';

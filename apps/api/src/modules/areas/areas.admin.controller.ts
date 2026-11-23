@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
-import { type AdminArea, areaSlug } from '@maqar/shared';
+import { type AdminArea, areaSlug } from '@mqr/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AreasRepository } from './areas.repository.js';
 import { AreaDto, UpdateAreaDto } from './dto/areas.dto.js';

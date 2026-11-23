@@ -1,4 +1,4 @@
-import type { Prefs } from '@maqar/shared';
+import type { Prefs } from '@mqr/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { updateMeRequest } from '@/features/account/api/me.api';
 import { useSession } from '@/features/auth/store/session.store';

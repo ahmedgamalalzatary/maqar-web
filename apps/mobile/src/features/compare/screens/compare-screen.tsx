@@ -17,7 +17,7 @@ import {
   type PropertyDetail,
   winner,
   pickField,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowLeftRight, ArrowRight, Check, Crown, Minus, Plus, Scale, Sparkles, X } from 'lucide-react-native';

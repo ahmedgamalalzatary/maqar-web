@@ -1,6 +1,6 @@
 "use client";
 
-import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FEATURE_LABEL, FINISHING_LABEL, fmtDate, fmtDuration, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from "@maqar/shared";
+import { type AdminListing, CATEGORY_LABEL, canMoveTo, closedStatusFor, FEATURE_LABEL, FINISHING_LABEL, fmtDate, fmtDuration, fmtMoney, fmtNum, PROPERTY_TYPE_LABEL } from "@mqr/shared";
 import { ArrowLeft, ArrowRight, Check, Pencil, Phone } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -110,7 +110,7 @@ function Body({ l }: { l: AdminListing }) {
 
       <aside className="flex flex-col gap-5">
         <Card className="flex flex-col gap-3">
-          <h2 className="text-xs font-medium text-ink-3">{t("المالك (لفريق مقر بس)", "Owner (Maqar team only)")}</h2>
+          <h2 className="text-xs font-medium text-ink-3">{t("المالك (لفريق مقر بس)", "Owner (MQR team only)")}</h2>
           <p className="font-medium">{l.ownerName ?? t("مش متسجل", "Not recorded")}</p>
           {l.ownerPhone ? (
             <a href={`tel:${l.ownerPhone}`} className="inline-flex w-fit items-center gap-2 text-sm text-accent-ink hover:underline" dir="ltr">

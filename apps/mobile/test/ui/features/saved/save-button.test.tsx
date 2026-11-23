@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { toast } from '@/components/toast';
 import { useAuthPrompt } from '@/features/auth/components/auth-prompt';

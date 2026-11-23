@@ -21,7 +21,7 @@ import type {
   ClientUpdateResult,
   SlotsResponse,
   ViewingWhen,
-} from "@maqar/shared";
+} from "@mqr/shared";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useKey, useRefresh } from "./admin";
 import { api } from "./client";

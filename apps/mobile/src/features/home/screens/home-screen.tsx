@@ -1,4 +1,4 @@
-import { type Bi, pickField, type Category, fmtMoney, fmtPct, type HomeSection } from '@maqar/shared';
+import { type Bi, pickField, type Category, fmtMoney, fmtPct, type HomeSection } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Award, Building2, Calculator, Home as HomeIcon, KeyRound, type LucideIcon, Moon, Palmtree, Search, Sparkles, Sun, TrendingDown } from 'lucide-react-native';
@@ -264,7 +264,7 @@ function Picks({ cardWidth }: { cardWidth: number }) {
   );
 }
 
-/** "Featured by Maqar" (phase 18): homes the Maqar team picked, first on Home. Hidden when there are none. */
+/** "Featured by MQR" (phase 18): homes the MQR team picked, first on Home. Hidden when there are none. */
 function Featured({ cardWidth }: { cardWidth: number }) {
   const t = useT();
   const { colors } = useTheme();
@@ -273,7 +273,7 @@ function Featured({ cardWidth }: { cardWidth: number }) {
   const items = featured.data?.items ?? [];
   if (!items.length) return null;
   return (
-    <Section title={t(m.home.featuredByMaqar)} icon={<Award size={18} color={colors.accentInk} />}>
+    <Section title={t(m.home.featuredByMqr)} icon={<Award size={18} color={colors.accentInk} />}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
         {items.map((c, i) => (
           <Entrance key={c.id} clock={entrance} index={i}>

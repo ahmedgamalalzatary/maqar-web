@@ -21,14 +21,14 @@ describe('Accounts and sign-in (e2e)', () => {
   it.each(['agent', 'admin', 'owner'])('nobody can sign up as %s (owners were removed)', async (role) => {
     await http()
       .post('/v1/auth/sign-up')
-      .send({ name: 'X', email: 'x@test.maqar', password: 'Secret123', role })
+      .send({ name: 'X', email: 'x@test.mqr', password: 'Secret123', role })
       .expect(400);
   });
 
   it('signs up a client when the role is left out', async () => {
     const res = await http()
       .post('/v1/auth/sign-up')
-      .send({ name: 'No Role', email: 'no-role@test.maqar', password: 'Secret123' })
+      .send({ name: 'No Role', email: 'no-role@test.mqr', password: 'Secret123' })
       .expect(201);
     expect(res.body.user.role).toBe('client');
     expect(res.body.user.phone).toBeNull();
@@ -37,21 +37,21 @@ describe('Accounts and sign-in (e2e)', () => {
   it('keeps a mobile number given at sign-up, and refuses one that is not a number', async () => {
     const res = await http()
       .post('/v1/auth/sign-up')
-      .send({ name: 'With Phone', email: 'with-phone@test.maqar', password: 'Secret123', phone: '+201001234567' })
+      .send({ name: 'With Phone', email: 'with-phone@test.mqr', password: 'Secret123', phone: '+201001234567' })
       .expect(201);
     expect(res.body.user.phone).toBe('+201001234567');
     await http()
       .post('/v1/auth/sign-up')
-      .send({ name: 'Bad Phone', email: 'bad-phone@test.maqar', password: 'Secret123', phone: '0100-abc' })
+      .send({ name: 'Bad Phone', email: 'bad-phone@test.mqr', password: 'Secret123', phone: '0100-abc' })
       .expect(400);
   });
 
   it('a wrong password and an unknown email get the same 401', async () => {
-    await signUp(app, { email: 'omar@test.maqar' });
-    const wrong = await http().post('/v1/auth/sign-in').send({ email: 'omar@test.maqar', password: 'Wrong1234' }).expect(401);
-    const unknown = await http().post('/v1/auth/sign-in').send({ email: 'nobody@test.maqar', password: 'Wrong1234' }).expect(401);
+    await signUp(app, { email: 'omar@test.mqr' });
+    const wrong = await http().post('/v1/auth/sign-in').send({ email: 'omar@test.mqr', password: 'Wrong1234' }).expect(401);
+    const unknown = await http().post('/v1/auth/sign-in').send({ email: 'nobody@test.mqr', password: 'Wrong1234' }).expect(401);
     expect(wrong.body.message).toBe(unknown.body.message);
-    await http().post('/v1/auth/sign-in').send({ email: 'Omar@test.maqar', password: 'Secret123' }).expect(200);
+    await http().post('/v1/auth/sign-in').send({ email: 'Omar@test.mqr', password: 'Secret123' }).expect(200);
   });
 
   it('refresh rotates the token; replaying an old one signs out every session', async () => {
@@ -76,12 +76,12 @@ describe('Accounts and sign-in (e2e)', () => {
   });
 
   it('deleting the account needs the password, then cuts all access and frees the email', async () => {
-    const { accessToken, refreshToken } = await signUp(app, { email: 'leaving@test.maqar' });
+    const { accessToken, refreshToken } = await signUp(app, { email: 'leaving@test.mqr' });
     await http().delete('/v1/me').set(bearer(accessToken)).send({ password: 'Wrong1234' }).expect(401);
     await http().delete('/v1/me').set(bearer(accessToken)).send({ password: 'Secret123' }).expect(204);
 
     await http().get('/v1/me').set(bearer(accessToken)).expect(401);
     await http().post('/v1/auth/refresh').send({ refreshToken }).expect(401);
-    await signUp(app, { email: 'leaving@test.maqar' });
+    await signUp(app, { email: 'leaving@test.mqr' });
   });
 });

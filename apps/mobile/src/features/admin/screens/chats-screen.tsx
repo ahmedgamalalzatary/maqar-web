@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AdminChatDetail, type AdminChatItem, CHAT_REPORT_REASON_LABEL, type ChatMessage, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, REPORT_OUTCOME_LABEL, type ReportOutcome } from '@maqar/shared';
+import { pickField, joinParts, type AdminChatDetail, type AdminChatItem, CHAT_REPORT_REASON_LABEL, type ChatMessage, type ChatReport, type ChatReportReason, chatPreview, fmtDate, fmtNum, relTime, REPORT_OUTCOME_LABEL, type ReportOutcome } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Flag, Lock, MessagesSquare } from 'lucide-react-native';
 import { useState } from 'react';
@@ -167,7 +167,7 @@ function ChatBody({ c }: { c: AdminChatDetail }) {
             <Lock size={16} color={colors.ink2} />
             <Txt size={13} style={styles.flex}>
               {c.blocked.by === 'admin'
-                ? t(m.admin.theMaqarTeamClosedIt)
+                ? t(m.admin.theMqrTeamClosedIt)
                 : c.blocked.by === 'agent'
                   ? t(m.admin.theAdvisorClosedIt)
                   : t(m.admin.theClientClosedIt)}

@@ -10,7 +10,7 @@ import {
   SPLASH_KINDS,
   SPLASH_TEXT_MAX,
   type SplashKind,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayUnique, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 

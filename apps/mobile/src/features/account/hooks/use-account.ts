@@ -1,4 +1,4 @@
-import type { ChangePasswordBody, Lang, ThemePref, UpdateMeBody } from '@maqar/shared';
+import type { ChangePasswordBody, Lang, ThemePref, UpdateMeBody } from '@mqr/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { toast } from '@/components/toast';

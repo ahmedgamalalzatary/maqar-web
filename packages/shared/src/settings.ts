@@ -45,7 +45,7 @@ export type HomeSection = (typeof HOME_SECTIONS)[number];
 export const HOME_SECTION_LABEL: Record<HomeSection, Bi> = {
   shortcuts: { ar: 'اختصارات: شراء، إيجار، مشروعات، إقامة', en: 'Shortcuts: buy, rent, projects, stays' },
   nextViewing: { ar: 'المعاينة الجاية', en: 'The next viewing' },
-  featured: { ar: 'مميزة من مقر', en: 'Featured by Maqar' },
+  featured: { ar: 'مميزة من مقر', en: 'Featured by MQR' },
   prefs: { ar: 'بتدور على إيه (تفضيلات العميل)', en: 'What you’re looking for (the client’s preferences)' },
   picks: { ar: 'مختارة ليك', en: 'Picked for you' },
   areas: { ar: 'تصفح حسب المنطقة', en: 'Browse by area' },

@@ -1,5 +1,5 @@
 import { ErrorText } from '@/components/error-text';
-import { passwordOk, RESET_CODE_MINUTES, readResetCode } from '@maqar/shared';
+import { passwordOk, RESET_CODE_MINUTES, readResetCode } from '@mqr/shared';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';

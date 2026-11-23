@@ -6,7 +6,7 @@ export type Role = (typeof ROLES)[number];
 
 /**
  * Roles a person can pick at sign-up: clients only. Agents and admins are created by an admin, and
- * there are no owner accounts: owners deal with Maqar, and admins list their homes (2026-11-09).
+ * there are no owner accounts: owners deal with MQR, and admins list their homes (2026-11-09).
  */
 export const SIGN_UP_ROLES = ['client'] as const satisfies readonly Role[];
 export type SignUpRole = (typeof SIGN_UP_ROLES)[number];
@@ -76,7 +76,7 @@ export const REMINDER_OFFSETS = ['1d', '2h', '30m'] as const;
 export type ReminderOffset = (typeof REMINDER_OFFSETS)[number];
 
 /**
- * What a notification is about (contract §8.13). `system` is Maqar's own, such as the one sent when
+ * What a notification is about (contract §8.13). `system` is MQR's own, such as the one sent when
  * phone notifications are turned on. There is no `approval`: owners have no accounts (2026-11-09).
  */
 export const NOTIFICATION_KINDS = ['price', 'reminder', 'booking', 'match', 'lead', 'chat', 'system'] as const;

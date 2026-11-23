@@ -1,4 +1,4 @@
-import { pickField, fmtMoney, type PropertyCard } from '@maqar/shared';
+import { pickField, fmtMoney, type PropertyCard } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';

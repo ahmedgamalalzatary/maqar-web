@@ -1,10 +1,10 @@
-import type { AuthResponse, Me, Role } from '@maqar/shared';
+import type { AuthResponse, Me, Role } from '@mqr/shared';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { ApiError, setAuthHandlers } from '@/core/api/api';
 import { refreshRequest } from '../api/auth.api';
 
-const REFRESH_KEY = 'maqar.refreshToken';
+const REFRESH_KEY = 'mqr.refreshToken';
 
 type Status = 'loading' | 'guest' | 'signedIn';
 

@@ -7,7 +7,7 @@ import type {
   Page,
   PropertyCard,
   UploadResponse,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
 import request from 'supertest';
@@ -66,8 +66,8 @@ describe('Admin listings (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    agent = await signInSeeded(app, 'omar@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    agent = await signInSeeded(app, 'omar@mqr.app');
     client = (await signUp(app)).accessToken;
     photo = ((await upload(await jpeg(800, 600))).body as UploadResponse).url;
   });

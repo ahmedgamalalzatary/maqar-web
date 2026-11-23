@@ -1,4 +1,4 @@
-import type { Sort } from '@maqar/shared';
+import type { Sort } from '@mqr/shared';
 import { Check } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Sheet } from '@/components/sheet';

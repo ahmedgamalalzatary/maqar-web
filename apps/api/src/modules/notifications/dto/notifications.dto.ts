@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { NOTIFICATIONS_LIMIT, PUSH_PLATFORMS, type PushPlatform, type PushTokenBody } from '@maqar/shared';
+import { NOTIFICATIONS_LIMIT, PUSH_PLATFORMS, type PushPlatform, type PushTokenBody } from '@mqr/shared';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 

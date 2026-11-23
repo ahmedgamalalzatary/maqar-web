@@ -1,6 +1,6 @@
-# Maqar (مقر): project contract
+# MQR (مقر): project contract
 
-This is the single source of truth for what Maqar is, what it does and how it is built.
+This is the single source of truth for what MQR is, what it does and how it is built.
 
 **Rules for this file**
 
@@ -27,7 +27,7 @@ This is the single source of truth for what Maqar is, what it does and how it is
 8. [Features: client](#8-features-client)
 9. [Features: listings for owners](#9-features-listings-for-owners)
 10. [Features: sales agent](#10-features-sales-agent)
-11. [Features: Maqar admin](#11-features-maqar-admin)
+11. [Features: MQR admin](#11-features-mqr-admin)
 12. [Shared features](#12-shared-features)
 13. [Data model](#13-data-model)
 14. [API](#14-api)
@@ -40,7 +40,7 @@ This is the single source of truth for what Maqar is, what it does and how it is
 
 ## 1. Product
 
-**Maqar (مقر)** is a real-estate app for Egypt. Clients can find a home, see it, talk to a named sales advisor and book a viewing, all without leaving the app.
+**MQR (مقر)** is a real-estate app for Egypt. Clients can find a home, see it, talk to a named sales advisor and book a viewing, all without leaving the app.
 
 - Tagline: **لكل طموح ..مقر**
 - Market: Egypt. Currency is EGP. Arabic first, English second.
@@ -50,11 +50,11 @@ This is the single source of truth for what Maqar is, what it does and how it is
   - **stay**: short stays; price is per night
   - **project**: new developments, usually with a developer payment plan
 
-### 1.1 Why clients pick Maqar over MQR
+### 1.1 Why clients pick MQR over the competing app
 
-MQR is the competing app (Expo / React Native, Arabic and English). We analysed its Android build. Every row below is a promise the real product must keep.
+The competing app (Expo / React Native, Arabic and English). We analysed its Android build. Every row below is a promise the real product must keep.
 
-| | MQR | Maqar |
+| | Competing app | MQR |
 |---|---|---|
 | Sale, rent, short stays, new projects | ✓ | ✓ |
 | Search and filters | ✓ | ✓ plus one-tap quick filters, range sliders and multi-select |
@@ -76,8 +76,8 @@ MQR is the competing app (Expo / React Native, Arabic and English). We analysed 
 |---|---|---|---|
 | **Guest** | Not signed in | Home | Browse, search, view listings, 360° tour, calculator, compare |
 | **Client** (`buyer`) | Signed-in home seeker | Home | Everything a guest can, plus: save homes, price alerts, chat, book and manage viewings, notifications, preferences |
-| **Sales agent** | Maqar employee | `/agent` | See assigned leads and viewings, move leads through stages, add notes, chat with clients |
-| **Admin** [Real] | Maqar team | `/admin` in the app, and the web dashboard | Create, edit, publish and close listings for owners (there are no owner accounts), upload videos and 360° tours, manage agents, clients and other admins, assign leads, oversee viewings and chats, handle reports, manage areas, see the business overview |
+| **Sales agent** | MQR employee | `/agent` | See assigned leads and viewings, move leads through stages, add notes, chat with clients |
+| **Admin** [Real] | MQR team | `/admin` in the app, and the web dashboard | Create, edit, publish and close listings for owners (there are no owner accounts), upload videos and 360° tours, manage agents, clients and other admins, assign leads, oversee viewings and chats, handle reports, manage areas, see the business overview |
 
 Rules:
 
@@ -94,11 +94,11 @@ Rules:
 
 | Path | Package | Purpose |
 |---|---|---|
-| `apps/mobile` | `@maqar/mobile` | The real app: Expo SDK 58 with Expo Router, for iOS and Android. |
-| `apps/api` | `@maqar/api` | The real backend: NestJS 12, MySQL through Drizzle ORM. |
-| `apps/web` | `@maqar/web` | The admin web dashboard (Phase 17): Next.js 16 and Tailwind, a static export served by nginx at `/admin/` on the API's host. Port 3220 in development. |
-| `packages/tsconfig` | `@maqar/tsconfig` | Shared TypeScript configs. |
-| `packages/shared` | `@maqar/shared` | Enums, bilingual labels, API request/response types and the formatters (§7), used by both the API and the app. Built to `dist/` before the apps typecheck, test or build. |
+| `apps/mobile` | `@mqr/mobile` | The real app: Expo SDK 58 with Expo Router, for iOS and Android. |
+| `apps/api` | `@mqr/api` | The real backend: NestJS 12, MySQL through Drizzle ORM. |
+| `apps/web` | `@mqr/web` | The admin web dashboard (Phase 17): Next.js 16 and Tailwind, a static export served by nginx at `/admin/` on the API's host. Port 3220 in development. |
+| `packages/tsconfig` | `@mqr/tsconfig` | Shared TypeScript configs. |
+| `packages/shared` | `@mqr/shared` | Enums, bilingual labels, API request/response types and the formatters (§7), used by both the API and the app. Built to `dist/` before the apps typecheck, test or build. |
 | `docs/` | | This contract and other docs. |
 
 ---
@@ -119,13 +119,13 @@ Rules:
 | API libraries | `@nestjs/config`, `@nestjs/swagger`, `class-validator` + `class-transformer`, `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt`, `@node-rs/argon2` (hashing), `@nestjs/throttler`, `helmet`, `@nestjs/websockets` + `@nestjs/platform-socket.io` (chat), `@nestjs/schedule` (reminders), `@nestjs/event-emitter`, `sharp` (image resizing), `nestjs-pino` (logs), `date-fns` + `@date-fns/tz` (Africa/Cairo) |
 | Mobile libraries | `@tanstack/react-query`, `zustand` + `@react-native-async-storage/async-storage`, `expo-secure-store` (tokens), `expo-localization`, `expo-notifications`, `expo-image-picker` + `expo-image-manipulator`, `expo-haptics`, `expo-calendar`, `expo-file-system` + `expo-sharing`, `expo-sensors` + `expo-gl` + `three` (360° tour), `expo-video` (listing videos), `@expo-google-fonts/readex-pro`, `react-native-svg`, `expo-linear-gradient`, `socket.io-client` |
 | Not installed yet (waiting on §16.1) | Video (#5, decided in-person only for now). Timed jobs use `@nestjs/schedule` inside the API, with no queue (#13). Push is sent to Expo's HTTP API directly, with no SDK. |
-| API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `maqar_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
+| API tests | vitest. **Unit:** `test/unit/**/*.spec.ts`, for business rules, with no database (`pnpm test`). **e2e:** `test/e2e/**/*.e2e-spec.ts`, the real Nest app over HTTP (supertest) against the `mqr_test` database (`pnpm test:e2e`). Helpers in `test/utils`. Both configs load the root `.env.test`. |
 | Mobile tests | Jest with the `jest-expo` preset, plus React Native Testing Library 14 (`render` is async). **Unit:** `test/unit/**`; **UI:** `test/ui/**` (screens and flows); helpers in `test/utils`. Setup is in `jest.setup.ts`, and `jest.env.js` loads the root `.env.test` (`pnpm test`). |
 | API lint | oxlint |
 | Database | MySQL 8, Drizzle ORM, `drizzle-kit` migrations (`src/core/db/schema.ts` → `drizzle/`) |
-| Local database | The MySQL 8.0 already installed on the PC (`localhost:3306`, user `root`, the same password as the other work projects), database `maqar` (utf8mb4). root `.env` → `DATABASE_URL=mysql://root:…@localhost:3306/maqar` |
-| Production database | A `mysql` service in the project's Docker Compose, configured by `.env.production` on the server (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://maqar:…@mysql:3306/maqar`; `deploy/setup-server.sh` writes them). The Docker files and `.env.production` are added in Phase 2. |
-| Production server | Its own Hostinger KVM2 VPS (2 CPUs, 8 GB, about 100 GB disk), used only by Maqar. nginx on the server with a Let's Encrypt certificate for `api.<domain>` (the free domain from the Hostinger plan). Each deploy backs up the database and images, then runs the migrations (Phase 2). |
+| Local database | The MySQL 8.0 already installed on the PC (`localhost:3306`, user `root`, the same password as the other work projects), database `mqr` (utf8mb4). root `.env` → `DATABASE_URL=mysql://root:…@localhost:3306/mqr` |
+| Production database | A `mysql` service in the project's Docker Compose, configured by `.env.production` on the server (`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `DATABASE_URL=mysql://mqr:…@mysql:3306/mqr`; `deploy/setup-server.sh` writes them). The Docker files and `.env.production` are added in Phase 2. |
+| Production server | Its own Hostinger KVM2 VPS (2 CPUs, 8 GB, about 100 GB disk), used only by MQR. nginx on the server with a Let's Encrypt certificate for `api.<domain>` (the free domain from the Hostinger plan). Each deploy backs up the database and images, then runs the migrations (Phase 2). |
 | File storage | The server's disk (an uploads volume), served by nginx; a local git-ignored `uploads/` folder in development. Images are resized with `sharp`. |
 | pnpm build scripts | Allowed: `esbuild`, `@parcel/watcher`. Denied: `@scarf/scarf` (telemetry). Set in `pnpm-workspace.yaml`. |
 
@@ -139,12 +139,12 @@ Rules:
 - Commit only when asked.
 - Commit messages: a short imperative subject and a body that says what and why.
 - `pnpm build lint typecheck test` must pass before pushing.
-- **One `.env` at the repo root** is used by every app (API, Drizzle, mobile). **Tests use the root `.env.test` instead** (`NODE_ENV=test`, port 4001, the `maqar_test` database). Both files are git-ignored. The root `.env.example` lists every variable and is kept up to date; `.env.test` holds the same variables with test values (the README lists them). Apps load the root file explicitly; they never have their own `.env`.
+- **One `.env` at the repo root** is used by every app (API, Drizzle, mobile). **Tests use the root `.env.test` instead** (`NODE_ENV=test`, port 4001, the `mqr_test` database). Both files are git-ignored. The root `.env.example` lists every variable and is kept up to date; `.env.test` holds the same variables with test values (the README lists them). Apps load the root file explicitly; they never have their own `.env`.
 - Ports: the dev API runs on **4000** (tests on 4001), the Expo dev server on its default 8081.
 - **Test first (TDD), only where it matters.** A test is written and seen to fail before the code. Tests cover business rules, formatters, auth and role guards, data rules and each screen's main flow and key states, not plumbing. All tests live in `test/` next to `src/`, sorted by kind.
 - **Code layout.** API: `src/modules/<feature>/` (controller, service, repository, DTOs, module), plus `src/core` and `src/common`. Mobile: `src/features/<feature>/` (`api/`, `hooks/`, `components/`, `screens/`), plus `src/core`, `src/components`, and `src/app` for routes only.
 - Database changes go only through Drizzle migrations. Never edit a production database by hand.
-- Production server rules: Maqar has its own server and never goes on the owner's shared VPS. Run `nginx -t` before any reload. Delete only the backups you made yourself.
+- Production server rules: MQR has its own server and never goes on the owner's shared VPS. Run `nginx -t` before any reload. Delete only the backups you made yourself.
 - Any text a user sees exists in both Arabic and English.
 
 ---
@@ -198,7 +198,7 @@ Soft variants are the same colour at 12–14% opacity. Lead stages have their ow
 - Money: EGP, with compact forms for large values (for example ١١٫٢ مليون ج.م / EGP 11.2M).
 - Dates and times follow the locale. Viewing times are whole hours, shown in 12-hour form with a period word.
 - Relative times are used for activity ("2 hours ago").
-- [Real] All of these formatters live in `@maqar/shared` (`fmtNum`, `fmtCompact`, `fmtMoney`, `fmtPct`, `fmtTime`, `fmtDate`, `relTime`). They are written by hand rather than with `Intl`, because Hermes lacks parts of `Intl` and the output must match on the API, both phones and in tests.
+- [Real] All of these formatters live in `@mqr/shared` (`fmtNum`, `fmtCompact`, `fmtMoney`, `fmtPct`, `fmtTime`, `fmtDate`, `relTime`). They are written by hand rather than with `Intl`, because Hermes lacks parts of `Intl` and the output must match on the API, both phones and in tests.
 
 ---
 
@@ -226,7 +226,7 @@ Soft variants are the same colour at 12–14% opacity. Lead stages have their ow
 - Category shortcuts that open Explore on that category.
 - **Your next viewing** card, shown when one is booked; it links to My viewings.
 - Sections:
-  - **Featured by Maqar:** homes the Maqar team picked (Phase 18); shown only when there are some.
+  - **Featured by MQR:** homes the MQR team picked (Phase 18); shown only when there are some.
   - **Picked for you:** the homes with the highest match %, each with its reasons.
   - **Price drops:** shown only when there are some.
   - **Tour it before you go:** homes with a 360° tour.
@@ -416,7 +416,7 @@ The price is compared on the client's terms:
   | `match` | New homes match the client's preferences: a listing reaching a good match (70+) for a client is announced once, when it is published — at most 200 clients per listing, and never twice for the same home |
   | `lead` | Agent: new lead or new booking |
   | `chat` | New chat message |
-  | `system` | Maqar's own messages, such as "Notifications are on" when the switch is turned on |
+  | `system` | MQR's own messages, such as "Notifications are on" when the switch is turned on |
 - **Phone notifications:** a switch in Me that the user can turn on **and off** at any time.
   - On asks for permission the first time.
   - If permission is blocked, the switch says so and explains how to allow it.
@@ -429,13 +429,13 @@ The price is compared on the client's terms:
 - [Demo] Role switcher (client, owner, sales agent) for trying the app. [Real] Replaced by sign-in and sign-out; the role comes from the account.
 - Settings: language (Arabic / English), dark mode, phone notifications, edit preferences, installment calculator.
 - [Demo] "Reset demo" clears all stored state and chats, after a confirmation.
-- [Real] Edit profile (name and phone), delete account, app version, and (Phase 20) an "About Maqar" group for everyone, guests included: the privacy policy and terms (public pages on the API host, opened in the in-app browser) and contact support (an e-mail to `maqarcompany@gmail.com`). Changing the email still does not ship. (Phase 31) Clients and admins change their password and recover a forgotten one with a code by email; advisors ask the admin.
+- [Real] Edit profile (name and phone), delete account, app version, and (Phase 20) an "About MQR" group for everyone, guests included: the privacy policy and terms (public pages on the API host, opened in the in-app browser) and contact support (an e-mail to `maqarcompany1@gmail.com`). Changing the email still does not ship. (Phase 31) Clients and admins change their password and recover a forgotten one with a code by email; advisors ask the admin.
 
 ---
 
 ## 9. Features: listings for owners
 
-There are no owner accounts (decided 2026-11-09). An owner talks to Maqar, and an admin creates and manages the listing for them, in the app's admin screens or on the web dashboard.
+There are no owner accounts (decided 2026-11-09). An owner talks to MQR, and an admin creates and manages the listing for them, in the app's admin screens or on the web dashboard.
 
 ### 9.1 Listing insights
 
@@ -503,7 +503,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 
 ---
 
-## 11. Features: Maqar admin
+## 11. Features: MQR admin
 
 [Real] This is not in the demo. The admin tools are both screens inside the app and a web dashboard (§16.1 #6).
 
@@ -511,7 +511,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
 - **Agents** (Phase 18): create accounts with a starting password, edit profiles and monthly targets, turn off (signed out at once; not while they advise a live listing) or on; weekly hours and days off for one agent or several at once (§16.1 #8). Viewing slots and the chat's away reply follow at once.
 - Assign each listing to an advisor (at publish, or later). Reassign leads (the client's chats and viewings stay with the home's advisor).
 - Manage areas: names in both languages, city, image; an area in use cannot be deleted.
-- Featured listings: shown first on Home ("Featured by Maqar").
+- Featured listings: shown first on Home ("Featured by MQR").
 - **Listing insights** (Phase 19), on every listing that has been published, for the admin to pass to the owner:
   - a chart of views per Cairo day over the last 7, 30 or 90 days, with each day's views, saves and new interested clients;
   - totals for the range, and all time: views, interested clients, and who has it saved or follows its price now, chats and viewings booked;
@@ -546,7 +546,7 @@ Statuses: `draft`, `approved` (live), `unpublished`, `sold` and `rented`. There 
   The tab bar is hidden on property, tour, booking, chat, listing wizard and lead screens.
 - **Toasts** for quick feedback (gold, sage or danger), optionally tappable.
 - **Splash screen** while state loads.
-- **Deep links:** every notification and card opens its target screen. App scheme: `maqar`.
+- **Deep links:** every notification and card opens its target screen. App scheme: `mqr`.
 - **Share** a listing (system share sheet, with a link to the listing).
 - **Calendar export** (`.ics`) for viewings.
 - **Directions** to a property, opened in the phone's maps app.
@@ -658,12 +658,12 @@ Access is checked by role guards on every route. Agents and clients can only rea
 | 4 | ~~Maps provider~~ **Decided:** `react-native-maps` (free; Apple Maps on iOS, Google Maps on Android; included in Expo Go). Directions open the phone's maps app on the listing's location, so no paid directions API. Android store builds need a free, restricted Google Maps key (`GOOGLE_MAPS_API_KEY`, passed to the config plugin in `app.config.ts`). |
 | 5 | ~~Video viewings~~ **Decided:** none for now; in-person visits only. ⚑ May be added later, so keep the `mode` column (`visit` only for now). |
 | 6 | ~~Admin UI form~~ **Decided:** both a web dashboard and admin screens inside the app. |
-| 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for Maqar, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
+| 7 | ~~Hosting~~ **Decided:** a new Hostinger KVM2 VPS only for MQR, Docker Compose (API + MySQL) configured by `.env.production`, and the free domain from the Hostinger plan with Let's Encrypt HTTPS. |
 | 8 | ~~Agent working hours~~ **Decided:** each agent has weekly working hours per day, plus holidays and days off. An admin sets them for one agent or several at once. Viewing slots and the chat auto-reply follow them. |
 | 9 | ~~Client and owner on one account?~~ **Decided:** no, one role per account. |
 | 10 | ~~Owner verification and limits~~ **Removed:** there are no owner accounts (see the 2026-11-09 change log). |
 | 11 | ~~Owner edits~~ **Removed:** only admins edit listings. |
-| 12 | ~~Agent away~~ **Decided:** outside working hours, an automatic reply says to contact Maqar during working hours, until an agent picks up the chat. |
+| 12 | ~~Agent away~~ **Decided:** outside working hours, an automatic reply says to contact MQR during working hours, until an agent picks up the chat. |
 | 13 | ~~Background jobs~~ **Decided (for now):** a simple scheduler inside the API, no Redis or queue. |
 | 14 | ~~Analytics and crash reporting~~ **Decided:** out of scope for now. |
 
@@ -671,7 +671,7 @@ Access is checked by role guards on every route. Agents and clients can only rea
 
 - Tablet and desktop layouts.
 - Online payments, deposits and contracts.
-- Broker or agency accounts outside Maqar.
+- Broker or agency accounts outside MQR.
 - Mortgage applications with banks (the calculator only estimates).
 - A public web version of the app. (The `apps/demo` sales demo was removed on 2026-11-16.)
 - Admin tools left out on 2026-11-12: hard-deleting listings or agents (they are closed or turned off, so history keeps its links), broadcast notifications, and an audit log of admin changes.
@@ -714,7 +714,7 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-04 | Database setup decided: the local MySQL 8.0 for development, Docker Compose MySQL with `.env.docker` for production. |
 | 2026-11-04 | One `.env` at the repo root for all apps. |
 | 2026-11-04 | Tests read the root `.env.test`. |
-| 2026-11-04 | API and mobile libraries installed; test setup for both apps (vitest unit + e2e on `maqar_test`; Jest + Testing Library on mobile). |
+| 2026-11-04 | API and mobile libraries installed; test setup for both apps (vitest unit + e2e on `mqr_test`; Jest + Testing Library on mobile). |
 | 2026-11-08 | Phase 0 built (the phone check is still pending): `packages/shared`, API foundation (env check, Drizzle MySQL, `/v1`, validation, helmet, CORS, Swagger at `/docs`, `GET /v1/health`), mobile foundation (fonts, splash, theme, Arabic-first i18n with RTL, API client, React Query, toasts, role tab layouts). TDD made a working rule. `.env.test.example` and `.env.docker.example` removed. |
 | 2026-11-08 | Phase 1 built (the phone check is still pending). Decided: email + password sign-in (Google OAuth later) and one role per account. Added `refresh_tokens`, `users.password_hash`, `agents.name_ar/name_en`. Ports back to 4000 (API) and 4001 (tests). Prettier removed. |
 | 2026-11-09 | Decided: hosting on a new Hostinger KVM2 VPS with the plan's free domain (#7), and file storage on its disk (#2). Production config is `.env.production` (not `.env.docker`). Deployment became Phase 2 (deploys back up the database and images, then run migrations); the later phases moved up by one, so there are now 21 (0 to 20). The installment formula and calculator screen were built early for the store app (Phase 8, in progress). |
@@ -724,7 +724,7 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-09 | Phase 6 built (the phone check is still pending): `client_prefs`, `PUT /me/prefs`, `prefs` on `/me`, the match score on the server, `sort=match`, `GET /properties/recommended`, and the new `GET /properties/match-count` for onboarding's live count. Onboarding now follows sign-up rather than first launch, because preferences belong to the account; guests get an invitation instead. The tour's +2 waits for Phase 10. |
 | 2026-11-09 | Phase 9 built (the phone check is still pending): compare two homes. The new `GET /properties/compare?ids=` returns both homes' details in one call without counting views, unlike `GET /properties/:id`. The better-value rule and the verdict live in `packages/shared`. The "interested" demand row and the 360° tour amenity row wait for the phases that bring that data (12, 13, 16 and 10). |
 | 2026-11-09 | Decided: admin tools are a web dashboard plus screens inside the app (#6); analytics and crash reporting are out of scope for now (#14). |
-| 2026-11-09 | Decided: Expo push (#3); a scheduler inside the API for timed jobs (#13); in-person viewings only, video may come later (#5); admins set agents' weekly hours (#8); an out-of-hours auto-reply in chat (#12). **Scope change:** the owner role is removed. Owners deal with Maqar directly, and admins create and manage every listing, so owner screens and accounts go and their work moves to the admin tools; #10 and #11 no longer apply. Phases 17–19 are to be re-planned. |
+| 2026-11-09 | Decided: Expo push (#3); a scheduler inside the API for timed jobs (#13); in-person viewings only, video may come later (#5); admins set agents' weekly hours (#8); an out-of-hours auto-reply in chat (#12). **Scope change:** the owner role is removed. Owners deal with MQR directly, and admins create and manage every listing, so owner screens and accounts go and their work moves to the admin tools; #10 and #11 no longer apply. Phases 17–19 are to be re-planned. |
 | 2026-11-09 | Decided: chats stay with each home's advisor; agents' hours can be set one by one or for several at once, plus holidays; owner insights move to the admin tools. Phases re-planned: owner clean-up in 10, hours and holidays data in 13, 17 Admin listings, 18 Admin tools, 19 Listing insights. The owner sections of §2, §9 and §11 are to be rewritten when those phases start. |
 | 2026-11-09 | Phase 10 built (the phone check is still pending): `tour_rooms`, `tourRooms` on the property detail, `tour` on cards and as a filter, the +2 match points for a tour, and the 360° viewer. The owner role is removed from the code and the database (migration `0005` deletes owner accounts and drops `properties.owner_id`); sign-up is for clients only and its `role` field is optional. |
 | 2026-11-09 | The backend runs on a temporary server with no domain and no backups, until the dedicated server in #7 exists. `TRUST_PROXY_HOPS` added to the env. See Phase 2's status. |
@@ -736,16 +736,16 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-09 | CodeRabbit fixes on Phases 12–13: `PUT /alerts/:id` refuses stays (400). Deleting an account cancels only viewings that haven't started yet. In the app, Change and Cancel go away once a viewing starts, and a reschedule must pick a new time. |
 | 2026-11-10 | Phase 14 built (the phone check is still pending): a job inside the API sends viewing reminders every minute. Each is sent once, even with two servers. Choices already due at booking are skipped, and missed ones are merged into one message. No new tables or routes. |
 | 2026-11-10 | Phase 15 built (the phone check is still pending): the agent's Today, Leads and lead page. `lead_notes`; `leads.seen_at` ("New from app") and `won_at` (the monthly target); lead sources are now named (`booking` instead of `app`). The seed adds sample leads to each agent. Every database session now runs in UTC, so times MySQL fills in itself read right on a PC whose MySQL is in local time (production was already UTC). |
-| 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-maqar.conf` at deploy. |
+| 2026-11-10 | Phase 16 built (the phone check is still pending): `chat_threads` and `chat_messages`, the chat routes and the Socket.IO gateway at `/v1/socket.io`, the out-of-hours reply (#12), photos, and booking from a times card. The HTTP guards now skip socket events (the gateway signs sockets in itself). nginx needs the socket and photo-size blocks from `deploy/nginx-mqr.conf` at deploy. |
 | 2026-11-10 | Phases 14–16 deployed (`89afb44`) and checked on the phone (pushes still need Firebase). Phase 17 built (the deploy and the phone check are left): admin listings in the API (`POST /uploads`, `/admin/listings`, `/admin/agents`), the app's admin screens, and the web dashboard `apps/web` at `/admin/`. Migration `0011`: owner name and phone on listings, no advisor until published, and the `pending` and `changes` statuses removed (no review step). §2, §3, §9, §11, §13 and §14 rewritten to match. |
-| 2026-11-10 | Phase 18 built (the deploy and the phone check are left): agents (create, edit, turn off), weekly hours and days off for several agents at once, reassigning leads, areas, and featured listings (`featured` on cards, `?featured=true`, Home's "Featured by Maqar"). No migration. The admin's tabs are Listings, Agents, Leads, Areas and Me, on the web too. |
+| 2026-11-10 | Phase 18 built (the deploy and the phone check are left): agents (create, edit, turn off), weekly hours and days off for several agents at once, reassigning leads, areas, and featured listings (`featured` on cards, `?featured=true`, Home's "Featured by MQR"). No migration. The admin's tabs are Listings, Agents, Leads, Areas and Me, on the web too. |
 | 2026-11-11 | Phase 19 built (the deploy and the phone check are left): `listing_stats` (migration `0012`), `GET /admin/listings/:id/stats` (7, 30 or 90 days) and `/interested`, and the insights section on the listing page in the app and on the web. §9.1 moved under §11. Also fixed: the chat shows a retry when its messages or older ones fail to load, and the booking screen drops a picked time once the refreshed times show it is no longer free. |
 | 2026-11-11 | Pre-release review fixes (SEC and DATA sections). Security: password/email changes invalidate issued access tokens (migration `0014`); chat sockets re-validate on every event plus a minute sweep; rate limits on chat, bookings, uploads, notifications, saves and price follows, and an nginx `limit_req`; cross-tab refresh coordination on web and mobile; `null` fields stripped at validation; the mobile inbox cache is per account. Data: one active viewing per client and home is a database rule (migration `0015`); past viewings become completed; cancel/reschedule races settle in the write; booking from a chat times card retries safely; a thread keeps its own advisor after a listing moves; notification delivery is secondary; reminders are stamped sent only after delivery, with an expiring claim (migration `0016`); a listing edit and its price change commit together; a category change resets the price instead of inventing a drop, and installment plans are refused on rent and stay listings; publish/unpublish/close write with the expected source status and a still-active advisor. Decided: files under `/uploads/…` stay public by URL (§14, §15). Deactivating an advisor is refused while they have upcoming viewings, conversations or open leads, unless `reassignTo` (or `POST /admin/agents/:id/reassign`) hands the work to another advisor (§14). |
 | 2026-11-11 | Pre-release review fixes (UI sections, UI-01–UI-27; UI-18 contrast tokens skipped by the owner). Guests resume what they were doing after signing in or signing up; every request has a deadline; a failed chat send keeps its text and a lost-after-commit message is refetched; Explore and the admin lists recover from a failed page; booking treats stale availability as uncertain and offers retry with a Back fallback; error toasts carry the server's reason; photo-upload retries survive step navigation and long forms keep a local draft; listing photos are validated on the server and removed photos collected; staff self-edits reach their advisor profile; developer, floor and maintenance fee joined the listing forms; admin listings and leads page through everything; notifications page into the past and the compare picker always offers saved homes; sharing includes the deep link; an assumed installment plan is labeled as an estimate; the insights chart is touch- and keyboard-reachable; app motion yields to reduce motion; invalid admin ids show a finite not-found state (§8.14 amended: email change, recovery, policies and support are not shipped); admin edits refresh the public preview; panorama failures show retry; tour thumbs load lazily; advisor cards show no rating and call the reply time a target. |
 | 2026-11-11 | Pre-release review fixes (OPS and QA sections). OPS-06: the dashboard is built and validated before the API is touched, the asset swap keeps one previous generation, and the schema-compatibility and interrupted-deploy rules are written into the deploy scripts. OPS-08: publishing a listing announces it to clients whose saved preferences score a good match, at most 200 per listing and once per listing (§8.13). OPS-09: the stale/contradictory texts in the contract, phase plan and README are reconciled. QA-01: the mobile suite is green again (321 tests). QA-02: UI-08 and UI-14 gained the regression tests they lacked. QA-03 and QA-04: the device and release-operations checklists live in §17. |
 | 2026-11-11 | CodeRabbit fixes on the review of everything since Phase 19. Publishing works for every advisor (the active-advisor SQL compared the advisor id with the active flag); lead reassignment no longer trips MySQL error 1093; an agent edit that does not change the email no longer signs them out; JSON nulls validate per field, so phone, plan and location accept a null clear while NOT NULL fields refuse null, and a null array element is a 400; `page` and `limit` must be whole numbers on the interested list, and the web dashboard pages through it; sign-up keeps a guest's pending action for onboarding to resume, and sign-in dismisses itself before resuming; the web agents page offers the handover advisor when deactivation needs one and shows the server's counts (§8.14: the privacy policy and a support contact are required before a store submission). The e2e suite runs again (`ListingsModule` was missing its uploads dependency). |
 | 2026-11-11 | Phase 20 started. Write rate limits count per account (§15 already said so; the guard counted per address). Every route's access is pinned by an e2e table. Reminder claims respect a live lease. The app drops the unused calendar package and the camera, microphone, storage and overlay permissions, explains motion and photo access in Arabic and English, and declares no non-exempt encryption. `pre-release-review.md` removed: its items are fixed or recorded here and in §17. |
-| 2026-11-11 | Phase 20: the privacy policy, terms, support and account-deletion pages (Arabic and English, `deploy/site`), served by nginx at `/privacy`, `/terms`, `/support` and `/delete-account`; `deploy.sh` copies them and installs a changed Maqar nginx site only after `nginx -t`, restoring the previous file otherwise. The Me screen links the policy and terms and e-mails support (§8.14). The data controller named on the pages is "Maqar". |
+| 2026-11-11 | Phase 20: the privacy policy, terms, support and account-deletion pages (Arabic and English, `deploy/site`), served by nginx at `/privacy`, `/terms`, `/support` and `/delete-account`; `deploy.sh` copies them and installs a changed MQR nginx site only after `nginx -t`, restoring the previous file otherwise. The Me screen links the policy and terms and e-mails support (§8.14). The data controller named on the pages is "MQR". |
 | 2026-11-11 | Phase 20 phone check (release APK on an Android phone). Release builds keep the view constructors Expo creates by reflection and all of expo-gl's classes (its C++ calls them by name), so the 360° tour opens; the panorama is uploaded as RGBA, the layout expo-gl decodes photos into. Text fields stay above the keyboard on Android too (edge to edge). Android "Add to calendar" opens the viewing in a calendar app (view intent), falling back to the share sheet. A backdrop keeps scrolled content out of the status bar, except under the property photo, the tour and chat headers. The insights chart fits its range without scrolling; phone numbers keep their leading `+` in Arabic text. Overlay, activity-recognition and biometric permissions are blocked as unused. |
 | 2026-11-12 | Phase 21 built: `POST /uploads/panoramas` (checked, stored at 4096×2048 under `/uploads/tours/`), the listing's `tour` on create and edit (replaced in order, removed panoramas deleted unless another listing uses them), `tourRooms` on the admin listing, and a 360° tour step in the listing form in the app and on the web. nginx takes 32 MB on the panorama route. Also: the app's agent page asks who takes an advisor's open work before turning them off, as the web did. |
 | 2026-11-12 | Phase 22 built: `/admin/clients` (list, detail, new password, suspend/restore, delete) and `/admin/admins` (list, create, edit, suspend/restore); `users.suspended_at` (migration `0017`). The admin's app tabs are Listings, Agents, Leads, More. Security fix: access tokens carry `iatMs` and `credentials_changed_at` keeps milliseconds (migration `0018`), so a token issued in the same second as a password change no longer survives it. |
@@ -765,4 +765,4 @@ Run Arabic and English, light and dark, on one small and one large phone, and re
 | 2026-11-12 | Phase 27 built: `GET /admin/analytics/:id` for the eleven reports (closed deals, advisor performance, leads and sources, inventory, listing performance, price changes, listing quality, clients and engagement, demand by area, viewings, chats and response times), Reports in the web menu and under More in the app, with ranges, the previous period, filters, CSV export and print. Migration `0022`: `viewings.cancelled_by`, `leads.lost_at`. The web menu scrolls inside itself on narrow screens. |
 | 2026-11-12 | Phase 26 built: listing videos. `POST /uploads/videos` (admins; MP4 or MOV, at most 150 MB and 3 minutes; stored as H.264 MP4 with a poster under `/uploads/videos/`, converted when needed), the listing's `videos` (at most 5, in order; migration `0021`), a Videos step in the listing form in the app and on the web, and the videos after the photos in the client's gallery, played full screen (`expo-video`). The API image installs ffmpeg; nginx takes 160 MB on the video route. |
 | 2026-11-12 | Scope added (owner's call on the admin gap review): admins upload 360° tours (Phase 21); manage clients and other admins, with suspension (Phase 22); oversee viewings (Phase 23); read every chat, with report and block for clients and agents (Phase 24); a business overview (Phase 25). Left out on purpose: hard-deleting listings or agents, broadcast notifications, an audit log. §2, §8.6, §8.12, §11, §12, §13, §14 updated. |
-| 2026-11-16 | `apps/demo` removed (OPS-07). Its sample photos and panoramas moved to `apps/api/seed/` for the seed script (the image leaves them out; on the server mount them: `-v /root/maqar/apps/api/seed:/app/apps/api/seed:ro`); its logo files to `docs/brand/`. The demo stays in git history, for example `git show 1c91fa1:apps/demo/README.md`. |
+| 2026-11-16 | `apps/demo` removed (OPS-07). Its sample photos and panoramas moved to `apps/api/seed/` for the seed script (the image leaves them out; on the server mount them: `-v /root/mqr/apps/api/seed:/app/apps/api/seed:ro`); its logo files to `docs/brand/`. The demo stays in git history, for example `git show 1c91fa1:apps/demo/README.md`. |

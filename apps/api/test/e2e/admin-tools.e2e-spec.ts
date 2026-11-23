@@ -15,7 +15,7 @@ import type {
   PropertyCard,
   PropertyDetail,
   SlotsResponse,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -49,7 +49,7 @@ describe('Admin tools (e2e)', () => {
   const agentBody = (over: Partial<AgentBody> = {}): AgentBody => ({
     nameAr: 'نادين سمير',
     nameEn: 'Nadine Samir',
-    email: `nadine-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@maqar.app`,
+    email: `nadine-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@mqr.app`,
     password: 'Starting123',
     phone: '+201005550101',
     roleTitleAr: 'مستشارة مبيعات',
@@ -74,9 +74,9 @@ describe('Admin tools (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
-    omarId = await idOf('omar@maqar.app');
-    mariamId = await idOf('mariam@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
+    omarId = await idOf('omar@mqr.app');
+    mariamId = await idOf('mariam@mqr.app');
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');
     const details = await Promise.all(all.map(async (c) => (await http().get(`/v1/properties/${c.id}`).expect(200)).body as PropertyDetail));
     omarHome = all.find((_, i) => details[i]!.agent.id === omarId)!;
@@ -88,7 +88,7 @@ describe('Admin tools (e2e)', () => {
 
   it('is for admins only', async () => {
     const client = (await signUp(app)).accessToken;
-    const omar = await signInSeeded(app, 'omar@maqar.app');
+    const omar = await signInSeeded(app, 'omar@mqr.app');
     const routes = [
       () => http().get('/v1/admin/agents'),
       () => http().post('/v1/admin/agents').send(agentBody()),
@@ -120,7 +120,7 @@ describe('Admin tools (e2e)', () => {
     it('refuses an email in use, a short password, and a colour that is not one', async () => {
       const { body } = await createAgent();
       await http().post('/v1/admin/agents').set(as()).send(agentBody({ email: body.email })).expect(409);
-      await http().post('/v1/admin/agents').set(as()).send(agentBody({ email: 'OMAR@maqar.app' })).expect(409);
+      await http().post('/v1/admin/agents').set(as()).send(agentBody({ email: 'OMAR@mqr.app' })).expect(409);
       await http().post('/v1/admin/agents').set(as()).send(agentBody({ password: 'short' })).expect(400);
       await http().post('/v1/admin/agents').set(as()).send(agentBody({ password: undefined })).expect(400);
       await http().post('/v1/admin/agents').set(as()).send(agentBody({ colour: 'gold' })).expect(400);
@@ -235,8 +235,8 @@ describe('Admin tools (e2e)', () => {
 
       const moved = (await http().patch(`/v1/admin/leads/${lead.id}/assign`).set(as()).send({ agentId: mariamId }).expect(200)).body as AdminLeadItem;
       expect(moved.agent.id).toBe(mariamId);
-      const omar = await signInSeeded(app, 'omar@maqar.app');
-      const mariam = await signInSeeded(app, 'mariam@maqar.app');
+      const omar = await signInSeeded(app, 'omar@mqr.app');
+      const mariam = await signInSeeded(app, 'mariam@mqr.app');
       expect(((await http().get('/v1/agent/leads').set(as(omar)).expect(200)).body as LeadCard[]).map((l) => l.id)).not.toContain(lead.id);
       expect(((await http().get('/v1/agent/leads').set(as(mariam)).expect(200)).body as LeadCard[]).map((l) => l.id)).toContain(lead.id);
 

@@ -1,4 +1,4 @@
-import type { AdminChatDetail, AdminChatItem, ChatReport } from '@maqar/shared';
+import type { AdminChatDetail, AdminChatItem, ChatReport } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { ToastHost } from '@/components/toast';

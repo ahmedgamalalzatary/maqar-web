@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import type { AreaItem } from '@maqar/shared';
+import type { AreaItem } from '@mqr/shared';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { AreasRepository } from './areas.repository.js';
 

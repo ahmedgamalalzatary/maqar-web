@@ -26,12 +26,12 @@ describe('SignInScreen', () => {
   ] as const)('a %s lands on their own home screen', async (role, home) => {
     const fetchMock = mockFetch().mockResolvedValue(jsonResponse(200, makeAuth({ role })));
     await renderWithProviders(<SignInScreen />);
-    await signIn('omar@maqar.app', 'Secret123');
+    await signIn('omar@mqr.app', 'Secret123');
 
     expect(requestOf(fetchMock)).toMatchObject({
       method: 'POST',
       path: '/auth/sign-in',
-      body: { email: 'omar@maqar.app', password: 'Secret123' },
+      body: { email: 'omar@mqr.app', password: 'Secret123' },
     });
     expect(mockRouter.replace).toHaveBeenCalledWith(home);
     expect(useSession.getState().user?.role).toBe(role);
@@ -40,7 +40,7 @@ describe('SignInScreen', () => {
   it('shows the server message when the password is wrong, and stays signed out', async () => {
     mockFetch().mockResolvedValue(jsonResponse(401, { statusCode: 401, message: 'Wrong email or password' }));
     await renderWithProviders(<SignInScreen />);
-    await signIn('omar@maqar.app', 'nope');
+    await signIn('omar@mqr.app', 'nope');
 
     expect(await screen.findByText('الإيميل أو كلمة السر غلط')).toBeOnTheScreen();
     expect(mockRouter.replace).not.toHaveBeenCalled();
@@ -49,9 +49,9 @@ describe('SignInScreen', () => {
 
   it('opens Forgot password with the email typed so far (phase 31)', async () => {
     await renderWithProviders(<SignInScreen />);
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'omar@maqar.app');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'omar@mqr.app');
     await fireEvent.press(screen.getByRole('link', { name: 'نسيت كلمة السر؟' }));
-    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/forgot-password', params: { email: 'omar@maqar.app' } });
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/forgot-password', params: { email: 'omar@mqr.app' } });
   });
 
   // The owner's choice (2026-11-13): guests can still browse (App Store 5.1.1), but the way in is a quiet link.

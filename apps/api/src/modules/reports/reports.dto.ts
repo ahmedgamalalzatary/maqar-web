@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CATEGORIES, type Category, REPORT_IDS, type ReportId, type ReportQuery } from '@maqar/shared';
+import { CATEGORIES, type Category, REPORT_IDS, type ReportId, type ReportQuery } from '@mqr/shared';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Matches, Min } from 'class-validator';
 

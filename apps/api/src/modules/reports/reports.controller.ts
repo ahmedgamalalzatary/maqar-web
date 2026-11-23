@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { ReportResult } from '@maqar/shared';
+import type { ReportResult } from '@mqr/shared';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { ReportParamDto, ReportQueryDto } from './reports.dto.js';
 import { ReportsService } from './reports.service.js';

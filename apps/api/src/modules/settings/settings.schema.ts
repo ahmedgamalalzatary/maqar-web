@@ -1,4 +1,4 @@
-import type { AppSettings } from '@maqar/shared';
+import type { AppSettings } from '@mqr/shared';
 import { sql } from 'drizzle-orm';
 import { json, mysqlTable, timestamp, tinyint } from 'drizzle-orm/mysql-core';
 

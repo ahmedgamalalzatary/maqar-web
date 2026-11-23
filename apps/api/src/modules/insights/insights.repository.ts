@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { InterestKind } from '@maqar/shared';
+import type { InterestKind } from '@mqr/shared';
 import { and, between, count, eq, inArray, isNull, max, min, ne, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { chatMessages, chatThreads } from '../chat/chat.schema.js';

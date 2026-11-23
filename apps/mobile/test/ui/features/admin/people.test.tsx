@@ -1,4 +1,4 @@
-import type { AdminAccount, AdminClientDetail, AdminClientItem } from '@maqar/shared';
+import type { AdminAccount, AdminClientDetail, AdminClientItem } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { ToastHost } from '@/components/toast';
@@ -15,7 +15,7 @@ jest.mock('expo-router', () => require('../../../utils/router').expoRouterMock);
 const KARIM: AdminClientItem = {
   id: 21,
   name: 'كريم محمود',
-  email: 'karim@test.maqar',
+  email: 'karim@test.mqr',
   phone: '+201014124412',
   lang: 'ar',
   createdAt: '2026-11-01T10:00:00.000Z',
@@ -34,8 +34,8 @@ const detail = (over: Partial<AdminClientDetail> = {}): AdminClientDetail => ({
   leadsList: [],
   ...over,
 });
-const ME: AdminAccount = { id: 1, name: 'فريق مقر', email: 'admin@maqar.app', phone: null, createdAt: '2026-11-01T10:00:00.000Z', suspendedAt: null, lastSeenAt: null, you: true };
-const OTHER: AdminAccount = { ...ME, id: 2, name: 'سارة', email: 'sara@maqar.app', you: false };
+const ME: AdminAccount = { id: 1, name: 'فريق مقر', email: 'admin@mqr.app', phone: null, createdAt: '2026-11-01T10:00:00.000Z', suspendedAt: null, lastSeenAt: null, you: true };
+const OTHER: AdminAccount = { ...ME, id: 2, name: 'سارة', email: 'sara@mqr.app', you: false };
 
 /** A fake API for the people pages. Returns the requests made, as "METHOD path?query" with bodies. */
 function serve() {
@@ -150,10 +150,10 @@ describe('Admin accounts', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'أضف أدمن' }));
     await fireEvent.changeText(screen.getByLabelText('الاسم'), 'Mona');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@maqar.app');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل'), 'mona@mqr.app');
     await fireEvent.changeText(screen.getByLabelText('كلمة السر'), 'Starting123');
     await fireEvent.press(screen.getByRole('button', { name: 'أضف' }));
     expect(await screen.findByText('الأدمن اتضاف')).toBeOnTheScreen();
-    expect(requests().find(([r]) => r === 'POST /admin/admins')![1]).toEqual({ name: 'Mona', email: 'mona@maqar.app', password: 'Starting123' });
+    expect(requests().find(([r]) => r === 'POST /admin/admins')![1]).toEqual({ name: 'Mona', email: 'mona@mqr.app', password: 'Starting123' });
   });
 });

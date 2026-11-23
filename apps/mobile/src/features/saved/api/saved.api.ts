@@ -1,4 +1,4 @@
-import type { PropertyCard } from '@maqar/shared';
+import type { PropertyCard } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 /** Every saved home, most recently saved first. */

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { PriceChangeBody } from '@maqar/shared';
+import type { PriceChangeBody } from '@mqr/shared';
 import { IsInt, Max, Min } from 'class-validator';
 
 export class PriceChangeDto implements PriceChangeBody {

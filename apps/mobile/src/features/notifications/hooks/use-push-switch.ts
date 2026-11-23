@@ -72,7 +72,7 @@ export function usePushSwitch() {
     if (p === 'denied') {
       toast.show({
         title: t(m.notifications.notificationsAreBlocked),
-        body: t(m.notifications.allowThemForMaqarIn),
+        body: t(m.notifications.allowThemForMqrIn),
         tone: 'danger',
       });
       return;

@@ -32,7 +32,7 @@ import {
   type TableView,
   viewRows,
   weekdayName,
-} from "@maqar/shared";
+} from "@mqr/shared";
 import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileBarChart, Printer, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

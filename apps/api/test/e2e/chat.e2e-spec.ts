@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, ChatMessage, ChatPage, ChatThread, LeadCard, LeadDetail, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@maqar/shared';
+import type { AuthResponse, ChatMessage, ChatPage, ChatThread, LeadCard, LeadDetail, NotificationsResponse, Page, PropertyCard, PropertyDetail, SlotsResponse, ViewingItem } from '@mqr/shared';
 import { and, eq } from 'drizzle-orm';
 import { io, type Socket } from 'socket.io-client';
 import request from 'supertest';
@@ -61,9 +61,9 @@ describe('Chat (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    omar = await signInSeeded(app, 'omar@maqar.app');
-    mariam = await signInSeeded(app, 'mariam@maqar.app');
-    omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@maqar.app')))[0]!.id;
+    omar = await signInSeeded(app, 'omar@mqr.app');
+    mariam = await signInSeeded(app, 'mariam@mqr.app');
+    omarId = (await db.select({ id: users.id }).from(users).where(eq(users.email, 'omar@mqr.app')))[0]!.id;
     // Omar works around the clock in these tests, so the away reply only comes when a test asks for it.
     await db.update(agentHours).set({ fromHour: 0, toHour: 23 }).where(eq(agentHours.agentId, omarId));
     const all = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');
@@ -83,7 +83,7 @@ describe('Chat (e2e)', () => {
   describe('conversations', () => {
     it('is for clients and agents; only clients start one', async () => {
       await http().get('/v1/chats').expect(401);
-      const admin = await signInSeeded(app, 'admin@maqar.app');
+      const admin = await signInSeeded(app, 'admin@mqr.app');
       await http().get('/v1/chats').set(bearer(admin)).expect(403);
       await http().post('/v1/chats').set(bearer(omar)).send({ propertyId: aHome().id }).expect(403);
       await http().post('/v1/chats').set(bearer(client.accessToken)).send({ propertyId: 999999 }).expect(404);
@@ -357,7 +357,7 @@ describe('Chat (e2e)', () => {
     it('turns away a missing or bad token, and staff other than agents', async () => {
       await expect(connect(undefined)).rejects.toThrow();
       await expect(connect('not-a-token')).rejects.toThrow();
-      await expect(connect(await signInSeeded(app, 'admin@maqar.app'))).rejects.toThrow();
+      await expect(connect(await signInSeeded(app, 'admin@mqr.app'))).rejects.toThrow();
     });
 
     it('brings messages, typing and read receipts to the other side at once', async () => {

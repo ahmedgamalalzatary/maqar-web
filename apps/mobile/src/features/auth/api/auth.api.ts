@@ -1,4 +1,4 @@
-import type { AuthResponse, ResetPasswordBody, SignInBody, SignUpBody } from '@maqar/shared';
+import type { AuthResponse, ResetPasswordBody, SignInBody, SignUpBody } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const signInRequest = (body: SignInBody) =>

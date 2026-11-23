@@ -3,7 +3,7 @@ import appConfig from '../../../app.config';
 
 // OPS-03 (2026-11-15): each store build carries a build number that goes up, set by CI from
 // the commit count on main, so Play and the App Store accept the next upload.
-const base = { name: 'Maqar', slug: 'maqar', version: '1.0.0', android: { package: 'com.maqar.app' }, ios: { bundleIdentifier: 'com.maqar.app' } } as ExpoConfig;
+const base = { name: 'MQR', slug: 'mqr', version: '1.0.0', android: { package: 'com.mqr.app' }, ios: { bundleIdentifier: 'com.mqr.app' } } as ExpoConfig;
 const build = () => appConfig({ config: base } as never);
 
 afterEach(() => {
@@ -14,8 +14,8 @@ describe('the build number', () => {
   it('goes to Android as versionCode and to iOS as buildNumber', () => {
     process.env.APP_BUILD_NUMBER = '412';
     const c = build();
-    expect(c.android).toMatchObject({ package: 'com.maqar.app', versionCode: 412 });
-    expect(c.ios).toMatchObject({ bundleIdentifier: 'com.maqar.app', buildNumber: '412' });
+    expect(c.android).toMatchObject({ package: 'com.mqr.app', versionCode: 412 });
+    expect(c.ios).toMatchObject({ bundleIdentifier: 'com.mqr.app', buildNumber: '412' });
     expect(c.version).toBe('1.0.0');
   });
 

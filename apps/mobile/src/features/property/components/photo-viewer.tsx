@@ -1,4 +1,4 @@
-import { fmtNum } from '@maqar/shared';
+import { fmtNum } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { X } from 'lucide-react-native';
 import { useState } from 'react';

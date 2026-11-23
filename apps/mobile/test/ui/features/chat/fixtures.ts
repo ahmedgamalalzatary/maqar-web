@@ -1,4 +1,4 @@
-import type { ChatBody, ChatMessage, ChatThread } from '@maqar/shared';
+import type { ChatBody, ChatMessage, ChatThread } from '@mqr/shared';
 import { makeCard } from '../../../utils/api';
 
 export const agent = {

@@ -1,4 +1,4 @@
-import type { AnswerBookingBody, ChatMessage, ChatPage, ChatReport, ChatReportBody, ChatThread, SendChatBody, ViewingItem } from '@maqar/shared';
+import type { AnswerBookingBody, ChatMessage, ChatPage, ChatReport, ChatReportBody, ChatThread, SendChatBody, ViewingItem } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 import type { PhotoPart } from '../photos';
 

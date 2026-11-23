@@ -1,6 +1,6 @@
 import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import type { Role } from '@maqar/shared';
+import type { Role } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
@@ -36,9 +36,9 @@ describe('Role guards (e2e)', () => {
     await seedDemoAccounts(app.get<Db>(DB), process.env.SEED_PASSWORD!);
 
     for (const [role, email] of Object.entries({
-      client: 'client@maqar.app',
-      agent: 'omar@maqar.app',
-      admin: 'admin@maqar.app',
+      client: 'client@mqr.app',
+      agent: 'omar@mqr.app',
+      admin: 'admin@mqr.app',
     })) {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/sign-in')

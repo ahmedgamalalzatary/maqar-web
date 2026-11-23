@@ -1,4 +1,4 @@
-import { type AdminAccount, ltrPhone } from '@maqar/shared';
+import { type AdminAccount, ltrPhone } from '@mqr/shared';
 import { Plus, ShieldUser } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';

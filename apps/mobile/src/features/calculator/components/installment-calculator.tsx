@@ -1,4 +1,4 @@
-import { fmtMoney, fmtNum, fmtPct, installment, localDigits, minDownOf, yearsLimits } from '@maqar/shared';
+import { fmtMoney, fmtNum, fmtPct, installment, localDigits, minDownOf, yearsLimits } from '@mqr/shared';
 import { Info } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';

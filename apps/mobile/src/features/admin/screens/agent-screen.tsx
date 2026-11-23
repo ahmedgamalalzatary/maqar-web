@@ -1,4 +1,4 @@
-import { pickField, type AdminAgentDetail, fmtDate, fmtTime, weekdayName, ltrPhone } from '@maqar/shared';
+import { pickField, type AdminAgentDetail, fmtDate, fmtTime, weekdayName, ltrPhone } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Phone, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';

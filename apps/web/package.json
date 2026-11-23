@@ -1,5 +1,5 @@
 {
-  "name": "@maqar/web",
+  "name": "@mqr/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@maqar/shared": "workspace:*",
+    "@mqr/shared": "workspace:*",
     "@tanstack/react-query": "^5.105.3",
     "lucide-react": "^1.67.0",
     "next": "16.4.4",

@@ -1,4 +1,4 @@
-import { fmtDuration, fmtNum, type ListingVideo } from '@maqar/shared';
+import { fmtDuration, fmtNum, type ListingVideo } from '@mqr/shared';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Play } from 'lucide-react-native';

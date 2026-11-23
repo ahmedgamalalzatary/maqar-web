@@ -1,4 +1,4 @@
-import { lastDays } from '@maqar/shared';
+import { lastDays } from '@mqr/shared';
 import { cairoClock, cairoInstant } from '../viewings/slots.js';
 
 const nextDay = (date: string) => {

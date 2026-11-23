@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import type { ChatThread } from '@maqar/shared';
+import type { ChatThread } from '@mqr/shared';
 import { addMessage, chatKey, chatsKey, markReadBy, replaceMessage, threadKey } from '../chat-cache';
 import { useChatUser } from '../hooks/use-chat';
 import { connectChat, heardTyping, stoppedTyping } from '../socket';

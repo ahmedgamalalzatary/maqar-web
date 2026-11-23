@@ -16,7 +16,7 @@ import {
   SPLASH_VIDEO_MAX_SECONDS,
   type SplashKind,
   VIDEO_TYPES,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ArrowDown, ArrowUp, ImagePlus, Video } from 'lucide-react-native';

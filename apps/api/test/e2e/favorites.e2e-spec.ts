@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, Page, PropertyCard } from '@maqar/shared';
+import type { AuthResponse, Page, PropertyCard } from '@mqr/shared';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -49,7 +49,7 @@ describe('Saved homes (e2e)', () => {
   });
 
   it('is for clients only', async () => {
-    const agent = await signInSeeded(app, 'omar@maqar.app');
+    const agent = await signInSeeded(app, 'omar@mqr.app');
     await http().get('/v1/favorites').set(bearer(agent)).expect(403);
     await save(agent, homes[0]!.id).expect(403);
     await unsave(agent, homes[0]!.id).expect(403);
@@ -92,7 +92,7 @@ describe('Saved homes (e2e)', () => {
   });
 
   it('stays saved on another device: a new sign-in sees the same list', async () => {
-    const email = `saved-${Date.now()}@test.maqar`;
+    const email = `saved-${Date.now()}@test.mqr`;
     const first = await signUp(app, { email });
     await save(first.accessToken, homes[2]!.id).expect(204);
     const second = (await http().post('/v1/auth/sign-in').send({ email, password: 'Secret123' }).expect(200)).body as AuthResponse;

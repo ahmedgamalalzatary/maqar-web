@@ -1,4 +1,4 @@
-import type { ListingFilters, PropertiesQuery } from '@maqar/shared';
+import type { ListingFilters, PropertiesQuery } from '@mqr/shared';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { getAreas, getFacets, getProperties } from '../api/listings.api';

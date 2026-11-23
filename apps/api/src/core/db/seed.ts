@@ -1,4 +1,4 @@
-// `pnpm --filter @maqar/api db:seed`: adds the demo data to the database in the root .env.
+// `pnpm --filter @mqr/api db:seed`: adds the demo data to the database in the root .env.
 import { cp, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from 'dotenv';

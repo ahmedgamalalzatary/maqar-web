@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COMPARE_MAX } from '@maqar/shared';
+import { COMPARE_MAX } from '@mqr/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -50,7 +50,7 @@ export const useCompare = create<CompareState>()(
       },
     }),
     {
-      name: 'maqar.compare',
+      name: 'mqr.compare',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ homes }) => ({ homes }),
     },

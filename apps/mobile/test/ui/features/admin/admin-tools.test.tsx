@@ -1,4 +1,4 @@
-import type { AdminAgentDetail, AdminAgentItem, AdminArea, AdminLeadItem } from '@maqar/shared';
+import type { AdminAgentDetail, AdminAgentItem, AdminArea, AdminLeadItem } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ToastHost } from '@/components/toast';
 import { useSession } from '@/features/auth/store/session.store';
@@ -18,7 +18,7 @@ const agent = (over: Partial<AdminAgentItem>): AdminAgentItem => ({
   nameAr: 'عمر حسن',
   nameEn: 'Omar Hassan',
   colour: '#b38959',
-  email: 'omar@maqar.app',
+  email: 'omar@mqr.app',
   phone: '+201000000001',
   roleTitleAr: 'مستشار مبيعات أول',
   roleTitleEn: 'Senior sales advisor',
@@ -29,7 +29,7 @@ const agent = (over: Partial<AdminAgentItem>): AdminAgentItem => ({
   ...over,
 });
 const OMAR = agent({});
-const MARIAM = agent({ id: 4, nameAr: 'مريم عادل', nameEn: 'Mariam Adel', email: 'mariam@maqar.app', colour: '#61766d', live: 3 });
+const MARIAM = agent({ id: 4, nameAr: 'مريم عادل', nameEn: 'Mariam Adel', email: 'mariam@mqr.app', colour: '#61766d', live: 3 });
 /** Listings for the picker in the agent's form (phase 29): Omar (3) has the villa; the flat is Mariam's. */
 const LISTING_OPTIONS = [
   { id: 21, titleAr: 'شقة في زايد', titleEn: 'Flat in Zayed', status: 'approved', agentId: 4 },
@@ -179,7 +179,7 @@ describe('New agent', () => {
     await renderWithProviders(withToasts(<AgentFormScreen />));
     await fireEvent.changeText(screen.getByLabelText('الاسم (عربي)'), 'نادين سمير');
     await fireEvent.changeText(screen.getByLabelText('الاسم (إنجليزي)'), 'Nadine Samir');
-    await fireEvent.changeText(screen.getByLabelText('الإيميل (للدخول)'), 'nadine@maqar.app');
+    await fireEvent.changeText(screen.getByLabelText('الإيميل (للدخول)'), 'nadine@mqr.app');
     await fireEvent.changeText(screen.getByLabelText('كلمة سر البداية'), 'short');
     await fireEvent.changeText(screen.getByLabelText('الموبايل'), '٠١٠٠٥٥٥٠١٠١');
     await fireEvent.press(screen.getByRole('button', { name: 'أضف المسؤول' }));
@@ -189,7 +189,7 @@ describe('New agent', () => {
     await fireEvent.changeText(screen.getByLabelText('كلمة سر البداية'), 'Starting123');
     await fireEvent.press(screen.getByRole('button', { name: 'أضف المسؤول' }));
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/admin/agent/9'));
-    expect(writes()[0]![1]).toMatchObject({ nameEn: 'Nadine Samir', email: 'nadine@maqar.app', password: 'Starting123', phone: '01005550101' });
+    expect(writes()[0]![1]).toMatchObject({ nameEn: 'Nadine Samir', email: 'nadine@mqr.app', password: 'Starting123', phone: '01005550101' });
     expect(writes()[0]![1]).not.toHaveProperty('listingIds');
   });
 });

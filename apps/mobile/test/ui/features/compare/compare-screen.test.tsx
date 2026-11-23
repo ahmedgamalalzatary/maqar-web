@@ -1,4 +1,4 @@
-import type { PropertyDetail } from '@maqar/shared';
+import type { PropertyDetail } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { CompareScreen } from '@/features/compare/screens/compare-screen';

@@ -1,4 +1,4 @@
-import { fmtDuration, localDigits, type Bi } from '@maqar/shared';
+import { fmtDuration, localDigits, type Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS, counted, arNum } from './forms';
 

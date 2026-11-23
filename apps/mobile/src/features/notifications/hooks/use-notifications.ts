@@ -1,4 +1,4 @@
-import type { NotificationsResponse } from '@maqar/shared';
+import type { NotificationsResponse } from '@mqr/shared';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth/store/session.store';

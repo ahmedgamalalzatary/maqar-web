@@ -1,4 +1,4 @@
-import { pickField, type ListingAgent } from '@maqar/shared';
+import { pickField, type ListingAgent } from '@mqr/shared';
 import { BadgeCheck, Clock, Phone } from 'lucide-react-native';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Card } from '@/components/card';

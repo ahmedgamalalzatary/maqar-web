@@ -19,12 +19,12 @@ export async function addToCalendar(viewingId: number): Promise<void> {
     const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'maqar-viewing.ics';
+    a.download = 'mqr-viewing.ics';
     a.click();
     URL.revokeObjectURL(url);
     return;
   }
-  const file = new File(Paths.cache, `maqar-viewing-${viewingId}.ics`);
+  const file = new File(Paths.cache, `mqr-viewing-${viewingId}.ics`);
   if (file.exists) file.delete();
   file.create();
   file.write(ics);
@@ -37,5 +37,5 @@ export async function addToCalendar(viewingId: number): Promise<void> {
       // No app opens calendar files: the share sheet still lets the user save or send it.
     }
   }
-  await Sharing.shareAsync(file.uri, { mimeType: 'text/calendar', UTI: 'public.calendar-event', dialogTitle: 'Maqar' });
+  await Sharing.shareAsync(file.uri, { mimeType: 'text/calendar', UTI: 'public.calendar-event', dialogTitle: 'MQR' });
 }

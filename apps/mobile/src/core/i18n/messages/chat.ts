@@ -1,4 +1,4 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { FORMS, counted, arNum } from './forms';
 
@@ -24,7 +24,7 @@ export const chat = {
   morePhotosPlease: { ar: 'ابعتلي صور أكتر', en: 'More photos please' },
   movedToAnotherTime: { ar: 'اتنقلت لميعاد تاني', en: 'Moved to another time' },
   newTimeConfirmed: { ar: 'الميعاد اتغير', en: 'New time confirmed' },
-  nobodyCanSendInIt: { ar: 'محدش هيقدر يبعت فيها تاني، وفريق مقر بس اللي يقدر يفتحها.', en: 'Nobody can send in it any more; only the Maqar team can open it again.' },
+  nobodyCanSendInIt: { ar: 'محدش هيقدر يبعت فيها تاني، وفريق مقر بس اللي يقدر يفتحها.', en: 'Nobody can send in it any more; only the MQR team can open it again.' },
   noConversationsYet: { ar: 'مفيش محادثات لسه', en: 'No conversations yet' },
   openAnyHomeAndTap: { ar: 'افتح أي وحدة واضغط «شات» عشان تكلم مسؤول المبيعات بتاعها مباشرة.', en: 'Open any home and tap “Chat” to talk to its sales advisor directly.' },
   openPhoto: { ar: 'افتح الصورة', en: 'Open photo' },
@@ -39,16 +39,16 @@ export const chat = {
   stillAvailable: { ar: 'لسه متاحة؟', en: 'Still available?' },
   tapATimeTheAdvisor: { ar: 'دوس على ميعاد، والمسؤول هيأكده', en: 'Tap a time; the advisor confirms it' },
   thatTimeWasJustBooked: { ar: 'الميعاد ده لسه اتحجز، اختار ميعاد تاني', en: 'That time was just booked, pick another' },
-  theAdvisorClosedThisConversation: { ar: 'المسؤول قفل المحادثة دي. لو محتاج حاجة كلّم مقر.', en: 'The advisor closed this conversation. Contact Maqar if you need anything.' },
+  theAdvisorClosedThisConversation: { ar: 'المسؤول قفل المحادثة دي. لو محتاج حاجة كلّم مقر.', en: 'The advisor closed this conversation. Contact MQR if you need anything.' },
   theAdvisorDeclinedTheViewing: { ar: 'المسؤول اعتذر عن المعاينة', en: 'The advisor declined the viewing' },
   theClientBookedAViewing: { ar: 'العميل حجز معاينة', en: 'The client booked a viewing' },
   theClientClosedThisConversation: { ar: 'العميل قفل المحادثة دي.', en: 'The client closed this conversation.' },
   theClientPickedATime: { ar: 'العميل اختار ميعاد', en: 'The client picked a time' },
   theClientWasToldYou: { ar: 'العميل عرف إنك اعتذرت', en: 'The client was told you declined' },
-  theMaqarTeamClosedThis: { ar: 'فريق مقر قفل المحادثة دي.', en: 'The Maqar team closed this conversation.' },
-  theMaqarTeamGotYour: { ar: 'البلاغ وصل لفريق مقر', en: 'The Maqar team got your report' },
+  theMqrTeamClosedThis: { ar: 'فريق مقر قفل المحادثة دي.', en: 'The MQR team closed this conversation.' },
+  theMqrTeamGotYour: { ar: 'البلاغ وصل لفريق مقر', en: 'The MQR team got your report' },
   theNewTimeWasSent: { ar: 'الميعاد الجديد اتبعت للعميل', en: 'The new time was sent to the client' },
-  theReportGoesToThe: { ar: 'البلاغ بيوصل لفريق مقر بس، والطرف التاني مش هيعرف.', en: 'The report goes to the Maqar team only; the other side is not told.' },
+  theReportGoesToThe: { ar: 'البلاغ بيوصل لفريق مقر بس، والطرف التاني مش هيعرف.', en: 'The report goes to the MQR team only; the other side is not told.' },
   view: { ar: 'عرض', en: 'View' },
   viewingAwaitingConfirmation: { ar: 'معاينة مستنية التأكيد', en: 'Viewing awaiting confirmation' },
   viewingConfirmed: { ar: 'المعاينة اتأكدت', en: 'Viewing confirmed' },
@@ -66,7 +66,7 @@ export const chat = {
   youAlreadyHaveAViewing: { ar: 'عندك معاينة للوحدة دي، غيّر ميعادها من معايناتي', en: 'You already have a viewing of this home: change it in My viewings' },
   youBookedAViewing: { ar: 'حجزت معاينة', en: 'You booked a viewing' },
   youClosedThisConversationNobody: { ar: 'انت قفلت المحادثة دي. محدش يقدر يبعت فيها تاني.', en: 'You closed this conversation. Nobody can send in it any more.' },
-  youreChattingWithAVerified: { ar: 'محادثتك مع مسؤول مبيعات موثّق من مقر. متشاركش بيانات الدفع في الشات.', en: 'You’re chatting with a verified Maqar advisor. Never share payment details in chat.' },
+  youreChattingWithAVerified: { ar: 'محادثتك مع مسؤول مبيعات موثّق من مقر. متشاركش بيانات الدفع في الشات.', en: 'You’re chatting with a verified MQR advisor. Never share payment details in chat.' },
   messagesNew: (n: number): Bi => ({ ar: `المحادثات، ${arNum(n)} جديدة`, en: `Messages, ${n} new` }),
   newCount: (n: number): Bi => ({ ar: `${arNum(n)} جديدة`, en: `${n} new` }),
   advisorReplyIn: (mins: number): Bi => ({ ar: `مستشار مبيعات | هدفنا الرد خلال ${arNum(mins)} د`, en: `Sales advisor | aims to reply in ${mins} min` }),

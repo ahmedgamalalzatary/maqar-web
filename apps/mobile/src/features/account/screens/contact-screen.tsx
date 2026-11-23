@@ -1,4 +1,4 @@
-import { type Bi, type ContactField, contactLinks } from '@maqar/shared';
+import { type Bi, type ContactField, contactLinks } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Camera, Mail, MessageCircle, Music2, Phone } from 'lucide-react-native';
 import { type ReactNode, useEffect } from 'react';
@@ -19,7 +19,7 @@ const SOCIAL: { field: 'facebook' | 'instagram' | 'tiktok'; label: Bi; color: st
 ];
 
 /**
- * `/contact` (owner, 2026-11-14): the ways to reach Maqar that an admin fills in under App settings.
+ * `/contact` (owner, 2026-11-14): the ways to reach MQR that an admin fills in under App settings.
  * Only filled details show. It asks the server for the latest when it opens.
  */
 export function ContactScreen() {

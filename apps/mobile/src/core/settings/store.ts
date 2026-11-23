@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Lang, ThemePref } from '@maqar/shared';
+import type { Lang, ThemePref } from '@mqr/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { trackLoad } from '@/core/storage/loaded';
@@ -21,8 +21,8 @@ export const useSettings = create<Settings>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'maqar.settings',
-      onRehydrateStorage: trackLoad('maqar.settings'),
+      name: 'mqr.settings',
+      onRehydrateStorage: trackLoad('mqr.settings'),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ lang, theme }) => ({ lang, theme }),
     },

@@ -1,4 +1,4 @@
-import type { AdminAgentOption, AdminListing, AdminListingItem, AdminListingsPage, PropertyStatus } from '@maqar/shared';
+import type { AdminAgentOption, AdminListing, AdminListingItem, AdminListingsPage, PropertyStatus } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ToastHost } from '@/components/toast';

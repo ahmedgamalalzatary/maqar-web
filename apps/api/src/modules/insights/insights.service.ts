@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { INTEREST_KINDS, type InterestKind, type InterestedClient, lastDays, type ListingStats } from '@maqar/shared';
+import { INTEREST_KINDS, type InterestKind, type InterestedClient, lastDays, type ListingStats } from '@mqr/shared';
 import { cairoClock } from '../viewings/slots.js';
 import { type InterestRow, InsightsRepository } from './insights.repository.js';
 

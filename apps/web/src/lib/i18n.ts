@@ -1,9 +1,9 @@
 "use client";
 
-import type { Bi, Lang } from "@maqar/shared";
+import type { Bi, Lang } from "@mqr/shared";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
-const KEY = "maqar-admin-lang";
+const KEY = "mqr-admin-lang";
 const listeners = new Set<() => void>();
 
 function read(): Lang {

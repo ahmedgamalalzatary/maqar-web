@@ -1,4 +1,4 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 
 export const alerts = {
   alertOnDrop: { ar: 'نبهني لو نزل', en: 'Alert on drop' },

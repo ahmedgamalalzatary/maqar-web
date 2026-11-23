@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { InterestedClient, ListingStats, Page, PropertyCard, PropertyDetail, SlotsResponse } from '@maqar/shared';
+import type { InterestedClient, ListingStats, Page, PropertyCard, PropertyDetail, SlotsResponse } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { DB, type Db } from '../../src/core/db/db.module.js';
@@ -32,7 +32,7 @@ describe('Listing insights (e2e)', () => {
     await seedDemoAccounts(db, process.env.SEED_PASSWORD!);
     await seedAreas(db);
     await seedProperties(db);
-    admin = await signInSeeded(app, 'admin@maqar.app');
+    admin = await signInSeeded(app, 'admin@mqr.app');
     homes = ((await http().get('/v1/properties?limit=50').expect(200)).body as Page<PropertyCard>).items.filter((c) => c.category !== 'stay');
   });
   afterAll(async () => {
@@ -41,7 +41,7 @@ describe('Listing insights (e2e)', () => {
 
   it('is for admins only, and 404 for a listing that does not exist', async () => {
     const client = (await signUp(app)).accessToken;
-    const agent = await signInSeeded(app, 'omar@maqar.app');
+    const agent = await signInSeeded(app, 'omar@mqr.app');
     for (const path of [`/v1/admin/listings/${homes[0]!.id}/stats`, `/v1/admin/listings/${homes[0]!.id}/interested`]) {
       await http().get(path).expect(401);
       await http().get(path).set(as(client)).expect(403);

@@ -1,4 +1,4 @@
-import type { NotificationItem, NotificationsResponse } from '@maqar/shared';
+import type { NotificationItem, NotificationsResponse } from '@mqr/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSession } from '@/features/auth/store/session.store';
 import { NotificationsScreen } from '@/features/notifications/screens/notifications-screen';

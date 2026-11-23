@@ -1,4 +1,4 @@
-import { joinParts, fmtDate, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, targetProgress } from '@maqar/shared';
+import { joinParts, fmtDate, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, targetProgress } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { Target, TrendingDown, TrendingUp } from 'lucide-react-native';
 import type { ReactNode } from 'react';

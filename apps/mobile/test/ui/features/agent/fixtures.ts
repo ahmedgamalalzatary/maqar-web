@@ -1,4 +1,4 @@
-import type { AgentToday, AgentViewing, LeadCard, LeadDetail } from '@maqar/shared';
+import type { AgentToday, AgentViewing, LeadCard, LeadDetail } from '@mqr/shared';
 import { makeCard } from '../../../utils/api';
 
 export const lead = (over: Partial<LeadCard> = {}): LeadCard => ({

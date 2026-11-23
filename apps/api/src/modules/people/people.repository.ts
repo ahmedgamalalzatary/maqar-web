@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AdminAgent, AdminHomeRef, ClientStatus, LeadStage, ViewingStatus } from '@maqar/shared';
+import type { AdminAgent, AdminHomeRef, ClientStatus, LeadStage, ViewingStatus } from '@mqr/shared';
 import { and, count, desc, eq, isNotNull, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { agents } from '../agents/agents.schema.js';

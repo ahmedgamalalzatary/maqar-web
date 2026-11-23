@@ -1,4 +1,4 @@
-import { fmtMoney, fmtPct, type PropertyCard } from '@maqar/shared';
+import { fmtMoney, fmtPct, type PropertyCard } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { BellRing, TrendingDown } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';

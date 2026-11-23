@@ -16,7 +16,7 @@ import {
   type PublishBody,
   TOUR_ROOMS_MAX,
   type TourRoomBody,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { BookingCardState, ChatBlocker, ChatBody, ChatReportReason, ChatSender, ReportOutcome } from '@maqar/shared';
+import type { BookingCardState, ChatBlocker, ChatBody, ChatReportReason, ChatSender, ReportOutcome } from '@mqr/shared';
 import { and, count, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import { type Db, InjectDb } from '../../core/db/db.module.js';
 import { leads } from '../leads/leads.schema.js';

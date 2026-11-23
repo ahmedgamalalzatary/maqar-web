@@ -1,9 +1,9 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import type { Message } from './types';
 import { arNum } from './forms';
 
 export const notifications = {
-  allowThemForMaqarIn: { ar: 'اسمح بيها لمقر من إعدادات الموبايل وجرّب تاني.', en: 'Allow them for Maqar in your phone’s settings, then try again.' },
+  allowThemForMqrIn: { ar: 'اسمح بيها لمقر من إعدادات الموبايل وجرّب تاني.', en: 'Allow them for MQR in your phone’s settings, then try again.' },
   blockedInYourPhonesSettings: { ar: 'مقفولة من إعدادات الموبايل', en: 'Blocked in your phone’s settings' },
   checkYourConnection: { ar: 'اتأكد إنك متصل بالإنترنت.', en: 'Check your connection.' },
   checkYourConnectionAndTry: { ar: 'اتأكد إنك متصل بالإنترنت وجرّب تاني.', en: 'Check your connection and try again.' },

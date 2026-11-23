@@ -1,4 +1,4 @@
-import { pickField, joinParts, type AnswerBookingBody, CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtTime, type SendChatBody } from '@maqar/shared';
+import { pickField, joinParts, type AnswerBookingBody, CHAT_IMAGES_MAX, CHAT_REPORT_REASONS, CHAT_TEXT_MAX, type ChatMessage, type ChatReportReason, type ChatSender, type ChatThread, fmtDate, fmtMoney, fmtTime, type SendChatBody } from '@mqr/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -312,7 +312,7 @@ function Conversation({ thread, side, onBack }: { thread: ChatThread; side: Chat
             {thread.blocked.by === side
               ? t(m.chat.youClosedThisConversationNobody)
               : thread.blocked.by === 'admin'
-                ? t(m.chat.theMaqarTeamClosedThis)
+                ? t(m.chat.theMqrTeamClosedThis)
                 : side === 'client'
                   ? t(m.chat.theAdvisorClosedThisConversation)
                   : t(m.chat.theClientClosedThisConversation)}
@@ -444,7 +444,7 @@ const REASON_LABEL: Record<ChatReportReason, { ar: string; en: string }> = {
   other: m.chat.somethingElse,
 };
 
-/** Report the conversation to the Maqar team (phase 24): a reason and an optional note. */
+/** Report the conversation to the MQR team (phase 24): a reason and an optional note. */
 function ReportSheet({ threadId, open, onClose }: { threadId: number; open: boolean; onClose: () => void }) {
   const t = useT();
   const { colors } = useTheme();
@@ -479,7 +479,7 @@ function ReportSheet({ threadId, open, onClose }: { threadId: number; open: bool
               { reason: reason!, ...(note.trim() ? { note: note.trim() } : {}) },
               {
                 onSuccess: () => {
-                  toast.show({ title: t(m.chat.theMaqarTeamGotYour), tone: 'sage' });
+                  toast.show({ title: t(m.chat.theMqrTeamGotYour), tone: 'sage' });
                   setReason(null);
                   setNote('');
                   onClose();

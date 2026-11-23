@@ -1,4 +1,4 @@
-import type { Bi } from '@maqar/shared';
+import type { Bi } from '@mqr/shared';
 import { ApiError } from '@/core/api/api';
 import { m } from '@/core/i18n';
 

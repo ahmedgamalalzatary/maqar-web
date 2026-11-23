@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { AuthResponse, SignUpBody } from '@maqar/shared';
+import type { AuthResponse, SignUpBody } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 
@@ -10,7 +10,7 @@ export async function signUp(app: INestApplication<App>, body: Partial<SignUpBod
   n += 1;
   const res = await request(app.getHttpServer())
     .post('/v1/auth/sign-up')
-    .send({ name: 'Test User', email: `user${n}-${Date.now()}@test.maqar`, password: 'Secret123', role: 'client', ...body })
+    .send({ name: 'Test User', email: `user${n}-${Date.now()}@test.mqr`, password: 'Secret123', role: 'client', ...body })
     .expect(201);
   return res.body as AuthResponse;
 }

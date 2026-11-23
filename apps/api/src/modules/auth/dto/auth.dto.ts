@@ -12,7 +12,7 @@ import {
   type SignInBody,
   type SignUpBody,
   type SignUpRole,
-} from '@maqar/shared';
+} from '@mqr/shared';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsIn, IsOptional, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 

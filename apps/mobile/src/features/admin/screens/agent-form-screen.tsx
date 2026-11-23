@@ -1,4 +1,4 @@
-import { pickField, type AdminAgentDetail, type AgentBody, fmtNum, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from '@maqar/shared';
+import { pickField, type AdminAgentDetail, type AgentBody, fmtNum, PROPERTY_STATUS_LABEL, readPhone, readWholeNumber } from '@mqr/shared';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react-native';
 import { useState } from 'react';

@@ -1,4 +1,4 @@
-import type { AddLeadNoteBody, AgentToday, LeadCard, LeadDetail, LeadNote, UpdateLeadBody } from '@maqar/shared';
+import type { AddLeadNoteBody, AgentToday, LeadCard, LeadDetail, LeadNote, UpdateLeadBody } from '@mqr/shared';
 import { apiFetch } from '@/core/api/api';
 
 export const getToday = (signal?: AbortSignal) => apiFetch<AgentToday>('/agent/today', { signal });

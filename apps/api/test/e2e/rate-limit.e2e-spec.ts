@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import type { Page, PropertyCard } from '@maqar/shared';
+import type { Page, PropertyCard } from '@mqr/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { WRITE_LIMIT } from '../../src/common/rate-limit.js';

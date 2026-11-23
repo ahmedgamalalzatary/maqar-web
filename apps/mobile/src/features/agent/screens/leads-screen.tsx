@@ -1,4 +1,4 @@
-import { joinParts, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, type LeadStage } from '@maqar/shared';
+import { joinParts, fmtNum, LEAD_STAGE_COLOUR, LEAD_STAGE_LABEL, LEAD_STAGES, type LeadStage } from '@mqr/shared';
 import { Search, Users, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';

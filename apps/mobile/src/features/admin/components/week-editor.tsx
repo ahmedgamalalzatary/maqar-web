@@ -1,4 +1,4 @@
-import { type DayHours, fmtDate, fmtTime, weekdayName } from '@maqar/shared';
+import { type DayHours, fmtDate, fmtTime, weekdayName } from '@mqr/shared';
 import { Minus, Plus } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt } from '@/components/text';
