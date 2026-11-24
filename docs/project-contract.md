@@ -91,6 +91,15 @@ Rules:
 
 - **Mobile only** for clients and agents: phone layout, portrait, no tablet or desktop layouts. The admin web dashboard (`apps/web`) is the one desktop page.
 - One pnpm + Turborepo monorepo: `github.com/ahmedgamalalzatary/maqar-web`.
+- **Name: MQR everywhere** (app name, texts, scheme `mqr://`, packages `@mqr/*`, server, database, demo accounts). Only these places keep "maqar", on purpose, and nothing else may use it:
+
+| Place | Value | Why it stays |
+|---|---|---|
+| Android package and iOS bundle ID | `com.maqar.app` | The store apps were created with it; it can never change. |
+| Support / contact email | `maqarcompany1@gmail.com` | The real mailbox (also sends the password emails). |
+| Expo project slug | `maqar` (`@alzatary/maqar`) | Tied to the EAS project id. |
+| Firebase project id | `maqar-app-notification-354f3` | Firebase ids can't be renamed. |
+| GitHub repository | `maqar-web` | Renaming it breaks links and the server's clone. |
 
 | Path | Package | Purpose |
 |---|---|---|
