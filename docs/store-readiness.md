@@ -51,7 +51,7 @@ Items B1–B5 are done in Phase 20. The pages go live with the next deploy (`dep
 | **Permissions the app doesn't use** | ✅ fixed in Phase 20 (was ❌) | The final manifest has `CAMERA`, `RECORD_AUDIO`, `READ_CALENDAR`, `WRITE_CALENDAR`, `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`. Nothing in `src/` uses camera, microphone or calendar. `expo-calendar` is a dependency but is never imported. Google checks declared permissions against the Data safety form and real use, so unused ones invite questions or a rejection. **Fix:** remove `expo-calendar` from `package.json`, and add `android.blockedPermissions` for `CAMERA`, `RECORD_AUDIO` and the two storage permissions. `SYSTEM_ALERT_WINDOW` comes from the debug manifest only; check that it's gone from the release AAB. |
 | Photo access via the system photo picker (Play's Photo and Video Permissions policy) | ✅ | `expo-image-picker` uses Android's photo picker, and there is no `READ_MEDIA_IMAGES`, so no declaration is needed. |
 | Push (FCM) | ✅ | Firebase project `maqar-app-notification-354f3`; the APK and AAB workflows write the file from the secret (2026-11-15). |
-| **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.mqr.app` and the upload and Play signing SHA-1s. |
+| **Google Maps key** | ❌ ⚠️ | The repo has **no `GOOGLE_MAPS_API_KEY` secret**, so a release AAB built today leaves out the property map (the workflow only warns). Add the key, restricted to `com.maqar.app` and the upload and Play signing SHA-1s. |
 | versionCode goes up on each upload | ✅ | The commit count on main, set by the AAB workflow (2026-11-15). Build each upload from a newer commit. |
 
 ### 2.3 App content (Play Console → Policy → App content)
@@ -106,7 +106,7 @@ What account deletion does is solid. `UsersRepository.softDelete` blanks the nam
 | Item | Status | Notes |
 |---|---|---|
 | Apple Developer Program ($99 a year), as an individual or an organization (an organization needs D-U-N-S) | ⏸ | OPS-02 |
-| Register the bundle ID `com.mqr.app` | 📝 ⚠️ | Check that it's free. If another team already owns it, the ID has to change before the first build. |
+| Register the bundle ID `com.maqar.app` | 📝 ⚠️ | Check that it's free. If another team already owns it, the ID has to change before the first build. |
 | Signing, provisioning profile, **Push Notifications capability and APNs key** (uploaded to Expo for Expo push) | ⏸ | OPS-02. `ios-ipa.yml` builds unsigned on purpose today. |
 | Built with **Xcode 26 / iOS 26 SDK** (required for uploads since 2026-04-28) | ⚠️ | `macos-latest` should be on Xcode 26 by now. Print `xcodebuild -version` in the workflow to prove it. Uploads must also target iOS 13 or later; Expo SDK 58 targets much higher ✅. |
 | Build number goes up on each upload | ✅ | The commit count on main, set by the iOS workflow (2026-11-15). |

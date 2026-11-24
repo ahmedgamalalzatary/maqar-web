@@ -44,10 +44,10 @@ jobs:
           script: |
             adb install -r app.apk
             adb logcat -c
-            adb shell monkey -p com.mqr.app -c android.intent.category.LAUNCHER 1
+            adb shell monkey -p com.maqar.app -c android.intent.category.LAUNCHER 1
             sleep 45
             adb exec-out screencap -p > results/screen.png
-            adb shell pidof com.mqr.app > results/pid.txt || echo "not running" > results/pid.txt
+            adb shell pidof com.maqar.app > results/pid.txt || echo "not running" > results/pid.txt
             adb logcat -d > results/logcat.txt
             ! grep -q "not running" results/pid.txt
 

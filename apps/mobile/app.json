@@ -8,7 +8,7 @@
     "scheme": "mqr",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.mqr.app",
+      "bundleIdentifier": "com.maqar.app",
       "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/brand/icon-512.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mqr.app",
+      "package": "com.maqar.app",
       "blockedPermissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
