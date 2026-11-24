@@ -1,4 +1,4 @@
-# Opens the last successful "iOS IPA" bake from this branch on a simulator, and keeps a screenshot
+# Opens the last successful "iOS simulator" bake from this branch on a simulator, and keeps a screenshot
 # and any crash reports. It builds nothing. The run fails if the app is not running after a minute.
 name: iOS launch check
 
@@ -19,13 +19,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p results
-          latest="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ios-ipa.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[] | "\(.databaseId) \(.headSha)"')"
-          test -n "$latest" || { echo "::error::No successful iOS IPA run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
+          latest="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ios-simulator.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId,headSha -q '.[] | "\(.databaseId) \(.headSha)"')"
+          test -n "$latest" || { echo "::error::No successful iOS simulator run on $GITHUB_REF_NAME. Bake one first."; exit 1; }
           run="${latest% *}"
           sha="${latest#* }"
           gh run download "$run" --repo "$GITHUB_REPOSITORY" -n mqr-ios-simulator -D downloaded || { echo "::error::Run $run has no simulator app: it is too old or expired. Bake a new one."; exit 1; }
           ditto -x -k downloaded/MQR-simulator.zip app
-          echo "Checked commit ${sha::7} from iOS IPA run $run" | tee results/checked.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "Checked commit ${sha::7} from iOS simulator run $run" | tee results/checked.txt >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open the app and keep what happens
         run: |

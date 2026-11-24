@@ -1,0 +1,74 @@
+# Bakes the iPhone app of apps/mobile for the simulator, because a simulator cannot open an .ipa.
+# "iOS launch check" opens this copy. Separate from "iOS IPA" so the store build needs only one Mac.
+# The build logs show one line per file compiled, plus errors.
+name: iOS simulator
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-simulator-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+  NODE_OPTIONS: --max-old-space-size=6144
+
+jobs:
+  simulator-app:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check the release settings
+        run: |
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "::error::Set the EXPO_PUBLIC_API_URL repository variable: the app cannot work without it"; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history, for the build number below
+
+      # OPS-03: the store build number is the commit count on main, so each upload is higher than the last.
+      - name: Set the build number
+        run: |
+          echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "Build number: $(git rev-list --count HEAD)"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the shared package
+        run: pnpm --filter @mqr/shared build
+
+      - name: Generate the native iOS project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install the iOS libraries
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      # This runner's chip only: Release otherwise compiles everything once per simulator chip.
+      - name: Build a Release app for the simulator
+        working-directory: apps/mobile/ios
+        run: |
+          xcodebuild -workspace MQR.xcworkspace -scheme MQR -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO | grep --line-buffered -E '^(CompileC|SwiftCompile|Ld) |^[*][*] |error:'
+          test "${PIPESTATUS[0]}" -eq 0
+
+      # Zipped first: an artifact would otherwise lose the app's file permissions.
+      - name: Package the simulator app
+        run: |
+          mkdir -p out
+          ditto -c -k --sequesterRsrc --keepParent apps/mobile/ios/build/Build/Products/Release-iphonesimulator/MQR.app out/MQR-simulator.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mqr-ios-simulator
+          path: out/MQR-simulator.zip
+          retention-days: 14
